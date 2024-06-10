@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.SKK" parent="Theme.AppCompat.DayNight.DarkActionBar">
+        <item name="keyboardViewStyle">@style/KeyboardView</item>
+    </style>
+
+    <style name="KeyboardView" parent="android:Widget">
+        <item name="android:background">#FFAAAAAA</item>
+        <item name="keyTextSize">22sp</item>
+        <item name="keyTextColor">@color/key_char_color</item>
+        <item name="keyBackground">@drawable/key_bg</item>
+        <item name="keyPreviewOffset">-12dp</item>
+        <item name="keyPreviewHeight">80dp</item>
+        <item name="labelTextSize">14sp</item>
+        <item name="popupLayout">@layout/keyboard_popup_keyboard</item>
+        <item name="verticalCorrection">-10dp</item>
+        <item name="shadowColor">@android:color/transparent</item>
+        <item name="shadowRadius">2.75</item>
+    </style>
+</resources>

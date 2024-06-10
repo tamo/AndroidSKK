@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+	<uses-permission android:name="android.permission.RECORD_AUDIO" />
+	<queries>
+		<intent>
+			<action android:name="android.speech.RecognitionService"/>
+		</intent>
+		<intent>
+			<action android:name="com.adamrocker.android.simeji.ACTION_INTERCEPT" />
+			<category android:name="com.adamrocker.android.simeji.REPLACE"/>
+		</intent>
+	</queries>
+	<application android:label="@string/ime_name"
+			android:allowBackup="true"
+			android:name=".SKKApplication"
+		>
+		<service android:name=".SKKService"
+			android:permission="android.permission.BIND_INPUT_METHOD"
+			android:exported="false" >
+			<intent-filter>
+				<action android:name="android.view.InputMethod" />
+			</intent-filter>
+			<meta-data android:name="android.view.im" android:resource="@xml/method" />
+		</service>
+
+		<activity android:name=".SKKSettingsActivity"
+			android:theme="@style/Theme.AppCompat.Light.DarkActionBar"
+			android:label="@string/label_pref_activity" >
+		</activity>
+		<activity android:name=".SKKUserDicTool"
+			android:theme="@style/Theme.AppCompat.Light.DarkActionBar"
+			android:label="@string/label_dictool_activity" >
+		</activity>
+		<activity android:name=".SKKDicManager"
+				  android:theme="@style/Theme.AppCompat.Light.DarkActionBar"
+				  android:label="@string/label_dicmanager_activity" >
+		</activity>
+		<activity android:name=".SKKMushroom"
+			android:label="@string/label_mushroom"
+			android:theme="@style/Theme.AppCompat.Light.Dialog">
+		</activity>
+		<activity android:name=".SKKSpeechRecognitionResultsList"
+				  android:label="@string/label_speech_recognition_results"
+                  android:windowSoftInputMode="stateAlwaysHidden"
+				  android:theme="@style/Theme.AppCompat.Light.Dialog">
+		</activity>
+	</application>
+</manifest>

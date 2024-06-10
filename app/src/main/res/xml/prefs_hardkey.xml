@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    app:title="@string/label_pref_hardkeyboard">
+    <jp.deadend.noname.skk.SetKeyPreference
+        app:key="@string/prefkey_kana_key"
+        app:title="かなキー"
+        app:summary="かなモードに移行するキー"
+        app:dialogTitle="Press a key ..."
+        app:negativeButtonText="キャンセル"
+        app:positiveButtonText="OK"
+        app:iconSpaceReserved="false"
+        />
+    <CheckBoxPreference
+        app:key="@string/prefkey_toggle_kana_key"
+        app:title="かなキーをトグルに"
+        app:summary="オンだと，かなモードでかなキーを押すとASCIIモードに戻ります"
+        app:defaultValue="true"
+        app:iconSpaceReserved="false"
+        />
+    <jp.deadend.noname.skk.SetKeyPreference
+        app:key="@string/prefkey_cancel_key"
+        app:title="キャンセルキー"
+        app:dialogTitle="Press a key ..."
+        app:negativeButtonText="キャンセル"
+        app:positiveButtonText="OK"
+        app:iconSpaceReserved="false"
+        />
+    <CheckBoxPreference
+        app:key="@string/prefkey_use_candidates_view"
+        app:title="補完・候補の一覧表示"
+        app:summary="補完候補や変換候補を一覧表示します"
+        app:defaultValue="true"
+        app:iconSpaceReserved="false"
+        />
+    <CheckBoxPreference
+        app:key="@string/prefkey_sticky_meta"
+        app:title="Sticky shift"
+        app:summary="shiftを同時押しでなくても効くようにします"
+        app:defaultValue="false"
+        app:iconSpaceReserved="false"
+        />
+    <CheckBoxPreference
+        app:key="@string/prefkey_sands"
+        app:title="SandS"
+        app:summary="スペースキーをshiftとして使います"
+        app:defaultValue="false"
+        app:iconSpaceReserved="false"
+        />
+</PreferenceScreen>

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Keyboard xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	app:keyWidth="20%p"
+	app:horizontalGap="0dip"
+	app:verticalGap="0dip"
+	app:keyHeight="8%p"
+	>
+	<Row>
+		<Key app:codes="0" />
+		<Key app:codes="0"/>
+		<Key app:codes="-1012" app:keyLabel="声" app:isSticky="true" />
+		<Key app:codes="0" />
+		<Key app:codes="-5" app:keyIcon="@drawable/ic_keyboard_backspace" app:isRepeatable="true" />
+	</Row>
+	<Row>
+		<Key app:codes="-1001" app:keyIcon="@drawable/ic_keyboard_arrow_left" app:isRepeatable="true" />
+		<Key app:codes="44" app:keyLabel="、" />
+		<Key app:codes="46" app:keyLabel="。" />
+		<Key app:codes="0" />
+		<Key app:codes="-1002" app:keyIcon="@drawable/ic_keyboard_arrow_right" app:isRepeatable="true" />
+	</Row>
+	<Row>
+		<Key app:codes="-1010" app:keyLabel="かな" />
+		<Key app:codes="91" app:keyLabel="「" />
+		<Key app:codes="93" app:keyLabel="」" />
+		<Key app:codes="63" app:keyLabel="？"/>
+		<Key app:codes="-1004" app:keyIcon="@drawable/ic_keyboard_spacebar" />
+	</Row>
+	<Row app:rowEdgeFlags="bottom">
+		<Key app:codes="-1003" app:keyLabel="ABC" />
+		<Key app:codes="40" app:keyLabel="（"/>
+		<Key app:codes="41" app:keyLabel="）" />
+		<Key app:codes="33" app:keyLabel="！"/>
+		<Key app:codes="-1007" app:keyIcon="@drawable/ic_keyboard_return" />
+	</Row>
+</Keyboard>

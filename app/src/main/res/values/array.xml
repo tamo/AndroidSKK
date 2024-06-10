@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<string-array name="kutouten_entries">
+		<item>． ， (ピリオドとカンマ)</item>
+		<item>。 、 (マルとテン)</item>
+		<item>。 ， (マルとカンマ)</item>
+	</string-array>
+	<string-array name="kutouten_values">
+		<item>en</item>
+		<item>jp</item>
+		<item>jp_en</item>
+	</string-array>
+	<string-array name="usesoftkey_entries">
+		<item>自動</item>
+		<item>常に表示</item>
+		<item>常に非表示</item>
+	</string-array>
+	<string-array name="usesoftkey_values">
+		<item>auto</item>
+		<item>on</item>
+		<item>off</item>
+	</string-array>
+	<string-array name="position_entries">
+		<item>左寄せ</item>
+		<item>中央</item>
+		<item>右寄せ</item>
+	</string-array>
+	<string-array name="position_values">
+		<item>left</item>
+		<item>center</item>
+		<item>right</item>
+	</string-array>
+	<string-array name="sensitivity_entries">
+		<item>高</item>
+		<item>中</item>
+		<item>低</item>
+	</string-array>
+	<string-array name="sensitivity_values">
+		<item>high</item>
+		<item>mid</item>
+		<item>low</item>
+	</string-array>
+	<string-array name="theme_entries">
+		<item>システム設定</item>
+		<item>ライト</item>
+		<item>ダーク</item>
+	</string-array>
+	<string-array name="theme_values">
+		<item>default</item>
+		<item>light</item>
+		<item>dark</item>
+	</string-array>
+</resources>

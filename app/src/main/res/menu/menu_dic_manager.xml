@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+	  xmlns:app="http://schemas.android.com/apk/res-auto">
+	<item
+		android:id="@+id/menu_dic_manager_add"
+		android:title="@string/label_dicmanager_add"
+		android:icon="@drawable/ic_add"
+		app:showAsAction="ifRoom" />
+	<item
+		android:id="@+id/menu_dic_manager_reset"
+		android:title="@string/label_dicmanager_reset"
+		app:showAsAction="never" />
+</menu>

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    app:title="@string/label_pref_activity">
+    <ListPreference
+        app:key="@string/prefkey_kutouten_type"
+        app:title="句読点のタイプ"
+        app:summary="かなモードで入力される句読点"
+        app:entries="@array/kutouten_entries"
+        app:entryValues="@array/kutouten_values"
+        app:dialogTitle="句読点のタイプ"
+        app:defaultValue="en"
+        app:iconSpaceReserved="false"
+        />
+    <androidx.preference.SeekBarPreference
+        app:key="@string/prefkey_candidates_size"
+        app:min="12"
+        android:max="48"
+        app:defaultValue="18"
+        app:title="候補表示の文字サイズ"
+        app:showSeekBarValue="true"
+        app:iconSpaceReserved="false"
+        />
+    <Preference
+        app:title="@string/label_dicmanager_activity" >
+        <intent android:action="android.intent.action.MAIN"
+            android:targetPackage="jp.deadend.noname.skk"
+            android:targetClass="jp.deadend.noname.skk.SKKDicManager" />
+    </Preference>
+    <Preference
+        app:title="@string/label_dictool_activity" >
+        <intent android:action="android.intent.action.MAIN"
+            android:targetPackage="jp.deadend.noname.skk"
+            android:targetClass="jp.deadend.noname.skk.SKKUserDicTool" />
+    </Preference>
+    <Preference
+        app:fragment="jp.deadend.noname.skk.SKKSettingsActivity$SettingsHardKeyFragment"
+        app:title="@string/label_pref_hardkeyboard"/>
+    <Preference
+        app:fragment="jp.deadend.noname.skk.SKKSettingsActivity$SettingsSoftKeyFragment"
+        app:title="@string/label_pref_softkeyboard"/>
+</PreferenceScreen>
