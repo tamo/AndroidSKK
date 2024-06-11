@@ -157,11 +157,10 @@ open class Keyboard {
             a.recycle()
         }
 
-        fun onPressed() { pressed = !pressed }
-
-        fun onReleased(inside: Boolean) {
-            pressed = !pressed
-            if (sticky && inside) { on = !on }
+        fun press() { pressed = true }
+        fun release() {
+            pressed = false
+            if (sticky) { on != on }
         }
 
         fun isInside(x: Int, y: Int): Boolean {
@@ -495,6 +494,13 @@ open class Keyboard {
         mProximityThreshold = (defaultKeyWidth * SEARCH_DISTANCE).toInt()
         mProximityThreshold *= mProximityThreshold // Square it for comparison
         a.recycle()
+    }
+
+    fun resetKeys() {
+        for (key in keys) {
+            key.on = false
+            key.pressed = false
+        }
     }
 
     companion object {

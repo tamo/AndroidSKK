@@ -49,8 +49,6 @@ class SKKService : InputMethodService() {
     // onKeyDown()でEnterキーのイベントを消費したかどうかのフラグ．onKeyUp()で判定するのに使う
     private var isEnterUsed = false
 
-    private var isCandidatesViewShownFlag = false
-
     private val mShiftKey = SKKStickyShift(this)
     private var mStickyShift = false
     private var mSandS = false
@@ -262,7 +260,11 @@ class SKKService : InputMethodService() {
         val abbrev = mAbbrevKeyboardView
         if (flick == null || qwerty == null || abbrev == null) return
 
-        val context = applicationContext
+        val context = when (skkPrefs.theme) {
+            "light" -> createNightModeContext(applicationContext, false)
+            "dark"  -> createNightModeContext(applicationContext, true)
+            else    -> applicationContext
+        }
         val config = resources.configuration
         val keyHeight: Int
         val keyWidth: Int
@@ -430,11 +432,6 @@ class SKKService : InputMethodService() {
                 }
             }
         }
-
-        if (mUseSoftKeyboard || skkPrefs.useCandidatesView) {
-            setCandidatesViewShown(true)
-            mCandidateViewContainer?.setAlpha(96)
-        }
     }
 
     /**
@@ -466,13 +463,11 @@ class SKKService : InputMethodService() {
         return container
     }
 
-    override fun onStartCandidatesView(info: EditorInfo, restarting: Boolean) {
-        isCandidatesViewShownFlag = true
-    }
-
-    override fun onFinishCandidatesView(finishingInput: Boolean) {
-        isCandidatesViewShownFlag = false
-        super.onFinishCandidatesView(finishingInput)
+    override fun onStartInputView(editorInfo: EditorInfo?, restarting: Boolean) {
+        if (mUseSoftKeyboard || skkPrefs.useCandidatesView) {
+            setCandidatesViewShown(true)
+            mCandidateViewContainer?.setAlpha(96)
+        }
     }
 
     /**
@@ -484,7 +479,6 @@ class SKKService : InputMethodService() {
 
         mQwertyInputView?.handleBack()
         mAbbrevKeyboardView?.handleBack()
-        setCandidatesViewShown(false)
     }
 
     override fun onDestroy() {

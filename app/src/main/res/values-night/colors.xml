@@ -5,7 +5,9 @@
     <color name="candidate_other">#BBEEEEEE</color>
     <color name="candidate_background">#FF6E6E6E</color>
     <color name="key_background_color">#FF555555</color>
+    <color name="key_pressed_color">#FFAFB42B</color>
     <color name="key_stroke_color">#FF222222</color>
     <color name="key_checked_color">#FF283593</color>
     <color name="key_char_color">#FFFFFFFF</color>
+    <color name="popup_background_color">#787878</color>
 </resources>

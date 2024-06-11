@@ -39,12 +39,12 @@ class SKKUserDictionary private constructor (
         // 送りがなブロック以外の部分を追加
         valList.takeWhile { !it.startsWith("[") }.forEach { cd.add(it) }
 
-        if (value.contains("[") && value.contains("]")) {
+        if (value.contains("/[") && value.contains("/]")) {
             // 送りがなブロック
-            val regex = """\[.*?\]""".toRegex()
+            val regex = """/\[.*?/\]""".toRegex()
             regex.findAll(value).forEach { result: MatchResult ->
                 okr.add(
-                    result.value.substring(1, result.value.length - 2) // "[" と "/]" をとる
+                    result.value.substring(2, result.value.length - 2) // "/[" と "/]" をとる
                         .split('/')
                         .let { Pair(it[0], it[1]) }
                 )

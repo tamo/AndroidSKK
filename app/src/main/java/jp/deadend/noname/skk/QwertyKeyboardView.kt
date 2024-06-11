@@ -61,7 +61,9 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                 val dy2 = dy * dy
                 if (dx2 + dy2 > mFlickSensitivitySquared) {
                     if (dy < 0 && dx2 < dy2) {
+                        val oldMFlicked = mFlicked
                         mFlicked = true
+                        if (!oldMFlicked) { switchCaseInPreview() }
                         return true
                     }
                 }

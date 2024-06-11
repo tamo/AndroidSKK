@@ -8,8 +8,8 @@ android {
         applicationId "jp.deadend.noname.skk"
         minSdkVersion 21
         targetSdk 34
-        versionCode 36
-        versionName "3.6"
+        versionCode 37
+        versionName "3.6.1"
     }
 
     buildTypes {
