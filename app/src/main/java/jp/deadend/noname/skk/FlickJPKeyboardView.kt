@@ -1,7 +1,7 @@
 package jp.deadend.noname.skk
 
 import android.content.Context
-import android.text.ClipboardManager
+import android.content.ClipboardManager
 import android.util.AttributeSet
 import android.view.KeyEvent
 import android.view.MotionEvent
@@ -790,7 +790,7 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
                 mService.processKey(primaryCode)
             KEYCODE_FLICK_JP_PASTE -> {
                 val cm = mService.getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
-                val cs = cm.text
+                val cs = cm.primaryClip?.getItemAt(0)?.text
                 val clip = cs?.toString() ?: ""
                 mService.commitTextSKK(clip, 1)
             }
