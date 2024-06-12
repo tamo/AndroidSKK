@@ -55,7 +55,7 @@
         <Key app:codes="-1010" app:keyLabel="ABC" app:keyWidth="15%p"/>
         <Key app:codes="32" app:keyIcon="@drawable/ic_keyboard_spacebar"
                 app:keyWidth="30%p" app:isRepeatable="true"/>
-        <Key app:codes="46,44" app:keyLabel=". ,"
+        <Key app:codes="46" app:keyLabel="."
                 app:keyWidth="15%p"/>
         <Key app:codes="-1011" app:keyIcon="@drawable/ic_keyboard_return"
                 app:keyWidth="20%p" app:keyEdgeFlags="right"/>

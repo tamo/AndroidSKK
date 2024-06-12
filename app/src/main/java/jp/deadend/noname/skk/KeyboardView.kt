@@ -271,8 +271,12 @@ open class KeyboardView @JvmOverloads constructor(
     }
 
     private fun adjustCase(label: CharSequence): CharSequence {
-        return if (mKeyboard.isShifted && label.length < 3 && Character.isLowerCase(label[0])) {
-            label.toString().uppercase(Locale.getDefault())
+        return if (mKeyboard.isShifted && label.length < 3) {
+            if (label[0] == '.') {
+                ","
+            } else if (Character.isLowerCase(label[0])) {
+                label.toString().uppercase(Locale.getDefault())
+            } else label
         } else label
     }
 
@@ -536,7 +540,11 @@ open class KeyboardView @JvmOverloads constructor(
         mPreviewText?.let {
             val previewText = it.text
             if (previewText.isNotEmpty()) {
-                it.text = if (Character.isLowerCase(previewText[0])) {
+                it.text = if (previewText[0] == '.') {
+                    ","
+                } else if (previewText[0] == ',') {
+                    "."
+                } else if (Character.isLowerCase(previewText[0])) {
                     previewText.toString().uppercase(Locale.getDefault())
                 } else {
                     previewText.toString().lowercase(Locale.getDefault())

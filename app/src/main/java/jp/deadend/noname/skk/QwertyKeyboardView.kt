@@ -95,8 +95,14 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
             KEYCODE_QWERTY_TOSYM -> keyboard = mSymbolsKeyboard
             KEYCODE_QWERTY_TOLATIN -> keyboard = mLatinKeyboard
             else -> {
-                val code = if (keyboard === mLatinKeyboard && (isShifted xor mFlicked)) {
-                    Character.toUpperCase(primaryCode)
+                val code = if (isShifted xor mFlicked) {
+                    if (primaryCode == '.'.code) {
+                        ','.code
+                    } else if (keyboard === mLatinKeyboard){
+                        Character.toUpperCase(primaryCode)
+                    } else {
+                        primaryCode
+                    }
                 } else {
                     primaryCode
                 }
