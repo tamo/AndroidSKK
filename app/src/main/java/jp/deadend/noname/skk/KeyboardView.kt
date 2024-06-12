@@ -216,7 +216,7 @@ open class KeyboardView @JvmOverloads constructor(
 
         mPopupKeyboard.setBackgroundDrawable(null)
         mPopupKeyboard.isClippingEnabled = false
-        mPopupParent = this
+        this.also { mPopupParent = it }
 
         mPaint.isAntiAlias = true
         mPaint.textSize = mKeyTextSize.toFloat()
