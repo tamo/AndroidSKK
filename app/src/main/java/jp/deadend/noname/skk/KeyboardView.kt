@@ -252,6 +252,10 @@ open class KeyboardView @JvmOverloads constructor(
             if (mKeyboard.setShifted(value)) { invalidateAllKeys() }
         }
 
+    var isCapsLocked: Boolean
+        get() = mKeyboard.isCapsLocked
+        set(value) { mKeyboard.isCapsLocked = value }
+
     private fun setPopupParent(v: View) {
         mPopupParent = v
     }

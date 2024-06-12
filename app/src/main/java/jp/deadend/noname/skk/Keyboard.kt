@@ -26,6 +26,7 @@ open class Keyboard {
             }
             if (field != value) { field = value }
         }
+    var isCapsLocked = false
 
     var height = 0
         private set
@@ -520,6 +521,7 @@ open class Keyboard {
         const val KEYCODE_DONE = -4
         const val KEYCODE_DELETE = -5
         const val KEYCODE_ALT = -6
+        const val KEYCODE_CAPSLOCK = -7
 
         // Variables for pre-computing nearest keys.
         private const val GRID_WIDTH = 10

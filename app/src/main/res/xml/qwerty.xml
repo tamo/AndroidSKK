@@ -38,9 +38,9 @@
     </Row>
 
     <Row>
-        <Key app:codes="-1" app:keyIcon="@drawable/ic_keyboard_shift"
+        <Key app:codes="-1,-7" app:keyIcon="@drawable/ic_keyboard_shift"
                 app:keyWidth="15%p" app:isModifier="true"
-                app:isSticky="true" app:keyEdgeFlags="left"/>
+                app:keyEdgeFlags="left"/>
         <Key app:codes="122" app:keyLabel="z"/>
         <Key app:codes="120" app:keyLabel="x"/>
         <Key app:codes="99" app:keyLabel="c"

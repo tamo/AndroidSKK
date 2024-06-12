@@ -28,6 +28,7 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
         isShifted = false
+        isCapsLocked = false
     }
 
     fun setService(listener: SKKService) {
@@ -89,24 +90,33 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                     keyboard = mSymbolsKeyboard
                     mSymbolsKeyboard.isShifted = false
                 }
+                isCapsLocked = false
+            }
+            Keyboard.KEYCODE_CAPSLOCK -> {
+                isShifted = true
+                isCapsLocked = true
             }
             KEYCODE_QWERTY_ENTER -> if (!mService.handleEnter()) mService.pressEnter()
             KEYCODE_QWERTY_TOJP -> mService.handleKanaKey()
             KEYCODE_QWERTY_TOSYM -> keyboard = mSymbolsKeyboard
-            KEYCODE_QWERTY_TOLATIN -> keyboard = mLatinKeyboard
+            KEYCODE_QWERTY_TOLATIN -> {
+                keyboard = mLatinKeyboard
+                isShifted = keyboard.isShifted
+                isCapsLocked = keyboard.isCapsLocked
+            }
             else -> {
-                val code = if (isShifted xor mFlicked) {
-                    if (primaryCode == '.'.code) {
-                        ','.code
-                    } else if (keyboard === mLatinKeyboard){
-                        Character.toUpperCase(primaryCode)
-                    } else {
-                        primaryCode
+                val code = when {
+                    isShifted xor mFlicked -> when {
+                        primaryCode == '.'.code -> ','.code
+                        keyboard === mLatinKeyboard -> Character.toUpperCase(primaryCode)
+                        else -> primaryCode
                     }
-                } else {
-                    primaryCode
+                    else -> primaryCode
                 }
                 mService.commitTextSKK(code.toChar().toString(), 1)
+                if (keyboard === mLatinKeyboard && !isCapsLocked) {
+                    isShifted = false
+                }
             }
         }
     }
