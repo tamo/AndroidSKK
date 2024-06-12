@@ -54,9 +54,9 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
         a.append(KEYCODE_FLICK_JP_CHAR_NA, arrayOf("な", "に", "ぬ", "ね", "の", "", ""))
         a.append(KEYCODE_FLICK_JP_CHAR_HA, arrayOf("は", "ひ", "ふ", "へ", "ほ", "゜", "゛"))
         a.append(KEYCODE_FLICK_JP_CHAR_MA, arrayOf("ま", "み", "む", "め", "も", "", ""))
-        a.append(KEYCODE_FLICK_JP_CHAR_YA, arrayOf("や", "", "ゆ", "", "よ", "小", ""))
+        a.append(KEYCODE_FLICK_JP_CHAR_YA, arrayOf("や", "（", "ゆ", "）", "よ", "小", ""))
         a.append(KEYCODE_FLICK_JP_CHAR_RA, arrayOf("ら", "り", "る", "れ", "ろ", "", ""))
-        a.append(KEYCODE_FLICK_JP_CHAR_WA, arrayOf("わ", "を", "ん", "ー", "", "", ""))
+        a.append(KEYCODE_FLICK_JP_CHAR_WA, arrayOf("わ", "を", "ん", "ー", "～", "", ""))
         a.append(KEYCODE_FLICK_JP_CHAR_TEN, arrayOf("、", "。", "？", "！", "", "", ""))
         a.append(KEYCODE_FLICK_JP_CHAR_TEN_SHIFTED, arrayOf("（", "「", "」", "）", "", "", ""))
         a.append(KEYCODE_FLICK_JP_CHAR_TEN_NUM, arrayOf("，", "．", "−", "：", "", "", ""))
@@ -293,11 +293,19 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
                 labels[4].text = mCurrentPopupLabels[4]
                 labels[5].text = mCurrentPopupLabels[5]
                 labels[6].text = mCurrentPopupLabels[6]
+                if (mLastPressedKey == KEYCODE_FLICK_JP_CHAR_WA) {
+                    // 例外：小さい「ゎ」
+                    labels[5].text = "小"
+                }
                 labels[0].setBackgroundResource(R.drawable.popup_label_highlighted)
             }
             FLICK_STATE_NONE_LEFT -> {
                 labels[0].text = mCurrentPopupLabels[0]
                 labels[5].text = mCurrentPopupLabels[5]
+                if (mLastPressedKey == KEYCODE_FLICK_JP_CHAR_WA) {
+                    // 例外：小さい「ゎ」
+                    labels[5].text = "小"
+                }
                 labels[5].setBackgroundResource(R.drawable.popup_label_highlighted)
             }
             FLICK_STATE_NONE_RIGHT -> {
@@ -309,11 +317,19 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
                 labels[1].text = mCurrentPopupLabels[1]
                 labels[7].text = mCurrentPopupLabels[5]
                 labels[8].text = mCurrentPopupLabels[6]
+                if (mLastPressedKey == KEYCODE_FLICK_JP_CHAR_YA) {
+                    // 例外：括弧
+                    labels[7].text = "「"
+                }
                 labels[1].setBackgroundResource(R.drawable.popup_label_highlighted)
             }
             FLICK_STATE_LEFT_LEFT -> {
                 labels[1].text = mCurrentPopupLabels[1]
                 labels[7].text = mCurrentPopupLabels[5]
+                if (mLastPressedKey == KEYCODE_FLICK_JP_CHAR_YA) {
+                    // 例外：括弧
+                    labels[7].text = "「"
+                }
                 labels[7].setBackgroundResource(R.drawable.popup_label_highlighted)
             }
             FLICK_STATE_LEFT_RIGHT -> {
@@ -357,11 +373,19 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
                 labels[3].text  = mCurrentPopupLabels[3]
                 labels[11].text = mCurrentPopupLabels[5]
                 labels[12].text = mCurrentPopupLabels[6]
+                if (mLastPressedKey == KEYCODE_FLICK_JP_CHAR_YA) {
+                    // 例外：括弧
+                    labels[11].text = "」"
+                }
                 labels[3].setBackgroundResource(R.drawable.popup_label_highlighted)
             }
             FLICK_STATE_RIGHT_LEFT -> {
                 labels[3].text  = mCurrentPopupLabels[3]
                 labels[11].text = mCurrentPopupLabels[5]
+                if (mLastPressedKey == KEYCODE_FLICK_JP_CHAR_YA) {
+                    // 例外：括弧
+                    labels[11].text = "」"
+                }
                 labels[11].setBackgroundResource(R.drawable.popup_label_highlighted)
             }
             FLICK_STATE_RIGHT_RIGHT -> {
@@ -387,7 +411,7 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
             }
         }
         for (i in 5..14) {
-            if (labels[i].text == "小") {
+            if (labels[i].text == "小" || labels[i].text == "「" || labels[i].text == "」") {
                 labels[i].setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, 12f)
             } else {
                 labels[i].setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, 18f)
@@ -453,8 +477,12 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
 
     private fun processFirstFlick(dx: Float, dy: Float) {
         val dAngle = diamondAngle(dx, dy)
-        val hasLeftCurve = mCurrentPopupLabels[5].isNotEmpty()
+        var hasLeftCurve = mCurrentPopupLabels[5].isNotEmpty()
         val hasRightCurve = mCurrentPopupLabels[6].isNotEmpty()
+        //小さい「ゎ」は特別処理
+        if (mLastPressedKey == KEYCODE_FLICK_JP_CHAR_WA) {
+            hasLeftCurve = true
+        }
 
         mFlickState = when (dAngle) {
             in 0.5f..1.5f   -> FLICK_STATE_DOWN
@@ -560,7 +588,20 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
                 else -> 'h'.code
             }
             KEYCODE_FLICK_JP_CHAR_MA -> consonant = 'm'.code
-            KEYCODE_FLICK_JP_CHAR_YA -> consonant = 'y'.code
+            KEYCODE_FLICK_JP_CHAR_YA -> {
+                val yaSymbol = when (flick) {
+                    FLICK_STATE_LEFT -> '('
+                    FLICK_STATE_LEFT_LEFT -> '['
+                    FLICK_STATE_RIGHT -> ')'
+                    FLICK_STATE_RIGHT_LEFT -> ']'
+                    else -> 'y'
+                }
+                if (yaSymbol != 'y') {
+                    mService.processKey(yaSymbol.code)
+                    return
+                }
+                consonant = 'y'.code
+            }
             KEYCODE_FLICK_JP_CHAR_RA -> consonant = 'r'.code
             KEYCODE_FLICK_JP_CHAR_WA -> {
                 when (flick) {
@@ -570,6 +611,15 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
                         } else {
                             mService.processKey('w'.code)
                         }
+                        mService.processKey('a'.code)
+                    }
+                    FLICK_STATE_NONE_LEFT -> {
+                        if (isShifted) {
+                            mService.processKey('X'.code)
+                        } else {
+                            mService.processKey('x'.code)
+                        }
+                        mService.processKey('w'.code)
                         mService.processKey('a'.code)
                     }
                     FLICK_STATE_LEFT -> {
@@ -585,6 +635,7 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
                         mService.processKey('n'.code)
                     }
                     FLICK_STATE_RIGHT -> mService.processKey('-'.code)
+                    FLICK_STATE_DOWN -> mService.processKey('~'.code)
                 }
                 return
             }

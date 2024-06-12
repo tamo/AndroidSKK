@@ -26,7 +26,7 @@ object RomajiConverter {
         "cha" to "ちゃ", "chi" to "ち", "chu" to "ちゅ", "che" to "ちぇ", "cho" to "ちょ",
         "fa" to "ふぁ", "fi" to "ふぃ", "fu" to "ふ", "fe" to "ふぇ", "fo" to "ふぉ",
 
-        "xya" to "ゃ",   "xyu" to "ゅ",   "xyo" to "ょ",
+        "xya" to "ゃ",   "xyu" to "ゅ",   "xyo" to "ょ", "xwa" to "ゎ",
         "kya" to "きゃ", "kyu" to "きゅ", "kyo" to "きょ",
         "gya" to "ぎゃ", "gyu" to "ぎゅ", "gyo" to "ぎょ",
         "sya" to "しゃ", "syu" to "しゅ", "syo" to "しょ",
@@ -62,12 +62,12 @@ object RomajiConverter {
     private val mSmallKanaMap = mapOf(
         "あ" to "ぁ", "い" to "ぃ", "う" to "ぅ", "え" to "ぇ", "お" to "ぉ",
         "ぁ" to "あ", "ぃ" to "い", "ぅ" to "う", "ぇ" to "え", "ぉ" to "お",
-        "や" to "ゃ", "ゆ" to "ゅ", "よ" to "ょ", "つ" to "っ",
-        "ゃ" to "や", "ゅ" to "ゆ", "ょ" to "よ", "っ" to "つ",
+        "や" to "ゃ", "ゆ" to "ゅ", "よ" to "ょ", "つ" to "っ", "わ" to "ゎ",
+        "ゃ" to "や", "ゅ" to "ゆ", "ょ" to "よ", "っ" to "つ", "ゎ" to "わ",
         "ア" to "ァ", "イ" to "ィ", "ウ" to "ゥ", "エ" to "ェ", "オ" to "ォ",
         "ァ" to "ア", "ィ" to "イ", "ゥ" to "ウ", "ェ" to "エ", "ォ" to "オ",
-        "ヤ" to "ャ", "ユ" to "ュ", "ヨ" to "ョ", "ツ" to "ッ",
-        "ャ" to "ヤ", "ュ" to "ユ", "ョ" to "ヨ", "ッ" to "ツ"
+        "ヤ" to "ャ", "ユ" to "ュ", "ヨ" to "ョ", "ツ" to "ッ", "ワ" to "ヮ",
+        "ャ" to "ヤ", "ュ" to "ユ", "ョ" to "ヨ", "ッ" to "ツ", "ヮ" to "ワ"
     )
 
     private val mDakutenMap = mapOf(
