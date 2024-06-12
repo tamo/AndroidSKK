@@ -111,7 +111,7 @@
     <androidx.preference.SeekBarPreference
         app:key="@string/prefkey_key_width_port"
         app:title="日本語キーボードの幅（縦画面）"
-        app:summary="画面の高さに対する割合（％）"
+        app:summary="画面の幅に対する割合（％）"
         app:defaultValue="100"
         app:min="40"
         android:max="100"
@@ -122,7 +122,7 @@
     <androidx.preference.SeekBarPreference
         app:key="@string/prefkey_key_width_land"
         app:title="日本語キーボードの幅（横画面）"
-        app:summary="画面の高さに対する割合（％）"
+        app:summary="画面の幅に対する割合（％）"
         app:defaultValue="100"
         app:min="40"
         android:max="100"
