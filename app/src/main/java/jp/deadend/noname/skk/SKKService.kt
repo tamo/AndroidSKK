@@ -22,7 +22,6 @@ import android.text.InputType
 import android.util.Log
 import android.util.TypedValue
 import android.view.KeyEvent
-import android.view.LayoutInflater
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.widget.Toast
@@ -445,7 +444,7 @@ class SKKService : InputMethodService() {
             else    -> applicationContext
         }
 
-        val container = LayoutInflater.from(context).inflate(R.layout.view_candidates, null) as CandidateViewContainer
+        val container = View.inflate(context, R.layout.view_candidates, null) as CandidateViewContainer
         container.initViews()
         val view = container.findViewById(R.id.candidates) as CandidateView
         view.setService(this)
