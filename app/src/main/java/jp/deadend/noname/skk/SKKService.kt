@@ -431,6 +431,10 @@ class SKKService : InputMethodService() {
                 }
             }
         }
+
+        //場所を用意しておく?
+        setCandidatesViewShown(true)
+        setCandidatesViewShown(false)
     }
 
     /**
