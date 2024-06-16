@@ -284,36 +284,31 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
             it.text = ""
             it.setBackgroundResource(R.drawable.popup_label)
         }
-        when (mFlickState) {
-            FLICK_STATE_NONE -> {
+        val activeLabel = when {
+            flickHasFlag(mFlickState, FLICK_STATE_NONE) -> {
                 labels[0].text = mCurrentPopupLabels[0]
-                labels[1].text = mCurrentPopupLabels[1]
-                labels[2].text = mCurrentPopupLabels[2]
-                labels[3].text = mCurrentPopupLabels[3]
-                labels[4].text = mCurrentPopupLabels[4]
+                if (!isCurve(mFlickState)) {
+                    labels[1].text = mCurrentPopupLabels[1]
+                    labels[2].text = mCurrentPopupLabels[2]
+                    labels[3].text = mCurrentPopupLabels[3]
+                    labels[4].text = mCurrentPopupLabels[4]
+                }
                 labels[5].text = mCurrentPopupLabels[5]
                 labels[6].text = mCurrentPopupLabels[6]
                 if (mLastPressedKey == KEYCODE_FLICK_JP_CHAR_WA) {
                     // 例外：小さい「ゎ」
                     labels[5].text = "小"
                 }
-                labels[0].setBackgroundResource(R.drawable.popup_label_highlighted)
-            }
-            FLICK_STATE_NONE_LEFT -> {
-                labels[0].text = mCurrentPopupLabels[0]
-                labels[5].text = mCurrentPopupLabels[5]
-                if (mLastPressedKey == KEYCODE_FLICK_JP_CHAR_WA) {
-                    // 例外：小さい「ゎ」
-                    labels[5].text = "小"
+                when {
+                    isLeftCurve(mFlickState) -> 5
+                    isRightCurve(mFlickState) -> 6
+                    else -> 0
                 }
-                labels[5].setBackgroundResource(R.drawable.popup_label_highlighted)
             }
-            FLICK_STATE_NONE_RIGHT -> {
-                labels[0].text = mCurrentPopupLabels[0]
-                labels[6].text = mCurrentPopupLabels[6]
-                labels[6].setBackgroundResource(R.drawable.popup_label_highlighted)
-            }
-            FLICK_STATE_LEFT -> {
+            flickHasFlag(mFlickState, FLICK_STATE_LEFT) -> {
+                if (!isCurve(mFlickState)) {
+                    labels[0].text = mCurrentPopupLabels[0]
+                }
                 labels[1].text = mCurrentPopupLabels[1]
                 labels[7].text = mCurrentPopupLabels[5]
                 labels[8].text = mCurrentPopupLabels[6]
@@ -322,27 +317,16 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
                     labels[7].text = "「"
                     labels[8].text = "『"
                 }
-                labels[1].setBackgroundResource(R.drawable.popup_label_highlighted)
-            }
-            FLICK_STATE_LEFT_LEFT -> {
-                labels[1].text = mCurrentPopupLabels[1]
-                labels[7].text = mCurrentPopupLabels[5]
-                if (mLastPressedKey == KEYCODE_FLICK_JP_CHAR_YA) {
-                    // 例外：括弧
-                    labels[7].text = "「"
+                when {
+                    isLeftCurve(mFlickState) -> 7
+                    isRightCurve(mFlickState) -> 8
+                    else -> 1
                 }
-                labels[7].setBackgroundResource(R.drawable.popup_label_highlighted)
             }
-            FLICK_STATE_LEFT_RIGHT -> {
-                labels[1].text = mCurrentPopupLabels[1]
-                labels[8].text = mCurrentPopupLabels[6]
-                if (mLastPressedKey == KEYCODE_FLICK_JP_CHAR_YA) {
-                    // 例外：括弧
-                    labels[8].text = "『"
+            flickHasFlag(mFlickState, FLICK_STATE_UP) -> {
+                if (!isCurve(mFlickState)) {
+                    labels[0].text = mCurrentPopupLabels[0]
                 }
-                labels[8].setBackgroundResource(R.drawable.popup_label_highlighted)
-            }
-            FLICK_STATE_UP -> {
                 labels[2].text  = mCurrentPopupLabels[2]
                 labels[9].text  = mCurrentPopupLabels[5]
                 labels[10].text = mCurrentPopupLabels[6]
@@ -354,27 +338,16 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
                     // 例外：「ヴ」
                     labels[10].text = "゛"
                 }
-                labels[2].setBackgroundResource(R.drawable.popup_label_highlighted)
-            }
-            FLICK_STATE_UP_LEFT -> {
-                labels[2].text = mCurrentPopupLabels[2]
-                labels[9].text = mCurrentPopupLabels[5]
-                if (mLastPressedKey == KEYCODE_FLICK_JP_CHAR_TA) {
-                    // 例外：小さい「っ」
-                    labels[9].text = "小"
+                when {
+                    isLeftCurve(mFlickState) -> 9
+                    isRightCurve(mFlickState) -> 10
+                    else -> 2
                 }
-                labels[9].setBackgroundResource(R.drawable.popup_label_highlighted)
             }
-            FLICK_STATE_UP_RIGHT -> {
-                labels[2].text  = mCurrentPopupLabels[2]
-                labels[10].text = mCurrentPopupLabels[6]
-                if (mLastPressedKey == KEYCODE_FLICK_JP_CHAR_A && !isHiragana) {
-                    // 例外：「ヴ」
-                    labels[10].text = "゛"
+            flickHasFlag(mFlickState, FLICK_STATE_RIGHT) -> {
+                if (!isCurve(mFlickState)) {
+                    labels[0].text = mCurrentPopupLabels[0]
                 }
-                labels[10].setBackgroundResource(R.drawable.popup_label_highlighted)
-            }
-            FLICK_STATE_RIGHT -> {
                 labels[3].text  = mCurrentPopupLabels[3]
                 labels[11].text = mCurrentPopupLabels[5]
                 labels[12].text = mCurrentPopupLabels[6]
@@ -383,43 +356,28 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
                     labels[11].text = "」"
                     labels[12].text = "』"
                 }
-                labels[3].setBackgroundResource(R.drawable.popup_label_highlighted)
-            }
-            FLICK_STATE_RIGHT_LEFT -> {
-                labels[3].text  = mCurrentPopupLabels[3]
-                labels[11].text = mCurrentPopupLabels[5]
-                if (mLastPressedKey == KEYCODE_FLICK_JP_CHAR_YA) {
-                    // 例外：括弧
-                    labels[11].text = "」"
+                when {
+                    flickHasFlag(mFlickState, FLICK_CURVE_LEFT) -> 11
+                    flickHasFlag(mFlickState, FLICK_CURVE_RIGHT) -> 12
+                    else -> 3
                 }
-                labels[11].setBackgroundResource(R.drawable.popup_label_highlighted)
             }
-            FLICK_STATE_RIGHT_RIGHT -> {
-                labels[3].text  = mCurrentPopupLabels[3]
-                labels[12].text = mCurrentPopupLabels[6]
-                if (mLastPressedKey == KEYCODE_FLICK_JP_CHAR_YA) {
-                    // 例外：括弧
-                    labels[12].text = "』"
+            flickHasFlag(mFlickState, FLICK_STATE_DOWN) -> {
+                if (!isCurve(mFlickState)) {
+                    labels[0].text = mCurrentPopupLabels[0]
                 }
-                labels[12].setBackgroundResource(R.drawable.popup_label_highlighted)
-            }
-            FLICK_STATE_DOWN -> {
                 labels[4].text  = mCurrentPopupLabels[4]
                 labels[13].text = mCurrentPopupLabels[5]
                 labels[14].text = mCurrentPopupLabels[6]
-                labels[4].setBackgroundResource(R.drawable.popup_label_highlighted)
+                when {
+                    isLeftCurve(mFlickState) -> 13
+                    isRightCurve(mFlickState) -> 14
+                    else -> 4
+                }
             }
-            FLICK_STATE_DOWN_LEFT -> {
-                labels[4].text  = mCurrentPopupLabels[4]
-                labels[13].text = mCurrentPopupLabels[5]
-                labels[13].setBackgroundResource(R.drawable.popup_label_highlighted)
-            }
-            FLICK_STATE_DOWN_RIGHT -> {
-                labels[4].text  = mCurrentPopupLabels[4]
-                labels[14].text = mCurrentPopupLabels[6]
-                labels[14].setBackgroundResource(R.drawable.popup_label_highlighted)
-            }
+            else -> -1
         }
+        labels[activeLabel].setBackgroundResource(R.drawable.popup_label_highlighted)
         for (i in 5..14) {
             val size = when (labels[i].text) {
                 "小", "「", "」", "『", "』" -> 12f
@@ -429,21 +387,10 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
         }
     }
 
-    private fun isLeftCurve(flick: Int): Boolean {
-        return flick == FLICK_STATE_NONE_LEFT
-                || flick == FLICK_STATE_LEFT_LEFT
-                || flick == FLICK_STATE_UP_LEFT
-                || flick == FLICK_STATE_RIGHT_LEFT
-                || flick == FLICK_STATE_DOWN_LEFT
-    }
-
-    private fun isRightCurve(flick: Int): Boolean {
-        return flick == FLICK_STATE_NONE_RIGHT
-                || flick == FLICK_STATE_LEFT_RIGHT
-                || flick == FLICK_STATE_UP_RIGHT
-                || flick == FLICK_STATE_RIGHT_RIGHT
-                || flick == FLICK_STATE_DOWN_RIGHT
-    }
+    private fun flickHasFlag(flick: Int, flag: Int): Boolean = flick and flag == flag
+    private fun isLeftCurve(flick: Int): Boolean = flickHasFlag(flick, FLICK_CURVE_LEFT)
+    private fun isRightCurve(flick: Int): Boolean = flickHasFlag(flick, FLICK_CURVE_RIGHT)
+    private fun isCurve(flick: Int): Boolean = isLeftCurve(flick) || isRightCurve(flick)
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
         when (event.action) {
@@ -452,20 +399,13 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
                 mFlickStartY = event.rawY
             }
             MotionEvent.ACTION_MOVE -> {
-                if (isLeftCurve(mFlickState) || isRightCurve(mFlickState)) { return true }
-
                 val dx = event.rawX - mFlickStartX
                 val dy = event.rawY - mFlickStartY
-                if (dx * dx + dy * dy < mFlickSensitivitySquared) { return true }
 
-                if (mFlickState == FLICK_STATE_NONE) {
-                    // 一回目の終了座標を記憶
-                    mFlickStartX = event.rawX
-                    mFlickStartY = event.rawY
-
-                    processFirstFlick(dx, dy)
-                } else {
-                    processCurveFlick(dx, dy)
+                when {
+                    dx * dx + dy * dy < mFlickSensitivitySquared -> mFlickState = FLICK_STATE_NONE
+                    mFlickState == FLICK_STATE_NONE -> processFirstFlick(dx, dy)
+                    else -> processCurveFlick(dx, dy)
                 }
 
                 if (mUsePopup) setupPopupTextView()
@@ -516,42 +456,42 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
         var hasLeftCurve = mCurrentPopupLabels[5].isNotEmpty()
         var hasRightCurve = mCurrentPopupLabels[6].isNotEmpty()
         //小さい「っ」は特別処理
-        if (mLastPressedKey == KEYCODE_FLICK_JP_CHAR_TA && mFlickState == FLICK_STATE_UP) {
+        if (mLastPressedKey == KEYCODE_FLICK_JP_CHAR_TA
+                && flickHasFlag(mFlickState, FLICK_STATE_UP)
+        ) {
             hasLeftCurve = true
         }
         //『』は特別処理
         if (mLastPressedKey == KEYCODE_FLICK_JP_CHAR_YA
-                && mFlickState == FLICK_STATE_LEFT
-                || mFlickState == FLICK_STATE_RIGHT
+                && (flickHasFlag(mFlickState, FLICK_STATE_LEFT) || flickHasFlag(mFlickState, FLICK_STATE_RIGHT))
         ) {
             hasRightCurve = true
         }
         //「ヴ」は特別処理
         if (!isHiragana
                 && mLastPressedKey == KEYCODE_FLICK_JP_CHAR_A
-                && mFlickState == FLICK_STATE_UP
+                && flickHasFlag(mFlickState, FLICK_STATE_UP)
         ) {
             hasRightCurve = true
         }
-        if (!hasLeftCurve && !hasRightCurve) return
 
-        val newstate = when (mFlickState) {
-            FLICK_STATE_LEFT -> when (diamondAngle(-dx, -dy)) {
+        val newstate = when {
+            flickHasFlag(mFlickState, FLICK_STATE_LEFT) -> when (diamondAngle(-dx, -dy)) {
                 in 0.45f..2f -> FLICK_STATE_LEFT_RIGHT
                 in 2f..3.55f -> FLICK_STATE_LEFT_LEFT
                 else -> -1
             }
-            FLICK_STATE_UP -> when (diamondAngle(-dy, dx)) {
+            flickHasFlag(mFlickState, FLICK_STATE_UP) -> when (diamondAngle(-dy, dx)) {
                 in 0.45f..2f -> FLICK_STATE_UP_RIGHT
                 in 2f..3.55f -> FLICK_STATE_UP_LEFT
                 else -> -1
             }
-            FLICK_STATE_RIGHT -> when (diamondAngle(dx, dy)) {
+            flickHasFlag(mFlickState, FLICK_STATE_RIGHT) -> when (diamondAngle(dx, dy)) {
                 in 0.45f..2f -> FLICK_STATE_RIGHT_RIGHT
                 in 2f..3.55f -> FLICK_STATE_RIGHT_LEFT
                 else -> -1
             }
-            FLICK_STATE_DOWN -> when (diamondAngle(dy, -dx)) {
+            flickHasFlag(mFlickState, FLICK_STATE_DOWN) -> when (diamondAngle(dy, -dx)) {
                 in 0.45f..2f -> FLICK_STATE_DOWN_RIGHT
                 in 2f..3.55f -> FLICK_STATE_DOWN_LEFT
                 else -> -1
@@ -559,9 +499,6 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
             else -> -1
         }
         if (newstate == -1) {
-            //曲がらずにそのままフリックしてるらしい場合
-            mFlickStartX += dx
-            mFlickStartY += dy
             return
         }
 
@@ -572,11 +509,11 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
 
     private fun processFlickForLetter(keyCode: Int, flick: Int, isShifted: Boolean) {
         var vowel: Int = 'a'.code
-        when (flick) {
-            FLICK_STATE_LEFT, FLICK_STATE_LEFT_LEFT, FLICK_STATE_LEFT_RIGHT -> vowel = 'i'.code
-            FLICK_STATE_UP, FLICK_STATE_UP_LEFT, FLICK_STATE_UP_RIGHT -> vowel = 'u'.code
-            FLICK_STATE_RIGHT, FLICK_STATE_RIGHT_LEFT, FLICK_STATE_RIGHT_RIGHT -> vowel = 'e'.code
-            FLICK_STATE_DOWN, FLICK_STATE_DOWN_LEFT, FLICK_STATE_DOWN_RIGHT -> vowel = 'o'.code
+        when {
+            flickHasFlag(flick, FLICK_STATE_LEFT) -> vowel = 'i'.code
+            flickHasFlag(flick, FLICK_STATE_UP) -> vowel = 'u'.code
+            flickHasFlag(flick, FLICK_STATE_RIGHT) -> vowel = 'e'.code
+            flickHasFlag(flick, FLICK_STATE_DOWN) -> vowel = 'o'.code
         }
 
         val consonant: Int
@@ -883,21 +820,23 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
         private const val KEYCODE_FLICK_JP_TOKANA = -1010
         private const val KEYCODE_FLICK_JP_PASTE = -1011
         private const val KEYCODE_FLICK_JP_SPEECH = -1012
-        private const val FLICK_STATE_NONE = 0
-        private const val FLICK_STATE_LEFT = 1
-        private const val FLICK_STATE_UP = 2
-        private const val FLICK_STATE_RIGHT = 3
-        private const val FLICK_STATE_DOWN = 4
-        private const val FLICK_STATE_NONE_LEFT = 5
-        private const val FLICK_STATE_NONE_RIGHT = 6
-        private const val FLICK_STATE_LEFT_LEFT = 7
-        private const val FLICK_STATE_LEFT_RIGHT = 8
-        private const val FLICK_STATE_UP_LEFT = 9
-        private const val FLICK_STATE_UP_RIGHT = 10
-        private const val FLICK_STATE_RIGHT_LEFT = 11
-        private const val FLICK_STATE_RIGHT_RIGHT = 12
-        private const val FLICK_STATE_DOWN_LEFT = 13
-        private const val FLICK_STATE_DOWN_RIGHT = 14
+        private const val FLICK_STATE_NONE = 1 shl 0
+        private const val FLICK_STATE_LEFT = 1 shl 1
+        private const val FLICK_STATE_UP = 1 shl 2
+        private const val FLICK_STATE_RIGHT = 1 shl 3
+        private const val FLICK_STATE_DOWN = 1 shl 4
+        private const val FLICK_CURVE_LEFT = 1 shl 5
+        private const val FLICK_CURVE_RIGHT = 1 shl 6
+        private const val FLICK_STATE_NONE_LEFT = FLICK_STATE_NONE or FLICK_CURVE_LEFT
+        private const val FLICK_STATE_NONE_RIGHT = FLICK_STATE_NONE or FLICK_CURVE_RIGHT
+        private const val FLICK_STATE_LEFT_LEFT = FLICK_STATE_LEFT or FLICK_CURVE_LEFT
+        private const val FLICK_STATE_LEFT_RIGHT = FLICK_STATE_LEFT or FLICK_CURVE_RIGHT
+        private const val FLICK_STATE_UP_LEFT = FLICK_STATE_UP or FLICK_CURVE_LEFT
+        private const val FLICK_STATE_UP_RIGHT = FLICK_STATE_UP or FLICK_CURVE_RIGHT
+        private const val FLICK_STATE_RIGHT_LEFT = FLICK_STATE_RIGHT or FLICK_CURVE_LEFT
+        private const val FLICK_STATE_RIGHT_RIGHT = FLICK_STATE_RIGHT or FLICK_CURVE_RIGHT
+        private const val FLICK_STATE_DOWN_LEFT = FLICK_STATE_DOWN or FLICK_CURVE_LEFT
+        private const val FLICK_STATE_DOWN_RIGHT = FLICK_STATE_DOWN or FLICK_CURVE_RIGHT
         private val POPUP_LABELS_NULL = arrayOf("", "", "", "", "", "", "")
     }
 }
