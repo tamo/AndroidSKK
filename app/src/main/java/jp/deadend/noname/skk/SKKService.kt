@@ -78,7 +78,7 @@ class SKKService : InputMethodService() {
                 }
                 COMMAND_READ_PREFS -> {
                     setInputView(onCreateInputView())
-                    setCandidatesView(onCreateCandidatesView())
+                    onCreateCandidatesView()
                     readPrefs()
                 }
                 COMMAND_RELOAD_DICS -> mEngine.reopenDictionaries(openDictionaries())
@@ -356,6 +356,9 @@ class SKKService : InputMethodService() {
         mFlickJPInputView = null
         mQwertyInputView = null
         mAbbrevKeyboardView = null
+        mCandidateViewContainer?.removeAllViews()
+        mCandidateViewContainer = null
+        mCandidateView = null
         super.onConfigurationChanged(newConfig)
     }
 
@@ -460,28 +463,35 @@ class SKKService : InputMethodService() {
      * needs to be generated, like [.onCreateInputView].
      */
     override fun onCreateCandidatesView(): View {
-        val context = when (skkPrefs.theme) {
-            "light" -> createNightModeContext(applicationContext, false)
-            "dark"  -> createNightModeContext(applicationContext, true)
-            else    -> applicationContext
-        }
+        if (mCandidateViewContainer == null) {
+            val context = when (skkPrefs.theme) {
+                "light" -> createNightModeContext(applicationContext, false)
+                "dark" -> createNightModeContext(applicationContext, true)
+                else -> applicationContext
+            }
 
-        val container = View.inflate(context, R.layout.view_candidates, null) as CandidateViewContainer
-        container.initViews()
-        val view = container.findViewById(R.id.candidates) as CandidateView
-        view.setService(this)
-        view.setContainer(container)
-        mCandidateView = view
+            val container = View.inflate(context, R.layout.view_candidates, null) as CandidateViewContainer
+            container.initViews()
+            val view: CandidateView = container.findViewById(R.id.candidates)
+            view.setService(this)
+            view.setContainer(container)
+            mCandidateView = view
 
-        val sp = skkPrefs.candidatesSize
-        val px = TypedValue.applyDimension(
+            val sp = skkPrefs.candidatesSize
+            val px = TypedValue.applyDimension(
                 TypedValue.COMPLEX_UNIT_SP, sp.toFloat(), context.resources.displayMetrics
-        ).toInt()
-        container.setSize(px)
+            ).toInt()
+            container.setSize(px)
 
-        mCandidateViewContainer = container
-
-        return container
+            setCandidatesView(container)
+            mCandidateViewContainer = container
+        }
+        if (mUseSoftKeyboard || skkPrefs.useCandidatesView) {
+            setCandidatesViewShown(true)
+            mCandidateViewContainer?.setAlpha(96)
+        }
+        isExtractViewShown = onEvaluateFullscreenMode()
+        return mCandidateViewContainer!!
     }
 
     // 状態変化を onConfigurationChanged に頼ると取りこぼすので自前でチェック
@@ -503,17 +513,8 @@ class SKKService : InputMethodService() {
             mHandler.postDelayed({
                 // なぜか readPrefsForInputView() ではサイズ修正されない
                 setInputView(onCreateInputView())
-                if (mUseSoftKeyboard || skkPrefs.useCandidatesView) {
-                    setCandidatesViewShown(true)
-                    mCandidateViewContainer?.setAlpha(96)
-                    showWindow(true)
-                }
+                showWindow(true)
             }, 800)
-        } else {
-            if (mUseSoftKeyboard || skkPrefs.useCandidatesView) {
-                setCandidatesViewShown(true)
-                mCandidateViewContainer?.setAlpha(96)
-            }
         }
     }
 
