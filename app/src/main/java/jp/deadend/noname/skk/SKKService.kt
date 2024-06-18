@@ -230,6 +230,10 @@ class SKKService : InputMethodService() {
         })
         mAudioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
+        mOrientation = resources.configuration.orientation
+        mScreenWidth = resources.displayMetrics.widthPixels
+        mScreenHeight = resources.displayMetrics.heightPixels
+
         readPrefs()
     }
 
@@ -411,7 +415,25 @@ class SKKService : InputMethodService() {
             mSandSUsed = false
         }
 
+        // inputView が null のうちに setCandidatesViewShown(true) しておく
+        // また、Activity から離れるときにもなぜか onStartupInput が呼ばれるので
+        // isInputViewShown == false のときは除外しないと candidatesView だけ表示される
+        if (mFlickJPInputView == null || isInputViewShown
+            && (mUseSoftKeyboard || skkPrefs.useCandidatesView)
+        ) {
+            setCandidatesViewShown(true)
+        }
+
+        // 再利用できるので何もしない
+        if (restarting) {
+            return
+        }
+
         mEngine.resetOnStartInput()
+        if (attribute.inputType == InputType.TYPE_NULL) {
+            requestHideSelf(0)
+            return
+        }
         when (attribute.inputType and InputType.TYPE_MASK_CLASS) {
             InputType.TYPE_CLASS_NUMBER,
             InputType.TYPE_CLASS_DATETIME,
@@ -431,10 +453,6 @@ class SKKService : InputMethodService() {
                 }
             }
         }
-
-        //場所を用意しておく?
-        setCandidatesViewShown(true)
-        setCandidatesViewShown(false)
     }
 
     /**
@@ -466,10 +484,36 @@ class SKKService : InputMethodService() {
         return container
     }
 
+    // 状態変化を onConfigurationChanged に頼ると取りこぼすので自前でチェック
+    // FIXME: 分割画面使用時に画面回転した場合など変な位置に表示されることがある
+    private var mOrientation = Configuration.ORIENTATION_UNDEFINED
+    private var mScreenWidth = 0
+    private var mScreenHeight = 0
     override fun onStartInputView(editorInfo: EditorInfo?, restarting: Boolean) {
-        if (mUseSoftKeyboard || skkPrefs.useCandidatesView) {
-            setCandidatesViewShown(true)
-            mCandidateViewContainer?.setAlpha(96)
+        if (mOrientation != resources.configuration.orientation
+            || mScreenWidth != resources.displayMetrics.widthPixels
+            || mScreenHeight != resources.displayMetrics.heightPixels
+        ) {
+            mOrientation = resources.configuration.orientation
+            mScreenWidth = resources.displayMetrics.widthPixels
+            mScreenHeight = resources.displayMetrics.heightPixels
+
+            // なぜか一度隠しておいて showWindow(true) しないと後で隠れてしまう
+            requestHideSelf(0)
+            mHandler.postDelayed({
+                // なぜか readPrefsForInputView() ではサイズ修正されない
+                setInputView(onCreateInputView())
+                if (mUseSoftKeyboard || skkPrefs.useCandidatesView) {
+                    setCandidatesViewShown(true)
+                    mCandidateViewContainer?.setAlpha(96)
+                    showWindow(true)
+                }
+            }, 800)
+        } else {
+            if (mUseSoftKeyboard || skkPrefs.useCandidatesView) {
+                setCandidatesViewShown(true)
+                mCandidateViewContainer?.setAlpha(96)
+            }
         }
     }
 
