@@ -28,10 +28,10 @@ object SKKChooseState : SKKState {
                 kanjiKey.append('>')
                 context.setComposingTextSKK(kanjiKey, 1)
             }
-            'l'.code -> {
+            'l'.code, 'L'.code, '/'.code -> {
                 // 暗黙の確定
                 context.pickCurrentCandidate()
-                context.changeState(SKKASCIIState)
+                context.changeInputMode(pcode, true)
             }
             ':'.code -> context.changeState(SKKNarrowingState)
             else -> {

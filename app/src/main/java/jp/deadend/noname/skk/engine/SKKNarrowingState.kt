@@ -17,6 +17,11 @@ object SKKNarrowingState : SKKState {
         when {
             pcode == ' '.code -> context.chooseAdjacentCandidate(true)
             pcode == 'x'.code -> context.chooseAdjacentCandidate(false)
+            pcode == 'l'.code || pcode == 'L'.code || pcode == '/'.code -> {
+                // 暗黙の確定
+                context.pickCurrentCandidate()
+                context.changeInputMode(pcode, true)
+            }
             isAlphabet(pcode) -> {
                 val composing = context.mComposing
                 val pcodeLower = if (Character.isUpperCase(pcode)) {

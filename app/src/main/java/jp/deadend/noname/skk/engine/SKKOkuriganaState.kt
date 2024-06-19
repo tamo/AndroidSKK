@@ -19,6 +19,11 @@ object SKKOkuriganaState : SKKState {
         val kanjiKey = context.mKanjiKey
         val okurigana = context.mOkurigana
 
+        // l, L, / による暗黙の確定
+        if (context.changeInputMode(pcode, true)) {
+            composing.setLength(0)
+            context.commitTextSKK(kanjiKey, 1)
+        }
         if (composing.length == 1 || okurigana == null) {
             // 「ん」か「っ」を処理したらここで終わり
             val hchr = RomajiConverter.checkSpecialConsonants(composing[0], pcodeLower)
