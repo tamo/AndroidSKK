@@ -225,6 +225,8 @@ open class KeyboardView @JvmOverloads constructor(
 
         mKeyBackground?.getPadding(mPadding)
 
+        isHapticFeedbackEnabled = true
+
         mGestureDetector.setIsLongpressEnabled(false)
 
         resetMultiTap()
@@ -435,6 +437,7 @@ open class KeyboardView @JvmOverloads constructor(
 
     private fun pressKey(keyIndex: Int) {
         if (keyIndex < 0 || keyIndex >= mKeyboard.keys.size) { return }
+        performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
         mKeyboard.keys[keyIndex].press()
         invalidateKey(keyIndex)
         showPreview(keyIndex)

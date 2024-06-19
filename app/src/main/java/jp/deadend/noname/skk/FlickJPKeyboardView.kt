@@ -9,6 +9,7 @@ import android.util.SparseArray
 import android.view.LayoutInflater
 import android.widget.PopupWindow
 import android.content.Context.CLIPBOARD_SERVICE
+import android.view.HapticFeedbackConstants
 import android.widget.TextView
 import jp.deadend.noname.skk.databinding.PopupFlickguideBinding
 import jp.deadend.noname.skk.engine.SKKEngine
@@ -403,7 +404,12 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
                 val dy = event.rawY - mFlickStartY
 
                 when {
-                    dx * dx + dy * dy < mFlickSensitivitySquared -> mFlickState = EnumSet.of(FlickState.NONE)
+                    dx * dx + dy * dy < mFlickSensitivitySquared -> {
+                        if (mFlickState != EnumSet.of(FlickState.NONE)) {
+                            mFlickState = EnumSet.of(FlickState.NONE)
+                            performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+                        }
+                    }
                     mFlickState == EnumSet.of(FlickState.NONE) -> processFirstFlick(dx, dy)
                     else -> processCurveFlick(dx, dy)
                 }
@@ -450,6 +456,7 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
                 }
             else -> EnumSet.of(FlickState.RIGHT)
         }
+        performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
     }
 
     private fun processCurveFlick(dx: Float, dy: Float) {
@@ -498,12 +505,13 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
             }
             else -> EnumSet.noneOf(FlickState::class.java)
         }
-        if (newstate.isEmpty()) {
+        if (newstate.isEmpty() || mFlickState == newstate) {
             return
         }
 
         if (hasLeftCurve && isLeftCurve(newstate) || hasRightCurve && isRightCurve(newstate)) {
             mFlickState = newstate
+            performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
         }
     }
 
