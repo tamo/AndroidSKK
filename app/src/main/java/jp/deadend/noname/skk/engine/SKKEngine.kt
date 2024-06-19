@@ -21,6 +21,9 @@ class SKKEngine(
     internal val mKanjiKey = StringBuilder()
     // 送りがな 「っ」や「ん」が含まれる場合だけ二文字になる
     internal var mOkurigana: String? = null
+    // 実際に表示されているもの
+    internal val mComposingText = StringBuilder()
+    internal var mCursorPosition = 1
 
     // 全角で入力する記号リスト
     private val mZenkakuSeparatorMap = mutableMapOf(
@@ -183,6 +186,8 @@ class SKKEngine(
             setComposingTextSKK("", newCursorPosition)
         } else {
             ic.commitText(text, newCursorPosition)
+            mComposingText.setLength(0)
+            mCursorPosition = newCursorPosition
         }
     }
 
@@ -343,6 +348,8 @@ class SKKEngine(
                 } else {
                     ic.deleteSurroundingText(1, 0)
                     ic.commitText(newLastChar, 1)
+                    mComposingText.setLength(0)
+                    mCursorPosition = 1
                 }
             }
         }
@@ -357,8 +364,9 @@ class SKKEngine(
      */
     internal fun setComposingTextSKK(text: CharSequence, newCursorPosition: Int) {
         val ic = mService.currentInputConnection ?: return
-
-        val ct = StringBuilder()
+        val ct = mComposingText
+        ct.setLength(0)
+        mCursorPosition = newCursorPosition
 
         if (!mRegistrationStack.isEmpty()) {
             val depth = mRegistrationStack.size
@@ -634,6 +642,8 @@ class SKKEngine(
         mCandidatesList = null
         mService.clearCandidatesView()
         mService.currentInputConnection.setComposingText("", 1)
+        mComposingText.setLength(0)
+        mCursorPosition = 1
     }
 
     internal fun changeInputMode(pcode: Int, toKatakana: Boolean): Boolean {

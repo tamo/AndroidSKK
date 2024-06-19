@@ -427,8 +427,9 @@ class SKKService : InputMethodService() {
             setCandidatesViewShown(true)
         }
 
-        // 再利用できるので何もしない
+        // 再利用できるので composingText だけ再描画して終了
         if (restarting) {
+            currentInputConnection.setComposingText(mEngine.mComposingText, mEngine.mCursorPosition)
             return
         }
 
