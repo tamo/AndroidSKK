@@ -109,9 +109,9 @@ class SKKUserDicTool : AppCompatActivity() {
             dialog.show(supportFragmentManager, "dialog")
         }
 
-        val intent = Intent(SKKService.ACTION_COMMAND)
+        val intent = Intent(this@SKKUserDicTool, SKKService::class.java)
         intent.putExtra(SKKService.KEY_COMMAND, SKKService.COMMAND_COMMIT_USERDIC)
-        sendBroadcast(intent)
+        startService(intent)
 
         mAdapter = EntryAdapter(this, mEntryList)
         binding.userDictoolList.adapter = mAdapter

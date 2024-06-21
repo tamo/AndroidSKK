@@ -21,10 +21,10 @@ class SKKSpeechRecognitionResultsList : AppCompatActivity() {
         binding.listView.emptyView = binding.emptyView
         binding.listView.adapter = ArrayAdapter(this, R.layout.listitem_text_row, mResults)
         binding.listView.onItemClickListener = AdapterView.OnItemClickListener { _, _, position, _ ->
-            val retIntent = Intent(SKKService.ACTION_COMMAND)
+            val retIntent = Intent(this@SKKSpeechRecognitionResultsList, SKKService::class.java)
             retIntent.putExtra(SKKService.KEY_COMMAND, SKKService.COMMAND_SPEECH_RECOGNITION)
             retIntent.putExtra(RESULTS_KEY, mResults[position])
-            sendBroadcast(retIntent)
+            startService(retIntent)
             finish()
         }
     }

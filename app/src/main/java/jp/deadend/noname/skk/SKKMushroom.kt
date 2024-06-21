@@ -30,10 +30,10 @@ class SKKMushroom : AppCompatActivity() {
                 val extras = result.data?.extras
                 val s = if (extras == null) "" else extras.getString(REPLACE_KEY)
 
-                val retIntent = Intent(ACTION_BROADCAST)
-                retIntent.addCategory(CATEGORY_BROADCAST)
+                val retIntent = Intent(this@SKKMushroom, SKKService::class.java)
+                retIntent.putExtra(SKKService.KEY_COMMAND, SKKService.COMMAND_MUSHROOM)
                 retIntent.putExtra(REPLACE_KEY, s)
-                sendBroadcast(retIntent)
+                startService(retIntent)
             }
             finish()
         }

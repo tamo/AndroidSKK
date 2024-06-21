@@ -2,10 +2,8 @@ package jp.deadend.noname.skk
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.res.Configuration
 import android.inputmethodservice.InputMethodService
 import android.media.AudioManager
@@ -25,7 +23,6 @@ import android.view.KeyEvent
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.widget.Toast
-import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 
 import jp.deadend.noname.skk.engine.*
@@ -60,33 +57,31 @@ class SKKService : InputMethodService() {
 
     private var mPendingInput: String? = null
 
-    private val mMushroomReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            mPendingInput = intent?.getStringExtra(SKKMushroom.REPLACE_KEY)
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        when (intent?.getStringExtra(KEY_COMMAND)) {
+            COMMAND_COMMIT_USERDIC -> {
+                dlog("commit user dictionary!")
+                mEngine.commitUserDictChanges()
+            }
+            COMMAND_READ_PREFS -> {
+                requestHideSelf(0)
+                setInputView(onCreateInputView())
+                onCreateCandidatesView()
+                readPrefs()
+            }
+            COMMAND_RELOAD_DICS -> mEngine.reopenDictionaries(openDictionaries())
+            COMMAND_SPEECH_RECOGNITION -> {
+                mPendingInput = intent.getStringExtra(SKKSpeechRecognitionResultsList.RESULTS_KEY)
+            }
+            COMMAND_MUSHROOM -> {
+                mPendingInput = intent.getStringExtra(SKKMushroom.REPLACE_KEY)
 //                if (mMushroomWord != null) {
 //                    val cm = getSystemService(CLIPBOARD_SERVICE) as android.content.ClipboardManager
 //                    cm.setText(mMushroomWord)
 //                }
-        }
-    }
-    private val mReloadReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            when (intent?.getStringExtra(KEY_COMMAND)) {
-                COMMAND_COMMIT_USERDIC -> {
-                    dlog("commit user dictionary!")
-                    mEngine.commitUserDictChanges()
-                }
-                COMMAND_READ_PREFS -> {
-                    setInputView(onCreateInputView())
-                    onCreateCandidatesView()
-                    readPrefs()
-                }
-                COMMAND_RELOAD_DICS -> mEngine.reopenDictionaries(openDictionaries())
-                COMMAND_SPEECH_RECOGNITION -> {
-                    mPendingInput = intent.getStringExtra(SKKSpeechRecognitionResultsList.RESULTS_KEY)
-                }
             }
         }
+        return super.onStartCommand(intent, flags, startId)
     }
 
     private fun extractDictionary(): Boolean {
@@ -185,11 +180,6 @@ class SKKService : InputMethodService() {
         }
 
         mEngine = SKKEngine(this@SKKService, dics, userDic!!)
-
-        val filter = IntentFilter(SKKMushroom.ACTION_BROADCAST)
-        filter.addCategory(SKKMushroom.CATEGORY_BROADCAST)
-        ContextCompat.registerReceiver(this, mMushroomReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
-        ContextCompat.registerReceiver(this, mReloadReceiver, IntentFilter(ACTION_COMMAND), ContextCompat.RECEIVER_NOT_EXPORTED)
 
         mSpeechRecognizer.setRecognitionListener(object : RecognitionListener {
             private fun restoreState() {
@@ -329,12 +319,9 @@ class SKKService : InputMethodService() {
     override fun onBindInput() {
         super.onBindInput()
 
-        if (mPendingInput.isNullOrEmpty()) {
-            return
-        } else {
-            currentInputConnection.commitText(mPendingInput, 1)
-            mPendingInput = null
+        if (!mPendingInput.isNullOrEmpty()) {
             keyDownUp(KeyEvent.KEYCODE_DPAD_CENTER)
+            // この時点ではまだ入力できないので onStartInput まで mPendingInput を保持
         }
     }
 
@@ -411,6 +398,10 @@ class SKKService : InputMethodService() {
      */
     override fun onStartInput(attribute: EditorInfo, restarting: Boolean) {
         super.onStartInput(attribute, restarting)
+        if (!mPendingInput.isNullOrEmpty() && attribute.inputType != InputType.TYPE_NULL) {
+            currentInputConnection.commitText(mPendingInput!!, 1)
+            mPendingInput = null
+        }
 
         if (mStickyShift) mShiftKey.clearState()
         if (mSandS) {
@@ -532,8 +523,6 @@ class SKKService : InputMethodService() {
 
     override fun onDestroy() {
         mEngine.commitUserDictChanges()
-        unregisterReceiver(mMushroomReceiver)
-        unregisterReceiver(mReloadReceiver)
         mSpeechRecognizer.destroy()
 
         super.onDestroy()
@@ -872,6 +861,7 @@ class SKKService : InputMethodService() {
         internal const val COMMAND_READ_PREFS = "jp.deadend.noname.skk.COMMAND_READ_PREFS"
         internal const val COMMAND_RELOAD_DICS = "jp.deadend.noname.skk.COMMAND_RELOAD_DICS"
         internal const val COMMAND_SPEECH_RECOGNITION = "jp.deadend.noname.skk.COMMAND_SPEECH_RECOGNITION"
+        internal const val COMMAND_MUSHROOM = "jp.deadend.noname.skk.COMMAND_MUSHROOM"
         internal const val DICT_ZIP_FILE = "skk_dict_btree_db.zip"
         private const val CHANNEL_ID = "skk_notification"
         private const val CHANNEL_NAME = "SKK"

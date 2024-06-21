@@ -89,9 +89,9 @@ class SKKDicManager : AppCompatActivity() {
                     .apply()
 
 
-            val intent = Intent(SKKService.ACTION_COMMAND)
+            val intent = Intent(this@SKKDicManager, SKKService::class.java)
             intent.putExtra(SKKService.KEY_COMMAND, SKKService.COMMAND_RELOAD_DICS)
-            sendBroadcast(intent)
+            startService(intent)
         }
 
         super.onPause()
