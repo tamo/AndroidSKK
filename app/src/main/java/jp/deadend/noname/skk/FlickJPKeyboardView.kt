@@ -628,10 +628,10 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
             }
             KEYCODE_FLICK_JP_CHAR_TEN_NUM -> {
                 when (flick) {
-                    EnumSet.of(FlickState.NONE)  -> mService.commitTextSKK(",", 0)
-                    EnumSet.of(FlickState.LEFT)  -> mService.commitTextSKK(".", 0)
-                    EnumSet.of(FlickState.UP)    -> mService.commitTextSKK("-", 0)
-                    EnumSet.of(FlickState.RIGHT) -> mService.commitTextSKK(":", 0)
+                    EnumSet.of(FlickState.NONE)  -> mService.commitTextSKK(",", 1)
+                    EnumSet.of(FlickState.LEFT)  -> mService.commitTextSKK(".", 1)
+                    EnumSet.of(FlickState.UP)    -> mService.commitTextSKK("-", 1)
+                    EnumSet.of(FlickState.RIGHT) -> mService.commitTextSKK(":", 1)
                 }
                 return
             }

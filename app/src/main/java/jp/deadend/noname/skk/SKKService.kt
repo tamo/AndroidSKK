@@ -216,7 +216,7 @@ class SKKService : InputMethodService() {
                 results?.let {
                     it.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.let { matches ->
                         if (matches.size == 1) {
-                            commitTextSKK(matches[0], 0)
+                            commitTextSKK(matches[0], 1)
                         } else {
                             val intent = Intent(this@SKKService, SKKSpeechRecognitionResultsList::class.java)
                             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
