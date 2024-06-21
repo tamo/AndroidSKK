@@ -57,6 +57,8 @@
     <declare-styleable name="Keyboard_Key">
         <!-- The unicode value or comma-separated values that this key outputs -->
         <attr name="codes" format="integer|string" />
+        <!-- 上フリックで出るコード -->
+        <attr name="shiftedCode" format="integer" />
         <!-- The XML keyboard layout of any popup keyboard -->
         <attr name="popupKeyboard" format="reference" />
         <!-- The characters to display in the popup keyboard -->
@@ -80,6 +82,8 @@
         <attr name="keyOutputText" format="string" />
         <!-- The label to display on the key -->
         <attr name="keyLabel" format="string" />
+        <!-- 上フリックで出るラベル -->
+        <attr name="shiftedLabel" format="string" />
         <!-- The icon to display on the key instead of the label -->
         <attr name="keyIcon" format="reference" />
         <!-- Mode of the keyboard. If the mode doesn't match the

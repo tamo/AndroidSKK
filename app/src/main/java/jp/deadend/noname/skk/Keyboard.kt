@@ -34,6 +34,7 @@ open class Keyboard {
         private set
 
     val keys: MutableList<Key>  = mutableListOf()
+    val shiftedCodes = mutableMapOf<Int, Int>() // code から shiftedCode への逆引き
     private val rows: MutableList<Row> = mutableListOf()
     private val modifierKeys: MutableList<Key> = mutableListOf()
 
@@ -79,6 +80,8 @@ open class Keyboard {
     class Key(parent: Row) {
         var codes: IntArray = intArrayOf()
         var label: CharSequence = ""
+        var shiftedCode = 0
+        var shiftedLabel: CharSequence = ""
         var icon: Drawable? = null
         var iconPreview: Drawable? = null
         var width: Int
@@ -135,6 +138,7 @@ open class Keyboard {
                 codes = codesValue.string.toString()
                             .split(",").map { it.trim().toInt() }.toIntArray()
             }
+            shiftedCode = a.getInt(R.styleable.Keyboard_Key_shiftedCode, 0)
             iconPreview = a.getDrawable(R.styleable.Keyboard_Key_iconPreview)
             iconPreview?.let {
                 iconPreview?.setBounds(0, 0, it.intrinsicWidth, it.intrinsicHeight)
@@ -151,10 +155,15 @@ open class Keyboard {
                 it.setBounds(0, 0, it.intrinsicWidth, it.intrinsicHeight)
             }
             label = a.getText(R.styleable.Keyboard_Key_keyLabel) ?: ""
+            shiftedLabel = a.getText(R.styleable.Keyboard_Key_shiftedLabel) ?: ""
             text = a.getText(R.styleable.Keyboard_Key_keyOutputText)
-//            if (codes.isEmpty() && !TextUtils.isEmpty(label)) {
-//                codes = intArrayOf(label[0].code)
-//            }
+            if (codes.isEmpty() && label.isNotEmpty()) {
+                codes = intArrayOf(label[0].code)
+            }
+            if (shiftedCode == 0 && shiftedLabel.isNotEmpty()) {
+                shiftedCode = shiftedLabel[0].code
+            }
+            keyboard.shiftedCodes[codes[0]] = shiftedCode
             a.recycle()
         }
 

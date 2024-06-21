@@ -40,6 +40,8 @@ open class KeyboardView @JvmOverloads constructor(
     private var mKeyTextSize = 0
     private var mKeyTextColor = 0
     private var mPreviewText: TextView? = null
+    private var mPreviewNormalText: CharSequence = ""
+    private var mPreviewShiftedText: CharSequence = ""
     private val mPreviewPopup = PopupWindow(context)
     private var mPreviewOffset = 0
     private var mPreviewHeight = 0
@@ -276,13 +278,9 @@ open class KeyboardView @JvmOverloads constructor(
         dismissPopupKeyboard()
     }
 
-    private fun adjustCase(label: CharSequence): CharSequence {
-        return if (mKeyboard.isShifted && label.length < 3) {
-            if (label[0] == '.') {
-                ","
-            } else if (Character.isLowerCase(label[0])) {
-                label.toString().uppercase(Locale.getDefault())
-            } else label
+    private fun adjustCase(label: CharSequence, shiftedLabel: CharSequence = ""): CharSequence {
+        return if (mKeyboard.isShifted && shiftedLabel.isNotEmpty()) {
+            shiftedLabel
         } else label
     }
 
@@ -343,7 +341,7 @@ open class KeyboardView @JvmOverloads constructor(
                 keyBackground?.state = key.currentDrawableState
 
                 // Switch the character to uppercase if shift is pressed
-                val label = if (key.label.isEmpty()) null else adjustCase(key.label).toString()
+                val label = if (key.label.isEmpty()) null else adjustCase(key.label, key.shiftedLabel).toString()
                 val icon = key.icon
                 keyBackground?.bounds?.let {
                     if (key.width != it.right || key.height != it.bottom) {
@@ -431,7 +429,7 @@ open class KeyboardView @JvmOverloads constructor(
             mPreviewLabel.append(key.codes[mTapCount.coerceAtLeast(0)].toChar())
             adjustCase(mPreviewLabel)
         } else {
-            adjustCase(key.label)
+            adjustCase(key.label, key.shiftedLabel)
         }
     }
 
@@ -489,6 +487,8 @@ open class KeyboardView @JvmOverloads constructor(
             if (key.icon != null || (key.label.length > 1 && key.codes.size < 2)) { return }
             // show only single character keys
 
+            mPreviewNormalText = key.label
+            mPreviewShiftedText = key.shiftedLabel
             previewText.text = getPreviewText(key)
             previewText.typeface = Typeface.DEFAULT
             previewText.measure(
@@ -547,14 +547,10 @@ open class KeyboardView @JvmOverloads constructor(
         mPreviewText?.let {
             val previewText = it.text
             if (previewText.isNotEmpty()) {
-                it.text = if (previewText[0] == '.') {
-                    ","
-                } else if (previewText[0] == ',') {
-                    "."
-                } else if (Character.isLowerCase(previewText[0])) {
-                    previewText.toString().uppercase(Locale.getDefault())
+                it.text = if (!isShifted && mPreviewShiftedText.isNotEmpty()) {
+                    mPreviewShiftedText
                 } else {
-                    previewText.toString().lowercase(Locale.getDefault())
+                    mPreviewNormalText
                 }
             }
         }

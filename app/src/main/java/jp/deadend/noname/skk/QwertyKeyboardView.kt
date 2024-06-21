@@ -10,7 +10,6 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
 
     private val mLatinKeyboard = Keyboard(context, R.xml.qwerty)
     private val mSymbolsKeyboard = Keyboard(context, R.xml.symbols)
-    private val mSymbolsShiftedKeyboard = Keyboard(context, R.xml.symbols_shift)
 
     private var mFlickSensitivitySquared = 100
     private var mFlickStartX = -1f
@@ -81,15 +80,6 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
             }
             Keyboard.KEYCODE_SHIFT -> {
                 isShifted = !isShifted
-                if (keyboard === mSymbolsKeyboard) {
-                    mSymbolsKeyboard.isShifted = true
-                    keyboard = mSymbolsShiftedKeyboard
-                    mSymbolsShiftedKeyboard.isShifted = true
-                } else if (keyboard === mSymbolsShiftedKeyboard) {
-                    mSymbolsShiftedKeyboard.isShifted = false
-                    keyboard = mSymbolsKeyboard
-                    mSymbolsKeyboard.isShifted = false
-                }
                 isCapsLocked = false
             }
             Keyboard.KEYCODE_CAPSLOCK -> {
@@ -105,9 +95,10 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                 isCapsLocked = keyboard.isCapsLocked
             }
             else -> {
+                val shiftedCode = keyboard.shiftedCodes[primaryCode] ?: 0
                 val code = when {
                     isShifted xor mFlicked -> when {
-                        primaryCode == '.'.code -> ','.code
+                        shiftedCode > 0 -> shiftedCode
                         keyboard === mLatinKeyboard -> Character.toUpperCase(primaryCode)
                         else -> primaryCode
                     }
