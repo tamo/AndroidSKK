@@ -306,6 +306,7 @@ class SKKEngine(
             state === SKKKanjiState && mComposing.isEmpty() -> {
                 val s = mKanjiKey.toString()
                 val idx = s.length - 1
+                if (idx < 0) { return }
                 val newLastChar = RomajiConverter.convertLastChar(s.substring(idx), type) ?: return
 
                 mKanjiKey.deleteCharAt(idx)
@@ -316,6 +317,7 @@ class SKKEngine(
             state === SKKNarrowingState && mComposing.isEmpty() -> {
                 val hint = SKKNarrowingState.mHint
                 val idx = hint.length - 1
+                if (idx < 0) { return }
                 val newLastChar = RomajiConverter.convertLastChar(hint.substring(idx), type) ?: return
 
                 hint.deleteCharAt(idx)
