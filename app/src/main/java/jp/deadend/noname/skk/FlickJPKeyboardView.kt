@@ -761,7 +761,10 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
                 EnumSet.of(FlickState.LEFT)  -> mService.changeLastChar(SKKEngine.LAST_CONVERTION_DAKUTEN)
                 EnumSet.of(FlickState.UP)    -> mService.handleCancel()
                 EnumSet.of(FlickState.RIGHT) -> mService.changeLastChar(SKKEngine.LAST_CONVERTION_HANDAKUTEN)
-                EnumSet.of(FlickState.DOWN)  -> mService.changeLastChar(SKKEngine.LAST_CONVERTION_SHIFT)
+                EnumSet.of(FlickState.DOWN)  -> {
+                    mService.changeLastChar(SKKEngine.LAST_CONVERTION_SHIFT)
+                    setHiraganaMode()
+                }
             }
             KEYCODE_FLICK_JP_CANCEL -> mService.handleCancel()
             KEYCODE_FLICK_JP_MOJI   -> when (mFlickState) {

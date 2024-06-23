@@ -22,6 +22,13 @@ fun hirakana2katakana(str: String?): String? {
     return if (idx == -1) str2 else str2.replaceRange(idx, idx+2, "ヴ")
 }
 
+fun katakana2hiragana(str: String?): String? {
+    if (str == null) { return null }
+
+    return str.map { if (it in 'ァ'..'ン') it.minus(0x60) else it }.joinToString("")
+    // 「ヴ」が「う゛」ではなく「ゔ」になるかもしれないが無視する
+}
+
 fun isAlphabet(code: Int) = (code in 0x41..0x5A || code in 0x61..0x7A)
 
 fun isVowel(code: Int) = (code == 0x61 || code == 0x69 || code == 0x75 || code == 0x65 || code == 0x6F)

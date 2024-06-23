@@ -344,10 +344,12 @@ class SKKEngine(
                 if (type == LAST_CONVERTION_SHIFT) {
                     if (state === SKKHiraganaState || state === SKKKatakanaState) {
                         ic.deleteSurroundingText(1, 0)
-                        mKanjiKey.append(cs)
+                        mKanjiKey.append(katakana2hiragana(cs.toString()))
                         changeState(SKKKanjiState)
                         setComposingTextSKK(mKanjiKey, 1)
                         updateSuggestions(mKanjiKey.toString())
+                    } else {
+                        return
                     }
                 }
                 val newLastChar = RomajiConverter.convertLastChar(cs.toString(), type) ?: return
