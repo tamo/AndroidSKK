@@ -359,13 +359,19 @@ open class KeyboardView @JvmOverloads constructor(
                         mPaint.textSize = mKeyTextSize.toFloat()
                         mPaint.typeface = Typeface.DEFAULT
                     }
-                    // Draw the text
-                    canvas.drawText(
-                        label,
-                        (key.width - mPadding.left - mPadding.right) / 2f + mPadding.left,
-                        (key.height - mPadding.top - mPadding.bottom) / 2f + (mPaint.textSize - mPaint.descent()) / 2 + mPadding.top,
-                        mPaint
-                    )
+                    val lines = label.split("\n")
+                    val numLines = lines.size
+                    lines.forEachIndexed { i, line ->
+                        // Draw the text
+                        canvas.drawText(
+                            line,
+                            (key.width - mPadding.left - mPadding.right) / 2f + mPadding.left,
+                            (key.height - mPadding.top - mPadding.bottom) / 2f + mPadding.top
+                                    + (mPaint.textSize * numLines - mPaint.descent()) / 2
+                                    - mPaint.textSize * (numLines - 1 - i),
+                            mPaint
+                        )
+                    }
                 } else if (icon != null) {
                     val drawableX =
                         (key.width - mPadding.left - mPadding.right - icon.intrinsicWidth) / 2 + mPadding.left
