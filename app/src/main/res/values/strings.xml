@@ -2,7 +2,6 @@
 <resources>
 	<string name="ime_name">SKK for Android</string>
 	<string name="label_mushroom">マッシュルーム</string>
-	<string name="label_speech_recognition_results">認識結果</string>
 	<string name="label_pref_activity">SKK for Androidの設定</string>
 	<string name="label_pref_softkeyboard">ソフトウェアキーボードの設定</string>
 	<string name="label_pref_hardkeyboard">ハードウェアキーボードの設定</string>

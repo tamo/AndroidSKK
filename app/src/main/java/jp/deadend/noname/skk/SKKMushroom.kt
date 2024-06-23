@@ -103,9 +103,6 @@ class SKKMushroom : AppCompatActivity() {
         const val ACTION_SIMEJI_MUSHROOM = "com.adamrocker.android.simeji.ACTION_INTERCEPT"
         const val CATEGORY_SIMEJI_MUSHROOM = "com.adamrocker.android.simeji.REPLACE"
 
-        const val ACTION_BROADCAST = "jp.deadend.noname.skk.MUSHROOM_RESULT"
-        const val CATEGORY_BROADCAST = "jp.deadend.noname.skk.MUSHROOM_VALUE"
-
         const val REPLACE_KEY = "replace_key"
     }
 }

@@ -848,7 +848,6 @@ class SKKService : InputMethodService() {
         internal const val COMMAND_COMMIT_USERDIC = "jp.deadend.noname.skk.COMMAND_COMMIT_USERDIC"
         internal const val COMMAND_READ_PREFS = "jp.deadend.noname.skk.COMMAND_READ_PREFS"
         internal const val COMMAND_RELOAD_DICS = "jp.deadend.noname.skk.COMMAND_RELOAD_DICS"
-        internal const val COMMAND_SPEECH_RECOGNITION = "jp.deadend.noname.skk.COMMAND_SPEECH_RECOGNITION"
         internal const val COMMAND_MUSHROOM = "jp.deadend.noname.skk.COMMAND_MUSHROOM"
         internal const val DICT_ZIP_FILE = "skk_dict_btree_db.zip"
         private const val CHANNEL_ID = "skk_notification"
