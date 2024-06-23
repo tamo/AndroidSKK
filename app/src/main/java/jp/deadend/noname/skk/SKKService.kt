@@ -403,12 +403,8 @@ class SKKService : InputMethodService() {
             mSandSUsed = false
         }
 
-        // inputView が null のうちに setCandidatesViewShown(true) しておく
-        // また、Activity から離れるときにもなぜか onStartupInput が呼ばれるので
-        // isInputViewShown == false のときは除外しないと candidatesView だけ表示される
-        if (mFlickJPInputView == null || isInputViewShown
-            && (mUseSoftKeyboard || skkPrefs.useCandidatesView)
-        ) {
+        // ここで作成しておいて、表示するかどうかは onCreateCandidatesView 内で判定する
+        if (mFlickJPInputView == null) {
             setCandidatesViewShown(true)
         }
 
@@ -476,7 +472,6 @@ class SKKService : InputMethodService() {
             setCandidatesViewShown(true)
             mCandidateViewContainer?.setAlpha(96)
         }
-        isExtractViewShown = onEvaluateFullscreenMode()
         return mCandidateViewContainer!!
     }
 
