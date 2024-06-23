@@ -673,7 +673,14 @@ class SKKService : InputMethodService() {
     }
 
     fun processKey(pcode: Int) {
+        val oldState = mEngine.state
         mEngine.processKey(pcode)
+        if (oldState === SKKKatakanaState && mEngine.state === SKKKanjiState) {
+            mFlickJPInputView?.setHiraganaMode()
+            // 漢字モードを抜けてももうカタカナモードに戻らないので、表示をひらがなにする
+            // (本来の SKK では q でカタカナモードになったまま漢字変換できるので
+            // 怪物のセリフのような「オレハ強イ」とかも簡単に入力できるのだが)
+        }
     }
     fun handleKanaKey() {
         mEngine.handleKanaKey()
