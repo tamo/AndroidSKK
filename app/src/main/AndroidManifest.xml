@@ -39,10 +39,5 @@
 			android:label="@string/label_mushroom"
 			android:theme="@style/Theme.AppCompat.Light.Dialog">
 		</activity>
-		<activity android:name=".SKKSpeechRecognitionResultsList"
-				  android:label="@string/label_speech_recognition_results"
-                  android:windowSoftInputMode="stateAlwaysHidden"
-				  android:theme="@style/Theme.AppCompat.Light.Dialog">
-		</activity>
 	</application>
 </manifest>

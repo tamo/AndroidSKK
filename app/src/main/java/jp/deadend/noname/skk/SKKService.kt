@@ -70,9 +70,6 @@ class SKKService : InputMethodService() {
                 readPrefs()
             }
             COMMAND_RELOAD_DICS -> mEngine.reopenDictionaries(openDictionaries())
-            COMMAND_SPEECH_RECOGNITION -> {
-                mPendingInput = intent.getStringExtra(SKKSpeechRecognitionResultsList.RESULTS_KEY)
-            }
             COMMAND_MUSHROOM -> {
                 mPendingInput = intent.getStringExtra(SKKMushroom.REPLACE_KEY)
 //                if (mMushroomWord != null) {
@@ -208,10 +205,7 @@ class SKKService : InputMethodService() {
                         if (matches.size == 1) {
                             commitTextSKK(matches[0], 1)
                         } else {
-                            val intent = Intent(this@SKKService, SKKSpeechRecognitionResultsList::class.java)
-                            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                            intent.putStringArrayListExtra(SKKSpeechRecognitionResultsList.RESULTS_KEY, matches)
-                            startActivity(intent)
+                            mFlickJPInputView?.speechRecognitionResultsList(matches)
                         }
                     }
                 }
@@ -855,7 +849,6 @@ class SKKService : InputMethodService() {
     }
 
     companion object {
-        internal const val ACTION_COMMAND = "jp.deadend.noname.skk.ACTION_COMMAND"
         internal const val KEY_COMMAND = "jp.deadend.noname.skk.KEY_COMMAND"
         internal const val COMMAND_COMMIT_USERDIC = "jp.deadend.noname.skk.COMMAND_COMMIT_USERDIC"
         internal const val COMMAND_READ_PREFS = "jp.deadend.noname.skk.COMMAND_READ_PREFS"

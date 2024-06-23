@@ -1,16 +1,18 @@
 package jp.deadend.noname.skk
 
-import android.content.Context
 import android.content.ClipboardManager
-import android.util.AttributeSet
-import android.view.KeyEvent
-import android.view.MotionEvent
-import android.util.SparseArray
-import android.view.LayoutInflater
-import android.widget.PopupWindow
+import android.content.Context
 import android.content.Context.CLIPBOARD_SERVICE
+import android.util.AttributeSet
+import android.util.SparseArray
 import android.view.HapticFeedbackConstants
+import android.view.KeyEvent
+import android.view.LayoutInflater
+import android.view.MotionEvent
+import android.view.WindowManager
+import android.widget.PopupWindow
 import android.widget.TextView
+import androidx.appcompat.app.AlertDialog
 import jp.deadend.noname.skk.databinding.PopupFlickguideBinding
 import jp.deadend.noname.skk.engine.SKKEngine
 import java.util.EnumSet
@@ -808,6 +810,51 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
     override fun swipeDown() {}
 
     override fun swipeUp() {}
+
+    private val leftSymbol = "【"
+    private val rightSymbol = "】"
+    fun speechRecognitionResultsList(results: ArrayList<String>) {
+        val (prefix, array, suffix) = extractCommon(results)
+
+        val dialogBuilder = AlertDialog.Builder(context, R.style.Theme_SKK).apply {
+            setTitle("${prefix}${leftSymbol} ${rightSymbol}${suffix}")
+            setItems(array) { _, which ->
+                val chosen = array[which].substring(
+                    leftSymbol.length,
+                    array[which].length - rightSymbol.length
+                )
+                mService.commitTextSKK(prefix, 1)
+                if (chosen.isNotEmpty()) {
+                    mService.commitTextSKK(chosen, 1)
+                }
+                mService.commitTextSKK(suffix, 1)
+            }
+        }
+
+        val dialog = dialogBuilder.create()
+        dialog.window!!.let {
+            it.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
+            it.attributes?.token = this.windowToken
+            it.setType(WindowManager.LayoutParams.TYPE_APPLICATION_ATTACHED_DIALOG)
+        }
+        dialog.show()
+    }
+    private fun extractCommon(list: ArrayList<String>): Triple<String, Array<CharSequence>, String> {
+        var commonPrefix = list.last()
+        var commonSuffix = list.last()
+        list.forEach {
+            if (commonPrefix.isNotEmpty()) { commonPrefix = it.commonPrefixWith(commonPrefix) }
+            if (commonSuffix.isNotEmpty()) { commonSuffix = it.commonSuffixWith(commonSuffix) }
+        }
+
+        val array: Array<CharSequence> = list.map {
+            leftSymbol + it.substring(
+                 commonPrefix.length,
+                 it.length - commonSuffix.length
+            ) + rightSymbol
+        }.toTypedArray()
+        return Triple(commonPrefix, array, commonSuffix)
+    }
 
     companion object {
         private const val KEYCODE_FLICK_JP_CHAR_A = -201
