@@ -340,6 +340,16 @@ class SKKEngine(
             mComposing.isEmpty() && mKanjiKey.isEmpty() -> {
                 val ic = mService.currentInputConnection ?: return
                 val cs = ic.getTextBeforeCursor(1, 0) ?: return
+
+                if (type == LAST_CONVERTION_SHIFT) {
+                    if (state === SKKHiraganaState || state === SKKKatakanaState) {
+                        ic.deleteSurroundingText(1, 0)
+                        mKanjiKey.append(cs)
+                        changeState(SKKKanjiState)
+                        setComposingTextSKK(mKanjiKey, 1)
+                        updateSuggestions(mKanjiKey.toString())
+                    }
+                }
                 val newLastChar = RomajiConverter.convertLastChar(cs.toString(), type) ?: return
 
                 val firstEntry = mRegistrationStack.peekFirst()?.entry
@@ -708,5 +718,6 @@ class SKKEngine(
         const val LAST_CONVERTION_SMALL = "small"
         const val LAST_CONVERTION_DAKUTEN = "daku"
         const val LAST_CONVERTION_HANDAKUTEN = "handaku"
+        const val LAST_CONVERTION_SHIFT = "shift"
     }
 }

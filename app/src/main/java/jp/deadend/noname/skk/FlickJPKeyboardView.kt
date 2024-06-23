@@ -64,7 +64,7 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
         a.append(KEYCODE_FLICK_JP_CHAR_TEN, arrayOf("、", "。", "？", "！", "…", "", ""))
         a.append(KEYCODE_FLICK_JP_CHAR_TEN_SHIFTED, arrayOf("（", "「", "」", "）", "", "", ""))
         a.append(KEYCODE_FLICK_JP_CHAR_TEN_NUM, arrayOf("，", "．", "−", "：", "", "", ""))
-        a.append(KEYCODE_FLICK_JP_KOMOJI, arrayOf("小", "゛", "", "゜", "", "", ""))
+        a.append(KEYCODE_FLICK_JP_KOMOJI, arrayOf("小", "゛", "CXL", "゜", "▽", "", ""))
         a.append(KEYCODE_FLICK_JP_MOJI, arrayOf("仮", "：", "数", "＞", "声", "", ""))
     }
 
@@ -759,7 +759,9 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
             KEYCODE_FLICK_JP_KOMOJI -> when (mFlickState) {
                 EnumSet.of(FlickState.NONE)  -> mService.changeLastChar(SKKEngine.LAST_CONVERTION_SMALL)
                 EnumSet.of(FlickState.LEFT)  -> mService.changeLastChar(SKKEngine.LAST_CONVERTION_DAKUTEN)
+                EnumSet.of(FlickState.UP)    -> mService.handleCancel()
                 EnumSet.of(FlickState.RIGHT) -> mService.changeLastChar(SKKEngine.LAST_CONVERTION_HANDAKUTEN)
+                EnumSet.of(FlickState.DOWN)  -> mService.changeLastChar(SKKEngine.LAST_CONVERTION_SHIFT)
             }
             KEYCODE_FLICK_JP_CANCEL -> mService.handleCancel()
             KEYCODE_FLICK_JP_MOJI   -> when (mFlickState) {

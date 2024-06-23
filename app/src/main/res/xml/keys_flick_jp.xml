@@ -29,7 +29,7 @@
 	</Row>
 	<Row app:rowEdgeFlags="bottom">
 		<Key app:codes="-1003" app:keyLabel="ABC" />
-		<Key app:codes="-1006" app:keyLabel="　゛小　゜" />
+		<Key app:codes="-1006" app:keyLabel="CXL\n　゛小　゜\n▽" />
 		<Key app:codes="-210" app:keyLabel="わ" />
 		<Key app:codes="-211" app:keyLabel="？\n。 、！\n…" />
 		<Key app:codes="-1007" app:keyIcon="@drawable/ic_keyboard_return" />
