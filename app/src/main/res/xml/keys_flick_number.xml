@@ -31,7 +31,7 @@
 		<Key app:codes="-1003" app:keyLabel="ABC" />
 		<Key app:codes="0" />
 		<Key app:codes="48" app:keyLabel="0" />
-		<Key app:codes="-213" app:keyLabel="，．−：" />
+		<Key app:codes="-213" app:keyLabel="−\n． ， ：\n" />
 		<Key app:codes="-1007" app:keyIcon="@drawable/ic_keyboard_return" />
 	</Row>
 </Keyboard>

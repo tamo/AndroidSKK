@@ -42,7 +42,7 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
     private val mNumKeyboard: Keyboard
     private val mVoiceKeyboard: Keyboard
 
-    private var mKutoutenLabel = "，．？！"
+    private var mKutoutenLabel = "？\n． ，！\n…"
     private val mKutoutenKey: Keyboard.Key
     private val mQwertyKey: Keyboard.Key
 
@@ -112,7 +112,7 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
                 KEYCODE_FLICK_JP_CHAR_YA -> key.label = "や"
                 KEYCODE_FLICK_JP_CHAR_RA -> key.label = "ら"
                 KEYCODE_FLICK_JP_CHAR_WA -> key.label = "わ"
-                KEYCODE_FLICK_JP_MOJI    -> key.label = "カナ"
+                KEYCODE_FLICK_JP_MOJI    -> key.label = "10\n：カナ＞\n声"
             }
         }
         invalidateAllKeys()
@@ -132,7 +132,7 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
                 KEYCODE_FLICK_JP_CHAR_YA -> key.label = "ヤ"
                 KEYCODE_FLICK_JP_CHAR_RA -> key.label = "ラ"
                 KEYCODE_FLICK_JP_CHAR_WA -> key.label = "ワ"
-                KEYCODE_FLICK_JP_MOJI    -> key.label = "かな"
+                KEYCODE_FLICK_JP_MOJI    -> key.label = "10\n：かな＞\n声"
             }
         }
         invalidateAllKeys()
@@ -210,19 +210,19 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
         // 句読点
         when (skkPrefs.kutoutenType) {
             "en" -> {
-                mKutoutenLabel = "，．？！"
+                mKutoutenLabel = "？\n． ，！\n…"
                 mFlickGuideLabelList.put(
                         KEYCODE_FLICK_JP_CHAR_TEN, arrayOf("，", "．", "？", "！", "…", "", "")
                 )
             }
             "jp_en" -> {
-                mKutoutenLabel = "，。？！"
+                mKutoutenLabel = "？\n。 ，！\n…"
                 mFlickGuideLabelList.put(
                         KEYCODE_FLICK_JP_CHAR_TEN, arrayOf("，", "。", "？", "！", "…", "", "")
                 )
             }
             else -> {
-                mKutoutenLabel = "、。？！"
+                mKutoutenLabel = "？\n。 、！\n…"
                 mFlickGuideLabelList.put(
                         KEYCODE_FLICK_JP_CHAR_TEN, arrayOf("、", "。", "？", "！", "…", "", "")
                 )

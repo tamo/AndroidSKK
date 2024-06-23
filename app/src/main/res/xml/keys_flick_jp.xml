@@ -21,7 +21,7 @@
 		<Key app:codes="-1002" app:keyIcon="@drawable/ic_keyboard_arrow_right" app:isRepeatable="true" />
 	</Row>
 	<Row>
-		<Key app:codes="-1005" app:keyLabel="カナ" />
+		<Key app:codes="-1005" app:keyLabel="10\n：カナ＞\n声" />
 		<Key app:codes="-207" app:keyLabel="ま" />
 		<Key app:codes="-208" app:keyLabel="や" />
 		<Key app:codes="-209" app:keyLabel="ら" />
@@ -29,9 +29,9 @@
 	</Row>
 	<Row app:rowEdgeFlags="bottom">
 		<Key app:codes="-1003" app:keyLabel="ABC" />
-		<Key app:codes="-1006" app:keyLabel="小 ゛゜" />
+		<Key app:codes="-1006" app:keyLabel="　゛小　゜" />
 		<Key app:codes="-210" app:keyLabel="わ" />
-		<Key app:codes="-211" app:keyLabel="、。？！" />
+		<Key app:codes="-211" app:keyLabel="？\n。 、！\n…" />
 		<Key app:codes="-1007" app:keyIcon="@drawable/ic_keyboard_return" />
 	</Row>
 </Keyboard>
