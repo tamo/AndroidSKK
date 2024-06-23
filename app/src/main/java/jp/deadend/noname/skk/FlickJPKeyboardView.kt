@@ -210,19 +210,19 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
             "en" -> {
                 mKutoutenLabel = "，．？！"
                 mFlickGuideLabelList.put(
-                        KEYCODE_FLICK_JP_CHAR_TEN, arrayOf("，", "．", "？", "！", "", "", "")
+                        KEYCODE_FLICK_JP_CHAR_TEN, arrayOf("，", "．", "？", "！", "…", "", "")
                 )
             }
             "jp_en" -> {
                 mKutoutenLabel = "，。？！"
                 mFlickGuideLabelList.put(
-                        KEYCODE_FLICK_JP_CHAR_TEN, arrayOf("，", "。", "？", "！", "", "", "")
+                        KEYCODE_FLICK_JP_CHAR_TEN, arrayOf("，", "。", "？", "！", "…", "", "")
                 )
             }
             else -> {
                 mKutoutenLabel = "、。？！"
                 mFlickGuideLabelList.put(
-                        KEYCODE_FLICK_JP_CHAR_TEN, arrayOf("、", "。", "？", "！", "", "", "")
+                        KEYCODE_FLICK_JP_CHAR_TEN, arrayOf("、", "。", "？", "！", "…", "", "")
                 )
             }
         }
@@ -614,6 +614,10 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
                     EnumSet.of(FlickState.LEFT)  -> mService.processKey('.'.code)
                     EnumSet.of(FlickState.UP)    -> mService.processKey('?'.code)
                     EnumSet.of(FlickState.RIGHT) -> mService.processKey('!'.code)
+                    EnumSet.of(FlickState.DOWN) -> {
+                        mService.processKey('z'.code)
+                        mService.processKey('.'.code)
+                    }
                 }
                 return
             }
