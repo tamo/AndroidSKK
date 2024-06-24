@@ -408,15 +408,17 @@ class SKKService : InputMethodService() {
             setCandidatesViewShown(true)
         }
 
-        // 再利用できるので composingText だけ再描画して終了
+        // restarting なら再利用できるので composingText だけ再描画して終了
         if (restarting) {
             currentInputConnection.setComposingText(mEngine.mComposingText, mEngine.mCursorPosition)
-            return
+        } else {
+            mEngine.resetOnStartInput()
         }
-
-        mEngine.resetOnStartInput()
         if (attribute.inputType == InputType.TYPE_NULL) {
             requestHideSelf(0)
+            return
+        }
+        if (restarting) {
             return
         }
         when (attribute.inputType and InputType.TYPE_MASK_CLASS) {
