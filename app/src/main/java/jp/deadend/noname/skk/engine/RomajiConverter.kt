@@ -47,18 +47,6 @@ object RomajiConverter {
         "z]" to "』", "zh" to "←", "zj" to "↓", "zk" to "↑", "zl" to "→"
     )
 
-    private val mConsonantMap = mapOf(
-        "が" to "g", "ぎ" to "g", "ぐ" to "g", "げ" to "g", "ご" to "g",
-        "か" to "k", "き" to "k", "く" to "k", "け" to "k", "こ" to "k",
-        "ざ" to "z", "じ" to "z", "ず" to "z", "ぜ" to "z", "ぞ" to "z",
-        "さ" to "s", "し" to "s", "す" to "s", "せ" to "s", "そ" to "s",
-        "だ" to "d", "ぢ" to "d", "づ" to "d", "で" to "d", "ど" to "d",
-        "た" to "t", "ち" to "t", "つ" to "t", "て" to "t", "と" to "t",
-        "ば" to "b", "び" to "b", "ぶ" to "b", "べ" to "b", "ぼ" to "b",
-        "ぱ" to "p", "ぴ" to "p"," ぷ" to "p", "ぺ" to "p", "ぽ" to "p",
-        "は" to "h", "ひ" to "h", "ふ" to "h", "へ" to "h", "ほ" to "h"
-    )
-
     private val mSmallKanaMap = mapOf(
         "あ" to "ぁ", "い" to "ぃ", "う" to "ぅ", "え" to "ぇ", "お" to "ぉ",
         "ぁ" to "あ", "ぃ" to "い", "ぅ" to "う", "ぇ" to "え", "ぉ" to "お",
@@ -98,11 +86,39 @@ object RomajiConverter {
     )
 
     fun convert(romaji: String) = mRomajiMap[romaji]
-    fun getConsonantForVoiced(kana: String) = mConsonantMap[kana]
+    fun getConsonantForVoiced(kana: String): String {
+        return when (val c = kana[0].code) {
+            'ぁ'.code, 'あ'.code -> "a"
+            'ぃ'.code, 'い'.code -> "i"
+            'ぅ'.code, 'う'.code -> "u"
+            'ぇ'.code, 'え'.code -> "e"
+            'ぉ'.code, 'お'.code -> "o"
+            in 'か'.code..'ご'.code -> if ((c - 'か'.code) % 2 == 0) "k" else "g"
+            in 'さ'.code..'ぞ'.code -> if ((c - 'さ'.code) % 2 == 0) "s" else "z"
+            in 'た'.code..'ぢ'.code -> if ((c - 'た'.code) % 2 == 0) "t" else "d"
+            'っ'.code -> "t"
+            in 'つ'.code..'ど'.code -> if ((c - 'つ'.code) % 2 == 0) "t" else "d"
+            in 'な'.code..'の'.code -> "n"
+            in 'は'.code..'ぽ'.code -> when ((c - 'は'.code) % 3) {
+                0 -> "h"
+                1 -> "b"
+                else -> "p"
+            }
+            in 'ま'.code..'も'.code -> "m"
+            in 'ゃ'.code..'よ'.code -> "y"
+            in 'ら'.code..'ろ'.code -> "r"
+            in 'ゎ'.code..'を'.code -> "w"
+            'ん'.code -> "n"
+            'ゔ'.code -> "v"
+            'ゕ'.code, 'ゖ'.code -> "k"
+            else -> ""
+        }
+    }
     fun convertLastChar(kana: String, type: String) = when (type) {
         SKKEngine.LAST_CONVERTION_SMALL      -> mSmallKanaMap[kana]
         SKKEngine.LAST_CONVERTION_DAKUTEN    -> mDakutenMap[kana]
         SKKEngine.LAST_CONVERTION_HANDAKUTEN -> mHandakutenMap[kana]
+        SKKEngine.LAST_CONVERTION_SHIFT      -> kana
         else -> null
     }
     // 1文字目と2文字目を合わせて"ん"・"っ"になるか判定

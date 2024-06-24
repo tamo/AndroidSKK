@@ -304,20 +304,28 @@ class SKKEngine(
     fun changeLastChar(type: String) {
         when {
             state === SKKKanjiState && mComposing.isEmpty() -> {
-                val s = mKanjiKey.toString()
+                val s = mKanjiKey.toString() // ▽あい
                 val idx = s.length - 1
-                if (idx < 0) { return }
+                if (idx < 0) { return } // ▽
+                if (idx < 1 && type == LAST_CONVERTION_SHIFT) { return } // ▽あ
                 val newLastChar = RomajiConverter.convertLastChar(s.substring(idx), type) ?: return
 
                 mKanjiKey.deleteCharAt(idx)
-                mKanjiKey.append(newLastChar)
-                setComposingTextSKK(mKanjiKey, 1)
-                updateSuggestions(mKanjiKey.toString())
+                if (type == LAST_CONVERTION_SHIFT) {
+                    mKanjiKey.append(RomajiConverter.getConsonantForVoiced(newLastChar))
+                    mOkurigana = newLastChar
+                    conversionStart(mKanjiKey) // ▼合い
+                } else {
+                    mKanjiKey.append(newLastChar)
+                    setComposingTextSKK(mKanjiKey, 1)
+                    updateSuggestions(mKanjiKey.toString())
+                }
             }
             state === SKKNarrowingState && mComposing.isEmpty() -> {
-                val hint = SKKNarrowingState.mHint
+                val hint = SKKNarrowingState.mHint // ▼藹 hint: わ
                 val idx = hint.length - 1
-                if (idx < 0) { return }
+                if (idx < 0) { return } // ▼藹 hint:
+                if (type == LAST_CONVERTION_SHIFT) { return }
                 val newLastChar = RomajiConverter.convertLastChar(hint.substring(idx), type) ?: return
 
                 hint.deleteCharAt(idx)
@@ -325,9 +333,15 @@ class SKKEngine(
                 narrowCandidates(hint.toString())
             }
             state === SKKChooseState -> {
-                val okuri = mOkurigana ?: return
+                val okuri = mOkurigana ?: return // ▼合い (okuri = い)
                 val newOkuri = RomajiConverter.convertLastChar(okuri, type) ?: return
 
+                if (type == LAST_CONVERTION_SHIFT) {
+                    handleCancel() // ▽あ (mOkurigana = null)
+                    mKanjiKey.append(newOkuri) // ▽あい
+                    setComposingTextSKK(mKanjiKey, 1)
+                    return
+                }
                 // 例外: 送りがなが「っ」になる場合は，どのみち必ずt段の音なのでmKanjiKeyはそのまま
                 // 「ゃゅょ」で送りがなが始まる場合はないはず
                 if (type != LAST_CONVERTION_SMALL) {
@@ -340,19 +354,16 @@ class SKKEngine(
             mComposing.isEmpty() && mKanjiKey.isEmpty() -> {
                 val ic = mService.currentInputConnection ?: return
                 val cs = ic.getTextBeforeCursor(1, 0) ?: return
+                val newLastChar = RomajiConverter.convertLastChar(cs.toString(), type) ?: return
 
                 if (type == LAST_CONVERTION_SHIFT) {
-                    if (state === SKKHiraganaState || state === SKKKatakanaState) {
-                        ic.deleteSurroundingText(1, 0)
-                        mKanjiKey.append(katakana2hiragana(cs.toString()))
-                        changeState(SKKKanjiState)
-                        setComposingTextSKK(mKanjiKey, 1)
-                        updateSuggestions(mKanjiKey.toString())
-                    } else {
-                        return
-                    }
+                    ic.deleteSurroundingText(1, 0)
+                    mKanjiKey.append(katakana2hiragana(newLastChar))
+                    changeState(SKKKanjiState)
+                    setComposingTextSKK(mKanjiKey, 1)
+                    updateSuggestions(mKanjiKey.toString())
+                    return
                 }
-                val newLastChar = RomajiConverter.convertLastChar(cs.toString(), type) ?: return
 
                 val firstEntry = mRegistrationStack.peekFirst()?.entry
                 if (firstEntry != null) {
