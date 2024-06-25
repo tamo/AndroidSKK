@@ -470,7 +470,7 @@ class SKKService : InputMethodService() {
             setCandidatesView(container)
             mCandidateViewContainer = container
         }
-        if (mUseSoftKeyboard || skkPrefs.useCandidatesView) {
+        if (isInputViewShown && (mUseSoftKeyboard || skkPrefs.useCandidatesView)) {
             setCandidatesViewShown(true)
             mCandidateViewContainer?.setAlpha(96)
         }
