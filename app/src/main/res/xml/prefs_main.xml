@@ -30,6 +30,14 @@
     <Preference
         app:title="@string/label_dictool_activity" >
         <intent android:action="android.intent.action.MAIN"
+            android:data="@string/dic_name_user"
+            android:targetPackage="jp.deadend.noname.skk"
+            android:targetClass="jp.deadend.noname.skk.SKKUserDicTool" />
+    </Preference>
+    <Preference
+        app:title="@string/label_asciitool_activity" >
+        <intent android:action="android.intent.action.MAIN"
+            android:data="@string/dic_name_ascii"
             android:targetPackage="jp.deadend.noname.skk"
             android:targetClass="jp.deadend.noname.skk.SKKUserDicTool" />
     </Preference>

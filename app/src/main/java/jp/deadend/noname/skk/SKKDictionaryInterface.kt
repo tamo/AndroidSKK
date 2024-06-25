@@ -66,30 +66,49 @@ interface SKKDictionaryInterface {
     val mRecID: Long
     val mBTree: BTree
 
-    fun findKeys(key: String): List<String> {
-        val list = mutableListOf<String>()
+    fun findKeys(key: String, isASCII: Boolean = false): List<String> {
+        val list = mutableListOf<Tuple>()
         val tuple = Tuple()
         val browser: TupleBrowser
         var str: String
+        val topFreq = ArrayList<Int>()
 
         try {
-            browser = mBTree.browse(key) ?: return list
+            browser = mBTree.browse(key) ?: return listOf()
 
-            while (list.size < 5) {
+            while (list.size < if (isASCII) 255 else 5) {
                 if (!browser.getNext(tuple)) break
                 str = tuple.key as String
                 if (!str.startsWith(key)) break
+                if (isASCII) {
+                    val freq = (tuple.value as String).let {
+                        it.substring(1, it.length - 1) // 前後のスラッシュを除く
+                            .substringBefore('/') // 複数になっている場合は最初だけ選ぶ
+                            .toInt()
+                    }
+                    if (topFreq.size < 5 || freq >= topFreq.last()) {
+                        topFreq.add(freq)
+                        topFreq.sortDescending()
+                        if (topFreq.size > 5) topFreq.removeAt(5)
+                    }
+                    if (freq < topFreq.last()) continue // 頻度が5位に入らなければだめ
+                    list.add(Tuple(str, freq))
+                    continue
+                }
                 if (isAlphabet(str[str.length - 1].code) && !isAlphabet(str[0].code)) continue
                 // 送りありエントリは飛ばす
 
-                list.add(str)
+                list.add(Tuple(tuple.key, 0))
             }
         } catch (e: IOException) {
             Log.e("SKK", "Error in findKeys(): $e")
             throw RuntimeException(e)
         }
+        if (isASCII) {
+            list.sortByDescending { it.value as Int }
+        }
 
-        return list
+        return list.map { it.key as String }
     }
 
     fun close() {

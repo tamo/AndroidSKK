@@ -77,6 +77,7 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
         when (primaryCode) {
             Keyboard.KEYCODE_DELETE -> {
                 if (!mService.handleBackspace()) mService.keyDownUp(KeyEvent.KEYCODE_DEL)
+                mService.updateSuggestionsASCII()
             }
             Keyboard.KEYCODE_SHIFT -> {
                 isShifted = !isShifted
@@ -86,7 +87,10 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                 isShifted = true
                 isCapsLocked = true
             }
-            KEYCODE_QWERTY_ENTER -> if (!mService.handleEnter()) mService.pressEnter()
+            KEYCODE_QWERTY_ENTER -> {
+                if (!mService.handleEnter()) mService.pressEnter()
+                mService.updateSuggestionsASCII()
+            }
             KEYCODE_QWERTY_TOJP -> mService.handleKanaKey()
             KEYCODE_QWERTY_TOSYM -> keyboard = mSymbolsKeyboard
             KEYCODE_QWERTY_TOLATIN -> {
@@ -104,7 +108,8 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                     }
                     else -> primaryCode
                 }
-                mService.commitTextSKK(code.toChar().toString(), 1)
+                mService.processKey(code)
+                mService.updateSuggestionsASCII()
                 if (keyboard === mLatinKeyboard && !isCapsLocked) {
                     isShifted = false
                 }

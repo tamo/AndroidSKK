@@ -6,6 +6,7 @@ import jdbm.btree.BTree
 import jdbm.helper.StringComparator
 import jdbm.RecordManager
 import jdbm.RecordManagerFactory
+import java.io.File
 
 class SKKUserDictionary private constructor (
     override val mRecMan: RecordManager,
@@ -128,7 +129,11 @@ class SKKUserDictionary private constructor (
     }
 
     companion object {
-        fun newInstance(mDicFile: String, btreeName: String): SKKUserDictionary? {
+        fun newInstance(context: SKKService, mDicFile: String, btreeName: String): SKKUserDictionary? {
+            if (mDicFile.contains(context.getString(R.string.dic_name_ascii))
+                && !File(mDicFile).exists()) {
+                context.extractDictionary(withL = false, withASCII = true)
+            }
             try {
                 val recman = RecordManagerFactory.createRecordManager(mDicFile)
                 val recid = recman.getNamedObject(btreeName)

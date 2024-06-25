@@ -117,7 +117,9 @@ class SKKDicManager : AppCompatActivity() {
                     object : ConfirmationDialogFragment.Listener {
                         override fun onPositiveClick() {
                             fileList().forEach { file ->
-                                if (!file.startsWith("skk_userdict")) { deleteFile(file) }
+                                if (!file.startsWith(getString(R.string.dic_name_user)) &&
+                                    !file.startsWith(getString(R.string.dic_name_ascii))
+                                ) { deleteFile(file) }
                             }
                             try {
                                 unzipFile(resources.assets.open(SKKService.DICT_ZIP_FILE), filesDir)

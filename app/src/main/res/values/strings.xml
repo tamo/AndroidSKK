@@ -6,6 +6,7 @@
 	<string name="label_pref_softkeyboard">ソフトウェアキーボードの設定</string>
 	<string name="label_pref_hardkeyboard">ハードウェアキーボードの設定</string>
 	<string name="label_dictool_activity">SKK ユーザー辞書ツール</string>
+	<string name="label_asciitool_activity">SKK ASCII 辞書ツール</string>
 	<string name="label_import">インポート</string>
 	<string name="label_export">エクスポート</string>
 	<string name="label_clear_userdic">ユーザー辞書初期化</string>
@@ -66,4 +67,5 @@
 	<string translatable="false" name="btree_name">skk_dict</string>
 	<string translatable="false" name="dic_name_main">skk_dict_btree</string>
 	<string translatable="false" name="dic_name_user">skk_userdict</string>
+	<string translatable="false" name="dic_name_ascii">skk_asciidict</string>
 </resources>

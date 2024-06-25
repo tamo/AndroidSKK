@@ -81,7 +81,7 @@ class SKKService : InputMethodService() {
         return super.onStartCommand(intent, flags, startId)
     }
 
-    private fun extractDictionary(): Boolean {
+    internal fun extractDictionary(withL: Boolean = true, withASCII: Boolean = true): Boolean {
         try {
             dlog("dic extract start")
             mHandler.post {
@@ -90,7 +90,8 @@ class SKKService : InputMethodService() {
                 ).show()
             }
 
-            unzipFile(resources.assets.open(DICT_ZIP_FILE), filesDir)
+            if (withL) unzipFile(resources.assets.open(DICT_ZIP_FILE), filesDir)
+            if (withASCII) unzipFile(resources.assets.open(DICT_ASCII_ZIP_FILE), filesDir)
 
             mHandler.post {
                 Toast.makeText(
@@ -120,7 +121,7 @@ class SKKService : InputMethodService() {
             result.add(it)
         } ?: run {
             dlog("dict open failed")
-            if (!extractDictionary()) { stopSelf() }
+            if (!extractDictionary(withL = true, withASCII = false)) { stopSelf() }
             SKKDictionary.newInstance(
                 dd + "/" + getString(R.string.dic_name_main), getString(R.string.btree_name)
             )?.also {
@@ -164,6 +165,7 @@ class SKKService : InputMethodService() {
         if (dics.isEmpty()) { stopSelf() }
 
         val userDic = SKKUserDictionary.newInstance(
+            this,
             filesDir.absolutePath + "/" + getString(R.string.dic_name_user),
             getString(R.string.btree_name)
         )
@@ -175,8 +177,21 @@ class SKKService : InputMethodService() {
             }
             stopSelf()
         }
+        val asciiDic = SKKUserDictionary.newInstance(
+            this,
+            filesDir.absolutePath + "/" + getString(R.string.dic_name_ascii),
+            getString(R.string.btree_name)
+        )
+        if (asciiDic == null) {
+            mHandler.post {
+                Toast.makeText(
+                    applicationContext, getString(R.string.error_user_dic), Toast.LENGTH_LONG
+                ).show()
+            }
+            stopSelf()
+        }
 
-        mEngine = SKKEngine(this@SKKService, dics, userDic!!)
+        mEngine = SKKEngine(this@SKKService, dics, userDic!!, asciiDic!!)
 
         mSpeechRecognizer.setRecognitionListener(object : RecognitionListener {
             private fun restoreState() {
@@ -797,6 +812,10 @@ class SKKService : InputMethodService() {
         mIsRecording = true
     }
 
+    fun updateSuggestionsASCII() {
+        mEngine.updateSuggestionsASCII()
+    }
+
     fun setCandidates(list: List<String>?) {
         if (list != null) {
             mCandidateViewContainer?.setAlpha(255)
@@ -859,6 +878,7 @@ class SKKService : InputMethodService() {
         internal const val COMMAND_RELOAD_DICS = "jp.deadend.noname.skk.COMMAND_RELOAD_DICS"
         internal const val COMMAND_MUSHROOM = "jp.deadend.noname.skk.COMMAND_MUSHROOM"
         internal const val DICT_ZIP_FILE = "skk_dict_btree_db.zip"
+        internal const val DICT_ASCII_ZIP_FILE = "skk_asciidict.zip"
         private const val CHANNEL_ID = "skk_notification"
         private const val CHANNEL_NAME = "SKK"
     }

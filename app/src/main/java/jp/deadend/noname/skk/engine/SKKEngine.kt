@@ -6,7 +6,8 @@ import java.util.ArrayDeque
 class SKKEngine(
         private val mService: SKKService,
         private var mDicts: List<SKKDictionary>,
-        private val mUserDict: SKKUserDictionary
+        private val mUserDict: SKKUserDictionary,
+        private val mASCIIDict: SKKUserDictionary
 ) {
     var state: SKKState = SKKHiraganaState
         private set
@@ -81,6 +82,7 @@ class SKKEngine(
 
     fun commitUserDictChanges() {
         mUserDict.commitChanges()
+        mASCIIDict.commitChanges()
     }
 
     fun processKey(pcode: Int) {
@@ -276,18 +278,17 @@ class SKKEngine(
     }
 
     fun pickCandidateViewManually(index: Int) {
-        if (state === SKKChooseState || state === SKKNarrowingState) {
-            pickCandidate(index)
-        } else if (state === SKKAbbrevState || state === SKKKanjiState) {
-            pickSuggestion(index)
+        when (state) {
+            SKKChooseState, SKKNarrowingState -> pickCandidate(index)
+            SKKAbbrevState, SKKKanjiState, SKKASCIIState -> pickSuggestion(index)
         }
     }
 
     fun prepareToMushroom(clip: String): String {
-        val str = if (state === SKKKanjiState || state === SKKAbbrevState) {
-            mKanjiKey.toString()
-        } else {
-            clip
+        val str = when (state) {
+            SKKKanjiState, SKKAbbrevState -> mKanjiKey.toString()
+            SKKASCIIState -> getPrefixASCII().ifEmpty { clip }
+            else -> clip
         }
 
         if (state.isTransient) {
@@ -501,7 +502,8 @@ class SKKEngine(
             for (dic in mDicts) {
                 list.addAll(dic.findKeys(str))
             }
-            val list2 = mUserDict.findKeys(str)
+            val list2 = (if (state === SKKASCIIState) mASCIIDict else mUserDict)
+                .findKeys(str, (state === SKKASCIIState))
             for ((idx, s) in list2.withIndex()) {
                 //個人辞書のキーを先頭に追加
                 list.remove(s)
@@ -512,6 +514,16 @@ class SKKEngine(
         mCandidatesList = list
         mCurrentCandidateIndex = 0
         mService.setCandidates(list)
+    }
+
+    internal fun updateSuggestionsASCII() {
+        updateSuggestions(getPrefixASCII())
+    }
+
+    internal fun getPrefixASCII(): String {
+        val ic = mService.currentInputConnection ?: return ""
+        val tbc = ic.getTextBeforeCursor(ASCII_WORD_MAX_LENGTH, 0) ?: return ""
+        return tbc.split(Regex("\\W")).last()
     }
 
     private fun registerStart(str: String) {
@@ -564,7 +576,7 @@ class SKKEngine(
                 .fold(listOf()) { acc: Iterable<String>, list: Iterable<String> -> acc.union(list) }
                 .toMutableList()
 
-        val entry = mUserDict.getEntry(key)
+        val entry = (if (state === SKKASCIIState) mASCIIDict else mUserDict).getEntry(key)
         val list2 = entry?.candidates
 
         if (list1.isEmpty() && list2 == null) {
@@ -637,15 +649,18 @@ class SKKEngine(
         val candList = mCandidatesList ?: return
         val s = candList[index]
 
-        if (state === SKKAbbrevState) {
-            setComposingTextSKK(s, 1)
-            mKanjiKey.setLength(0)
-            mKanjiKey.append(s)
-            conversionStart(mKanjiKey)
-        } else if (state === SKKKanjiState) {
-            setComposingTextSKK(s, 1)
-            val li = s.length - 1
-            val last = s.codePointAt(li)
+        when (state) {
+            SKKAbbrevState -> {
+                setComposingTextSKK(s, 1)
+                mKanjiKey.setLength(0)
+                mKanjiKey.append(s)
+                conversionStart(mKanjiKey)
+            }
+
+            SKKKanjiState -> {
+                setComposingTextSKK(s, 1)
+                val li = s.length - 1
+                val last = s.codePointAt(li)
             if (isAlphabet(last)) {
                 mKanjiKey.setLength(0)
                 mKanjiKey.append(s.substring(0, li))
@@ -653,9 +668,23 @@ class SKKEngine(
                 processKey(Character.toUpperCase(last))
             } else {
                 mKanjiKey.setLength(0)
-                mKanjiKey.append(s)
-                mComposing.setLength(0)
-                conversionStart(mKanjiKey)
+                    mKanjiKey.append(s)
+                    mComposing.setLength(0)
+                    conversionStart(mKanjiKey)
+                }
+            }
+
+            SKKASCIIState -> {
+                val maxFreq = findCandidates(s)!!
+                    .plus("160")
+                    .maxOf {
+                        try { it.toInt() }
+                        catch(_: Exception) { 0 }
+                    }
+                mASCIIDict.addEntry(s, maxFreq.toString(), mOkurigana)
+                mASCIIDict.commitChanges()
+                commitTextSKK(s.subSequence(getPrefixASCII().length, s.length), 1)
+                reset()
             }
         }
     }
@@ -732,5 +761,6 @@ class SKKEngine(
         const val LAST_CONVERTION_DAKUTEN = "daku"
         const val LAST_CONVERTION_HANDAKUTEN = "handaku"
         const val LAST_CONVERTION_SHIFT = "shift"
+        const val ASCII_WORD_MAX_LENGTH = 32
     }
 }

@@ -25,6 +25,7 @@ import jp.deadend.noname.dialog.SimpleMessageDialogFragment
 import jp.deadend.noname.skk.databinding.ActivityUserDicToolBinding
 
 class SKKUserDicTool : AppCompatActivity() {
+    private lateinit var mDicName: String
     private lateinit var mRecMan: RecordManager
     private lateinit var mBtree: BTree
     private var isOpened = false
@@ -84,6 +85,7 @@ class SKKUserDicTool : AppCompatActivity() {
 
     public override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        mDicName = intent.dataString!!
         val binding = ActivityUserDicToolBinding.inflate(layoutInflater)
         setContentView(binding.root)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
@@ -129,7 +131,7 @@ class SKKUserDicTool : AppCompatActivity() {
                 return true
             }
             R.id.menu_user_dic_tool_export -> {
-                exportFileLauncher.launch(getString(R.string.dic_name_user) + ".txt")
+                exportFileLauncher.launch(mDicName + ".txt")
                 return true
             }
             R.id.menu_user_dic_tool_clear -> {
@@ -165,12 +167,11 @@ class SKKUserDicTool : AppCompatActivity() {
     private fun recreateUserDic() {
         closeUserDict()
 
-        val dicName = getString(R.string.dic_name_user)
-        deleteFile("$dicName.db")
-        deleteFile("$dicName.lg")
+        deleteFile("$mDicName.db")
+        deleteFile("$mDicName.lg")
 
         try {
-            mRecMan = RecordManagerFactory.createRecordManager(filesDir.absolutePath + "/" + dicName)
+            mRecMan = RecordManagerFactory.createRecordManager(filesDir.absolutePath + "/" + mDicName)
             mBtree = BTree.createInstance(mRecMan, StringComparator())
             mRecMan.setNamedObject(getString(R.string.btree_name), mBtree.recid)
             mRecMan.commit()
@@ -199,21 +200,21 @@ class SKKUserDicTool : AppCompatActivity() {
         val recID: Long?
         try {
             mRecMan = RecordManagerFactory.createRecordManager(
-                    filesDir.absolutePath + "/" + getString(R.string.dic_name_user)
+                    filesDir.absolutePath + "/" + mDicName
             )
             recID = mRecMan.getNamedObject(getString(R.string.btree_name))
         } catch (e: IOException) {
-            onFailToOpenUserDict()
-            return
-        }
+                onFailToOpenUserDict()
+                return
+            }
 
-        if (recID == 0L) {
-            onFailToOpenUserDict()
-            return
-        } else {
-            try {
-                mBtree = BTree.load(mRecMan, recID)
-            } catch (e: IOException) {
+            if (recID == 0L) {
+                onFailToOpenUserDict()
+                return
+            } else {
+                try {
+                    mBtree = BTree.load(mRecMan, recID)
+                } catch (e: IOException) {
                 onFailToOpenUserDict()
                 return
             }
