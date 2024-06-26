@@ -793,6 +793,12 @@ class SKKService : InputMethodService() {
         startActivity(mushroom)
     }
 
+    fun startSettings() {
+        val settingsIntent = Intent(this, SKKSettingsActivity::class.java)
+        settingsIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        startActivity(settingsIntent)
+    }
+
     fun recognizeSpeech() {
         if (mIsRecording) {
 //            mSpeechRecognizer.stopListening()

@@ -44,6 +44,7 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
 
     private var mKutoutenLabel = "？\n． ，！\n…"
     private val mKutoutenKey: Keyboard.Key
+    private val mSpaceKey: Keyboard.Key
     private val mQwertyKey: Keyboard.Key
 
     //フリックガイドTextView用
@@ -75,6 +76,7 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
 
         mJPKeyboard = Keyboard(context, R.xml.keys_flick_jp)
         mKutoutenKey = checkNotNull(findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_CHAR_TEN)) { "BUG: no kutoten key" }
+        mSpaceKey = checkNotNull(findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_SPACE)) { "BUG: no space key" }
         mQwertyKey = checkNotNull(findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_TOQWERTY)) { "BUG: no qwerty key" }
         mNumKeyboard = Keyboard(context, R.xml.keys_flick_number)
         mVoiceKeyboard = Keyboard(context, R.xml.keys_flick_voice)
@@ -88,6 +90,7 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
 
         mJPKeyboard = Keyboard(context, R.xml.keys_flick_jp)
         mKutoutenKey = checkNotNull(findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_CHAR_TEN)) { "BUG: no kutoten key" }
+        mSpaceKey = checkNotNull(findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_SPACE)) { "BUG: no space key" }
         mQwertyKey = checkNotNull(findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_TOQWERTY)) { "BUG: no qwerty key" }
         mNumKeyboard = Keyboard(context, R.xml.keys_flick_number)
         mVoiceKeyboard = Keyboard(context, R.xml.keys_flick_voice)
@@ -145,10 +148,12 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
         if (isShifted) {
             mKutoutenKey.codes[0] = KEYCODE_FLICK_JP_CHAR_TEN_SHIFTED
             mKutoutenKey.label = "「\n（　）\n」"
+            mSpaceKey.label = "設定"
             mQwertyKey.label = "abbr"
         } else {
             mKutoutenKey.codes[0] = KEYCODE_FLICK_JP_CHAR_TEN
             mKutoutenKey.label = mKutoutenLabel
+            mSpaceKey.label = ""
             mQwertyKey.label = "ABC"
         }
     }
@@ -754,7 +759,11 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
 
     private fun release() {
         when (mLastPressedKey) {
-            KEYCODE_FLICK_JP_SPACE  -> mService.processKey(' '.code)
+            KEYCODE_FLICK_JP_SPACE  -> if (isShifted) {
+                mService.startSettings()
+            } else {
+                mService.processKey(' '.code)
+            }
             KEYCODE_FLICK_JP_ENTER  -> if (!mService.handleEnter()) mService.pressEnter()
             KEYCODE_FLICK_JP_KOMOJI -> when (mFlickState) {
                 EnumSet.of(FlickState.NONE)  -> mService.changeLastChar(SKKEngine.LAST_CONVERTION_SMALL)
