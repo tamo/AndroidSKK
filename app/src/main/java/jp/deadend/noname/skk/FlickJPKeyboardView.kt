@@ -417,7 +417,7 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
                             performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
                         }
                     }
-                    mFlickState == EnumSet.of(FlickState.NONE) -> processFirstFlick(dx, dy)
+                    mFlickState.contains(FlickState.NONE) -> processFirstFlick(dx, dy)
                     else -> processCurveFlick(dx, dy)
                 }
 
@@ -447,7 +447,7 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
             hasLeftCurve = true
         }
 
-        mFlickState = when (dAngle) {
+        val newState = when (dAngle) {
             in 0.5f..1.5f   -> EnumSet.of(FlickState.DOWN)
             in 1.5f..2.29f  -> EnumSet.of(FlickState.LEFT)
             in 2.29f..2.71f -> when {
@@ -463,7 +463,10 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
                 }
             else -> EnumSet.of(FlickState.RIGHT)
         }
-        performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+        if (mFlickState != newState) {
+            mFlickState = newState
+            performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+        }
     }
 
     private fun processCurveFlick(dx: Float, dy: Float) {
@@ -493,30 +496,31 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
             mFlickState.contains(FlickState.LEFT) -> when (diamondAngle(-dx, -dy)) {
                 in 0.45f..2f -> EnumSet.of(FlickState.LEFT, FlickState.CURVE_RIGHT)
                 in 2f..3.55f -> EnumSet.of(FlickState.LEFT, FlickState.CURVE_LEFT)
-                else -> EnumSet.noneOf(FlickState::class.java)
+                else -> EnumSet.of(FlickState.LEFT)
             }
             mFlickState.contains(FlickState.UP) -> when (diamondAngle(-dy, dx)) {
                 in 0.45f..2f -> EnumSet.of(FlickState.UP, FlickState.CURVE_RIGHT)
                 in 2f..3.55f -> EnumSet.of(FlickState.UP, FlickState.CURVE_LEFT)
-                else -> EnumSet.noneOf(FlickState::class.java)
+                else -> EnumSet.of(FlickState.UP)
             }
             mFlickState.contains(FlickState.RIGHT) -> when (diamondAngle(dx, dy)) {
                 in 0.45f..2f -> EnumSet.of(FlickState.RIGHT, FlickState.CURVE_RIGHT)
                 in 2f..3.55f -> EnumSet.of(FlickState.RIGHT, FlickState.CURVE_LEFT)
-                else -> EnumSet.noneOf(FlickState::class.java)
+                else -> EnumSet.of(FlickState.RIGHT)
             }
             mFlickState.contains(FlickState.DOWN) -> when (diamondAngle(dy, -dx)) {
                 in 0.45f..2f -> EnumSet.of(FlickState.DOWN, FlickState.CURVE_RIGHT)
                 in 2f..3.55f -> EnumSet.of(FlickState.DOWN, FlickState.CURVE_LEFT)
-                else -> EnumSet.noneOf(FlickState::class.java)
+                else -> EnumSet.of(FlickState.DOWN)
             }
-            else -> EnumSet.noneOf(FlickState::class.java)
+            else -> return
         }
-        if (newstate.isEmpty() || mFlickState == newstate) {
-            return
-        }
-
-        if (hasLeftCurve && isLeftCurve(newstate) || hasRightCurve && isRightCurve(newstate)) {
+        if (mFlickState != newstate &&
+            (!isCurve(newstate) ||
+                    (hasLeftCurve && isLeftCurve(newstate)) ||
+                    (hasRightCurve && isRightCurve(newstate))
+            )
+        ) {
             mFlickState = newstate
             performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
         }
