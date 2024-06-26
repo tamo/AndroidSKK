@@ -76,7 +76,7 @@ interface SKKDictionaryInterface {
         try {
             browser = mBTree.browse(key) ?: return listOf()
 
-            while (list.size < if (isASCII) 255 else 5) {
+            while (list.size < if (isASCII) 50 else 5) {
                 if (!browser.getNext(tuple)) break
                 str = tuple.key as String
                 if (!str.startsWith(key)) break
