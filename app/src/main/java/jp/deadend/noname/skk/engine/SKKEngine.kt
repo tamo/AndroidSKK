@@ -341,6 +341,7 @@ class SKKEngine(
                     handleCancel() // ▽あ (mOkurigana = null)
                     mKanjiKey.append(newOkuri) // ▽あい
                     setComposingTextSKK(mKanjiKey, 1)
+                    updateSuggestions(mKanjiKey.toString())
                     return
                 }
                 // 例外: 送りがなが「っ」になる場合は，どのみち必ずt段の音なのでmKanjiKeyはそのまま
