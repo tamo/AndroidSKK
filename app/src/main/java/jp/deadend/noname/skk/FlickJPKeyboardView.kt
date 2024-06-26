@@ -392,10 +392,10 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
         labels[activeLabel].setBackgroundResource(R.drawable.popup_label_highlighted)
         for (i in 5..14) {
             val size = when (labels[i].text) {
-                "小", "「", "」", "『", "』" -> 12f
-                else -> 18f
+                "゜", "゛" -> 25f // 余白部分をはみ出させて見やすくする
+                else -> 12f // "小", "「", "」", "『", "』"
             }
-            labels[i].setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, size)
+            labels[i].setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, size)
         }
     }
 
