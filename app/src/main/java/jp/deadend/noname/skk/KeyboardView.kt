@@ -361,14 +361,16 @@ open class KeyboardView @JvmOverloads constructor(
                     }
                     val lines = label.split("\n")
                     val numLines = lines.size
+                    val lineScale = 1.5f
                     lines.forEachIndexed { i, line ->
                         // Draw the text
                         canvas.drawText(
                             line,
                             (key.width - mPadding.left - mPadding.right) / 2f + mPadding.left,
                             (key.height - mPadding.top - mPadding.bottom) / 2f + mPadding.top
-                                    + (mPaint.textSize * numLines - mPaint.descent()) / 2
-                                    - mPaint.textSize * (numLines - 1 - i),
+                                    - mPaint.descent() + lineScale * (
+                                    (mPaint.textSize * numLines - mPaint.descent()) / 2f
+                                            - mPaint.textSize * (numLines - 1 - i)),
                             mPaint
                         )
                     }
