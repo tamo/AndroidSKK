@@ -14,19 +14,38 @@ fun hankaku2zenkaku(pcode: Int) = if (pcode == 0x20) 0x3000 else pcode - 0x20 + 
 // スペースだけ、特別
 
 // ひらがなを全角カタカナにする
-fun hirakana2katakana(str: String?): String? {
+fun hirakana2katakana(str: String?, reversed: Boolean = false): String? {
     if (str == null) { return null }
 
-    val str2 = str.map { if (it in 'ぁ'..'ん') it.plus(0x60) else it }.joinToString("")
-    val idx = str2.indexOf("ウ゛")
-    return if (idx == -1) str2 else str2.replaceRange(idx, idx+2, "ヴ")
+    var skipNext = false // 「う゛」を「ヴ」にして文字数が減るときのフラグ
+    val str2 = str.mapIndexedNotNull { index, it ->
+        if (skipNext) {
+            skipNext = false
+            null
+        } else when (it) {
+            in 'ぁ'..'ゔ' -> {
+                if (it == 'う' && str.length > index + 1 && str[index + 1] == '゛') {
+                    skipNext = true
+                    'ヴ'
+                }
+                else it.plus(0x60)
+            }
+            in 'ァ'..'ヴ' -> {
+                if (reversed) it.minus(0x60)
+                else it
+            }
+            else -> it
+        }
+    }.joinToString("")
+
+    return str2
 }
 
 fun katakana2hiragana(str: String?): String? {
     if (str == null) { return null }
 
-    return str.map { if (it in 'ァ'..'ン') it.minus(0x60) else it }.joinToString("")
-    // 「ヴ」が「う゛」ではなく「ゔ」になるかもしれないが無視する
+    return str.map { if (it in 'ァ'..'ヴ') it.minus(0x60) else it }.joinToString("")
+    // 「ヴ」が「う゛」ではなく「ゔ」になる
 }
 
 fun isAlphabet(code: Int) = (code in 0x41..0x5A || code in 0x61..0x7A)
