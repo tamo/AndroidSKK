@@ -65,8 +65,7 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
         a.append(KEYCODE_FLICK_JP_CHAR_TEN, arrayOf("、", "。", "？", "！", "…", "", ""))
         a.append(KEYCODE_FLICK_JP_CHAR_TEN_SHIFTED, arrayOf("　", "（", "「", "）", "」", "", ""))
         a.append(KEYCODE_FLICK_JP_CHAR_TEN_NUM, arrayOf("，", "．", "−", "：", "", "", ""))
-        a.append(KEYCODE_FLICK_JP_KOMOJI, arrayOf("小", "゛", "CXL", "゜", "▽", "", ""))
-        a.append(KEYCODE_FLICK_JP_MOJI, arrayOf("仮", "：", "数", "＞", "声", "", ""))
+        a.append(KEYCODE_FLICK_JP_MOJI, arrayOf("カナ", "：", "10", "＞", "声", "", ""))
     }
 
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs) {
@@ -236,11 +235,15 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
         mKutoutenKey.label = mKutoutenLabel
         // キャンセルキー
         if (skkPrefs.useSoftCancelKey) {
-            val key = findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_KOMOJI)
-            if (key != null) {
-                key.label = "CXL"
-                key.codes[0] = KEYCODE_FLICK_JP_CANCEL
-            }
+            findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_KOMOJI)?.label = "小\n └゛CXL └゜\n▽"
+            mFlickGuideLabelList.put(
+                KEYCODE_FLICK_JP_KOMOJI, arrayOf("CXL", "゛", "小", "゜", "▽", "", "")
+            )
+        } else {
+            findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_KOMOJI)?.label = "CXL\n └゛小 └゜\n▽"
+            mFlickGuideLabelList.put(
+                KEYCODE_FLICK_JP_KOMOJI, arrayOf("小", "゛", "CXL", "゜", "▽", "", "")
+            )
         }
         // ポップアップ
         mUsePopup = skkPrefs.usePopup
@@ -697,7 +700,9 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
                 if (isHiragana) {
                     mCurrentPopupLabels[i] = labels[i]
                 } else {
-                    mCurrentPopupLabels[i] = checkNotNull(hirakana2katakana(labels[i])) { "BUG: invalid popup label!!"}
+                    mCurrentPopupLabels[i] = checkNotNull(
+                        hirakana2katakana(labels[i], reversed = true)
+                    ) { "BUG: invalid popup label!!"}
                 }
             }
             setupPopupTextView()
@@ -769,18 +774,24 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
                 mService.processKey(' '.code)
             }
             KEYCODE_FLICK_JP_ENTER  -> if (!mService.handleEnter()) mService.pressEnter()
-            KEYCODE_FLICK_JP_KOMOJI -> when (mFlickState) {
-                EnumSet.of(FlickState.NONE)  -> mService.changeLastChar(SKKEngine.LAST_CONVERTION_SMALL)
-                EnumSet.of(FlickState.LEFT)  -> mService.changeLastChar(SKKEngine.LAST_CONVERTION_DAKUTEN)
-                EnumSet.of(FlickState.UP)    -> mService.handleCancel()
-                EnumSet.of(FlickState.RIGHT) -> mService.changeLastChar(SKKEngine.LAST_CONVERTION_HANDAKUTEN)
-                EnumSet.of(FlickState.DOWN)  -> {
-                    mService.changeLastChar(SKKEngine.LAST_CONVERTION_SHIFT)
-                    setHiraganaMode()
+            KEYCODE_FLICK_JP_KOMOJI -> {
+                val smallToCancelState = if (skkPrefs.useSoftCancelKey) {
+                    FlickState.UP to FlickState.NONE
+                } else {
+                    FlickState.NONE to FlickState.UP
+                }
+                when (mFlickState) {
+                    EnumSet.of(smallToCancelState.first)  -> mService.changeLastChar(SKKEngine.LAST_CONVERTION_SMALL)
+                    EnumSet.of(FlickState.LEFT)  -> mService.changeLastChar(SKKEngine.LAST_CONVERTION_DAKUTEN)
+                    EnumSet.of(smallToCancelState.second)    -> mService.handleCancel()
+                    EnumSet.of(FlickState.RIGHT) -> mService.changeLastChar(SKKEngine.LAST_CONVERTION_HANDAKUTEN)
+                    EnumSet.of(FlickState.DOWN)  -> {
+                        mService.changeLastChar(SKKEngine.LAST_CONVERTION_SHIFT)
+                        setHiraganaMode()
+                    }
                 }
             }
-            KEYCODE_FLICK_JP_CANCEL -> mService.handleCancel()
-            KEYCODE_FLICK_JP_MOJI   -> when (mFlickState) {
+            KEYCODE_FLICK_JP_MOJI -> when (mFlickState) {
                 EnumSet.of(FlickState.NONE) -> mService.processKey('q'.code)
                 EnumSet.of(FlickState.LEFT) -> mService.processKey(':'.code)
                 EnumSet.of(FlickState.UP)   -> if (keyboard !== mNumKeyboard) { keyboard = mNumKeyboard }
