@@ -101,6 +101,7 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                     primaryCode
                 }
                 mService.commitTextSKK(code.toChar().toString(), 1)
+                if (keyboard == mLatinKeyboard && isShifted) { isShifted = false }
             }
         }
     }

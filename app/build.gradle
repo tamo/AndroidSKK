@@ -8,8 +8,8 @@ android {
         applicationId "jp.deadend.noname.skk"
         minSdkVersion 21
         targetSdk 34
-        versionCode 37
-        versionName "3.6.1"
+        versionCode 38
+        versionName "3.6.2"
     }
 
     buildTypes {
@@ -39,7 +39,7 @@ android {
 dependencies {
     implementation files('libs/jdbm-1.0.jar')
 /*    implementation 'androidx.legacy:legacy-support-v4:1.0.0-beta01' */
-    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'androidx.appcompat:appcompat:1.7.0'
     implementation 'androidx.preference:preference-ktx:1.2.1'
 }
 repositories {

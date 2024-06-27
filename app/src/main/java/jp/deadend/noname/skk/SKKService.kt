@@ -413,6 +413,16 @@ class SKKService : InputMethodService() {
         }
 
         mEngine.resetOnStartInput()
+
+        if (mUseSoftKeyboard || skkPrefs.useCandidatesView) {
+            if (attribute.inputType != InputType.TYPE_NULL) {
+                setCandidatesViewShown(true)
+                mCandidateViewContainer?.setAlpha(96)
+            } else {
+                requestHideSelf(0)
+            }
+        }
+
         when (attribute.inputType and InputType.TYPE_MASK_CLASS) {
             InputType.TYPE_CLASS_NUMBER,
             InputType.TYPE_CLASS_DATETIME,
@@ -439,35 +449,38 @@ class SKKService : InputMethodService() {
      * needs to be generated, like [.onCreateInputView].
      */
     override fun onCreateCandidatesView(): View {
-        val context = when (skkPrefs.theme) {
-            "light" -> createNightModeContext(applicationContext, false)
-            "dark"  -> createNightModeContext(applicationContext, true)
-            else    -> applicationContext
+        if (mCandidateViewContainer == null) {
+            val context = when (skkPrefs.theme) {
+                "light" -> createNightModeContext(applicationContext, false)
+                "dark" -> createNightModeContext(applicationContext, true)
+                else -> applicationContext
+            }
+
+            val container = LayoutInflater.from(context)
+                .inflate(R.layout.view_candidates, null) as CandidateViewContainer
+            container.initViews()
+
+            val sp = skkPrefs.candidatesSize
+            val px = TypedValue.applyDimension(
+                TypedValue.COMPLEX_UNIT_SP, sp.toFloat(), context.resources.displayMetrics
+            ).toInt()
+            container.setSize(px)
+            setCandidatesView(container)
+
+            val view = container.findViewById(R.id.candidates) as CandidateView
+            view.setService(this)
+            view.setContainer(container)
+            mCandidateView = view
+
+            mCandidateViewContainer = container
         }
 
-        val container = LayoutInflater.from(context).inflate(R.layout.view_candidates, null) as CandidateViewContainer
-        container.initViews()
-        val view = container.findViewById(R.id.candidates) as CandidateView
-        view.setService(this)
-        view.setContainer(container)
-        mCandidateView = view
-
-        val sp = skkPrefs.candidatesSize
-        val px = TypedValue.applyDimension(
-                TypedValue.COMPLEX_UNIT_SP, sp.toFloat(), context.resources.displayMetrics
-        ).toInt()
-        container.setSize(px)
-
-        mCandidateViewContainer = container
-
-        return container
-    }
-
-    override fun onStartInputView(editorInfo: EditorInfo?, restarting: Boolean) {
         if (mUseSoftKeyboard || skkPrefs.useCandidatesView) {
             setCandidatesViewShown(true)
             mCandidateViewContainer?.setAlpha(96)
         }
+
+        return mCandidateViewContainer!!
     }
 
     /**
