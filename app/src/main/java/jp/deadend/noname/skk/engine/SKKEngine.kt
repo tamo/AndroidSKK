@@ -1,6 +1,7 @@
 package jp.deadend.noname.skk.engine
 
 import jp.deadend.noname.skk.*
+import kotlinx.coroutines.*
 import java.util.ArrayDeque
 
 class SKKEngine(
@@ -503,9 +504,11 @@ class SKKEngine(
     }
 
     internal fun updateSuggestions(str: String) {
-        val list = mutableListOf<String>()
+        MainScope().cancel()
+        MainScope().launch(Dispatchers.Default) {
+            val list = mutableListOf<String>()
 
-        if (str.isNotEmpty()) {
+            if (str.isNotEmpty()) {
             for (dic in mDicts) {
                 list.addAll(dic.findKeys(str))
             }
@@ -518,9 +521,10 @@ class SKKEngine(
             }
         }
 
-        mCandidatesList = list
-        mCurrentCandidateIndex = 0
-        mService.setCandidates(list)
+            mCandidatesList = list
+            mCurrentCandidateIndex = 0
+            withContext(Dispatchers.Main) { mService.setCandidates(list) }
+        }.start()
     }
 
     internal fun updateSuggestionsASCII() {
