@@ -358,25 +358,31 @@ class SKKEngine(
                 val cs = ic.getTextBeforeCursor(1, 0) ?: return
                 val newLastChar = RomajiConverter.convertLastChar(cs.toString(), type) ?: return
 
-                if (type == LAST_CONVERTION_SHIFT) {
-                    ic.deleteSurroundingText(1, 0)
-                    mKanjiKey.append(katakana2hiragana(newLastChar))
-                    changeState(SKKKanjiState)
-                    setComposingTextSKK(mKanjiKey, 1)
-                    updateSuggestions(mKanjiKey.toString())
-                    return
-                }
-
                 val firstEntry = mRegistrationStack.peekFirst()?.entry
                 if (firstEntry != null) {
+                    if (firstEntry.isEmpty()) { return }
                     firstEntry.deleteCharAt(firstEntry.length - 1)
-                    firstEntry.append(newLastChar)
-                    setComposingTextSKK("", 1)
+                    if (type == LAST_CONVERTION_SHIFT) {
+                        mKanjiKey.append(katakana2hiragana(newLastChar))
+                        changeState(SKKKanjiState)
+                        setComposingTextSKK(mKanjiKey, 1)
+                        updateSuggestions(mKanjiKey.toString())
+                    } else {
+                        firstEntry.append(newLastChar)
+                        setComposingTextSKK("", 1)
+                    }
                 } else {
                     ic.deleteSurroundingText(1, 0)
-                    ic.commitText(newLastChar, 1)
-                    mComposingText.setLength(0)
-                    mCursorPosition = 1
+                    if (type == LAST_CONVERTION_SHIFT) {
+                        mKanjiKey.append(katakana2hiragana(newLastChar))
+                        changeState(SKKKanjiState)
+                        setComposingTextSKK(mKanjiKey, 1)
+                        updateSuggestions(mKanjiKey.toString())
+                    } else {
+                        ic.commitText(newLastChar, 1)
+                        mComposingText.setLength(0)
+                        mCursorPosition = 1
+                    }
                 }
             }
         }
