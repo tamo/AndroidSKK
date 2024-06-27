@@ -9,13 +9,13 @@ import jdbm.btree.BTree
 class SKKDictionary private constructor (
         override val mRecMan: RecordManager,
         override val mRecID: Long,
-        override val mBTree: BTree
+        override val mBTree: BTree<String, String>
 ): SKKDictionaryInterface {
 
     fun getCandidates(key: String): List<String>? {
         val value: String?
         try {
-            value = mBTree.find(key) as? String
+            value = mBTree.find(key)
         } catch (e: IOException) {
             Log.e("SKK", "Error in getCandidates(): $e")
             throw RuntimeException(e)
@@ -38,7 +38,7 @@ class SKKDictionary private constructor (
             return try {
                 val recman = RecordManagerFactory.createRecordManager(mDicFile)
                 val recid = recman.getNamedObject(btreeName)
-                val btree = BTree.load(recman, recid)
+                val btree = BTree<String, String>().load(recman, recid)
 
                 SKKDictionary(recman, recid, btree)
             } catch (e: Exception) {

@@ -11,7 +11,7 @@ import java.io.File
 class SKKUserDictionary private constructor (
     override val mRecMan: RecordManager,
     override val mRecID: Long,
-    override val mBTree: BTree
+    override val mBTree: BTree<String, String>
 ): SKKDictionaryInterface {
     private var mOldKey: String = ""
     private var mOldValue: String = ""
@@ -24,7 +24,7 @@ class SKKUserDictionary private constructor (
 
         val value: String?
         try {
-            value = mBTree.find(key) as? String
+            value = mBTree.find(key)
         } catch (e: IOException) {
             throw RuntimeException(e)
         }
@@ -88,7 +88,7 @@ class SKKUserDictionary private constructor (
             newVal.append("/")
 
             try {
-                mOldValue = mBTree.find(key) as String
+                mOldValue = mBTree.find(key)
             } catch (e: IOException) {
                 throw RuntimeException(e)
             }
@@ -138,13 +138,13 @@ class SKKUserDictionary private constructor (
                 val recman = RecordManagerFactory.createRecordManager(mDicFile)
                 val recid = recman.getNamedObject(btreeName)
                 if (recid == 0L) {
-                    val btree = BTree.createInstance(recman, StringComparator())
-                    recman.setNamedObject(btreeName, btree.recid)
+                    val btree = BTree<String, String>(recman, StringComparator())
+                    recman.setNamedObject(btreeName, btree.recordId)
                     recman.commit()
                     dlog("New user dictionary created")
                     return SKKUserDictionary(recman, recid, btree)
                 } else {
-                    return SKKUserDictionary(recman, recid, BTree.load(recman, recid))
+                    return SKKUserDictionary(recman, recid, BTree<String, String>().load(recman, recid))
                 }
             } catch (e: Exception) {
                 Log.e("SKK", "Error in opening the dictionary: $e")

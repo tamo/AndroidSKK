@@ -28,10 +28,10 @@ import jp.deadend.noname.skk.databinding.ActivityUserDicToolBinding
 class SKKUserDicTool : AppCompatActivity() {
     private lateinit var mDicName: String
     private lateinit var mRecMan: RecordManager
-    private lateinit var mBtree: BTree
+    private lateinit var mBtree: BTree<String, String>
     private var isOpened = false
-    private var mEntryList = mutableListOf<Tuple>()
-    private var mFoundList = mutableListOf<Tuple>()
+    private var mEntryList = mutableListOf<Tuple<String, String>>()
+    private var mFoundList = mutableListOf<Tuple<String, String>>()
     private lateinit var mAdapter: EntryAdapter
     private lateinit var mSearchAdapter: EntryAdapter
 
@@ -68,7 +68,7 @@ class SKKUserDicTool : AppCompatActivity() {
                     if (browser == null) {
                         onFailToOpenUserDict()
                     } else {
-                        val tuple = Tuple()
+                        val tuple = Tuple<String, String>()
                         while (browser.getNext(tuple)) {
                             it.write(tuple.key.toString() + " " + tuple.value + "\n")
                         }
@@ -128,8 +128,8 @@ class SKKUserDicTool : AppCompatActivity() {
                 val regex = Regex(newText)
                 mFoundList.clear()
                 mFoundList.addAll(mEntryList.filter {
-                    regex.containsMatchIn(it.key as String)
-                            || regex.containsMatchIn(it.value as String)
+                    regex.containsMatchIn(it.key)
+                            || regex.containsMatchIn(it.value)
                 })
                 binding.userDictoolList.adapter = mSearchAdapter
                 return true
@@ -198,8 +198,8 @@ class SKKUserDicTool : AppCompatActivity() {
 
         try {
             mRecMan = RecordManagerFactory.createRecordManager(filesDir.absolutePath + "/" + mDicName)
-            mBtree = BTree.createInstance(mRecMan, StringComparator())
-            mRecMan.setNamedObject(getString(R.string.btree_name), mBtree.recid)
+            mBtree = BTree(mRecMan, StringComparator())
+            mRecMan.setNamedObject(getString(R.string.btree_name), mBtree.recordId)
             mRecMan.commit()
         } catch (e: IOException) {
             throw RuntimeException(e)
@@ -239,7 +239,7 @@ class SKKUserDicTool : AppCompatActivity() {
                 return
             } else {
                 try {
-                    mBtree = BTree.load(mRecMan, recID)
+                    mBtree = BTree<String, String>().load(mRecMan, recID)
                 } catch (e: IOException) {
                 onFailToOpenUserDict()
                 return
@@ -269,7 +269,7 @@ class SKKUserDicTool : AppCompatActivity() {
             return
         }
 
-        val tuple = Tuple()
+        val tuple = Tuple<String, String>()
 
         mEntryList.clear()
         try {
@@ -280,7 +280,7 @@ class SKKUserDicTool : AppCompatActivity() {
             }
 
             while (browser.getNext(tuple)) {
-                mEntryList.add(Tuple(tuple.key as String, tuple.value as String))
+                mEntryList.add(Tuple(tuple.key, tuple.value))
             }
         } catch (e: IOException) {
             onFailToOpenUserDict()
@@ -292,8 +292,8 @@ class SKKUserDicTool : AppCompatActivity() {
 
     private class EntryAdapter(
             context: Context,
-            items: List<Tuple>
-    ) : ArrayAdapter<Tuple>(context, 0, items) {
+            items: List<Tuple<String, String>>
+    ) : ArrayAdapter<Tuple<String, String>>(context, 0, items) {
         private val mLayoutInflater = LayoutInflater.from(context)
 
         override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
@@ -301,7 +301,7 @@ class SKKUserDicTool : AppCompatActivity() {
                     ?: mLayoutInflater.inflate(android.R.layout.simple_list_item_1, parent, false)
 
             val item = getItem(position) ?: Tuple("", "")
-            (tv as TextView).text = (item.key as String) + "  " + (item.value as String)
+            (tv as TextView).text = item.key + "  " + item.value
 
             return tv
         }

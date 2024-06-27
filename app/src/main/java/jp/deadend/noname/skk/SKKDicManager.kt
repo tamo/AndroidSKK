@@ -26,7 +26,7 @@ import jp.deadend.noname.skk.databinding.ActivityDicManagerBinding
 
 class SKKDicManager : AppCompatActivity() {
     private lateinit var binding: ActivityDicManagerBinding
-    private val mDics = mutableListOf<Tuple>()
+    private val mDics = mutableListOf<Tuple<String, String>>()
     private var isModified = false
 
     private val addDicFileLauncher = registerForActivityResult(
@@ -61,7 +61,7 @@ class SKKDicManager : AppCompatActivity() {
                 dialog.setListener(
                     object : ConfirmationDialogFragment.Listener {
                         override fun onPositiveClick() {
-                            val dicName = mDics[position].value as String
+                            val dicName = mDics[position].value
                             deleteFile("$dicName.db")
                             deleteFile("$dicName.lg")
                             mDics.removeAt(position)
@@ -212,8 +212,8 @@ class SKKDicManager : AppCompatActivity() {
             recMan = RecordManagerFactory.createRecordManager(
                     filesDir.absolutePath + "/" + dicFileBaseName
             )
-            val btree = BTree.createInstance(recMan, StringComparator())
-            recMan.setNamedObject(getString(R.string.btree_name), btree.recid)
+            val btree = BTree<String, String>(recMan, StringComparator())
+            recMan.setNamedObject(getString(R.string.btree_name), btree.recordId)
             recMan.commit()
 
             contentResolver.openInputStream(uri)?.use { inputStream ->
@@ -257,15 +257,15 @@ class SKKDicManager : AppCompatActivity() {
 
     private class TupleAdapter(
             context: Context,
-            items: List<Tuple>
-    ) : ArrayAdapter<Tuple>(context, 0, items) {
+            items: List<Tuple<String, String>>
+    ) : ArrayAdapter<Tuple<String, String>>(context, 0, items) {
         private val mLayoutInflater = LayoutInflater.from(context)
 
         override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
             val view = convertView
                     ?: mLayoutInflater.inflate(android.R.layout.simple_list_item_1, parent, false)
             getItem(position)?.let {
-                (view as TextView).text = it.key as String
+                (view as TextView).text = it.key
             }
 
             return view

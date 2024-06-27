@@ -13,12 +13,12 @@ import jdbm.helper.TupleBrowser
 import java.io.InputStream
 
 @Throws(IOException::class)
-private fun appendToEntry(key: String, value: String, btree: BTree) {
+private fun appendToEntry(key: String, value: String, btree: BTree<String, String>) {
     val oldval = btree.find(key)
 
     if (oldval != null) {
         val valList = value.substring(1).split("/").dropLastWhile { it.isEmpty() }
-        val oldvalList = (oldval as String).substring(1).split("/").dropLastWhile { it.isEmpty() }
+        val oldvalList = oldval.substring(1).split("/").dropLastWhile { it.isEmpty() }
 
         val newValue = StringBuilder()
         newValue.append("/")
@@ -33,7 +33,7 @@ private fun appendToEntry(key: String, value: String, btree: BTree) {
 internal fun loadFromTextDic(
     inputStream: InputStream,
     recMan: RecordManager,
-    btree: BTree,
+    btree: BTree<String, String>,
     overwrite: Boolean
 ) {
     val decoder = Charset.forName("UTF-8").newDecoder()
@@ -64,12 +64,12 @@ internal fun loadFromTextDic(
 interface SKKDictionaryInterface {
     val mRecMan: RecordManager
     val mRecID: Long
-    val mBTree: BTree
+    val mBTree: BTree<String, String>
 
     fun findKeys(key: String, isASCII: Boolean = false): List<String> {
-        val list = mutableListOf<Tuple>()
-        val tuple = Tuple()
-        val browser: TupleBrowser
+        val list = mutableListOf<Tuple<String, Int>>()
+        val tuple = Tuple<String, String>()
+        val browser: TupleBrowser<String, String>
         var str: String
         val topFreq = ArrayList<Int>()
 
@@ -78,10 +78,10 @@ interface SKKDictionaryInterface {
 
             while (list.size < if (isASCII) 100 else 5) {
                 if (!browser.getNext(tuple)) break
-                str = tuple.key as String
+                str = tuple.key
                 if (!str.startsWith(key)) break
                 if (isASCII) {
-                    val freq = (tuple.value as String).let {
+                    val freq = tuple.value.let {
                         it.substring(1, it.length - 1) // 前後のスラッシュを除く
                             .substringBefore('/') // 複数になっている場合は最初だけ選ぶ
                             .toInt()
@@ -92,7 +92,7 @@ interface SKKDictionaryInterface {
                         if (topFreq.size > 5) topFreq.removeAt(5)
                     }
                     if (freq < topFreq.last()) continue // 頻度が5位に入らなければだめ
-                    list.add(Tuple(str, freq))
+                    list.add(Tuple<String, Int>(str, freq))
                     continue
                 }
                 if (isAlphabet(str[str.length - 1].code) && !isAlphabet(str[0].code)) continue
@@ -105,10 +105,10 @@ interface SKKDictionaryInterface {
             throw RuntimeException(e)
         }
         if (isASCII) {
-            list.sortByDescending { it.value as Int }
+            list.sortByDescending { it.value }
         }
 
-        return list.map { it.key as String }
+        return list.map { it.key }
     }
 
     fun close() {
