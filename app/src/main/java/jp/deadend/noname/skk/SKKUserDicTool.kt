@@ -13,6 +13,7 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.widget.SearchView
 import java.io.IOException
 import java.nio.charset.CharacterCodingException
 import jdbm.RecordManager
@@ -30,7 +31,9 @@ class SKKUserDicTool : AppCompatActivity() {
     private lateinit var mBtree: BTree
     private var isOpened = false
     private var mEntryList = mutableListOf<Tuple>()
+    private var mFoundList = mutableListOf<Tuple>()
     private lateinit var mAdapter: EntryAdapter
+    private lateinit var mSearchAdapter: EntryAdapter
 
     private val importFileLauncher = registerForActivityResult(
                                         ActivityResultContracts.OpenDocument()) { uri ->
@@ -111,12 +114,35 @@ class SKKUserDicTool : AppCompatActivity() {
             dialog.show(supportFragmentManager, "dialog")
         }
 
+        binding.userDictoolSearch.setOnQueryTextListener(object: SearchView.OnQueryTextListener {
+            override fun onQueryTextSubmit(query: String?): Boolean {
+                binding.userDictoolSearch.clearFocus()
+                return true
+            }
+
+            override fun onQueryTextChange(newText: String?): Boolean {
+                if (newText == null) {
+                    binding.userDictoolList.adapter = mAdapter
+                    return true
+                }
+                val regex = Regex(newText)
+                mFoundList.clear()
+                mFoundList.addAll(mEntryList.filter {
+                    regex.containsMatchIn(it.key as String)
+                            || regex.containsMatchIn(it.value as String)
+                })
+                binding.userDictoolList.adapter = mSearchAdapter
+                return true
+            }
+        })
+
         val intent = Intent(this@SKKUserDicTool, SKKService::class.java)
         intent.putExtra(SKKService.KEY_COMMAND, SKKService.COMMAND_COMMIT_USERDIC)
         startService(intent)
 
         mAdapter = EntryAdapter(this, mEntryList)
         binding.userDictoolList.adapter = mAdapter
+        mSearchAdapter = EntryAdapter(this, mFoundList)
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
