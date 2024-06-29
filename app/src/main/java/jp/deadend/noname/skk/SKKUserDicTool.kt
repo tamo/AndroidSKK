@@ -24,6 +24,12 @@ import jdbm.helper.Tuple
 import jp.deadend.noname.dialog.ConfirmationDialogFragment
 import jp.deadend.noname.dialog.SimpleMessageDialogFragment
 import jp.deadend.noname.skk.databinding.ActivityUserDicToolBinding
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class SKKUserDicTool : AppCompatActivity() {
     private lateinit var mDicName: String
@@ -34,6 +40,7 @@ class SKKUserDicTool : AppCompatActivity() {
     private var mFoundList = mutableListOf<Tuple<String, String>>()
     private lateinit var mAdapter: EntryAdapter
     private lateinit var mSearchAdapter: EntryAdapter
+    private var mSearchJob: Job = Job()
 
     private val importFileLauncher = registerForActivityResult(
                                         ActivityResultContracts.OpenDocument()) { uri ->
@@ -121,17 +128,33 @@ class SKKUserDicTool : AppCompatActivity() {
             }
 
             override fun onQueryTextChange(newText: String?): Boolean {
+                mSearchJob.cancel()
                 if (newText == null) {
                     binding.userDictoolList.adapter = mAdapter
                     return true
                 }
-                val regex = Regex(newText)
+                val regex: Regex? by lazy {
+                    try { Regex(newText) }
+                    catch (e: Exception) { null }
+                }
                 mFoundList.clear()
-                mFoundList.addAll(mEntryList.filter {
-                    regex.containsMatchIn(it.key)
-                            || regex.containsMatchIn(it.value)
-                })
-                binding.userDictoolList.adapter = mSearchAdapter
+                val searchJob = MainScope().launch(Dispatchers.Default) {
+                    mFoundList.addAll(mEntryList.filter {
+                        ensureActive() // ここでキャンセルされる
+                        if (regex != null) {
+                            regex!!.containsMatchIn(it.key) || regex!!.containsMatchIn(it.value)
+                        } else {
+                            newText in it.key || newText in it.value
+                        }
+                    })
+                    withContext(Dispatchers.Main) {
+                        binding.userDictoolList.adapter = mSearchAdapter
+                    }
+                }
+                mSearchJob.invokeOnCompletion {
+                    mSearchJob = searchJob
+                    mSearchJob.start()
+                }
                 return true
             }
         })

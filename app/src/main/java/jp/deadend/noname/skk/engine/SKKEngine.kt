@@ -1,7 +1,11 @@
 package jp.deadend.noname.skk.engine
 
 import jp.deadend.noname.skk.*
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.ArrayDeque
 
 class SKKEngine(
@@ -16,6 +20,7 @@ class SKKEngine(
     // 候補のリスト．KanjiStateとAbbrevStateでは補完リスト，ChooseStateでは変換候補リストになる
     private var mCandidatesList: List<String>? = null
     private var mCurrentCandidateIndex = 0
+    internal var mUpdateSuggestionsJob: Job = Job()
 
     // ひらがなや英単語などの入力途中
     internal val mComposing = StringBuilder()
@@ -504,19 +509,18 @@ class SKKEngine(
     }
 
     internal fun updateSuggestions(str: String) {
-        MainScope().cancel()
-        MainScope().launch(Dispatchers.Default) {
+        val job = MainScope().launch(Dispatchers.Default) {
             val list = mutableListOf<String>()
 
             if (str.isNotEmpty()) {
-            for (dic in mDicts) {
-                list.addAll(dic.findKeys(str))
-            }
-            val list2 = (if (state === SKKASCIIState) mASCIIDict else mUserDict)
-                .findKeys(str, (state === SKKASCIIState))
-            for ((idx, s) in list2.withIndex()) {
-                //個人辞書のキーを先頭に追加
-                list.remove(s)
+                for (dic in mDicts) {
+                    list.addAll(dic.findKeys(this, str))
+                }
+                val list2 = (if (state === SKKASCIIState) mASCIIDict else mUserDict)
+                    .findKeys(this, str, (state === SKKASCIIState))
+                for ((idx, s) in list2.withIndex()) {
+                    //個人辞書のキーを先頭に追加
+                    list.remove(s)
                 list.add(idx, s)
             }
         }
@@ -524,7 +528,13 @@ class SKKEngine(
             mCandidatesList = list
             mCurrentCandidateIndex = 0
             withContext(Dispatchers.Main) { mService.setCandidates(list) }
-        }.start()
+        }
+
+        mUpdateSuggestionsJob.cancel()
+        mUpdateSuggestionsJob.invokeOnCompletion {
+            mUpdateSuggestionsJob = job
+            mUpdateSuggestionsJob.start()
+        }
     }
 
     internal fun updateSuggestionsASCII() {

@@ -10,6 +10,8 @@ import jdbm.RecordManager
 import jdbm.btree.BTree
 import jdbm.helper.Tuple
 import jdbm.helper.TupleBrowser
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ensureActive
 import java.io.InputStream
 
 @Throws(IOException::class)
@@ -66,7 +68,7 @@ interface SKKDictionaryInterface {
     val mRecID: Long
     val mBTree: BTree<String, String>
 
-    fun findKeys(key: String, isASCII: Boolean = false): List<String> {
+    fun findKeys(scope: CoroutineScope, key: String, isASCII: Boolean = false): List<String> {
         val list = mutableListOf<Tuple<String, Int>>()
         val tuple = Tuple<String, String>()
         val browser: TupleBrowser<String, String>
@@ -77,6 +79,7 @@ interface SKKDictionaryInterface {
             browser = mBTree.browse(key) ?: return listOf()
 
             while (list.size < if (isASCII) 100 else 5) {
+                scope.ensureActive() // ここでキャンセルされる
                 if (!browser.getNext(tuple)) break
                 str = tuple.key
                 if (!str.startsWith(key)) break
