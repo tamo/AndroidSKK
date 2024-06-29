@@ -522,9 +522,9 @@ class SKKEngine(
                 for ((idx, s) in list2.withIndex()) {
                     //個人辞書のキーを先頭に追加
                     list.remove(s)
-                list.add(idx, s)
+                    list.add(idx, s)
+                }
             }
-        }
 
             mCandidatesList = list
             mCurrentCandidateIndex = 0
@@ -686,13 +686,13 @@ class SKKEngine(
                 setComposingTextSKK(s, 1)
                 val li = s.length - 1
                 val last = s.codePointAt(li)
-            if (isAlphabet(last)) {
-                mKanjiKey.setLength(0)
-                mKanjiKey.append(s.substring(0, li))
-                mComposing.setLength(0)
-                processKey(Character.toUpperCase(last))
-            } else {
-                mKanjiKey.setLength(0)
+                if (isAlphabet(last)) {
+                    mKanjiKey.setLength(0)
+                    mKanjiKey.append(s.substring(0, li))
+                    mComposing.setLength(0)
+                    processKey(Character.toUpperCase(last))
+                } else {
+                    mKanjiKey.setLength(0)
                     mKanjiKey.append(s)
                     mComposing.setLength(0)
                     conversionStart(mKanjiKey)
