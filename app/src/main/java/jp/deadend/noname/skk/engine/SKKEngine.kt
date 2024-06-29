@@ -4,6 +4,7 @@ import jp.deadend.noname.skk.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.ArrayDeque
@@ -538,7 +539,10 @@ class SKKEngine(
     }
 
     internal fun updateSuggestionsASCII() {
-        updateSuggestions(getPrefixASCII())
+        MainScope().launch(Dispatchers.Default) {
+            delay(50) // バックスペースなどの処理が間に合っていないことがあるので
+            updateSuggestions(getPrefixASCII())
+        }.start()
     }
 
     internal fun getPrefixASCII(): String {
