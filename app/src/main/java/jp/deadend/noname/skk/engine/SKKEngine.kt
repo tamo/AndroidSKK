@@ -21,7 +21,7 @@ class SKKEngine(
     // 候補のリスト．KanjiStateとAbbrevStateでは補完リスト，ChooseStateでは変換候補リストになる
     private var mCandidatesList: List<String>? = null
     private var mCurrentCandidateIndex = 0
-    internal var mUpdateSuggestionsJob: Job = Job()
+    private var mUpdateSuggestionsJob: Job = Job()
 
     // ひらがなや英単語などの入力途中
     internal val mComposing = StringBuilder()
