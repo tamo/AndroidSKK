@@ -24,15 +24,15 @@
 		</service>
 
 		<activity android:name=".SKKSettingsActivity"
-			android:theme="@style/Theme.AppCompat.Light.DarkActionBar"
+			android:theme="@style/Theme.AppCompat.DayNight.DarkActionBar"
 			android:label="@string/label_pref_activity" >
 		</activity>
 		<activity android:name=".SKKUserDicTool"
-			android:theme="@style/Theme.AppCompat.Light.DarkActionBar"
+			android:theme="@style/Theme.AppCompat.DayNight.DarkActionBar"
 			android:label="@string/label_dictool_activity" >
 		</activity>
 		<activity android:name=".SKKDicManager"
-				  android:theme="@style/Theme.AppCompat.Light.DarkActionBar"
+				  android:theme="@style/Theme.AppCompat.DayNight.DarkActionBar"
 				  android:label="@string/label_dicmanager_activity" >
 		</activity>
 		<activity android:name=".SKKMushroom"
