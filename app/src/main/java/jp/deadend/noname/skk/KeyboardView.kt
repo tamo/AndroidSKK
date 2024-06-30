@@ -589,6 +589,7 @@ open class KeyboardView @JvmOverloads constructor(
         // Check if we have a popup layout specified first.
         if (mPopupLayout == 0) { return false }
         if (mCurrentKey < 0 || mCurrentKey >= mKeyboard.keys.size) { return false }
+        if (!skkPrefs.useMiniKey) { return false }
 
         val result = onLongPress(mKeyboard.keys[mCurrentKey])
         if (result) {

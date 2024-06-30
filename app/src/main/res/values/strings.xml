@@ -53,6 +53,7 @@
 	<string translatable="false" name="prefkey_use_softkey">PrefKeyUseSoftKey</string>
 	<string translatable="false" name="prefkey_use_popup">PrefKeyUsePopup</string>
 	<string translatable="false" name="prefkey_fixed_popup">PrefKeyFixedPopup</string>
+	<string translatable="false" name="prefkey_mini_keyboard">PrefKeyUseMiniKey</string>
 	<string translatable="false" name="prefkey_use_soft_cancel_key">PrefKeyUseSoftCancelKey</string>
 	<string translatable="false" name="prefkey_key_height_port">PrefKeyKeyHeightPort</string>
 	<string translatable="false" name="prefkey_key_height_land">PrefKeyKeyHeightLand</string>
