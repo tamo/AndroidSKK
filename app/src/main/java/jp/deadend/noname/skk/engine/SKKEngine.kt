@@ -545,10 +545,18 @@ class SKKEngine(
         }.start()
     }
 
-    internal fun getPrefixASCII(): String {
+    private fun getPrefixASCII(): String {
         val ic = mService.currentInputConnection ?: return ""
         val tbc = ic.getTextBeforeCursor(ASCII_WORD_MAX_LENGTH, 0) ?: return ""
         return tbc.split(Regex("\\W")).last()
+    }
+
+    private fun deleteSuffixASCII() {
+        val ic = mService.currentInputConnection ?: return
+        val tac = ic.getTextAfterCursor(ASCII_WORD_MAX_LENGTH, 0) ?: return
+        val wac = tac.split(Regex("\\W")).first()
+        ic.deleteSurroundingText(0, wac.length)
+        return
     }
 
     private fun registerStart(str: String) {
@@ -709,6 +717,7 @@ class SKKEngine(
                 mASCIIDict.addEntry(s, maxFreq.toString(), mOkurigana)
                 mASCIIDict.commitChanges()
                 commitTextSKK(s.subSequence(getPrefixASCII().length, s.length), 1)
+                deleteSuffixASCII()
                 reset()
             }
         }
