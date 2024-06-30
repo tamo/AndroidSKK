@@ -59,6 +59,8 @@
         <attr name="codes" format="integer|string" />
         <!-- 上フリックで出るコード -->
         <attr name="shiftedCode" format="integer" />
+        <!-- 下フリックで出るコード -->
+        <attr name="downCode" format="integer" />
         <!-- The XML keyboard layout of any popup keyboard -->
         <attr name="popupKeyboard" format="reference" />
         <!-- The characters to display in the popup keyboard -->
@@ -84,6 +86,8 @@
         <attr name="keyLabel" format="string" />
         <!-- 上フリックで出るラベル -->
         <attr name="shiftedLabel" format="string" />
+        <!-- 下フリックで出るラベル -->
+        <attr name="downLabel" format="string" />
         <!-- The icon to display on the key instead of the label -->
         <attr name="keyIcon" format="reference" />
         <!-- Mode of the keyboard. If the mode doesn't match the

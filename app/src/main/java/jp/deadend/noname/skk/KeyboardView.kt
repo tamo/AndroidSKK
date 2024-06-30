@@ -42,6 +42,7 @@ open class KeyboardView @JvmOverloads constructor(
     private var mPreviewText: TextView? = null
     private var mPreviewNormalText: CharSequence = ""
     private var mPreviewShiftedText: CharSequence = ""
+    private var mPreviewDownText: CharSequence = ""
     private val mPreviewPopup = PopupWindow(context)
     private var mPreviewOffset = 0
     private var mPreviewHeight = 0
@@ -263,6 +264,19 @@ open class KeyboardView @JvmOverloads constructor(
         get() = mKeyboard.isCapsLocked
         set(value) { mKeyboard.isCapsLocked = value }
 
+    var isFlicked = 0
+        set(value) {
+            if (field != value) {
+                performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+            }
+            field = value
+            mPreviewText?.text = adjustCase(
+                mPreviewNormalText, mPreviewShiftedText, mPreviewDownText, isFlicked
+            )
+        }
+    var flickStartX = -1f
+    var flickStartY = -1f
+
     private fun setPopupParent(v: View) {
         mPopupParent = v
     }
@@ -281,8 +295,15 @@ open class KeyboardView @JvmOverloads constructor(
         dismissPopupKeyboard()
     }
 
-    private fun adjustCase(label: CharSequence, shiftedLabel: CharSequence = ""): CharSequence {
-        return if (mKeyboard.isShifted && shiftedLabel.isNotEmpty()) {
+    private fun adjustCase(
+        label: CharSequence,
+        shiftedLabel: CharSequence,
+        downLabel: CharSequence,
+        flicked: Int
+    ): CharSequence {
+        return if (flicked == -1 && downLabel.isNotEmpty()) {
+            downLabel
+        } else if (isShifted xor (flicked == 1) && shiftedLabel.isNotEmpty()) {
             shiftedLabel
         } else label
     }
@@ -344,7 +365,8 @@ open class KeyboardView @JvmOverloads constructor(
                 keyBackground?.state = key.currentDrawableState
 
                 // Switch the character to uppercase if shift is pressed
-                val label = if (key.label.isEmpty()) null else adjustCase(key.label, key.shiftedLabel).toString()
+                val label = if (key.label.isEmpty()) null else adjustCase(key.label, key.shiftedLabel, "", 0).toString()
+                val shiftedLabel = if (key.shiftedLabel.isEmpty()) null else adjustCase(key.shiftedLabel, key.label, "", 0).toString()
                 val icon = key.icon
                 keyBackground?.bounds?.let {
                     if (key.width != it.right || key.height != it.bottom) {
@@ -374,6 +396,29 @@ open class KeyboardView @JvmOverloads constructor(
                                     - mPaint.descent() + lineScale * (
                                     (mPaint.textSize * numLines - mPaint.descent()) / 2f
                                             - mPaint.textSize * (numLines - 1 - i)),
+                            mPaint
+                        )
+                    }
+                    if (!shiftedLabel.isNullOrEmpty()
+                        && shiftedLabel != label.uppercase()
+                        && shiftedLabel != label.lowercase()
+                    ) {
+                        mPaint.textSize = mKeyTextSize / 2f
+                        mPaint.typeface = Typeface.DEFAULT
+                        canvas.drawText(
+                            shiftedLabel,
+                            key.width - mPadding.right - mPaint.textSize,
+                            mPadding.top + mPaint.textSize,
+                            mPaint
+                        )
+                    }
+                    if (key.downLabel.isNotEmpty()) {
+                        mPaint.textSize = mKeyTextSize / 2f
+                        mPaint.typeface = Typeface.DEFAULT
+                        canvas.drawText(
+                            key.downLabel.toString(),
+                            key.width - mPadding.right - mPaint.textSize,
+                            key.height - mPadding.bottom - mPaint.textSize,
                             mPaint
                         )
                     }
@@ -438,9 +483,9 @@ open class KeyboardView @JvmOverloads constructor(
         return if (mInMultiTap) {
             mPreviewLabel.setLength(0)
             mPreviewLabel.append(key.codes[mTapCount.coerceAtLeast(0)].toChar())
-            adjustCase(mPreviewLabel)
+            mPreviewLabel // シフト時の toUpper とか必要ならするけど今はアルファベットの multiTap がない
         } else {
-            adjustCase(key.label, key.shiftedLabel)
+            adjustCase(key.label, key.shiftedLabel, key.downLabel, isFlicked)
         }
     }
 
@@ -500,6 +545,7 @@ open class KeyboardView @JvmOverloads constructor(
 
             mPreviewNormalText = key.label
             mPreviewShiftedText = key.shiftedLabel
+            mPreviewDownText = key.downLabel
             previewText.text = getPreviewText(key)
             previewText.typeface = Typeface.DEFAULT
             previewText.measure(
@@ -551,19 +597,6 @@ open class KeyboardView @JvmOverloads constructor(
                 )
             }
             previewText.visibility = VISIBLE
-        }
-    }
-
-    protected fun switchCaseInPreview() {
-        mPreviewText?.let {
-            val previewText = it.text
-            if (previewText.isNotEmpty()) {
-                it.text = if (!isShifted && mPreviewShiftedText.isNotEmpty()) {
-                    mPreviewShiftedText
-                } else {
-                    mPreviewNormalText
-                }
-            }
         }
     }
 
@@ -807,6 +840,8 @@ open class KeyboardView @JvmOverloads constructor(
                             mLastKeyTime = mCurrentKeyTime + eventTime - mLastMoveTime
                             mCurrentKey = keyIndex
                             mCurrentKeyTime = 0
+                            flickStartX = me.rawX
+                            flickStartY = me.rawY
                         }
                     }
                 }

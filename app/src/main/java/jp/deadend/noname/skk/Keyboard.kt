@@ -35,6 +35,7 @@ open class Keyboard {
 
     val keys: MutableList<Key>  = mutableListOf()
     val shiftedCodes = mutableMapOf<Int, Int>() // code から shiftedCode への逆引き
+    val downCodes = mutableMapOf<Int, Int>() // code から downCode への逆引き
     private val rows: MutableList<Row> = mutableListOf()
     private val modifierKeys: MutableList<Key> = mutableListOf()
 
@@ -82,6 +83,8 @@ open class Keyboard {
         var label: CharSequence = ""
         var shiftedCode = 0
         var shiftedLabel: CharSequence = ""
+        var downCode = 0
+        var downLabel: CharSequence = ""
         var icon: Drawable? = null
         var iconPreview: Drawable? = null
         var width: Int
@@ -139,6 +142,7 @@ open class Keyboard {
                             .split(",").map { it.trim().toInt() }.toIntArray()
             }
             shiftedCode = a.getInt(R.styleable.Keyboard_Key_shiftedCode, 0)
+            downCode = a.getInt(R.styleable.Keyboard_Key_downCode, 0)
             iconPreview = a.getDrawable(R.styleable.Keyboard_Key_iconPreview)
             iconPreview?.let {
                 iconPreview?.setBounds(0, 0, it.intrinsicWidth, it.intrinsicHeight)
@@ -156,6 +160,7 @@ open class Keyboard {
             }
             label = a.getText(R.styleable.Keyboard_Key_keyLabel) ?: ""
             shiftedLabel = a.getText(R.styleable.Keyboard_Key_shiftedLabel) ?: ""
+            downLabel = a.getText(R.styleable.Keyboard_Key_downLabel) ?: ""
             text = a.getText(R.styleable.Keyboard_Key_keyOutputText)
             if (codes.isEmpty() && label.isNotEmpty()) {
                 codes = intArrayOf(label[0].code)
@@ -163,7 +168,11 @@ open class Keyboard {
             if (shiftedCode == 0 && shiftedLabel.isNotEmpty()) {
                 shiftedCode = shiftedLabel[0].code
             }
+            if (downCode == 0 && downLabel.isNotEmpty()) {
+                downCode = downLabel[0].code
+            }
             keyboard.shiftedCodes[codes[0]] = shiftedCode
+            keyboard.downCodes[codes[0]] = downCode
             a.recycle()
         }
 

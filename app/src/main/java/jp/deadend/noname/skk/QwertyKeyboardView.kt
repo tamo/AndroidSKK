@@ -4,17 +4,15 @@ import android.content.Context
 import android.view.KeyEvent
 import android.view.MotionEvent
 import android.util.AttributeSet
+import android.view.HapticFeedbackConstants
 
 class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
     private lateinit var mService: SKKService
 
     private val mLatinKeyboard = Keyboard(context, R.xml.qwerty)
-    private val mSymbolsKeyboard = Keyboard(context, R.xml.symbols)
+    val mSymbolsKeyboard = Keyboard(context, R.xml.symbols)
 
     private var mFlickSensitivitySquared = 100
-    private var mFlickStartX = -1f
-    private var mFlickStartY = -1f
-    private var mFlicked = false
 
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
     constructor(context: Context, attrs: AttributeSet?, defStyle: Int) : super(context, attrs, defStyle)
@@ -50,22 +48,29 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
     override fun onTouchEvent(event: MotionEvent): Boolean {
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {
-                mFlickStartX = event.rawX
-                mFlickStartY = event.rawY
-                mFlicked = false
+                flickStartX = event.rawX
+                flickStartY = event.rawY
+                isFlicked = 0
             }
             MotionEvent.ACTION_MOVE -> {
-                val dx = event.rawX - mFlickStartX
-                val dy = event.rawY - mFlickStartY
+                val dx = event.rawX - flickStartX
+                val dy = event.rawY - flickStartY
                 val dx2 = dx * dx
                 val dy2 = dy * dy
                 if (dx2 + dy2 > mFlickSensitivitySquared) {
                     if (dy < 0 && dx2 < dy2) {
-                        val oldMFlicked = mFlicked
-                        mFlicked = true
-                        if (!oldMFlicked) { switchCaseInPreview() }
-                        return true
+                        isFlicked = 1
+                        return true // 上フリック
+                    } else if (dy > 0 && dx2 < dy2) {
+                        isFlicked = -1
+                        return true // 下フリック
+                    } else {
+                        isFlicked = 0
+                        // 左右に外れたので別のキーになるかもしれない
                     }
+                } else {
+                    isFlicked = 0
+                    return true // フリックなし (に戻す)
                 }
             }
         }
@@ -100,12 +105,12 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
             }
             else -> {
                 val shiftedCode = keyboard.shiftedCodes[primaryCode] ?: 0
+                val downCode = keyboard.downCodes[primaryCode] ?: 0
                 val code = when {
-                    isShifted xor mFlicked -> when {
-                        shiftedCode > 0 -> shiftedCode
-                        keyboard === mLatinKeyboard -> Character.toUpperCase(primaryCode)
-                        else -> primaryCode
-                    }
+                    isFlicked == -1 ->
+                        if (downCode > 0) downCode else primaryCode
+                    isShifted xor (isFlicked == 1) ->
+                        if (shiftedCode > 0) shiftedCode else primaryCode
                     else -> primaryCode
                 }
                 mService.processKey(code)

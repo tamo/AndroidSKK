@@ -18,7 +18,7 @@
         <androidx.preference.ListPreference
             app:key="@string/prefkey_flick_sensitivity2"
             app:title="フリック感度"
-            app:summary="「高」にすると反応しやすくなります"
+            app:summary="「高」にすると反応しやすくなります。キーが縦に小さいときは「高」がおすすめ"
             app:entries="@array/sensitivity_entries"
             app:entryValues="@array/sensitivity_values"
             app:dialogTitle="フリック感度"
