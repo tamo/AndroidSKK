@@ -291,6 +291,8 @@ class SKKService : InputMethodService() {
         val qwertyWidth = (keyWidth * skkPrefs.keyWidthQwertyZoom / 100).coerceAtMost(100)
         qwerty.keyboard.resizeByPercentageOfScreen(qwertyWidth, keyHeight)
         qwerty.keyboard.setLeftOffset(skkPrefs.keyPosition)
+        qwerty.mSymbolsKeyboard.resizeByPercentageOfScreen(qwertyWidth, keyHeight)
+        qwerty.mSymbolsKeyboard.setLeftOffset(skkPrefs.keyPosition)
         abbrev.keyboard.resizeByPercentageOfScreen(qwertyWidth, keyHeight)
         abbrev.keyboard.setLeftOffset(skkPrefs.keyPosition)
 
