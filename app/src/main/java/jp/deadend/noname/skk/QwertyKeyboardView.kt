@@ -4,7 +4,7 @@ import android.content.Context
 import android.view.KeyEvent
 import android.view.MotionEvent
 import android.util.AttributeSet
-import android.view.HapticFeedbackConstants
+import kotlin.math.ceil
 
 class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
     private lateinit var mService: SKKService
@@ -13,6 +13,9 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
     val mSymbolsKeyboard = Keyboard(context, R.xml.symbols)
 
     private var mFlickSensitivitySquared = 100
+
+    private var mSpacePressed = false
+    private var mSpaceFlicked = false
 
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
     constructor(context: Context, attrs: AttributeSet?, defStyle: Int) : super(context, attrs, defStyle)
@@ -58,6 +61,18 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                 val dx2 = dx * dx
                 val dy2 = dy * dy
                 if (dx2 + dy2 > mFlickSensitivitySquared) {
+                    if (mSpacePressed) {
+                        repeat(ceil(dx2 / 1500).toInt()) {
+                            if (dx < 0) {
+                                mService.keyDownUp(KeyEvent.KEYCODE_DPAD_LEFT)
+                            } else {
+                                mService.keyDownUp(KeyEvent.KEYCODE_DPAD_RIGHT)
+                            }
+                            mSpaceFlicked = true
+                        }
+                        flickStartX = event.rawX
+                        return true
+                    }
                     if (dy < 0 && dx2 < dy2) {
                         isFlicked = 1
                         return true // 上フリック
@@ -104,6 +119,10 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                 isCapsLocked = keyboard.isCapsLocked
             }
             else -> {
+                if (primaryCode == ' '.code && mSpaceFlicked) {
+                    mService.updateSuggestionsASCII()
+                    return
+                }
                 val shiftedCode = keyboard.shiftedCodes[primaryCode] ?: 0
                 val downCode = keyboard.downCodes[primaryCode] ?: 0
                 val code = when {
@@ -122,9 +141,14 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
         }
     }
 
-    override fun onPress(primaryCode: Int) {}
+    override fun onPress(primaryCode: Int) {
+        mSpacePressed = (primaryCode == ' '.code)
+        mSpaceFlicked = false
+    }
 
-    override fun onRelease(primaryCode: Int) {}
+    override fun onRelease(primaryCode: Int) {
+        mSpacePressed = false
+    }
 
     override fun onText(text: CharSequence) {}
 
