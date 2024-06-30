@@ -108,7 +108,10 @@ open class KeyboardView @JvmOverloads constructor(
         override fun handleMessage(msg: Message) {
             when (msg.what) {
                 MSG_SHOW_PREVIEW -> showKeyInPreview(msg.arg1)
-                MSG_REMOVE_PREVIEW -> mPreviewText?.visibility = INVISIBLE
+                MSG_REMOVE_PREVIEW -> {
+                    mPreviewText?.visibility = INVISIBLE
+                    mPreviewPopup.dismiss()
+                }
                 MSG_REPEAT -> {
                     detectAndSendKey(mCurrentKey, mLastTapTime)
                     sendMessageDelayed(Message.obtain(this, MSG_REPEAT), REPEAT_INTERVAL.toLong())
