@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PreferenceScreen
+<androidx.preference.PreferenceScreen
     xmlns:app="http://schemas.android.com/apk/res-auto"
     app:title="@string/label_pref_hardkeyboard">
     <jp.deadend.noname.skk.SetKeyPreference
@@ -11,7 +11,7 @@
         app:positiveButtonText="OK"
         app:iconSpaceReserved="false"
         />
-    <CheckBoxPreference
+    <androidx.preference.CheckBoxPreference
         app:key="@string/prefkey_toggle_kana_key"
         app:title="かなキーをトグルに"
         app:summary="オンだと，かなモードでかなキーを押すとASCIIモードに戻ります"
@@ -33,18 +33,18 @@
         app:defaultValue="true"
         app:iconSpaceReserved="false"
         />
-    <CheckBoxPreference
+    <androidx.preference.CheckBoxPreference
         app:key="@string/prefkey_sticky_meta"
         app:title="Sticky shift"
         app:summary="shiftを同時押しでなくても効くようにします"
         app:defaultValue="false"
         app:iconSpaceReserved="false"
         />
-    <CheckBoxPreference
+    <androidx.preference.CheckBoxPreference
         app:key="@string/prefkey_sands"
         app:title="SandS"
         app:summary="スペースキーをshiftとして使います"
         app:defaultValue="false"
         app:iconSpaceReserved="false"
         />
-</PreferenceScreen>
+</androidx.preference.PreferenceScreen>

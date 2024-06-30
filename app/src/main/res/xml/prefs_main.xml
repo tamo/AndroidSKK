@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     app:title="@string/label_pref_activity">
-    <ListPreference
+    <androidx.preference.ListPreference
         app:key="@string/prefkey_kutouten_type"
         app:title="句読点のタイプ"
         app:summary="かなモードで入力される句読点"
@@ -21,30 +21,30 @@
         app:showSeekBarValue="true"
         app:iconSpaceReserved="false"
         />
-    <Preference
+    <androidx.preference.Preference
         app:title="@string/label_dicmanager_activity" >
         <intent android:action="android.intent.action.MAIN"
             android:targetPackage="jp.deadend.noname.skk"
             android:targetClass="jp.deadend.noname.skk.SKKDicManager" />
-    </Preference>
-    <Preference
+    </androidx.preference.Preference>
+    <androidx.preference.Preference
         app:title="@string/label_dictool_activity" >
         <intent android:action="android.intent.action.MAIN"
             android:data="@string/dic_name_user"
             android:targetPackage="jp.deadend.noname.skk"
             android:targetClass="jp.deadend.noname.skk.SKKUserDicTool" />
-    </Preference>
-    <Preference
+    </androidx.preference.Preference>
+    <androidx.preference.Preference
         app:title="@string/label_asciitool_activity" >
         <intent android:action="android.intent.action.MAIN"
             android:data="@string/dic_name_ascii"
             android:targetPackage="jp.deadend.noname.skk"
             android:targetClass="jp.deadend.noname.skk.SKKUserDicTool" />
-    </Preference>
-    <Preference
+    </androidx.preference.Preference>
+    <androidx.preference.Preference
         app:fragment="jp.deadend.noname.skk.SKKSettingsActivity$SettingsHardKeyFragment"
         app:title="@string/label_pref_hardkeyboard"/>
-    <Preference
+    <androidx.preference.Preference
         app:fragment="jp.deadend.noname.skk.SKKSettingsActivity$SettingsSoftKeyFragment"
         app:title="@string/label_pref_softkeyboard"/>
-</PreferenceScreen>
+</androidx.preference.PreferenceScreen>

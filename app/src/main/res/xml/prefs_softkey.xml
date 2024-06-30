@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:title="@string/label_pref_softkeyboard">
-    <PreferenceCategory
+    <androidx.preference.PreferenceCategory
         app:title="動作"
         app:iconSpaceReserved="false"
         >
-        <ListPreference
+        <androidx.preference.ListPreference
             app:key="@string/prefkey_use_softkey"
             app:title="ソフトウェアキーボードの使用"
             app:summary="「常に表示／非表示」が可能です"
@@ -15,7 +15,7 @@
             app:defaultValue="auto"
             app:iconSpaceReserved="false"
             />
-        <ListPreference
+        <androidx.preference.ListPreference
             app:key="@string/prefkey_flick_sensitivity2"
             app:title="フリック感度"
             app:summary="「高」にすると反応しやすくなります"
@@ -25,7 +25,7 @@
             app:defaultValue="mid"
             app:iconSpaceReserved="false"
             />
-        <CheckBoxPreference
+        <androidx.preference.CheckBoxPreference
             app:key="@string/prefkey_use_popup"
             app:title="ポップアップの使用"
             app:summary="フリック入力用のガイドを表示します"
@@ -33,7 +33,7 @@
             app:defaultValue="true"
             app:iconSpaceReserved="false"
             />
-        <CheckBoxPreference
+        <androidx.preference.CheckBoxPreference
             app:key="@string/prefkey_fixed_popup"
             app:title="ポップアップの固定"
             app:summary="フリック入力ガイドを，常に上部の同じ場所に表示します"
@@ -41,19 +41,19 @@
             app:defaultValue="true"
             app:iconSpaceReserved="false"
             />
-        <CheckBoxPreference
+        <androidx.preference.CheckBoxPreference
             app:key="@string/prefkey_use_soft_cancel_key"
             app:title="キャンセルキーの使用"
             app:summary="小文字キーのかわりにキャンセルキーを使います"
             app:defaultValue="false"
             app:iconSpaceReserved="false"
             />
-    </PreferenceCategory>
-    <PreferenceCategory
+    </androidx.preference.PreferenceCategory>
+    <androidx.preference.PreferenceCategory
         app:title="外見"
         app:iconSpaceReserved="false"
         >
-        <ListPreference
+        <androidx.preference.ListPreference
             app:key="@string/prefkey_theme"
             app:title="テーマ"
             app:summary="ライト/ダークモードを強制できます"
@@ -63,7 +63,7 @@
             app:defaultValue="default"
             app:iconSpaceReserved="false"
             />
-        <CheckBoxPreference
+        <androidx.preference.CheckBoxPreference
             app:key="@string/prefkey_use_inset"
             app:title="外枠"
             app:summary="キーの間に間隔をあけます"
@@ -81,19 +81,19 @@
 <!--            app:showSeekBarValue="true"-->
 <!--            app:iconSpaceReserved="false"-->
 <!--            />-->
-    </PreferenceCategory>
-    <PreferenceCategory
+    </androidx.preference.PreferenceCategory>
+    <androidx.preference.PreferenceCategory
         app:title="サイズと位置"
         app:iconSpaceReserved="false"
         >
-    </PreferenceCategory>
+    </androidx.preference.PreferenceCategory>
     <androidx.preference.SeekBarPreference
         app:key="@string/prefkey_key_height_port"
         app:title="キーボードの高さ（縦画面）"
         app:summary="画面の高さに対する割合（％）"
         app:defaultValue="30"
-        app:min="20"
-        android:max="50"
+        app:min="1"
+        android:max="100"
         app:showSeekBarValue="true"
         app:iconSpaceReserved="false"
         />
@@ -102,8 +102,8 @@
         app:title="キーボードの高さ（横画面）"
         app:summary="画面の高さに対する割合（％）"
         app:defaultValue="30"
-        app:min="20"
-        android:max="50"
+        app:min="1"
+        android:max="100"
         app:showSeekBarValue="true"
         app:iconSpaceReserved="false"
         />
@@ -113,7 +113,7 @@
         app:title="日本語キーボードの幅（縦画面）"
         app:summary="画面の幅に対する割合（％）"
         app:defaultValue="100"
-        app:min="40"
+        app:min="1"
         android:max="100"
         app:showSeekBarValue="true"
         app:iconSpaceReserved="false"
@@ -124,12 +124,22 @@
         app:title="日本語キーボードの幅（横画面）"
         app:summary="画面の幅に対する割合（％）"
         app:defaultValue="100"
-        app:min="40"
+        app:min="1"
         android:max="100"
         app:showSeekBarValue="true"
         app:iconSpaceReserved="false"
         />
-    <ListPreference
+    <androidx.preference.SeekBarPreference
+        app:key="@string/prefkey_key_width_qwerty_zoom"
+        app:title="英字キーボード幅の倍率"
+        app:summary="日本語キーボードに対する割合（％）"
+        app:defaultValue="200"
+        app:min="100"
+        android:max="300"
+        app:showSeekBarValue="true"
+        app:iconSpaceReserved="false"
+        />
+    <androidx.preference.ListPreference
         app:key="@string/prefkey_key_position"
         app:title="日本語キーボードの位置"
         app:summary="左右に寄せることができます"
@@ -140,4 +150,4 @@
         app:showSeekBarValue="true"
         app:iconSpaceReserved="false"
         />
-</PreferenceScreen>
+</androidx.preference.PreferenceScreen>

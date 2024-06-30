@@ -87,6 +87,10 @@ class SKKPrefs(context: Context) {
         get() = prefs.getInt(res.getString(R.string.prefkey_key_width_land), 100)
         set(value) = prefs.edit().putInt(res.getString(R.string.prefkey_key_width_land), value).apply()
 
+    var keyWidthQwertyZoom: Int
+        get() = prefs.getInt(res.getString(R.string.prefkey_key_width_qwerty_zoom), 200)
+        set(value) = prefs.edit().putInt(res.getString(R.string.prefkey_key_width_qwerty_zoom), value).apply()
+
     var keyPosition: String
         get() = prefs.getString(res.getString(R.string.prefkey_key_position), null) ?: "center"
         set(value) = prefs.edit().putString(res.getString(R.string.prefkey_key_position), value).apply()

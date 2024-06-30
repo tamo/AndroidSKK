@@ -288,6 +288,12 @@ class SKKService : InputMethodService() {
         flick.prepareNewKeyboard(context, keyWidth, keyHeight, skkPrefs.keyPosition)
         flick.backgroundAlpha = 255 * alpha / 100
 
+        val qwertyWidth = (keyWidth * skkPrefs.keyWidthQwertyZoom / 100).coerceAtMost(100)
+        qwerty.keyboard.resizeByPercentageOfScreen(qwertyWidth, keyHeight)
+        qwerty.keyboard.setLeftOffset(skkPrefs.keyPosition)
+        abbrev.keyboard.resizeByPercentageOfScreen(qwertyWidth, keyHeight)
+        abbrev.keyboard.setLeftOffset(skkPrefs.keyPosition)
+
         val density = context.resources.displayMetrics.density
         val sensitivity = when (skkPrefs.flickSensitivity) {
             "low"  -> (36 * density + 0.5f).toInt()
