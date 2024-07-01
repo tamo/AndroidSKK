@@ -87,7 +87,7 @@ open class KeyboardView @JvmOverloads constructor(
     private val mDisambiguateSwipe = resources.getBoolean(R.bool.config_swipeDisambiguation)
 
     // Variables for dealing with multiple pointers
-    private var mOldPointerCount = 1
+    private var mActivePointerId = -1 // 有効な ID は 0 とか 1 とかなので初期値は負にしておく
     private var mOldPointerX = 0f
     private var mOldPointerY = 0f
     private var mKeyBackground: Drawable? = null
@@ -714,46 +714,84 @@ open class KeyboardView @JvmOverloads constructor(
         if (!isEnabled) { return false }
         // Convert multi-pointer up/down events to single up/down events to
         // deal with the typical multi-pointer behavior of two-thumb typing
-        val pointerCount = event.pointerCount
+        // 右手で「さ」をフリックして離さないうちに左手で「あ」をフリックするなど指が速いときの対応
         var result: Boolean
         val now = event.eventTime
-        if (pointerCount != mOldPointerCount) {
-            if (pointerCount == 1) {
-                // Send a down event for the latest pointer
-                val down = MotionEvent.obtain(
-                    now, now, MotionEvent.ACTION_DOWN,
-                    event.x, event.y, event.metaState
-                )
-                result = onModifiedTouchEvent(down, false)
-                down.recycle()
-                // If it's an up action, then deliver the up as well.
-                if (event.action == MotionEvent.ACTION_UP) {
-                    result = onModifiedTouchEvent(event, true)
-                }
-            } else {
-                // Send an up event for the last pointer
+        when (event.action and MotionEvent.ACTION_MASK) {
+            MotionEvent.ACTION_DOWN -> { // 1本目の指
+                mActivePointerId = event.getPointerId(0)
+                result = onModifiedTouchEvent(event, false)
+                mOldPointerX = event.x
+                mOldPointerY = event.y
+            }
+            MotionEvent.ACTION_POINTER_DOWN -> { // 2本目以降の指
+                // こっちを有効にして
+                mActivePointerId = event.getPointerId(event.actionIndex)
+
+                // 前のは up して今後無視する
                 val up = MotionEvent.obtain(
                     now, now, MotionEvent.ACTION_UP,
                     mOldPointerX, mOldPointerY, event.metaState
                 )
-                result = onModifiedTouchEvent(up, true)
+                onModifiedTouchEvent(up, true)
                 up.recycle()
+
+                // そして最新のを down して使っていく
+                mOldPointerX = event.getX(event.actionIndex)
+                mOldPointerY = event.getY(event.actionIndex)
+                val down = MotionEvent.obtain(
+                    now, now, MotionEvent.ACTION_DOWN,
+                    mOldPointerX, mOldPointerY, event.metaState
+                )
+                result = onModifiedTouchEvent(down, false)
+                down.recycle()
             }
-        } else {
-            if (pointerCount == 1) {
-                result = onModifiedTouchEvent(event, false)
-                mOldPointerX = event.x
-                mOldPointerY = event.y
-            } else {
-                // Don't do anything when 2 pointers are down and moving.
-                result = true
+            MotionEvent.ACTION_POINTER_UP -> { // 指が減ったけど最後ではない場合
+                // 最新の指以外はすでに up してあるので気にしない
+                if (mActivePointerId == event.getPointerId(event.actionIndex)) {
+                    // 唯一の指が無効になるので、以降の move はすべて無意味
+                    mActivePointerId = -1
+                    val up = MotionEvent.obtain(
+                        now, now, MotionEvent.ACTION_UP,
+                        mOldPointerX, mOldPointerY, event.metaState
+                    )
+                    result = onModifiedTouchEvent(up, true)
+                    up.recycle()
+                } else {
+                    result = true // すでに前借りで消費されているので true でいいのでは？
+                }
             }
+            MotionEvent.ACTION_UP -> { // 最後の指
+                result = if (mActivePointerId == event.getPointerId(0)) {
+                    onModifiedTouchEvent(event, false)
+                } else {
+                    true // すでに前借りで消費されているので true でいいのでは？
+                }
+            }
+            MotionEvent.ACTION_MOVE -> {
+                // どの指の動きで発行されたか分からないので、とにかく処理する
+                // ただし有効な指が残っていない場合は無視できる
+                if (mActivePointerId != -1) {
+                    val activeX = event.getX(event.findPointerIndex(mActivePointerId))
+                    val activeY = event.getY(event.findPointerIndex(mActivePointerId))
+                    val move = MotionEvent.obtain(
+                        now, now, MotionEvent.ACTION_MOVE,
+                        activeX, activeY, event.metaState
+                    )
+                    result = onModifiedTouchEvent(move, false)
+                    move.recycle()
+                    mOldPointerX = activeX
+                    mOldPointerY = activeY
+                } else {
+                    result = true // 無視したいイベントだから true でいいのでは？
+                }
+            }
+            else -> result = onModifiedTouchEvent(event, false)
         }
-        mOldPointerCount = pointerCount
         return result
     }
 
-    private fun onModifiedTouchEvent(me: MotionEvent, possiblePoly: Boolean): Boolean {
+    open fun onModifiedTouchEvent(me: MotionEvent, possiblePoly: Boolean): Boolean {
         var touchX = me.x.toInt() - paddingLeft
         var touchY = me.y.toInt() - paddingTop
         if (touchY >= -mVerticalCorrection) { touchY += mVerticalCorrection }
@@ -840,8 +878,8 @@ open class KeyboardView @JvmOverloads constructor(
                             mLastKeyTime = mCurrentKeyTime + eventTime - mLastMoveTime
                             mCurrentKey = keyIndex
                             mCurrentKeyTime = 0
-                            flickStartX = me.rawX
-                            flickStartY = me.rawY
+                            flickStartX = me.x
+                            flickStartY = me.y
                         }
                     }
                 }

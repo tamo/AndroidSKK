@@ -403,15 +403,15 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
     private fun isRightCurve(flick: EnumSet<FlickState>): Boolean = flick.contains(FlickState.CURVE_RIGHT)
     private fun isCurve(flick: EnumSet<FlickState>): Boolean = isLeftCurve(flick) || isRightCurve(flick)
 
-    override fun onTouchEvent(event: MotionEvent): Boolean {
+    override fun onModifiedTouchEvent(event: MotionEvent, pp: Boolean): Boolean {
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {
-                mFlickStartX = event.rawX
-                mFlickStartY = event.rawY
+                mFlickStartX = event.x
+                mFlickStartY = event.y
             }
             MotionEvent.ACTION_MOVE -> {
-                val dx = event.rawX - mFlickStartX
-                val dy = event.rawY - mFlickStartY
+                val dx = event.x - mFlickStartX
+                val dy = event.y - mFlickStartY
 
                 when {
                     dx * dx + dy * dy < mFlickSensitivitySquared -> {
@@ -427,10 +427,11 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
                 if (mUsePopup) setupPopupTextView()
                 return true
             }
-            MotionEvent.ACTION_UP -> release()
+            MotionEvent.ACTION_UP -> {
+                release()
+            }
         }
-
-        return super.onTouchEvent(event)
+        return super.onModifiedTouchEvent(event, pp)
     }
 
     private fun diamondAngle(x: Float, y: Float): Float {

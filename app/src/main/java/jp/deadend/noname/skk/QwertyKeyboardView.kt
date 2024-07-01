@@ -48,40 +48,44 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
         return super.onLongPress(key)
     }
 
-    override fun onTouchEvent(event: MotionEvent): Boolean {
+    override fun onModifiedTouchEvent(event: MotionEvent, pp: Boolean): Boolean {
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {
-                flickStartX = event.rawX
-                flickStartY = event.rawY
+                flickStartX = event.x
+                flickStartY = event.y
                 isFlicked = 0
             }
             MotionEvent.ACTION_MOVE -> {
-                val dx = event.rawX - flickStartX
-                val dy = event.rawY - flickStartY
+                val dx = event.x - flickStartX
+                val dy = event.y - flickStartY
                 val dx2 = dx * dx
                 val dy2 = dy * dy
                 if (dx2 + dy2 > mFlickSensitivitySquared) {
-                    if (mSpacePressed) {
-                        repeat(ceil(dx2 / 1500).toInt()) {
-                            if (dx < 0) {
-                                mService.keyDownUp(KeyEvent.KEYCODE_DPAD_LEFT)
-                            } else {
-                                mService.keyDownUp(KeyEvent.KEYCODE_DPAD_RIGHT)
+                    when {
+                        mSpacePressed -> {
+                            repeat(ceil(dx2 / 1500).toInt()) {
+                                if (dx < 0) {
+                                    mService.keyDownUp(KeyEvent.KEYCODE_DPAD_LEFT)
+                                } else {
+                                    mService.keyDownUp(KeyEvent.KEYCODE_DPAD_RIGHT)
+                                }
+                                mSpaceFlicked = true
                             }
-                            mSpaceFlicked = true
+                            flickStartX = event.x
+                            return true
                         }
-                        flickStartX = event.rawX
-                        return true
-                    }
-                    if (dy < 0 && dx2 < dy2) {
-                        isFlicked = 1
-                        return true // 上フリック
-                    } else if (dy > 0 && dx2 < dy2) {
-                        isFlicked = -1
-                        return true // 下フリック
-                    } else {
-                        isFlicked = 0
-                        // 左右に外れたので別のキーになるかもしれない
+                        dy < 0 && dx2 < dy2 -> {
+                            isFlicked = 1
+                            return true // 上フリック
+                        }
+                        dy > 0 && dx2 < dy2 -> {
+                            isFlicked = -1
+                            return true // 下フリック
+                        }
+                        else -> {
+                            isFlicked = 0
+                            // 左右に外れたので別のキーになるかもしれない
+                        }
                     }
                 } else {
                     isFlicked = 0
@@ -89,8 +93,7 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                 }
             }
         }
-
-        return super.onTouchEvent(event)
+        return super.onModifiedTouchEvent(event, pp)
     }
 
     override fun onKey(primaryCode: Int) {
