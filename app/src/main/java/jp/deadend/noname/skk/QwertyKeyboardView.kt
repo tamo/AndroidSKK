@@ -48,16 +48,16 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
         return super.onLongPress(key)
     }
 
-    override fun onModifiedTouchEvent(event: MotionEvent, pp: Boolean): Boolean {
-        when (event.action) {
+    override fun onModifiedTouchEvent(me: MotionEvent, possiblePoly: Boolean): Boolean {
+        when (me.action) {
             MotionEvent.ACTION_DOWN -> {
-                flickStartX = event.x
-                flickStartY = event.y
+                flickStartX = me.x
+                flickStartY = me.y
                 isFlicked = 0
             }
             MotionEvent.ACTION_MOVE -> {
-                val dx = event.x - flickStartX
-                val dy = event.y - flickStartY
+                val dx = me.x - flickStartX
+                val dy = me.y - flickStartY
                 val dx2 = dx * dx
                 val dy2 = dy * dy
                 if (dx2 + dy2 > mFlickSensitivitySquared) {
@@ -71,7 +71,7 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                                 }
                                 mSpaceFlicked = true
                             }
-                            flickStartX = event.x
+                            flickStartX = me.x
                             return true
                         }
                         dy < 0 && dx2 < dy2 -> {
@@ -93,7 +93,7 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                 }
             }
         }
-        return super.onModifiedTouchEvent(event, pp)
+        return super.onModifiedTouchEvent(me, possiblePoly)
     }
 
     override fun onKey(primaryCode: Int) {
