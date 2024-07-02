@@ -715,7 +715,7 @@ open class KeyboardView @JvmOverloads constructor(
         // Convert multi-pointer up/down events to single up/down events to
         // deal with the typical multi-pointer behavior of two-thumb typing
         // 右手で「さ」をフリックして離さないうちに左手で「あ」をフリックするなど指が速いときの対応
-        var result: Boolean
+        val result: Boolean
         val now = event.eventTime
         when (event.action and MotionEvent.ACTION_MASK) {
             MotionEvent.ACTION_DOWN -> { // 1本目の指
