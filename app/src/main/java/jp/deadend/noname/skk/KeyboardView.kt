@@ -464,8 +464,13 @@ open class KeyboardView @JvmOverloads constructor(
                 var code = key.codes[0]
                 // Multi-tap
                 if (mInMultiTap) {
-                    if (mTapCount != -1) {
-                        onKeyboardActionListener?.onKey(Keyboard.KEYCODE_DELETE)
+                    if (mTapCount != -1) { // 前回の入力を取り消す
+                        val codesLength = key.codes.size
+                        val prevCount = (mTapCount + codesLength - 1) % codesLength
+                        val prevCode = mKeyboard.keys[mLastSentIndex].codes[prevCount]
+                        if (prevCode > 0) {
+                            onKeyboardActionListener?.onKey(Keyboard.KEYCODE_DELETE)
+                        }
                     } else {
                         mTapCount = 0
                     }
