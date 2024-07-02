@@ -431,41 +431,63 @@ class SKKService : InputMethodService() {
             setCandidatesViewShown(true)
         }
 
-        // restarting なら再利用できるので composingText だけ再描画して終了
-        if (restarting) {
-            currentInputConnection.setComposingText(mEngine.mComposingText, mEngine.mCursorPosition)
-        } else {
+        // restarting なら composingText だけ再描画して再利用できるので reset しない
+        if (!restarting) {
             mEngine.resetOnStartInput()
         }
         if (attribute.inputType == InputType.TYPE_NULL) {
             requestHideSelf(0)
             return
         }
-        if (restarting) {
-            return
-        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             mEngine.isPersonalizedLearning =
                 (attribute.imeOptions and EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING) == 0
         }
-        when (attribute.inputType and InputType.TYPE_MASK_CLASS) {
-            InputType.TYPE_CLASS_NUMBER,
-            InputType.TYPE_CLASS_DATETIME,
-            InputType.TYPE_CLASS_PHONE -> {
-                if (mEngine.state !== SKKASCIIState) mEngine.processKey('l'.code)
-            }
+        val keyboardType = when (attribute.inputType and InputType.TYPE_MASK_CLASS) {
+            InputType.TYPE_CLASS_DATETIME -> skkPrefs.typeDateTime
+            InputType.TYPE_CLASS_NUMBER -> skkPrefs.typeNumber
+            InputType.TYPE_CLASS_PHONE -> skkPrefs.typePhone
             InputType.TYPE_CLASS_TEXT -> {
                 val variation = attribute.inputType and InputType.TYPE_MASK_VARIATION
-                if (variation == InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
-                        || variation == InputType.TYPE_TEXT_VARIATION_WEB_EMAIL_ADDRESS
-                        || variation == InputType.TYPE_TEXT_VARIATION_URI
-                        || variation == InputType.TYPE_TEXT_VARIATION_PASSWORD
-                        || variation == InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
-                        || variation == InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD
-                ) {
-                    if (mEngine.state !== SKKASCIIState) mEngine.processKey('l'.code)
+                when (variation) {
+                    InputType.TYPE_TEXT_VARIATION_URI-> skkPrefs.typeURI
+                    InputType.TYPE_TEXT_VARIATION_PASSWORD,
+                    InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD,
+                    InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD -> skkPrefs.typePassword
+                    InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS,
+                    InputType.TYPE_TEXT_VARIATION_WEB_EMAIL_ADDRESS -> "qwerty"
+                    else -> skkPrefs.typeText
                 }
             }
+            else -> "ignore"
+        }
+        when (keyboardType) {
+            "flick-jp" -> {
+                if (mEngine.state === SKKASCIIState) handleKanaKey()
+                if (mFlickJPInputView?.keyboard !== mFlickJPInputView?.mJPKeyboard) {
+                    mFlickJPInputView?.keyboard = mFlickJPInputView!!.mJPKeyboard
+                }
+            }
+            "flick-num" -> {
+                if (mEngine.state === SKKASCIIState) handleKanaKey()
+                if (mFlickJPInputView?.keyboard !== mFlickJPInputView?.mNumKeyboard) {
+                    mFlickJPInputView?.keyboard = mFlickJPInputView!!.mNumKeyboard
+                }
+            }
+            "qwerty" -> {
+                if (mEngine.state !== SKKASCIIState) mEngine.processKey('l'.code)
+                if (mQwertyInputView?.keyboard !== mQwertyInputView?.mLatinKeyboard) {
+                    mQwertyInputView?.keyboard = mQwertyInputView!!.mLatinKeyboard
+                }
+            }
+            "symbols" -> {
+                if (mEngine.state !== SKKASCIIState) mEngine.processKey('l'.code)
+                if (mQwertyInputView?.keyboard !== mQwertyInputView!!.mSymbolsKeyboard) {
+                    mQwertyInputView?.keyboard = mQwertyInputView!!.mSymbolsKeyboard
+                }
+            }
+            else -> if (restarting) currentInputConnection
+                .setComposingText(mEngine.mComposingText, mEngine.mCursorPosition)
         }
     }
 

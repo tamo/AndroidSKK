@@ -8,26 +8,26 @@
         >
         <androidx.preference.ListPreference
             app:key="@string/prefkey_use_softkey"
-            app:title="ソフトウェアキーボードの使用"
-            app:summary="「常に表示／非表示」が可能です"
+            app:title="ソフトウェアキーボードの表示"
             app:entries="@array/usesoftkey_entries"
             app:entryValues="@array/usesoftkey_values"
             app:defaultValue="auto"
+            app:useSimpleSummaryProvider="true"
             app:iconSpaceReserved="false"
             />
         <androidx.preference.ListPreference
             app:key="@string/prefkey_flick_sensitivity2"
-            app:title="フリック感度"
-            app:summary="「高」にすると反応しやすくなります。キーが縦に小さいときは「高」がおすすめ"
+            app:title="英字フリック感度 (高さが小さいときは「高」がおすすめ)"
             app:entries="@array/sensitivity_entries"
             app:entryValues="@array/sensitivity_values"
             app:dialogTitle="フリック感度"
             app:defaultValue="mid"
+            app:useSimpleSummaryProvider="true"
             app:iconSpaceReserved="false"
             />
         <androidx.preference.CheckBoxPreference
             app:key="@string/prefkey_use_popup"
-            app:title="ポップアップの使用"
+            app:title="ポップアップ (フリック入力用のガイド) の表示"
             app:summary="フリック入力用のガイドを表示します"
             app:disableDependentsState="false"
             app:defaultValue="true"
@@ -62,12 +62,12 @@
         >
         <androidx.preference.ListPreference
             app:key="@string/prefkey_theme"
-            app:title="テーマ"
-            app:summary="ライト/ダークモードを強制できます"
+            app:title="テーマの強制"
             app:entries="@array/theme_entries"
             app:entryValues="@array/theme_values"
             app:dialogTitle="テーマ"
             app:defaultValue="default"
+            app:useSimpleSummaryProvider="true"
             app:iconSpaceReserved="false"
             />
         <androidx.preference.CheckBoxPreference
@@ -93,68 +93,126 @@
         app:title="サイズと位置"
         app:iconSpaceReserved="false"
         >
+        <androidx.preference.SeekBarPreference
+            app:key="@string/prefkey_key_height_port"
+            app:title="キーボードの高さ（縦画面）"
+            app:summary="画面の高さに対する割合（％）"
+            app:defaultValue="30"
+            app:min="1"
+            android:max="100"
+            app:showSeekBarValue="true"
+            app:iconSpaceReserved="false"
+            />
+        <androidx.preference.SeekBarPreference
+            app:key="@string/prefkey_key_height_land"
+            app:title="キーボードの高さ（横画面）"
+            app:summary="画面の高さに対する割合（％）"
+            app:defaultValue="30"
+            app:min="1"
+            android:max="100"
+            app:showSeekBarValue="true"
+            app:iconSpaceReserved="false"
+            />
+        <!--			seekbar:step="5"-->
+        <androidx.preference.SeekBarPreference
+            app:key="@string/prefkey_key_width_port"
+            app:title="日本語キーボードの幅（縦画面）"
+            app:summary="画面の幅に対する割合（％）"
+            app:defaultValue="100"
+            app:min="1"
+            android:max="100"
+            app:showSeekBarValue="true"
+            app:iconSpaceReserved="false"
+            />
+        <!--			seekbar:step="5"-->
+        <androidx.preference.SeekBarPreference
+            app:key="@string/prefkey_key_width_land"
+            app:title="日本語キーボードの幅（横画面）"
+            app:summary="画面の幅に対する割合（％）"
+            app:defaultValue="100"
+            app:min="1"
+            android:max="100"
+            app:showSeekBarValue="true"
+            app:iconSpaceReserved="false"
+            />
+        <androidx.preference.SeekBarPreference
+            app:key="@string/prefkey_key_width_qwerty_zoom"
+            app:title="英字キーボード幅の倍率"
+            app:summary="日本語キーボードに対する割合（％）"
+            app:defaultValue="200"
+            app:min="100"
+            android:max="300"
+            app:showSeekBarValue="true"
+            app:iconSpaceReserved="false"
+            />
+        <androidx.preference.ListPreference
+            app:key="@string/prefkey_key_position"
+            app:title="キーボードの位置 (左右に寄せることができます)"
+            app:entries="@array/position_entries"
+            app:entryValues="@array/position_values"
+            app:dialogTitle="日本語キーボードの位置"
+            app:defaultValue="center"
+            app:useSimpleSummaryProvider="true"
+            app:iconSpaceReserved="false"
+            />
     </androidx.preference.PreferenceCategory>
-    <androidx.preference.SeekBarPreference
-        app:key="@string/prefkey_key_height_port"
-        app:title="キーボードの高さ（縦画面）"
-        app:summary="画面の高さに対する割合（％）"
-        app:defaultValue="30"
-        app:min="1"
-        android:max="100"
-        app:showSeekBarValue="true"
+    <androidx.preference.PreferenceCategory
+        app:title="入力欄のタイプ"
         app:iconSpaceReserved="false"
-        />
-    <androidx.preference.SeekBarPreference
-        app:key="@string/prefkey_key_height_land"
-        app:title="キーボードの高さ（横画面）"
-        app:summary="画面の高さに対する割合（％）"
-        app:defaultValue="30"
-        app:min="1"
-        android:max="100"
-        app:showSeekBarValue="true"
-        app:iconSpaceReserved="false"
-        />
-    <!--			seekbar:step="5"-->
-    <androidx.preference.SeekBarPreference
-        app:key="@string/prefkey_key_width_port"
-        app:title="日本語キーボードの幅（縦画面）"
-        app:summary="画面の幅に対する割合（％）"
-        app:defaultValue="100"
-        app:min="1"
-        android:max="100"
-        app:showSeekBarValue="true"
-        app:iconSpaceReserved="false"
-        />
-    <!--			seekbar:step="5"-->
-    <androidx.preference.SeekBarPreference
-        app:key="@string/prefkey_key_width_land"
-        app:title="日本語キーボードの幅（横画面）"
-        app:summary="画面の幅に対する割合（％）"
-        app:defaultValue="100"
-        app:min="1"
-        android:max="100"
-        app:showSeekBarValue="true"
-        app:iconSpaceReserved="false"
-        />
-    <androidx.preference.SeekBarPreference
-        app:key="@string/prefkey_key_width_qwerty_zoom"
-        app:title="英字キーボード幅の倍率"
-        app:summary="日本語キーボードに対する割合（％）"
-        app:defaultValue="200"
-        app:min="100"
-        android:max="300"
-        app:showSeekBarValue="true"
-        app:iconSpaceReserved="false"
-        />
-    <androidx.preference.ListPreference
-        app:key="@string/prefkey_key_position"
-        app:title="日本語キーボードの位置"
-        app:summary="左右に寄せることができます"
-        app:entries="@array/position_entries"
-        app:entryValues="@array/position_values"
-        app:dialogTitle="日本語キーボードの位置"
-        app:defaultValue="center"
-        app:showSeekBarValue="true"
-        app:iconSpaceReserved="false"
-        />
+        >
+        <androidx.preference.DropDownPreference
+            app:key="@string/prefkey_type_uri"
+            app:title="アドレスバー等のキーボード"
+            app:entries="@array/input_type_entries"
+            app:entryValues="@array/input_type_values"
+            app:defaultValue="ignore"
+            app:useSimpleSummaryProvider="true"
+            app:iconSpaceReserved="false"
+            />
+        <androidx.preference.DropDownPreference
+            app:key="@string/prefkey_type_date_time"
+            app:title="日時入力欄のキーボード"
+            app:entries="@array/input_type_entries"
+            app:entryValues="@array/input_type_values"
+            app:defaultValue="qwerty"
+            app:useSimpleSummaryProvider="true"
+            app:iconSpaceReserved="false"
+            />
+        <androidx.preference.DropDownPreference
+            app:key="@string/prefkey_type_number"
+            app:title="数字入力欄のキーボード"
+            app:entries="@array/input_type_entries"
+            app:entryValues="@array/input_type_values"
+            app:defaultValue="flick-num"
+            app:useSimpleSummaryProvider="true"
+            app:iconSpaceReserved="false"
+            />
+        <androidx.preference.DropDownPreference
+            app:key="@string/prefkey_type_phone"
+            app:title="電話番号欄のキーボード"
+            app:entries="@array/input_type_entries"
+            app:entryValues="@array/input_type_values"
+            app:defaultValue="flick-num"
+            app:useSimpleSummaryProvider="true"
+            app:iconSpaceReserved="false"
+            />
+        <androidx.preference.DropDownPreference
+            app:key="@string/prefkey_type_password"
+            app:title="パスワード欄のキーボード"
+            app:entries="@array/input_type_entries"
+            app:entryValues="@array/input_type_values"
+            app:defaultValue="qwerty"
+            app:useSimpleSummaryProvider="true"
+            app:iconSpaceReserved="false"
+            />
+        <androidx.preference.DropDownPreference
+            app:key="@string/prefkey_type_text"
+            app:title="設定されていないテキスト欄のキーボード"
+            app:entries="@array/input_type_entries"
+            app:entryValues="@array/input_type_values"
+            app:defaultValue="ignore"
+            app:useSimpleSummaryProvider="true"
+            app:iconSpaceReserved="false"
+            />
+    </androidx.preference.PreferenceCategory>
 </androidx.preference.PreferenceScreen>

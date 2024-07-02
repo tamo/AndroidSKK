@@ -99,6 +99,30 @@ class SKKPrefs(context: Context) {
         get() = prefs.getString(res.getString(R.string.prefkey_key_position), null) ?: "center"
         set(value) = prefs.edit().putString(res.getString(R.string.prefkey_key_position), value).apply()
 
+    var typeURI: String
+        get() = prefs.getString(res.getString(R.string.prefkey_type_uri), null) ?: "ignore"
+        set(value) = prefs.edit().putString(res.getString(R.string.prefkey_type_uri), value).apply()
+
+    var typeDateTime: String
+        get() = prefs.getString(res.getString(R.string.prefkey_type_date_time), null) ?: "qwerty"
+        set(value) = prefs.edit().putString(res.getString(R.string.prefkey_type_date_time), value).apply()
+
+    var typeNumber: String
+        get() = prefs.getString(res.getString(R.string.prefkey_type_number), null) ?: "flick-num"
+        set(value) = prefs.edit().putString(res.getString(R.string.prefkey_type_number), value).apply()
+
+    var typePhone: String
+        get() = prefs.getString(res.getString(R.string.prefkey_type_phone), null) ?: "flick-num"
+        set(value) = prefs.edit().putString(res.getString(R.string.prefkey_type_phone), value).apply()
+
+    var typePassword: String
+        get() = prefs.getString(res.getString(R.string.prefkey_type_password), null) ?: "qwerty"
+        set(value) = prefs.edit().putString(res.getString(R.string.prefkey_type_password), value).apply()
+
+    var typeText: String
+        get() = prefs.getString(res.getString(R.string.prefkey_type_text), null) ?: "ignore"
+        set(value) = prefs.edit().putString(res.getString(R.string.prefkey_type_text), value).apply()
+
     var useStickyMeta: Boolean
         get() = prefs.getBoolean(res.getString(R.string.prefkey_sticky_meta), false)
         set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_sticky_meta), value).apply()

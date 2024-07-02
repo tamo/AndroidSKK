@@ -9,7 +9,7 @@ import kotlin.math.ceil
 class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
     private lateinit var mService: SKKService
 
-    private val mLatinKeyboard = Keyboard(context, R.xml.qwerty)
+    val mLatinKeyboard = Keyboard(context, R.xml.qwerty)
     val mSymbolsKeyboard = Keyboard(context, R.xml.symbols)
 
     private var mFlickSensitivitySquared = 100

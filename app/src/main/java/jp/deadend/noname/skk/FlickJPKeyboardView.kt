@@ -38,8 +38,8 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
     private val mPopupOffset = intArrayOf(0, 0)
     private val mFixedPopupPos = intArrayOf(0, 0)
 
-    private val mJPKeyboard: Keyboard
-    private val mNumKeyboard: Keyboard
+    val mJPKeyboard: Keyboard
+    val mNumKeyboard: Keyboard
     private val mVoiceKeyboard: Keyboard
 
     private var mKutoutenLabel = "？\n． ，！\n…"
@@ -64,7 +64,8 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
         a.append(KEYCODE_FLICK_JP_CHAR_WA, arrayOf("わ", "を", "ん", "ー", "～", "", ""))
         a.append(KEYCODE_FLICK_JP_CHAR_TEN, arrayOf("、", "。", "？", "！", "…", "", ""))
         a.append(KEYCODE_FLICK_JP_CHAR_TEN_SHIFTED, arrayOf("　", "（", "「", "）", "」", "", ""))
-        a.append(KEYCODE_FLICK_JP_CHAR_TEN_NUM, arrayOf("，", "．", "−", "：", "", "", ""))
+        a.append(KEYCODE_FLICK_JP_CHAR_TEN_NUM, arrayOf("，", "．", "－", "：", "／", "", ""))
+        a.append(KEYCODE_FLICK_JP_CHAR_TEN_NUM_LEFT, arrayOf("＃", "￥", "＋", "＄", "＊", "", ""))
         a.append(KEYCODE_FLICK_JP_MOJI, arrayOf("カナ", "：", "10", "＞", "声", "", ""))
     }
 
@@ -649,6 +650,17 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
                     EnumSet.of(FlickState.LEFT)  -> mService.commitTextSKK(".", 1)
                     EnumSet.of(FlickState.UP)    -> mService.commitTextSKK("-", 1)
                     EnumSet.of(FlickState.RIGHT) -> mService.commitTextSKK(":", 1)
+                    EnumSet.of(FlickState.DOWN)  -> mService.commitTextSKK("/", 1)
+                }
+                return
+            }
+            KEYCODE_FLICK_JP_CHAR_TEN_NUM_LEFT -> {
+                when (flick) {
+                    EnumSet.of(FlickState.NONE)  -> mService.commitTextSKK("#", 1)
+                    EnumSet.of(FlickState.LEFT)  -> mService.commitTextSKK("￥", 1)
+                    EnumSet.of(FlickState.UP)    -> mService.commitTextSKK("+", 1)
+                    EnumSet.of(FlickState.RIGHT) -> mService.commitTextSKK("$", 1)
+                    EnumSet.of(FlickState.DOWN)  -> mService.commitTextSKK("*", 1)
                 }
                 return
             }
@@ -808,7 +820,8 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
                     KEYCODE_FLICK_JP_CHAR_TA, KEYCODE_FLICK_JP_CHAR_NA, KEYCODE_FLICK_JP_CHAR_HA,
                     KEYCODE_FLICK_JP_CHAR_MA, KEYCODE_FLICK_JP_CHAR_YA, KEYCODE_FLICK_JP_CHAR_RA,
                     KEYCODE_FLICK_JP_CHAR_WA, KEYCODE_FLICK_JP_CHAR_TEN,
-                    KEYCODE_FLICK_JP_CHAR_TEN_SHIFTED, KEYCODE_FLICK_JP_CHAR_TEN_NUM
+                    KEYCODE_FLICK_JP_CHAR_TEN_SHIFTED,
+                    KEYCODE_FLICK_JP_CHAR_TEN_NUM, KEYCODE_FLICK_JP_CHAR_TEN_NUM_LEFT
                     -> processFlickForLetter(mLastPressedKey, mFlickState, isShifted)
         }
 
@@ -898,6 +911,7 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
         private const val KEYCODE_FLICK_JP_CHAR_TEN = -211
         private const val KEYCODE_FLICK_JP_CHAR_TEN_SHIFTED = -212
         private const val KEYCODE_FLICK_JP_CHAR_TEN_NUM = -213
+        private const val KEYCODE_FLICK_JP_CHAR_TEN_NUM_LEFT = -214
         private const val KEYCODE_FLICK_JP_NONE = -1000
         private const val KEYCODE_FLICK_JP_LEFT = -1001
         private const val KEYCODE_FLICK_JP_RIGHT = -1002

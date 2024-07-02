@@ -50,4 +50,18 @@
 		<item>light</item>
 		<item>dark</item>
 	</string-array>
+	<string-array name="input_type_entries">
+		<item>変更しない</item>
+		<item>日本語にする</item>
+		<item>テンキーにする</item>
+		<item>英字にする</item>
+		<item>英数記号にする</item>
+	</string-array>
+	<string-array name="input_type_values">
+		<item>ignore</item>
+		<item>flick-jp</item>
+		<item>flick-num</item>
+		<item>qwerty</item>
+		<item>symbols</item>
+	</string-array>
 </resources>
