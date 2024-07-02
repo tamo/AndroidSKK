@@ -115,7 +115,11 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                 mService.updateSuggestionsASCII()
             }
             KEYCODE_QWERTY_TOJP -> mService.handleKanaKey()
-            KEYCODE_QWERTY_TOSYM -> keyboard = mSymbolsKeyboard
+            KEYCODE_QWERTY_TOSYM -> {
+                keyboard = mSymbolsKeyboard
+                isShifted = keyboard.isShifted
+                isCapsLocked = keyboard.isCapsLocked
+            }
             KEYCODE_QWERTY_TOLATIN -> {
                 keyboard = mLatinKeyboard
                 isShifted = keyboard.isShifted
