@@ -23,6 +23,7 @@ import jp.deadend.noname.dialog.ConfirmationDialogFragment
 import jp.deadend.noname.dialog.SimpleMessageDialogFragment
 import jp.deadend.noname.dialog.TextInputDialogFragment
 import jp.deadend.noname.skk.databinding.ActivityDicManagerBinding
+import java.util.zip.GZIPInputStream
 
 class SKKDicManager : AppCompatActivity() {
     private lateinit var binding: ActivityDicManagerBinding
@@ -186,10 +187,13 @@ class SKKDicManager : AppCompatActivity() {
             return null
         }
 
+        val isGzip = name.endsWith(".gz")
+        val nameWithoutGZ = if (isGzip) name.substring(0, name.length - 3) else name
+
         val dicFileBaseName = if (name.startsWith("SKK-JISYO.")) {
-            "skk_dict_" + name.substring(10)
+            "skk_dict_" + nameWithoutGZ.substring(10)
         } else {
-            "skk_dict_" + name.replace(".", "_")
+            "skk_dict_" + nameWithoutGZ.replace(".", "_")
         }
 
         val filesDir = filesDir
@@ -216,8 +220,13 @@ class SKKDicManager : AppCompatActivity() {
             recMan.setNamedObject(getString(R.string.btree_name), btree.recordId)
             recMan.commit()
 
+            val charset = if (contentResolver.openInputStream(uri)!!.use { inputStream ->
+                    val processedInputStream = if (isGzip) GZIPInputStream(inputStream) else inputStream
+                    isTextDicInEucJp(processedInputStream)
+            }) "EUC-JP" else "UTF-8"
             contentResolver.openInputStream(uri)?.use { inputStream ->
-                loadFromTextDic(inputStream, recMan, btree, false)
+                val processedInputStream = if (isGzip) GZIPInputStream(inputStream) else inputStream
+                loadFromTextDic(processedInputStream, charset, recMan, btree, false)
             }
         } catch (e: IOException) {
             if (e is CharacterCodingException) {

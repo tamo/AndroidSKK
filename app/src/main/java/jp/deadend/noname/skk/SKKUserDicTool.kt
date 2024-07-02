@@ -30,6 +30,7 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.zip.GZIPInputStream
 
 class SKKUserDicTool : AppCompatActivity() {
     private lateinit var mDicName: String
@@ -47,8 +48,15 @@ class SKKUserDicTool : AppCompatActivity() {
         if (uri != null) {
             openUserDict()
             try {
+                val name = getFileNameFromUri(this, uri)
+                val isGzip = name!!.endsWith(".gz")
+                val charset = if (contentResolver.openInputStream(uri)!!.use { inputStream ->
+                    val processedInputStream = if (isGzip) GZIPInputStream(inputStream) else inputStream
+                    isTextDicInEucJp(processedInputStream)
+                }) "EUC-JP" else "UTF-8"
                 contentResolver.openInputStream(uri)?.use { inputStream ->
-                    loadFromTextDic(inputStream, mRecMan, mBtree, false)
+                    val processedInputStream = if (isGzip) GZIPInputStream(inputStream) else inputStream
+                    loadFromTextDic(processedInputStream, charset, mRecMan, mBtree, false)
                 }
             } catch (e: IOException) {
                 if (e is CharacterCodingException) {

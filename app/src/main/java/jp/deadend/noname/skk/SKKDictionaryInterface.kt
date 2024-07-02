@@ -13,6 +13,8 @@ import jdbm.helper.TupleBrowser
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ensureActive
 import java.io.InputStream
+import java.nio.charset.CharacterCodingException
+import java.util.zip.GZIPInputStream
 
 @Throws(IOException::class)
 private fun appendToEntry(key: String, value: String, btree: BTree<String, String>) {
@@ -31,16 +33,39 @@ private fun appendToEntry(key: String, value: String, btree: BTree<String, Strin
     }
 }
 
+internal fun isTextDicInEucJp(inputStream: InputStream): Boolean {
+    val decoder = Charset.forName("EUC-JP").newDecoder()
+    decoder.onMalformedInput(CodingErrorAction.REPORT)
+    decoder.onUnmappableCharacter(CodingErrorAction.REPORT)
+    var failed = false
+    BufferedReader(InputStreamReader(inputStream, decoder)).use { bufferedReader ->
+        var count = 0
+        var prevLine = "0: (nothing has been read)"
+        try {
+            bufferedReader.forEachLine { line ->
+                prevLine = "${++count}: $line"
+                // if (count > 1000) { return@forEachLine }
+            }
+        } catch (e: CharacterCodingException) {
+            dlog("euc checker: failed after $prevLine")
+            failed = true
+        }
+        dlog("euc checker: read $count lines")
+    }
+    return !failed
+}
+
 @Throws(IOException::class)
 internal fun loadFromTextDic(
     inputStream: InputStream,
+    charset: String,
     recMan: RecordManager,
     btree: BTree<String, String>,
     overwrite: Boolean
 ) {
-    val decoder = Charset.forName("UTF-8").newDecoder()
+    val decoder = Charset.forName(charset).newDecoder()
     decoder.onMalformedInput(CodingErrorAction.REPORT)
-    decoder.onUnmappableCharacter(CodingErrorAction.REPORT)
+    decoder.onUnmappableCharacter(CodingErrorAction.REPLACE)
 
     BufferedReader(InputStreamReader(inputStream, decoder)).use { bufferedReader ->
         var count = 0
