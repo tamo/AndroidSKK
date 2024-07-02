@@ -59,6 +59,8 @@ class SKKEngine(
     )
     private var mLastConversion: ConversionInfo? = null
 
+    internal var isPersonalizedLearning = true
+
     init { setZenkakuPunctuationMarks("en") }
 
     fun reopenDictionaries(dics: List<SKKDictionary>) {
@@ -428,6 +430,9 @@ class SKKEngine(
             }
         }
 
+        if (!isPersonalizedLearning) {
+            ct.append("㊙")
+        }
         if (state === SKKAbbrevState || state === SKKKanjiState || state === SKKOkuriganaState) {
             ct.append("▽")
         } else if (state === SKKChooseState || state === SKKNarrowingState) {
@@ -579,6 +584,7 @@ class SKKEngine(
                         + "\")"
                         )
             }
+            // if (isPersonalizedLearning) のチェックはこの場合しないでおく
             mUserDict.addEntry(regInfo.key, regEntryStr, regInfo.okurigana)
             mUserDict.commitChanges()
             if (regInfo.okurigana.isNullOrEmpty()) {
@@ -655,8 +661,10 @@ class SKKEngine(
         val candList = mCandidatesList ?: return
         val candidate = processConcatAndEscape(removeAnnotation(candList[index]))
 
-        mUserDict.addEntry(mKanjiKey.toString(), candList[index], mOkurigana)
-        // ユーザー辞書登録時はエスケープや注釈を消さない
+        if (isPersonalizedLearning) {
+            mUserDict.addEntry(mKanjiKey.toString(), candList[index], mOkurigana)
+            // ユーザー辞書登録時はエスケープや注釈を消さない
+        }
 
         commitTextSKK(candidate, 1)
         val okuri = mOkurigana
@@ -708,14 +716,19 @@ class SKKEngine(
             }
 
             SKKASCIIState -> {
-                val maxFreq = findCandidates(s)!!
-                    .plus("160")
-                    .maxOf {
-                        try { it.toInt() }
-                        catch(_: Exception) { 0 }
-                    }
-                mASCIIDict.addEntry(s, maxFreq.toString(), mOkurigana)
-                mASCIIDict.commitChanges()
+                if (isPersonalizedLearning) {
+                    val maxFreq = findCandidates(s)!!
+                        .plus("160")
+                        .maxOf {
+                            try {
+                                it.toInt()
+                            } catch (_: Exception) {
+                                0
+                            }
+                        }
+                    mASCIIDict.addEntry(s, maxFreq.toString(), mOkurigana)
+                    mASCIIDict.commitChanges()
+                }
                 commitTextSKK(s.subSequence(getPrefixASCII().length, s.length), 1)
                 deleteSuffixASCII()
                 reset()

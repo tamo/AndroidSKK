@@ -444,6 +444,10 @@ class SKKService : InputMethodService() {
         if (restarting) {
             return
         }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            mEngine.isPersonalizedLearning =
+                (attribute.imeOptions and EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING) == 0
+        }
         when (attribute.inputType and InputType.TYPE_MASK_CLASS) {
             InputType.TYPE_CLASS_NUMBER,
             InputType.TYPE_CLASS_DATETIME,
