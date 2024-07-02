@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
 import java.io.*
+import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 
 //private val PAT_QUOTED = "\"(.+?)\"".toRegex()
@@ -106,18 +107,29 @@ fun getFileNameFromUri(context: Context, uri: Uri): String? {
 @Throws(IOException::class)
 internal fun unzipFile(input: InputStream, outDir: File) {
     val zis = ZipInputStream(BufferedInputStream(input))
-    val ze = zis.nextEntry
-    val bos = BufferedOutputStream(FileOutputStream(File(outDir, ze.name)))
-    val buf = ByteArray(1024)
+    var ze: ZipEntry
+    while (zis.nextEntry.also { ze = it } != null) {
+        val f = File(outDir, ze.name)
+        if (!f.canonicalPath.startsWith(outDir.canonicalPath)) {
+            throw IOException("zip path traversal")
+        }
+        if (f.isDirectory) {
+            f.mkdirs()
+        } else {
+            f.parentFile?.mkdirs()
+            val bos = BufferedOutputStream(FileOutputStream(f))
+            val buf = ByteArray(1024)
 
-    var size = zis.read(buf, 0, buf.size)
-    while (size > -1) {
-        bos.write(buf, 0, size)
-        size = zis.read(buf, 0, buf.size)
+            var size = zis.read(buf, 0, buf.size)
+            while (size > -1) {
+                bos.write(buf, 0, size)
+                size = zis.read(buf, 0, buf.size)
+            }
+
+            bos.close()
+        }
+        zis.closeEntry()
     }
-
-    bos.close()
-    zis.closeEntry()
     zis.close()
 }
 
