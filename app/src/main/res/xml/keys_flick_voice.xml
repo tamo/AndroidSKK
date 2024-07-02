@@ -1,11 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Keyboard xmlns:android="http://schemas.android.com/apk/res/android"
-	xmlns:app="http://schemas.android.com/apk/res-auto"
+<Keyboard xmlns:app="http://schemas.android.com/apk/res-auto"
 	app:keyWidth="20%p"
 	app:horizontalGap="0dip"
 	app:verticalGap="0dip"
-	app:keyHeight="8%p"
-	>
+	app:keyHeight="8%p">
 	<Row>
 		<Key app:codes="0" />
 		<Key app:codes="0"/>
