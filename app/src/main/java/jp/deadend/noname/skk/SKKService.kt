@@ -444,7 +444,6 @@ class SKKService : InputMethodService() {
                 (attribute.imeOptions and EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING) == 0
         }
         val keyboardType = when (attribute.inputType and InputType.TYPE_MASK_CLASS) {
-            InputType.TYPE_CLASS_DATETIME -> skkPrefs.typeDateTime
             InputType.TYPE_CLASS_NUMBER -> skkPrefs.typeNumber
             InputType.TYPE_CLASS_PHONE -> skkPrefs.typePhone
             InputType.TYPE_CLASS_TEXT -> {
@@ -459,6 +458,7 @@ class SKKService : InputMethodService() {
                     else -> skkPrefs.typeText
                 }
             }
+            // InputType.TYPE_CLASS_DATETIME -> "ignore" // ウェブブラウザが使ってないタイプなので無視
             else -> "ignore"
         }
         when (keyboardType) {

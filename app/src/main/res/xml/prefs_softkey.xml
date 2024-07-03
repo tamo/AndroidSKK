@@ -170,15 +170,6 @@
             app:iconSpaceReserved="false"
             />
         <androidx.preference.DropDownPreference
-            app:key="@string/prefkey_type_date_time"
-            app:title="日時入力欄のキーボード"
-            app:entries="@array/input_type_entries"
-            app:entryValues="@array/input_type_values"
-            app:defaultValue="qwerty"
-            app:useSimpleSummaryProvider="true"
-            app:iconSpaceReserved="false"
-            />
-        <androidx.preference.DropDownPreference
             app:key="@string/prefkey_type_number"
             app:title="数字入力欄のキーボード"
             app:entries="@array/input_type_entries"

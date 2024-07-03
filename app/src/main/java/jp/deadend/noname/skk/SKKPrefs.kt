@@ -103,10 +103,6 @@ class SKKPrefs(context: Context) {
         get() = prefs.getString(res.getString(R.string.prefkey_type_uri), null) ?: "ignore"
         set(value) = prefs.edit().putString(res.getString(R.string.prefkey_type_uri), value).apply()
 
-    var typeDateTime: String
-        get() = prefs.getString(res.getString(R.string.prefkey_type_date_time), null) ?: "qwerty"
-        set(value) = prefs.edit().putString(res.getString(R.string.prefkey_type_date_time), value).apply()
-
     var typeNumber: String
         get() = prefs.getString(res.getString(R.string.prefkey_type_number), null) ?: "flick-num"
         set(value) = prefs.edit().putString(res.getString(R.string.prefkey_type_number), value).apply()

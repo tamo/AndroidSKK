@@ -62,7 +62,6 @@
 	<string translatable="false" name="prefkey_key_width_qwerty_zoom">PrefKeyKeyWidthQwertyZoom</string>
 	<string translatable="false" name="prefkey_key_position">PrefKeyKeyPosition</string>
 	<string translatable="false" name="prefkey_type_uri">PrefKeyTypeURI</string>
-	<string translatable="false" name="prefkey_type_date_time">PrefKeyTypeDateTime</string>
 	<string translatable="false" name="prefkey_type_number">PrefKeyTypeNumber</string>
 	<string translatable="false" name="prefkey_type_phone">PrefKeyTypePhone</string>
 	<string translatable="false" name="prefkey_type_password">PrefKeyTypePassword</string>
