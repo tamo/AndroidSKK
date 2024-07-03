@@ -885,6 +885,18 @@ class SKKService : InputMethodService() {
 
     fun changeSoftKeyboard(state: SKKState) {
         if (!mUseSoftKeyboard) return
+
+        // 長押しリピートの message が残っている可能性があるので止める
+        val currentKeyboardView = when (mEngine.state) {
+            SKKAbbrevState -> mAbbrevKeyboardView
+            SKKASCIIState -> mQwertyInputView
+            SKKChooseState, SKKHiraganaState, SKKKanjiState, SKKKatakanaState,
+            SKKNarrowingState, SKKOkuriganaState -> mFlickJPInputView
+            SKKZenkakuState -> mFlickJPInputView // よく分からない
+            else -> null
+        }
+        currentKeyboardView?.stopRepeatKey()
+
         when (state) {
             SKKASCIIState -> {
                 val qwerty = mQwertyInputView ?: return

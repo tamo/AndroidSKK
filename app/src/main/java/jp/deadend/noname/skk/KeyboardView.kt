@@ -113,7 +113,7 @@ open class KeyboardView @JvmOverloads constructor(
                     mPreviewText?.visibility = INVISIBLE
                     mPreviewPopup.dismiss()
                 }
-                MSG_REPEAT -> {
+                MSG_REPEAT -> if (mCurrentKey != NOT_A_KEY) {
                     detectAndSendKey(mCurrentKey, mLastTapTime)
                     sendMessageDelayed(Message.obtain(this, MSG_REPEAT), REPEAT_INTERVAL.toLong())
                 }
@@ -949,6 +949,12 @@ open class KeyboardView @JvmOverloads constructor(
         mBuffer = null
         mCanvas = null
         mMiniKeyboardCache.clear()
+    }
+
+    // なぜか mHandler.removeMessages(MSG_REPEAT) で止まらないので
+    fun stopRepeatKey() {
+        releaseKey(mCurrentKey)
+        mCurrentKey = NOT_A_KEY
     }
 
     private fun removeMessages() {
