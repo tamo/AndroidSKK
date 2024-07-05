@@ -317,11 +317,11 @@ class SKKEngine(
                 val s = mKanjiKey.toString() // ▽あい
                 val idx = s.length - 1
                 if (idx < 0) { return } // ▽
-                if (idx < 1 && type == LAST_CONVERTION_SHIFT) { return } // ▽あ
+                if (idx < 1 && type == LAST_CONVERSION_SHIFT) { return } // ▽あ
                 val newLastChar = RomajiConverter.convertLastChar(s.substring(idx), type) ?: return
 
                 mKanjiKey.deleteCharAt(idx)
-                if (type == LAST_CONVERTION_SHIFT) {
+                if (type == LAST_CONVERSION_SHIFT) {
                     mKanjiKey.append(RomajiConverter.getConsonantForVoiced(newLastChar))
                     mOkurigana = newLastChar
                     conversionStart(mKanjiKey) // ▼合い
@@ -335,7 +335,7 @@ class SKKEngine(
                 val hint = SKKNarrowingState.mHint // ▼藹 hint: わ
                 val idx = hint.length - 1
                 if (idx < 0) { return } // ▼藹 hint:
-                if (type == LAST_CONVERTION_SHIFT) { return }
+                if (type == LAST_CONVERSION_SHIFT) { return }
                 val newLastChar = RomajiConverter.convertLastChar(hint.substring(idx), type) ?: return
 
                 hint.deleteCharAt(idx)
@@ -346,7 +346,7 @@ class SKKEngine(
                 val okuri = mOkurigana ?: return // ▼合い (okuri = い)
                 val newOkuri = RomajiConverter.convertLastChar(okuri, type) ?: return
 
-                if (type == LAST_CONVERTION_SHIFT) {
+                if (type == LAST_CONVERSION_SHIFT) {
                     handleCancel() // ▽あ (mOkurigana = null)
                     mKanjiKey.append(newOkuri) // ▽あい
                     setComposingTextSKK(mKanjiKey, 1)
@@ -355,7 +355,7 @@ class SKKEngine(
                 }
                 // 例外: 送りがなが「っ」になる場合は，どのみち必ずt段の音なのでmKanjiKeyはそのまま
                 // 「ゃゅょ」で送りがなが始まる場合はないはず
-                if (type != LAST_CONVERTION_SMALL) {
+                if (type != LAST_CONVERSION_SMALL) {
                     mKanjiKey.deleteCharAt(mKanjiKey.length - 1)
                     mKanjiKey.append(RomajiConverter.getConsonantForVoiced(newOkuri))
                 }
@@ -371,7 +371,7 @@ class SKKEngine(
                 if (firstEntry != null) {
                     if (firstEntry.isEmpty()) { return }
                     firstEntry.deleteCharAt(firstEntry.length - 1)
-                    if (type == LAST_CONVERTION_SHIFT) {
+                    if (type == LAST_CONVERSION_SHIFT) {
                         mKanjiKey.append(katakana2hiragana(newLastChar))
                         changeState(SKKKanjiState)
                         setComposingTextSKK(mKanjiKey, 1)
@@ -382,7 +382,7 @@ class SKKEngine(
                     }
                 } else {
                     ic.deleteSurroundingText(1, 0)
-                    if (type == LAST_CONVERTION_SHIFT) {
+                    if (type == LAST_CONVERSION_SHIFT) {
                         mKanjiKey.append(katakana2hiragana(newLastChar))
                         changeState(SKKKanjiState)
                         setComposingTextSKK(mKanjiKey, 1)
@@ -804,10 +804,11 @@ class SKKEngine(
     }
 
     companion object {
-        const val LAST_CONVERTION_SMALL = "small"
-        const val LAST_CONVERTION_DAKUTEN = "daku"
-        const val LAST_CONVERTION_HANDAKUTEN = "handaku"
-        const val LAST_CONVERTION_SHIFT = "shift"
+        const val LAST_CONVERSION_SMALL = "small"
+        const val LAST_CONVERSION_DAKUTEN = "daku"
+        const val LAST_CONVERSION_HANDAKUTEN = "handaku"
+        const val LAST_CONVERSION_TRANS = "trans"
+        const val LAST_CONVERSION_SHIFT = "shift"
         const val ASCII_WORD_MAX_LENGTH = 32
     }
 }

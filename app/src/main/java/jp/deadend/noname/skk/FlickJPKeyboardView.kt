@@ -234,17 +234,25 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
             }
         }
         mKutoutenKey.label = mKutoutenLabel
-        // キャンセルキー
-        if (skkPrefs.useSoftCancelKey) {
-            findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_KOMOJI)?.label = "小\n └゛CXL └゜\n▽"
-            mFlickGuideLabelList.put(
-                KEYCODE_FLICK_JP_KOMOJI, arrayOf("CXL", "゛", "小", "゜", "▽", "", "")
-            )
-        } else {
-            findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_KOMOJI)?.label = "CXL\n └゛小 └゜\n▽"
-            mFlickGuideLabelList.put(
-                KEYCODE_FLICK_JP_KOMOJI, arrayOf("小", "゛", "CXL", "゜", "▽", "", "")
-            )
+        when {
+            skkPrefs.useSoftCancelKey -> {
+                findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_KOMOJI)?.label = "小\n └゛CXL └゜\n▽"
+                mFlickGuideLabelList.put(
+                    KEYCODE_FLICK_JP_KOMOJI, arrayOf("CXL", "゛", "小", "゜", "▽", "", "")
+                )
+            }
+            skkPrefs.useSoftTransKey -> {
+                findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_KOMOJI)?.label = "CXL\n└゛└゜\n▽"
+                mFlickGuideLabelList.put(
+                    KEYCODE_FLICK_JP_KOMOJI, arrayOf("└゛└゜", "゛", "CXL", "゜", "▽", "", "")
+                )
+            }
+            else -> {
+                findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_KOMOJI)?.label = "CXL\n └゛小 └゜\n▽"
+                mFlickGuideLabelList.put(
+                    KEYCODE_FLICK_JP_KOMOJI, arrayOf("小", "゛", "CXL", "゜", "▽", "", "")
+                )
+            }
         }
         // ポップアップ
         mUsePopup = skkPrefs.usePopup
@@ -677,7 +685,7 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
         if (isLeftCurve(flick)) {
             if (consonant == 't'.code && vowel == 'u'.code
                     || consonant == 'y'.code && (vowel == 'a'.code || vowel == 'u'.code || vowel == 'o'.code)) {
-                mService.changeLastChar(SKKEngine.LAST_CONVERTION_SMALL)
+                mService.changeLastChar(SKKEngine.LAST_CONVERSION_SMALL)
             }
         }
     }
@@ -786,18 +794,24 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
             }
             KEYCODE_FLICK_JP_ENTER  -> if (!mService.handleEnter()) mService.pressEnter()
             KEYCODE_FLICK_JP_KOMOJI -> {
-                val smallToCancelState = if (skkPrefs.useSoftCancelKey) {
-                    FlickState.UP to FlickState.NONE
-                } else {
-                    FlickState.NONE to FlickState.UP
-                }
+                val smallState = if (skkPrefs.useSoftCancelKey) FlickState.UP else FlickState.NONE
+                val cancelState = if (skkPrefs.useSoftCancelKey) FlickState.NONE else FlickState.UP
                 when (mFlickState) {
-                    EnumSet.of(smallToCancelState.first)  -> mService.changeLastChar(SKKEngine.LAST_CONVERTION_SMALL)
-                    EnumSet.of(FlickState.LEFT)  -> mService.changeLastChar(SKKEngine.LAST_CONVERTION_DAKUTEN)
-                    EnumSet.of(smallToCancelState.second)    -> mService.handleCancel()
-                    EnumSet.of(FlickState.RIGHT) -> mService.changeLastChar(SKKEngine.LAST_CONVERTION_HANDAKUTEN)
+                    EnumSet.of(smallState) ->
+                        mService.changeLastChar(
+                            if (!skkPrefs.useSoftCancelKey && skkPrefs.useSoftTransKey)
+                                SKKEngine.LAST_CONVERSION_TRANS
+                            else
+                                SKKEngine.LAST_CONVERSION_SMALL
+                        )
+                    EnumSet.of(FlickState.LEFT) ->
+                        mService.changeLastChar(SKKEngine.LAST_CONVERSION_DAKUTEN)
+                    EnumSet.of(cancelState) ->
+                        mService.handleCancel()
+                    EnumSet.of(FlickState.RIGHT) ->
+                        mService.changeLastChar(SKKEngine.LAST_CONVERSION_HANDAKUTEN)
                     EnumSet.of(FlickState.DOWN)  -> {
-                        mService.changeLastChar(SKKEngine.LAST_CONVERTION_SHIFT)
+                        mService.changeLastChar(SKKEngine.LAST_CONVERSION_SHIFT)
                         setHiraganaMode()
                     }
                 }
