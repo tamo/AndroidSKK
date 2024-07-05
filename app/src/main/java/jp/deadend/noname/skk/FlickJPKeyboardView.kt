@@ -167,7 +167,8 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
             }
             key = findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_RIGHT)
             if (key != null) {
-                key.label = " "
+                key.codes[0] = KEYCODE_FLICK_JP_GOOGLE
+                key.label = "Google\n変換"
             }
         } else {
             var key = findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_PASTE)
@@ -175,8 +176,9 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
                 key.codes[0] = KEYCODE_FLICK_JP_LEFT
                 key.label = ""
             }
-            key = findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_RIGHT)
+            key = findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_GOOGLE)
             if (key != null) {
+                key.codes[0] = KEYCODE_FLICK_JP_RIGHT
                 key.label = ""
             }
         }
@@ -782,6 +784,9 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
                 val clip = cs?.toString() ?: ""
                 mService.commitTextSKK(clip, 1)
             }
+            KEYCODE_FLICK_JP_GOOGLE -> {
+                mService.googleTransliterate()
+            }
         }
     }
 
@@ -934,11 +939,12 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
         private const val KEYCODE_FLICK_JP_MOJI = -1005
         private const val KEYCODE_FLICK_JP_KOMOJI = -1006
         private const val KEYCODE_FLICK_JP_ENTER = -1007
-        private const val KEYCODE_FLICK_JP_SEARCH = -1008
-        private const val KEYCODE_FLICK_JP_CANCEL = -1009
+//        private const val KEYCODE_FLICK_JP_SEARCH = -1008
+//        private const val KEYCODE_FLICK_JP_CANCEL = -1009
         private const val KEYCODE_FLICK_JP_TOKANA = -1010
         private const val KEYCODE_FLICK_JP_PASTE = -1011
         private const val KEYCODE_FLICK_JP_SPEECH = -1012
+        private const val KEYCODE_FLICK_JP_GOOGLE = -1013
         private enum class FlickState { NONE, LEFT, UP, RIGHT, DOWN, CURVE_LEFT, CURVE_RIGHT }
         private val POPUP_LABELS_NULL = arrayOf("", "", "", "", "", "", "")
     }

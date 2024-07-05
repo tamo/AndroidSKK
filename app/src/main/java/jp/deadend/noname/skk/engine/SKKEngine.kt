@@ -1,5 +1,7 @@
 package jp.deadend.noname.skk.engine
 
+import com.android.volley.toolbox.JsonArrayRequest
+import com.android.volley.toolbox.Volley
 import jp.deadend.noname.skk.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -7,6 +9,7 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.json.JSONException
 import java.util.ArrayDeque
 
 class SKKEngine(
@@ -608,6 +611,40 @@ class SKKEngine(
         setComposingTextSKK(mKanjiKey, 1)
         updateSuggestions(mKanjiKey.toString())
         mService.onFinishRegister()
+    }
+
+    internal fun googleTransliterate() {
+        if (mRegistrationStack.isEmpty()) { return }
+        val original = mRegistrationStack.peekFirst()?.key ?: return
+        val volleyQueue = Volley.newRequestQueue(mService)
+        volleyQueue.add(
+            JsonArrayRequest(
+                "https://www.google.com/transliterate?langpair=ja-Hira|ja&text=$original,",
+                { response ->
+                    try {
+                        val list = mutableListOf<String>()
+                        val jsonArray = response.getJSONArray(0).getJSONArray(1)
+                        if (jsonArray.length() == 0) {
+                            return@JsonArrayRequest
+                        }
+                        var i = 0
+                        while (i < jsonArray.length()) {
+                            list.add(jsonArray.get(i).toString())
+                            i++
+                        }
+                        changeState(SKKChooseState)
+
+                        mCandidatesList = list
+                        mCurrentCandidateIndex = 0
+                        mService.setCandidates(list)
+                        setCurrentCandidateToComposing()
+                    } catch (e: JSONException) {
+                        dlog("google JSON error: ${e.message}")
+                    }
+                },
+                { dlog ("google api error") }
+            )
+        )
     }
 
     private fun findCandidates(key: String): List<String>? {

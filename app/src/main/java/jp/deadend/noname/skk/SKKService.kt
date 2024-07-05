@@ -749,6 +749,9 @@ class SKKService : InputMethodService() {
     fun commitTextSKK(text: CharSequence, newCursorPosition: Int) {
         mEngine.commitTextSKK(text, newCursorPosition)
     }
+    fun googleTransliterate() {
+        mEngine.googleTransliterate()
+    }
     fun pickCandidateViewManually(index: Int) {
         mEngine.pickCandidateViewManually(index)
     }

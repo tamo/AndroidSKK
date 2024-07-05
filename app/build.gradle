@@ -41,6 +41,7 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.7.0'
     implementation 'androidx.preference:preference-ktx:1.2.1'
     implementation 'org.apache.directory.jdbm:apacheds-jdbm1:2.0.0-M3'
+    implementation 'com.android.volley:volley:1.2.1'
 }
 repositories {
     mavenCentral()
