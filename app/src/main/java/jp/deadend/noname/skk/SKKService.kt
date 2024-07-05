@@ -1,5 +1,6 @@
 package jp.deadend.noname.skk
 
+import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
@@ -15,7 +16,10 @@ import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.content.ClipboardManager
+import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import android.text.InputType
 import android.util.Log
 import android.util.TypedValue
@@ -837,6 +841,19 @@ class SKKService : InputMethodService() {
         if (mIsRecording) {
 //            mSpeechRecognizer.stopListening()
             return
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) { // checkSelfPermission は api 23 必要
+            if (listOf(Manifest.permission.RECORD_AUDIO).any { // 将来複数必要になったときのため List.any
+                checkSelfPermission(it) == PackageManager.PERMISSION_DENIED
+            }) {
+                // requestPermissions は activity が必要なので雑に設定画面を出すだけにする
+                startActivity(
+                    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                        .setData(Uri.fromParts("package", packageName, null))
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                )
+                return
+            }
         }
         mStreamVolume = mAudioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
         mAudioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 0, 0)
