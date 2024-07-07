@@ -768,6 +768,7 @@ open class KeyboardView @JvmOverloads constructor(
             }
             MotionEvent.ACTION_UP -> { // 最後の指
                 result = if (mActivePointerId == event.getPointerId(0)) {
+                    mActivePointerId = -1
                     onModifiedTouchEvent(event, false)
                 } else {
                     true // すでに前借りで消費されているので true でいいのでは？
