@@ -519,24 +519,20 @@ class SKKEngine(
 
     internal fun updateSuggestions(str: String) {
         val job = MainScope().launch(Dispatchers.Default) {
-            val list = mutableListOf<String>()
+            val set = mutableSetOf<String>()
 
             if (str.isNotEmpty()) {
-                for (dic in mDicts) {
-                    list.addAll(dic.findKeys(this, str))
+                (if (state === SKKASCIIState) mASCIIDict else mUserDict).let {
+                    set.addAll(it.findKeys(this, str))
                 }
-                val list2 = (if (state === SKKASCIIState) mASCIIDict else mUserDict)
-                    .findKeys(this, str, (state === SKKASCIIState))
-                for ((idx, s) in list2.withIndex()) {
-                    //個人辞書のキーを先頭に追加
-                    list.remove(s)
-                    list.add(idx, s)
+                for (dic in mDicts) {
+                    set.addAll(dic.findKeys(this, str))
                 }
             }
 
-            mCandidatesList = list
+            mCandidatesList = set.toList()
             mCurrentCandidateIndex = 0
-            withContext(Dispatchers.Main) { mService.setCandidates(list) }
+            withContext(Dispatchers.Main) { mService.setCandidates(mCandidatesList) }
         }
 
         mUpdateSuggestionsJob.cancel()

@@ -11,7 +11,8 @@ import java.io.File
 class SKKUserDictionary private constructor (
     override val mRecMan: RecordManager,
     override val mRecID: Long,
-    override val mBTree: BTree<String, String>
+    override val mBTree: BTree<String, String>,
+    override val mIsASCII: Boolean
 ): SKKDictionaryInterface {
     private var mOldKey: String = ""
     private var mOldValue: String = ""
@@ -129,9 +130,8 @@ class SKKUserDictionary private constructor (
     }
 
     companion object {
-        fun newInstance(context: SKKService, mDicFile: String, btreeName: String): SKKUserDictionary? {
-            if (mDicFile.contains(context.getString(R.string.dic_name_ascii))
-                && !File(mDicFile).exists()) {
+        fun newInstance(context: SKKService, mDicFile: String, btreeName: String, isASCII: Boolean): SKKUserDictionary? {
+            if (isASCII && !File(mDicFile).exists()) {
                 context.extractDictionary(withL = false, withASCII = true)
             }
             try {
@@ -142,9 +142,9 @@ class SKKUserDictionary private constructor (
                     recman.setNamedObject(btreeName, btree.recordId)
                     recman.commit()
                     dlog("New user dictionary created")
-                    return SKKUserDictionary(recman, recid, btree)
+                    return SKKUserDictionary(recman, recid, btree, isASCII)
                 } else {
-                    return SKKUserDictionary(recman, recid, BTree<String, String>().load(recman, recid))
+                    return SKKUserDictionary(recman, recid, BTree<String, String>().load(recman, recid), isASCII)
                 }
             } catch (e: Exception) {
                 Log.e("SKK", "Error in opening the dictionary: $e")

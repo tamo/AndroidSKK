@@ -11,6 +11,7 @@ class SKKDictionary private constructor (
         override val mRecID: Long,
         override val mBTree: BTree<String, String>
 ): SKKDictionaryInterface {
+    override val mIsASCII = false
 
     fun getCandidates(key: String): List<String>? {
         val value: String?

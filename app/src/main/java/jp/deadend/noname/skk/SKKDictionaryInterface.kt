@@ -92,8 +92,9 @@ interface SKKDictionaryInterface {
     val mRecMan: RecordManager
     val mRecID: Long
     val mBTree: BTree<String, String>
+    val mIsASCII: Boolean
 
-    fun findKeys(scope: CoroutineScope, key: String, isASCII: Boolean = false): List<String> {
+    fun findKeys(scope: CoroutineScope, key: String): List<String> {
         val list = mutableListOf<Tuple<String, Int>>()
         val tuple = Tuple<String, String>()
         val browser: TupleBrowser<String, String>
@@ -103,12 +104,12 @@ interface SKKDictionaryInterface {
         try {
             browser = mBTree.browse(key) ?: return listOf()
 
-            while (list.size < if (isASCII) 100 else 5) {
+            while (list.size < if (mIsASCII) 100 else 5) {
                 scope.ensureActive() // ここでキャンセルされる
                 if (!browser.getNext(tuple)) break
                 str = tuple.key
                 if (!str.startsWith(key)) break
-                if (isASCII) {
+                if (mIsASCII) {
                     val freq = tuple.value.let {
                         it.substring(1, it.length - 1) // 前後のスラッシュを除く
                             .substringBefore('/') // 複数になっている場合は最初だけ選ぶ
@@ -132,7 +133,7 @@ interface SKKDictionaryInterface {
             Log.e("SKK", "Error in findKeys(): $e")
             throw RuntimeException(e)
         }
-        if (isASCII) {
+        if (mIsASCII) {
             list.sortByDescending { it.value }
         }
 

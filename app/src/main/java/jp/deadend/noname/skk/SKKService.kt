@@ -171,7 +171,8 @@ class SKKService : InputMethodService() {
         val userDic = SKKUserDictionary.newInstance(
             this,
             filesDir.absolutePath + "/" + getString(R.string.dic_name_user),
-            getString(R.string.btree_name)
+            getString(R.string.btree_name),
+            isASCII = false
         )
         if (userDic == null) {
             mHandler.post {
@@ -184,7 +185,8 @@ class SKKService : InputMethodService() {
         val asciiDic = SKKUserDictionary.newInstance(
             this,
             filesDir.absolutePath + "/" + getString(R.string.dic_name_ascii),
-            getString(R.string.btree_name)
+            getString(R.string.btree_name),
+            isASCII = true
         )
         if (asciiDic == null) {
             mHandler.post {
