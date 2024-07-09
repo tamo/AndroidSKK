@@ -611,34 +611,47 @@ class SKKEngine(
 
     internal fun googleTransliterate() {
         if (mRegistrationStack.isEmpty()) { return }
-        val original = mRegistrationStack.peekFirst()?.key ?: return
+
+        // candidate から選択しただけで登録されるので、cancelRegister してから変換
+        val original = mRegistrationStack.removeFirst()?.key ?: return
+        dlog("googleTransliterate $original")
+        mKanjiKey.setLength(0)
+        mKanjiKey.append(original)
+        mComposing.setLength(0)
+        changeState(SKKKanjiState)
+        setComposingTextSKK(mKanjiKey, 1)
+        mService.onFinishRegister()
+
         val volleyQueue = Volley.newRequestQueue(mService)
         volleyQueue.add(
             JsonArrayRequest(
                 "https://www.google.com/transliterate?langpair=ja-Hira|ja&text=$original,",
                 { response ->
+                    dlog(" googleTransliterate response=${response.toString(4)}")
+                    val list = mutableListOf<String>()
                     try {
-                        val list = mutableListOf<String>()
                         val jsonArray = response.getJSONArray(0).getJSONArray(1)
-                        if (jsonArray.length() == 0) {
-                            return@JsonArrayRequest
-                        }
+                        if (jsonArray.length() == 0) { throw JSONException("no array") }
                         var i = 0
                         while (i < jsonArray.length()) {
                             list.add(jsonArray.get(i).toString())
                             i++
                         }
+                    } catch (e: JSONException) {
+                        dlog(" googleTransliterate JSON error: ${e.message}")
+                        list.addAll(arrayListOf(
+                            "(エラー)",
+                            hirakana2katakana(mKanjiKey.toString()) ?: mKanjiKey.toString()
+                        ))
+                    } finally {
                         changeState(SKKChooseState)
-
                         mCandidatesList = list
                         mCurrentCandidateIndex = 0
                         mService.setCandidates(list)
                         setCurrentCandidateToComposing()
-                    } catch (e: JSONException) {
-                        dlog("google JSON error: ${e.message}")
                     }
                 },
-                { dlog ("google api error") }
+                { e -> dlog(" googleTransliterate API error: ${e.message}") }
             )
         )
     }
