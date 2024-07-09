@@ -40,6 +40,7 @@
 	<string name="error_extracting_dic_failed">変換辞書の解凍に失敗しました。一旦アンインストールしてみてください</string>
 
 	<string translatable="false" name="prefkey_kutouten_type">PrefKeyKutoutenType</string>
+	<string translatable="false" name="prefkey_prefix_mark">PrefKeyPrefixMark</string>
 	<string translatable="false" name="prefkey_kana_key">PrefKeyKanaKey</string>
 	<string translatable="false" name="prefkey_toggle_kana_key">PrefKeyToggleKanaKey</string>
 	<string translatable="false" name="prefkey_cancel_key">PrefKeyCancelKey</string>

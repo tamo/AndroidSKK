@@ -15,6 +15,10 @@ class SKKPrefs(context: Context) {
         get() = prefs.getString(res.getString(R.string.prefkey_kutouten_type), null) ?: "en"
         set(value) = prefs.edit().putString(res.getString(R.string.prefkey_kutouten_type), value).apply()
 
+    var prefixMark: Boolean
+        get() = prefs.getBoolean(res.getString(R.string.prefkey_prefix_mark), true)
+        set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_prefix_mark), value).apply()
+
     var useCandidatesView: Boolean
         get() = prefs.getBoolean(res.getString(R.string.prefkey_use_candidates_view), true)
         set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_use_candidates_view), value).apply()

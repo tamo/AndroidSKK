@@ -5,11 +5,18 @@
     <androidx.preference.ListPreference
         app:key="@string/prefkey_kutouten_type"
         app:title="句読点のタイプ"
-        app:summary="かなモードで入力される句読点"
         app:entries="@array/kutouten_entries"
         app:entryValues="@array/kutouten_values"
         app:dialogTitle="句読点のタイプ"
         app:defaultValue="en"
+        app:useSimpleSummaryProvider="true"
+        app:iconSpaceReserved="false"
+        />
+    <androidx.preference.CheckBoxPreference
+        app:key="@string/prefkey_prefix_mark"
+        app:title="変換中の▽や▼を表示"
+        app:summary="表示しないでおけば途中で確定されても問題になりにくいです"
+        app:defaultValue="true"
         app:iconSpaceReserved="false"
         />
     <androidx.preference.SeekBarPreference

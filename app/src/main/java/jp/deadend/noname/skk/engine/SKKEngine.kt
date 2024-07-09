@@ -433,13 +433,15 @@ class SKKEngine(
             }
         }
 
-        if (!isPersonalizedLearning) {
-            ct.append("㊙")
-        }
-        if (state === SKKAbbrevState || state === SKKKanjiState || state === SKKOkuriganaState) {
-            ct.append("▽")
-        } else if (state === SKKChooseState || state === SKKNarrowingState) {
-            ct.append("▼")
+        if (skkPrefs.prefixMark) {
+            if (!isPersonalizedLearning) {
+                ct.append("㊙")
+            }
+            if (state === SKKAbbrevState || state === SKKKanjiState || state === SKKOkuriganaState) {
+                ct.append("▽")
+            } else if (state === SKKChooseState || state === SKKNarrowingState) {
+                ct.append("▼")
+            }
         }
         ct.append(text)
         if (state === SKKNarrowingState) {
