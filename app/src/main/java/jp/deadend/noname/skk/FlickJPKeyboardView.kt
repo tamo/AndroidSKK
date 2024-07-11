@@ -15,6 +15,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import jp.deadend.noname.skk.databinding.PopupFlickguideBinding
 import jp.deadend.noname.skk.engine.SKKEngine
+import jp.deadend.noname.skk.engine.SKKZenkakuState
 import java.util.EnumSet
 
 class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
@@ -147,7 +148,7 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
     private fun onSetShifted(isShifted: Boolean) {
         if (isShifted) {
             mKutoutenKey.codes[0] = KEYCODE_FLICK_JP_CHAR_TEN_SHIFTED
-            mKutoutenKey.label = "「\n（　）\n」"
+            mKutoutenKey.label = "「\n（　□　）\n」"
             mSpaceKey.label = "設定"
             mQwertyKey.label = "abbr"
         } else {
@@ -647,6 +648,7 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
             }
             KEYCODE_FLICK_JP_CHAR_TEN_SHIFTED -> {
                 when (flick) {
+                    EnumSet.of(FlickState.NONE)  -> mService.processKeyIn(SKKZenkakuState, ' '.code)
                     EnumSet.of(FlickState.LEFT)  -> mService.processKey('('.code)
                     EnumSet.of(FlickState.UP)    -> mService.processKey('['.code)
                     EnumSet.of(FlickState.RIGHT) -> mService.processKey(')'.code)
