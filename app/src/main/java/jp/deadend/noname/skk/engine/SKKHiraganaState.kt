@@ -35,11 +35,11 @@ object SKKHiraganaState : SKKState {
         }
         if (isUpper) {
             // 漢字変換候補入力の開始。KanjiModeへの移行
+            context.changeState(SKKKanjiState)
             if (composing.isNotEmpty()) {
-                context.commitTextSKK(composing, 1)
+                SKKKanjiState.processKey(context, composing[0].code)
                 composing.setLength(0)
             }
-            context.changeState(SKKKanjiState)
             SKKKanjiState.processKey(context, pcodeLower)
         } else {
             composing.append(pcodeLower.toChar())
