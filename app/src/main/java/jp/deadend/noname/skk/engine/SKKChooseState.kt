@@ -12,7 +12,7 @@ object SKKChooseState : SKKState {
         if (context.toggleKanaKey) {
             context.changeState(SKKASCIIState)
         } else {
-            context.changeState(SKKHiraganaState)
+            context.changeState(context.kanaState)
         }
     }
 
@@ -31,13 +31,13 @@ object SKKChooseState : SKKState {
             'l'.code, 'L'.code, '/'.code -> {
                 // 暗黙の確定
                 context.pickCurrentCandidate()
-                context.changeInputMode(pcode, true)
+                context.changeInputMode(pcode)
             }
             ':'.code -> context.changeState(SKKNarrowingState)
             else -> {
                 // 暗黙の確定
                 context.pickCurrentCandidate()
-                SKKHiraganaState.processKey(context, pcode)
+                context.kanaState.processKey(context, pcode)
             }
         }
     }
@@ -45,7 +45,7 @@ object SKKChooseState : SKKState {
     override fun afterBackspace(context: SKKEngine) {
         val kanjiKey = context.mKanjiKey
         if (kanjiKey.isEmpty()) {
-            context.changeState(SKKHiraganaState)
+            context.changeState(context.kanaState)
         } else {
             if (isAlphabet(kanjiKey[0].code)) { // Abbrevモード
                 context.changeState(SKKAbbrevState)

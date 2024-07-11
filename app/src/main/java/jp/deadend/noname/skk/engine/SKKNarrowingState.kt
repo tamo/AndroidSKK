@@ -20,7 +20,7 @@ object SKKNarrowingState : SKKState {
             pcode == 'l'.code || pcode == 'L'.code || pcode == '/'.code -> {
                 // 暗黙の確定
                 context.pickCurrentCandidate()
-                context.changeInputMode(pcode, true)
+                context.changeInputMode(pcode)
             }
             isAlphabet(pcode) -> {
                 val composing = context.mComposing

@@ -19,7 +19,8 @@ class SKKUserDictionary private constructor (
 
     class Entry(val candidates: MutableList<String>, val okuriBlocks: MutableList<Pair<String, String>>)
 
-    fun getEntry(key: String): Entry? {
+    fun getEntry(rawKey: String): Entry? {
+        val key = katakana2hiragana(rawKey) ?: return null
         val cd = mutableListOf<String>()
         val okr = mutableListOf<Pair<String, String>>()
 

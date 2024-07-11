@@ -14,7 +14,7 @@ object SKKZenkakuState : SKKState {
     }
 
     override fun handleKanaKey(context: SKKEngine) {
-        context.changeState(SKKHiraganaState)
+        context.changeState(context.kanaState)
     }
 
     override fun processKey(context: SKKEngine, pcode: Int) {

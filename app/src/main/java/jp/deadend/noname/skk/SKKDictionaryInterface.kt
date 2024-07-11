@@ -94,7 +94,8 @@ interface SKKDictionaryInterface {
     val mBTree: BTree<String, String>
     val mIsASCII: Boolean
 
-    fun findKeys(scope: CoroutineScope, key: String): List<String> {
+    fun findKeys(scope: CoroutineScope, rawKey: String): List<String> {
+        val key = katakana2hiragana(rawKey) ?: return listOf()
         val list = mutableListOf<Tuple<String, Int>>()
         val tuple = Tuple<String, String>()
         val browser: TupleBrowser<String, String>

@@ -20,7 +20,7 @@ object SKKOkuriganaState : SKKState {
         val okurigana = context.mOkurigana
 
         // l, L, / による暗黙の確定
-        if (context.changeInputMode(pcode, true)) {
+        if (context.changeInputMode(pcode)) {
             composing.setLength(0)
             context.commitTextSKK(kanjiKey, 1)
         }

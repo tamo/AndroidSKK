@@ -13,7 +13,8 @@ class SKKDictionary private constructor (
 ): SKKDictionaryInterface {
     override val mIsASCII = false
 
-    fun getCandidates(key: String): List<String>? {
+    fun getCandidates(rawKey: String): List<String>? {
+        val key = katakana2hiragana(rawKey) ?: return null
         val value: String?
         try {
             value = mBTree.find(key)

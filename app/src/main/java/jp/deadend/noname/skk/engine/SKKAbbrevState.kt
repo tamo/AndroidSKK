@@ -14,7 +14,7 @@ object SKKAbbrevState : SKKState {
     }
 
     override fun handleKanaKey(context: SKKEngine) {
-        context.changeState(SKKHiraganaState)
+        context.changeState(context.kanaState)
     }
 
     override fun processKey(context: SKKEngine, pcode: Int) {
@@ -27,7 +27,7 @@ object SKKAbbrevState : SKKState {
                 // 全角変換
                 val buf = kanjiKey.map { hankaku2zenkaku(it.code).toChar() }.joinToString("")
                 context.commitTextSKK(buf, 1)
-                context.changeState(SKKHiraganaState)
+                context.changeState(context.kanaState)
             }
             else -> {
                 kanjiKey.append(pcode.toChar())
@@ -45,7 +45,7 @@ object SKKAbbrevState : SKKState {
     }
 
     override fun handleCancel(context: SKKEngine): Boolean {
-        context.changeState(SKKHiraganaState)
+        context.changeState(context.kanaState)
         return true
     }
 }

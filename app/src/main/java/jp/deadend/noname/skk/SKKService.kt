@@ -35,7 +35,7 @@ import java.io.*
 class SKKService : InputMethodService() {
     private var mCandidateViewContainer: CandidateViewContainer? = null
     private var mCandidateView: CandidateView? = null
-    private var mFlickJPInputView: FlickJPKeyboardView? = null
+    internal var mFlickJPInputView: FlickJPKeyboardView? = null
     private var mQwertyInputView: QwertyKeyboardView? = null
     private var mAbbrevKeyboardView: AbbrevKeyboardView? = null
 
@@ -730,14 +730,10 @@ class SKKService : InputMethodService() {
     }
 
     fun processKey(pcode: Int) {
-        val oldState = mEngine.state
         mEngine.processKey(pcode)
-        if (oldState === SKKKatakanaState && mEngine.state === SKKKanjiState) {
-            mFlickJPInputView?.setHiraganaMode()
-            // 漢字モードを抜けてももうカタカナモードに戻らないので、表示をひらがなにする
-            // (本来の SKK では q でカタカナモードになったまま漢字変換できるので
-            // 怪物のセリフのような「オレハ強イ」とかも簡単に入力できるのだが)
-        }
+    }
+    fun processKeyIn(state: SKKState, pcode: Int) {
+        state.processKey(mEngine, pcode)
     }
     fun handleKanaKey() {
         mEngine.handleKanaKey()
@@ -923,6 +919,10 @@ class SKKService : InputMethodService() {
             SKKASCIIState -> {
                 val qwerty = mQwertyInputView ?: return
                 setInputView(qwerty)
+            }
+            SKKKanjiState -> {
+                val flick = mFlickJPInputView ?: return
+                setInputView(flick)
             }
             SKKHiraganaState -> {
                 val flick = mFlickJPInputView ?: return

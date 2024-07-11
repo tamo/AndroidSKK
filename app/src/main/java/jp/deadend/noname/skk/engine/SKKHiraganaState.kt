@@ -53,7 +53,7 @@ object SKKHiraganaState : SKKState {
                 if (isAlphabet(pcodeLower)) {
                     context.setComposingTextSKK(composing, 1)
                 } else {
-                    context.commitTextSKK(composing, 1)
+                    commitFunc(context, composing.toString())
                     composing.setLength(0)
                 }
             }
@@ -61,7 +61,12 @@ object SKKHiraganaState : SKKState {
     }
 
     override fun processKey(context: SKKEngine, pcode: Int) {
-        if (context.changeInputMode(pcode, true)) return
+//        if (!context.isHiragana) { // 内部状態とキーボードの齟齬を解消
+//            dlog("SKKHiraganaState.processKey(${pcode.toChar()}) while Engine.state=Katakana")
+//            context.changeState(SKKKatakanaState)
+//            return SKKKatakanaState.processKey(context, pcode)
+//        }
+        if (context.changeInputMode(pcode)) return
         processKana(context, pcode) { engine, hchr ->
             engine.commitTextSKK(hchr, 1)
             engine.mComposing.setLength(0)

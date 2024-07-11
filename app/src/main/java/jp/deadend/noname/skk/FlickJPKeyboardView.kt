@@ -20,7 +20,7 @@ import java.util.EnumSet
 class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
     private lateinit var mService: SKKService
 
-    private var isHiragana = true
+    internal var isHiragana = true
 
     private var mFlickSensitivitySquared = 100
     private var mCurveSensitivityMultiplier = 2.0f

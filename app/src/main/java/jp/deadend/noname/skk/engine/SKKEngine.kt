@@ -3,6 +3,7 @@ package jp.deadend.noname.skk.engine
 import com.android.volley.toolbox.JsonArrayRequest
 import com.android.volley.toolbox.Volley
 import jp.deadend.noname.skk.*
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
@@ -20,6 +21,10 @@ class SKKEngine(
 ) {
     var state: SKKState = SKKHiraganaState
         private set
+    internal val isHiragana: Boolean
+        get() = mService.mFlickJPInputView?.isHiragana ?: true
+    internal val kanaState: SKKState
+        get() = if (isHiragana) SKKHiraganaState else SKKKatakanaState
 
     // 候補のリスト．KanjiStateとAbbrevStateでは補完リスト，ChooseStateでは変換候補リストになる
     private var mCandidatesList: List<String>? = null
@@ -112,7 +117,7 @@ class SKKEngine(
         }
 
         if (state.isTransient) {
-            changeState(SKKHiraganaState)
+            changeState(kanaState)
             return true
         } else if (!mRegistrationStack.isEmpty()) {
             reset()
@@ -126,8 +131,11 @@ class SKKEngine(
         when (state) {
             SKKChooseState, SKKNarrowingState -> pickCandidate(mCurrentCandidateIndex)
             SKKKanjiState, SKKOkuriganaState, SKKAbbrevState -> {
-                commitTextSKK(mKanjiKey, 1)
-                changeState(SKKHiraganaState)
+                commitTextSKK(
+                    if (isHiragana) mKanjiKey else hirakana2katakana(mKanjiKey.toString())!!,
+                    1
+                )
+                changeState(kanaState)
             }
             else -> {
                 if (mComposing.isEmpty()) {
@@ -158,7 +166,7 @@ class SKKEngine(
         // 変換中のものがない場合
         if (clen == 0 && klen == 0) {
             if (state == SKKKanjiState || state == SKKAbbrevState) {
-                changeState(SKKHiraganaState)
+                changeState(kanaState)
                 return true
             }
             val firstEntry = mRegistrationStack.peekFirst()?.entry
@@ -212,7 +220,7 @@ class SKKEngine(
         mCandidatesList = null
         when {
             state.isTransient -> {
-                changeState(SKKHiraganaState)
+                changeState(kanaState)
                 mService.showStatusIcon(state.icon)
             }
             state === SKKASCIIState -> mService.hideStatusIcon()
@@ -304,7 +312,7 @@ class SKKEngine(
         }
 
         if (state.isTransient) {
-            changeState(SKKHiraganaState)
+            changeState(kanaState)
         } else {
             reset()
             mRegistrationStack.clear()
@@ -421,15 +429,17 @@ class SKKEngine(
 
             val regInfo = mRegistrationStack.peekFirst()
             if (regInfo != null) {
-                if (regInfo.okurigana == null) {
-                    ct.append(regInfo.key)
+                val key = if (isHiragana) regInfo.key else hirakana2katakana(regInfo.key)!!
+                val okuri = if (isHiragana) regInfo.okurigana else hirakana2katakana(regInfo.okurigana)
+                if (okuri == null) {
+                    ct.append(key)
                 } else {
-                    ct.append(regInfo.key.substring(0, regInfo.key.length - 1))
+                    ct.append(key.substring(0, key.length - 1))
                     ct.append("*")
-                    ct.append(regInfo.okurigana)
+                    ct.append(okuri)
                 }
                 ct.append("：")
-                ct.append(regInfo.entry)
+                ct.append(regInfo.entry) // ここはカナ変換しない
             }
         }
 
@@ -443,7 +453,7 @@ class SKKEngine(
                 ct.append("▼")
             }
         }
-        ct.append(text)
+        ct.append(if (isHiragana) text else hirakana2katakana(text.toString(), reversed = true))
         if (state === SKKNarrowingState) {
             ct.append(" hint: ", SKKNarrowingState.mHint, mComposing)
         }
@@ -524,12 +534,8 @@ class SKKEngine(
             val set = mutableSetOf<String>()
 
             if (str.isNotEmpty()) {
-                (if (state === SKKASCIIState) mASCIIDict else mUserDict).let {
-                    set.addAll(it.findKeys(this, str))
-                }
-                for (dic in mDicts) {
-                    set.addAll(dic.findKeys(this, str))
-                }
+                addFound(this, set, str, (if (state === SKKASCIIState) mASCIIDict else mUserDict))
+                for (dic in mDicts) { addFound(this, set, str, dic) }
             }
 
             mCandidatesList = set.toList()
@@ -541,6 +547,18 @@ class SKKEngine(
         mUpdateSuggestionsJob.invokeOnCompletion {
             mUpdateSuggestionsJob = job
             mUpdateSuggestionsJob.start()
+        }
+    }
+    private fun addFound(
+        scope: CoroutineScope,
+        target: MutableSet<String>,
+        key: String,
+        dic: SKKDictionaryInterface
+    ) {
+        if (isHiragana) {
+            target.addAll(dic.findKeys(scope, key))
+        } else for (hiraSuggestion in dic.findKeys(scope, key)) {
+            target.add(hirakana2katakana(hiraSuggestion, reversed = true)!!)
         }
     }
 
@@ -567,7 +585,7 @@ class SKKEngine(
 
     private fun registerStart(str: String) {
         mRegistrationStack.addFirst(RegistrationInfo(str, mOkurigana))
-        changeState(SKKHiraganaState)
+        changeState(kanaState)
         //setComposingTextSKK("", 1);
 
         mService.onStartRegister()
@@ -588,11 +606,9 @@ class SKKEngine(
             // if (isPersonalizedLearning) のチェックはこの場合しないでおく
             mUserDict.addEntry(regInfo.key, regEntryStr, regInfo.okurigana)
             mUserDict.commitChanges()
-            if (regInfo.okurigana.isNullOrEmpty()) {
-                commitTextSKK(regInfo.entry, 1)
-            } else {
-                commitTextSKK(regInfo.entry.append(regInfo.okurigana), 1)
-            }
+            commitTextSKK(regInfo.entry.append(
+                (if (isHiragana) regInfo.okurigana else hirakana2katakana(regInfo.okurigana)) ?: ""
+            ), 1) // entry は生で登録するが okurigana はひらがな
         }
         reset()
         if (!mRegistrationStack.isEmpty()) setComposingTextSKK("", 1)
@@ -693,11 +709,8 @@ class SKKEngine(
     fun setCurrentCandidateToComposing() {
         val candList = mCandidatesList ?: return
         val candidate = processConcatAndEscape(removeAnnotation(candList[mCurrentCandidateIndex]))
-        if (mOkurigana != null) {
-            setComposingTextSKK(candidate + mOkurigana, 1)
-        } else {
-            setComposingTextSKK(candidate, 1)
-        }
+        setComposingTextSKK(katakana2hiragana(candidate + (mOkurigana ?: ""))!!, 1)
+        // setComposingTextSKK はひらがなを期待している
     }
 
     internal fun pickCurrentCandidate() {
@@ -715,23 +728,17 @@ class SKKEngine(
         }
 
         commitTextSKK(candidate, 1)
-        val okuri = mOkurigana
+        val okuri = if (isHiragana) mOkurigana else hirakana2katakana(mOkurigana)
         if (okuri != null) {
             commitTextSKK(okuri, 1)
-            if (mRegistrationStack.isEmpty()) {
-                mLastConversion = ConversionInfo(
-                        candidate + okuri, candList, index, mKanjiKey.toString(), okuri
-                )
-            }
-        } else {
-            if (mRegistrationStack.isEmpty()) {
-                mLastConversion = ConversionInfo(
-                        candidate, candList, index, mKanjiKey.toString(), null
-                )
-            }
+        }
+        if (mRegistrationStack.isEmpty()) {
+            mLastConversion = ConversionInfo(
+                candidate + (okuri ?: ""), candList, index, mKanjiKey.toString(), okuri
+            )
         }
 
-        changeState(SKKHiraganaState)
+        changeState(kanaState)
     }
 
     private fun pickSuggestion(index: Int) {
@@ -747,17 +754,18 @@ class SKKEngine(
             }
 
             SKKKanjiState -> {
-                setComposingTextSKK(s, 1)
-                val li = s.length - 1
-                val last = s.codePointAt(li)
+                val hira = if (isHiragana) s else katakana2hiragana(s)!!
+                setComposingTextSKK(hira, 1) // 向こうでカタカナにするので
+                val li = hira.length - 1
+                val last = hira.codePointAt(li)
                 if (isAlphabet(last)) {
                     mKanjiKey.setLength(0)
-                    mKanjiKey.append(s.substring(0, li))
+                    mKanjiKey.append(hira.substring(0, li))
                     mComposing.setLength(0)
                     processKey(Character.toUpperCase(last))
                 } else {
                     mKanjiKey.setLength(0)
-                    mKanjiKey.append(s)
+                    mKanjiKey.append(hira)
                     mComposing.setLength(0)
                     conversionStart(mKanjiKey)
                 }
@@ -795,15 +803,11 @@ class SKKEngine(
         mCursorPosition = 1
     }
 
-    internal fun changeInputMode(pcode: Int, toKatakana: Boolean): Boolean {
+    internal fun changeInputMode(pcode: Int): Boolean {
         // 入力モード変更操作．変更したらtrue
         when (pcode) {
             'q'.code -> {
-                if (toKatakana) {
-                    changeState(SKKKatakanaState)
-                } else {
-                    changeState(SKKHiraganaState)
-                }
+                changeState(if (isHiragana) SKKKatakanaState else SKKHiraganaState)
                 return true
             }
             'l'.code ->  {

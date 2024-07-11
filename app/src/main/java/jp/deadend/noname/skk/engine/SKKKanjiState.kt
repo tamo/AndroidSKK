@@ -3,6 +3,7 @@ package jp.deadend.noname.skk.engine
 import jp.deadend.noname.skk.createTrimmedBuilder
 import jp.deadend.noname.skk.hirakana2katakana
 import jp.deadend.noname.skk.isVowel
+import jp.deadend.noname.skk.katakana2hiragana
 
 // 漢字変換のためのひらがな入力中(▽モード)
 object SKKKanjiState : SKKState {
@@ -35,16 +36,17 @@ object SKKKanjiState : SKKState {
                 context.commitTextSKK(kanjiKey, 1)
                 composing.setLength(0)
                 kanjiKey.setLength(0)
-                context.changeInputMode(pcode, true)
+                context.changeInputMode(pcode)
             }
 
             'q'.code -> {
                 // カタカナ変換
                 if (kanjiKey.isNotEmpty()) {
-                    val str = hirakana2katakana(kanjiKey.toString())
+                    val str = if (context.isHiragana) hirakana2katakana(kanjiKey.toString())
+                    else kanjiKey.toString()
                     if (str != null) context.commitTextSKK(str, 1)
                 }
-                context.changeState(SKKHiraganaState)
+                context.changeState(context.kanaState)
             }
 
             ' '.code, '>'.code -> {
@@ -86,7 +88,7 @@ object SKKKanjiState : SKKState {
 
                     if (hchr != null) {
                         composing.setLength(0)
-                        kanjiKey.append(hchr)
+                        kanjiKey.append(if (context.isHiragana) hchr else katakana2hiragana(hchr))
                         context.setComposingTextSKK(kanjiKey, 1)
                     } else {
                         context.setComposingTextSKK(kanjiKey.toString() + composing.toString(), 1)
@@ -106,7 +108,7 @@ object SKKKanjiState : SKKState {
     }
 
     override fun handleCancel(context: SKKEngine): Boolean {
-        context.changeState(SKKHiraganaState)
+        context.changeState(context.kanaState)
         return true
     }
 }

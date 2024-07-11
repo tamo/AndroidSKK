@@ -18,7 +18,7 @@ object SKKKatakanaState : SKKState {
     }
 
     override fun processKey(context: SKKEngine, pcode: Int) {
-        if (context.changeInputMode(pcode, false)) return
+        if (context.changeInputMode(pcode)) return
         SKKHiraganaState.processKana(context, pcode) { engine, hchr ->
             val str = hirakana2katakana(hchr)
             if (str != null) engine.commitTextSKK(str, 1)
