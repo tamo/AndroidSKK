@@ -1,19 +1,29 @@
 package jp.deadend.noname.skk
 
 import android.content.Context
-import android.graphics.*
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Paint
 import android.graphics.Paint.Align
+import android.graphics.PorterDuff
+import android.graphics.Rect
+import android.graphics.Typeface
 import android.graphics.drawable.Drawable
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.Message
 import android.util.AttributeSet
-import android.view.*
+import android.view.GestureDetector
 import android.view.GestureDetector.SimpleOnGestureListener
+import android.view.Gravity
+import android.view.HapticFeedbackConstants
+import android.view.LayoutInflater
+import android.view.MotionEvent
+import android.view.View
+import android.view.ViewConfiguration
 import android.widget.PopupWindow
 import android.widget.TextView
-import java.util.*
 import kotlin.math.abs
 
 open class KeyboardView @JvmOverloads constructor(

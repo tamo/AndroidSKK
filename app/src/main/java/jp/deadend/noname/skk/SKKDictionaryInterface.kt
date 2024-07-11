@@ -1,20 +1,18 @@
 package jp.deadend.noname.skk
 
 import android.util.Log
-import java.io.BufferedReader
-import java.io.IOException
-import java.io.InputStreamReader
-import java.nio.charset.Charset
-import java.nio.charset.CodingErrorAction
 import jdbm.RecordManager
 import jdbm.btree.BTree
 import jdbm.helper.Tuple
 import jdbm.helper.TupleBrowser
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ensureActive
+import java.io.BufferedReader
+import java.io.IOException
 import java.io.InputStream
-import java.nio.charset.CharacterCodingException
-import java.util.zip.GZIPInputStream
+import java.io.InputStreamReader
+import java.nio.charset.Charset
+import java.nio.charset.CodingErrorAction
 
 @Throws(IOException::class)
 private fun appendToEntry(key: String, value: String, btree: BTree<String, String>) {
