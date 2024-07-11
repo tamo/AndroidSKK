@@ -107,10 +107,9 @@ open class Keyboard {
 
         var isModifier = false
 
-        private val keyboard: Keyboard
+        private val keyboard: Keyboard = parent.parent
 
         init {
-            keyboard = parent.parent
             height = parent.defaultHeight
             width = parent.defaultWidth
             horizontalGap = parent.defaultHorizontalGap
