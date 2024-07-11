@@ -7,7 +7,6 @@ import android.util.AttributeSet
 import android.util.SparseArray
 import android.view.HapticFeedbackConstants
 import android.view.KeyEvent
-import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.WindowManager
 import android.widget.PopupWindow
@@ -287,8 +286,7 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
     }
 
     private fun createPopupGuide(context: Context): PopupWindow {
-        val view = (context.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater)
-                .inflate(R.layout.popup_flickguide, null)
+        val view = inflate(context, R.layout.popup_flickguide, null)
 
         val scale = getContext().resources.displayMetrics.density
         val size = (mPopupSize * scale + 0.5f).toInt()
