@@ -99,6 +99,7 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
     override fun onKey(primaryCode: Int) {
         when (primaryCode) {
             Keyboard.KEYCODE_DELETE -> {
+                if (!isCapsLocked) isShifted = false
                 if (!mService.handleBackspace()) mService.keyDownUp(KeyEvent.KEYCODE_DEL)
                 mService.updateSuggestionsASCII()
             }
@@ -111,6 +112,7 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                 isCapsLocked = true
             }
             KEYCODE_QWERTY_ENTER -> {
+                if (!isCapsLocked) isShifted = false
                 if (!mService.handleEnter()) mService.pressEnter()
                 mService.updateSuggestionsASCII()
             }

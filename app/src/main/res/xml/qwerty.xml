@@ -37,8 +37,7 @@
 
     <Row>
         <Key app:codes="-1,-7" app:keyIcon="@drawable/ic_keyboard_shift"
-                app:keyWidth="15%p" app:isModifier="true"
-                app:keyEdgeFlags="left"/>
+                app:keyWidth="15%p" app:isModifier="true" app:keyEdgeFlags="left"/>
         <Key app:keyLabel="z" app:shiftedLabel="Z" app:downLabel="*"/>
         <Key app:keyLabel="x" app:shiftedLabel="X" app:downLabel="&quot;"/>
         <Key app:keyLabel="c" app:shiftedLabel="C" app:downLabel="\'"

@@ -310,6 +310,7 @@ class SKKService : InputMethodService() {
         }
         qwerty.setFlickSensitivity(sensitivity)
         qwerty.backgroundAlpha = 255 * alpha / 100
+        abbrev.setFlickSensitivity(sensitivity)
         abbrev.backgroundAlpha = 255 * alpha / 100
     }
 
