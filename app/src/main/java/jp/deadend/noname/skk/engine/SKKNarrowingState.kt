@@ -71,4 +71,8 @@ object SKKNarrowingState : SKKState {
         context.conversionStart(context.mKanjiKey)
         return true
     }
+
+    override fun changeToFlick(context: SKKEngine): Boolean {
+        return false
+    }
 }

@@ -4,6 +4,10 @@ import android.content.Context
 import android.view.KeyEvent
 import android.view.MotionEvent
 import android.util.AttributeSet
+import jp.deadend.noname.skk.engine.SKKASCIIState
+import jp.deadend.noname.skk.engine.SKKHiraganaState
+import jp.deadend.noname.skk.engine.SKKState
+import jp.deadend.noname.skk.engine.SKKZenkakuState
 import kotlin.math.ceil
 
 class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
@@ -53,7 +57,7 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
             MotionEvent.ACTION_DOWN -> {
                 flickStartX = me.x
                 flickStartY = me.y
-                isFlicked = 0
+                isFlicked = FLICK_NONE
             }
             MotionEvent.ACTION_MOVE -> {
                 val dx = me.x - flickStartX
@@ -75,20 +79,20 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                             return true
                         }
                         dy < 0 && dx2 < dy2 -> {
-                            isFlicked = 1
-                            return true // 上フリック
+                            isFlicked = FLICK_UP
+                            return true
                         }
                         dy > 0 && dx2 < dy2 -> {
-                            isFlicked = -1
-                            return true // 下フリック
+                            isFlicked = FLICK_DOWN
+                            return true
                         }
                         else -> {
-                            isFlicked = 0
-                            // 左右に外れたので別のキーになるかもしれない
+                            isFlicked = FLICK_NONE
+                            // 左右に外れて別のキーになるかもしれないので return しない
                         }
                     }
                 } else {
-                    isFlicked = 0
+                    isFlicked = FLICK_NONE
                     return true // フリックなし (に戻す)
                 }
             }
@@ -116,16 +120,32 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                 if (!mService.handleEnter()) mService.pressEnter()
                 mService.updateSuggestionsASCII()
             }
-            KEYCODE_QWERTY_TOJP -> mService.handleKanaKey()
+            KEYCODE_QWERTY_TOJP -> {
+                val toggle = skkPrefs.toggleKanaKey
+                when (isFlicked) {
+                    (if (toggle) FLICK_NONE else FLICK_DOWN) -> mService.changeToFlick()
+                    (if (toggle) FLICK_DOWN else FLICK_NONE) -> mService.handleKanaKey()
+                }
+            }
             KEYCODE_QWERTY_TOSYM -> {
-                keyboard = mSymbolsKeyboard
-                isShifted = keyboard.isShifted
-                isCapsLocked = keyboard.isCapsLocked
+                when (isFlicked) {
+                    FLICK_NONE -> {
+                        keyboard = mSymbolsKeyboard
+                        isShifted = keyboard.isShifted
+                        isCapsLocked = keyboard.isCapsLocked
+                    }
+                    FLICK_DOWN -> mService.handleCancel()
+                }
             }
             KEYCODE_QWERTY_TOLATIN -> {
-                keyboard = mLatinKeyboard
-                isShifted = keyboard.isShifted
-                isCapsLocked = keyboard.isCapsLocked
+                when (isFlicked) {
+                    FLICK_NONE -> {
+                        keyboard = mLatinKeyboard
+                        isShifted = keyboard.isShifted
+                        isCapsLocked = keyboard.isCapsLocked
+                    }
+                    FLICK_DOWN -> mService.handleCancel()
+                }
             }
             else -> {
                 if (primaryCode == ' '.code && mSpaceFlicked) {
@@ -135,9 +155,9 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                 val shiftedCode = keyboard.shiftedCodes[primaryCode] ?: 0
                 val downCode = keyboard.downCodes[primaryCode] ?: 0
                 val code = when {
-                    isFlicked == -1 ->
+                    isFlicked == FLICK_DOWN ->
                         if (downCode > 0) downCode else primaryCode
-                    isShifted xor (isFlicked == 1) ->
+                    isShifted xor (isFlicked == FLICK_UP) ->
                         if (shiftedCode > 0) shiftedCode else primaryCode
                     else -> primaryCode
                 }
@@ -148,6 +168,31 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                 }
             }
         }
+        setKeyState(mService.engineState)
+    }
+
+    private fun findKeyByCode(code: Int) =
+        keyboard.keys.find { it.codes[0] == code }
+
+    fun setKeyState(state: SKKState): QwertyKeyboardView {
+        val kanaKey = findKeyByCode(KEYCODE_QWERTY_TOJP)
+        val kanaLabel = if (state.isTransient) "確定" else "かな"
+        val toggle = skkPrefs.toggleKanaKey
+        kanaKey?.label = if (toggle) "Flick" else kanaLabel
+        kanaKey?.downLabel = if (toggle) kanaLabel else "Flick"
+        kanaKey?.on = state === SKKHiraganaState // Kanji とか Choose とかで消えるのがイヤなら以下にする
+        // kanaKey?.on = (state !in listOf(SKKASCIIState, SKKZenkakuState) && mService.isHiragana)
+
+        val qKey = findKeyByCode('q'.code)
+        qKey?.on = (state !in listOf(SKKASCIIState, SKKZenkakuState) && !mService.isHiragana)
+
+        val lKey = findKeyByCode('l'.code)
+        lKey?.on = (state === SKKASCIIState)
+
+        isZenkaku = (state === SKKZenkakuState)
+
+        invalidateAllKeys()
+        return this
     }
 
     override fun onPress(primaryCode: Int) {
@@ -174,6 +219,9 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
         private const val KEYCODE_QWERTY_TOSYM   = -1009
         private const val KEYCODE_QWERTY_TOLATIN = -1010
         private const val KEYCODE_QWERTY_ENTER   = -1011
+        private const val FLICK_UP = 1
+        private const val FLICK_NONE = 0
+        private const val FLICK_DOWN = -1
     }
 
 }

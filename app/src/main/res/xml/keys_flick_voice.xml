@@ -26,7 +26,7 @@
 		<Key app:codes="-1004" app:keyIcon="@drawable/ic_keyboard_spacebar" />
 	</Row>
 	<Row app:rowEdgeFlags="bottom">
-		<Key app:codes="-1003" app:keyLabel="ABC" />
+		<Key app:codes="-1003" app:keyLabel="ＡＢＣ\nabc\nqwerty" />
 		<Key app:codes="40" app:keyLabel="（"/>
 		<Key app:codes="41" app:keyLabel="）" />
 		<Key app:codes="33" app:keyLabel="！"/>

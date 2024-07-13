@@ -21,10 +21,9 @@ class SKKEngine(
 ) {
     var state: SKKState = SKKHiraganaState
         private set
-    internal val isHiragana: Boolean
-        get() = mService.mFlickJPInputView?.isHiragana ?: true
     internal val kanaState: SKKState
-        get() = if (isHiragana) SKKHiraganaState else SKKKatakanaState
+        get() = if (mService.isHiragana) SKKHiraganaState else SKKKatakanaState
+    internal var cameFromFlick: Boolean = false
 
     // 候補のリスト．KanjiStateとAbbrevStateでは補完リスト，ChooseStateでは変換候補リストになる
     private var mCandidatesList: List<String>? = null
@@ -48,8 +47,6 @@ class SKKEngine(
     )
     val isRegistering: Boolean
         get() = !mRegistrationStack.isEmpty()
-    internal val toggleKanaKey: Boolean
-        get() = skkPrefs.toggleKanaKey
 
     // 単語登録のための情報
     private val mRegistrationStack = ArrayDeque<RegistrationInfo>()
@@ -117,7 +114,7 @@ class SKKEngine(
         }
 
         if (state.isTransient) {
-            changeState(kanaState)
+            changeState(kanaState, false)
             return true
         } else if (!mRegistrationStack.isEmpty()) {
             reset()
@@ -132,10 +129,12 @@ class SKKEngine(
             SKKChooseState, SKKNarrowingState -> pickCandidate(mCurrentCandidateIndex)
             SKKKanjiState, SKKOkuriganaState, SKKAbbrevState -> {
                 commitTextSKK(
-                    if (isHiragana) mKanjiKey else hirakana2katakana(mKanjiKey.toString())!!,
+                    if (mService.isHiragana) mKanjiKey else hirakana2katakana(mKanjiKey.toString())!!,
                     1
                 )
                 changeState(kanaState)
+                if (state === SKKAbbrevState && !cameFromFlick)
+                    mService.changeSoftKeyboard(SKKASCIIState)
             }
             else -> {
                 if (mComposing.isEmpty()) {
@@ -167,6 +166,8 @@ class SKKEngine(
         if (clen == 0 && klen == 0) {
             if (state == SKKKanjiState || state == SKKAbbrevState) {
                 changeState(kanaState)
+                if (state === SKKAbbrevState && !cameFromFlick)
+                    mService.changeSoftKeyboard(SKKASCIIState)
                 return true
             }
             val firstEntry = mRegistrationStack.peekFirst()?.entry
@@ -312,7 +313,7 @@ class SKKEngine(
         }
 
         if (state.isTransient) {
-            changeState(kanaState)
+            changeState(kanaState, false)
         } else {
             reset()
             mRegistrationStack.clear()
@@ -429,8 +430,8 @@ class SKKEngine(
 
             val regInfo = mRegistrationStack.peekFirst()
             if (regInfo != null) {
-                val key = if (isHiragana) regInfo.key else hirakana2katakana(regInfo.key)!!
-                val okuri = if (isHiragana) regInfo.okurigana else hirakana2katakana(regInfo.okurigana)
+                val key = if (mService.isHiragana) regInfo.key else hirakana2katakana(regInfo.key)!!
+                val okuri = if (mService.isHiragana) regInfo.okurigana else hirakana2katakana(regInfo.okurigana)
                 if (okuri == null) {
                     ct.append(key)
                 } else {
@@ -453,7 +454,7 @@ class SKKEngine(
                 ct.append("▼")
             }
         }
-        ct.append(if (isHiragana) text else hirakana2katakana(text.toString(), reversed = true))
+        ct.append(if (mService.isHiragana) text else hirakana2katakana(text.toString(), reversed = true))
         if (state === SKKNarrowingState) {
             ct.append(" hint: ", SKKNarrowingState.mHint, mComposing)
         }
@@ -555,7 +556,7 @@ class SKKEngine(
         key: String,
         dic: SKKDictionaryInterface
     ) {
-        if (isHiragana) {
+        if (mService.isHiragana) {
             target.addAll(dic.findKeys(scope, key))
         } else for (hiraSuggestion in dic.findKeys(scope, key)) {
             target.add(hirakana2katakana(hiraSuggestion, reversed = true)!!)
@@ -563,6 +564,7 @@ class SKKEngine(
     }
 
     internal fun updateSuggestionsASCII() {
+        if (state !== SKKASCIIState) return
         MainScope().launch(Dispatchers.Default) {
             delay(50) // バックスペースなどの処理が間に合っていないことがあるので
             updateSuggestions(getPrefixASCII())
@@ -585,7 +587,7 @@ class SKKEngine(
 
     private fun registerStart(str: String) {
         mRegistrationStack.addFirst(RegistrationInfo(str, mOkurigana))
-        changeState(kanaState)
+        changeState(kanaState, false)
         //setComposingTextSKK("", 1);
 
         mService.onStartRegister()
@@ -607,7 +609,7 @@ class SKKEngine(
             mUserDict.addEntry(regInfo.key, regEntryStr, regInfo.okurigana)
             mUserDict.commitChanges()
             commitTextSKK(regInfo.entry.append(
-                (if (isHiragana) regInfo.okurigana else hirakana2katakana(regInfo.okurigana)) ?: ""
+                (if (mService.isHiragana) regInfo.okurigana else hirakana2katakana(regInfo.okurigana)) ?: ""
             ), 1) // entry は生で登録するが okurigana はひらがな
         }
         reset()
@@ -728,7 +730,7 @@ class SKKEngine(
         }
 
         commitTextSKK(candidate, 1)
-        val okuri = if (isHiragana) mOkurigana else hirakana2katakana(mOkurigana)
+        val okuri = if (mService.isHiragana) mOkurigana else hirakana2katakana(mOkurigana)
         if (okuri != null) {
             commitTextSKK(okuri, 1)
         }
@@ -738,7 +740,7 @@ class SKKEngine(
             )
         }
 
-        changeState(kanaState)
+        changeState(kanaState, false)
     }
 
     private fun pickSuggestion(index: Int) {
@@ -754,7 +756,7 @@ class SKKEngine(
             }
 
             SKKKanjiState -> {
-                val hira = if (isHiragana) s else katakana2hiragana(s)!!
+                val hira = if (mService.isHiragana) s else katakana2hiragana(s)!!
                 setComposingTextSKK(hira, 1) // 向こうでカタカナにするので
                 val li = hira.length - 1
                 val last = hira.codePointAt(li)
@@ -807,7 +809,7 @@ class SKKEngine(
         // 入力モード変更操作．変更したらtrue
         when (pcode) {
             'q'.code -> {
-                changeState(if (isHiragana) SKKKatakanaState else SKKHiraganaState)
+                changeState(if (mService.isHiragana) SKKKatakanaState else SKKHiraganaState, false)
                 return true
             }
             'l'.code ->  {
@@ -829,12 +831,19 @@ class SKKEngine(
         return false
     }
 
-    internal fun changeState(state: SKKState) {
+    internal fun changeState(state: SKKState, changeSoftKeyboard: Boolean = true) {
+        cameFromFlick = !mService.isQwerty
         this.state = state
 
         if (!state.isTransient) {
             reset()
-            mService.changeSoftKeyboard(state)
+            if (changeSoftKeyboard) {
+                mService.changeSoftKeyboard(state)
+            } else when (state) {
+                // 内部状態だけ変更する
+                SKKHiraganaState -> mService.isHiragana = true
+                SKKKatakanaState -> mService.isHiragana = false
+            }
             if (!mRegistrationStack.isEmpty()) setComposingTextSKK("", 1)
             // reset()で一旦消してるので， 登録中はここまで来てからComposingText復活
         }

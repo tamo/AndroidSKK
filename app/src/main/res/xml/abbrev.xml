@@ -46,12 +46,12 @@
     </Row>
 
     <Row app:rowEdgeFlags="bottom">
-        <Key app:codes="-1010" app:keyLabel="全角"
-             app:keyWidth="15%p" app:keyEdgeFlags="left"/>
-        <Key app:codes="-1009" app:keyLabel="CXL"
+        <Key app:codes="-1008" app:keyLabel="かな" app:downLabel="Flick"
+                app:keyWidth="20%p" app:keyEdgeFlags="left"/>
+        <Key app:codes="-1010" app:keyLabel="全角" app:downLabel="CXL"
                 app:keyWidth="15%p"/>
         <Key app:codes="32" app:keyIcon="@drawable/ic_keyboard_spacebar"
-                app:keyWidth="50%p"/>
+                app:keyWidth="45%p"/>
         <Key app:codes="-1011" app:keyIcon="@drawable/ic_keyboard_return"
                 app:keyWidth="20%p" app:keyEdgeFlags="right"/>
     </Row>

@@ -5,7 +5,9 @@ object SKKASCIIState : SKKState {
     override val isTransient = false
     override val icon = 0
 
-    override fun handleKanaKey(context: SKKEngine) = context.changeState(context.kanaState)
+    override fun handleKanaKey(context: SKKEngine) {
+        context.changeState(SKKHiraganaState, false) // 内部だけひらがなに
+    }
 
     override fun processKey(context: SKKEngine, pcode: Int) {
         context.commitTextSKK(pcode.toChar().toString(), 1)
@@ -14,4 +16,9 @@ object SKKASCIIState : SKKState {
     override fun afterBackspace(context: SKKEngine) {}
 
     override fun handleCancel(context: SKKEngine) = false
+
+    override fun changeToFlick(context: SKKEngine): Boolean {
+        context.changeState(context.kanaState) // 元の「ひら/カタ」で FlickJP に
+        return true
+    }
 }

@@ -16,6 +16,7 @@ class AbbrevKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
     init {
         keyboard = mKeyboard
         onKeyboardActionListener = this
+        setKeyState()
     }
 
     override fun onDetachedFromWindow() {
@@ -46,7 +47,7 @@ class AbbrevKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
             MotionEvent.ACTION_DOWN -> {
                 flickStartX = me.x
                 flickStartY = me.y
-                isFlicked = 0
+                isFlicked = FLICK_NONE
             }
             MotionEvent.ACTION_MOVE -> {
                 val dx = me.x - flickStartX
@@ -56,20 +57,20 @@ class AbbrevKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                 if (dx2 + dy2 > mFlickSensitivitySquared) {
                     when {
                         dy < 0 && dx2 < dy2 -> {
-                            isFlicked = 1
-                            return true // 上フリック
+                            isFlicked = FLICK_UP
+                            return true
                         }
                         dy > 0 && dx2 < dy2 -> {
-                            isFlicked = -1
-                            return true // 下フリック
+                            isFlicked = FLICK_DOWN
+                            return true
                         }
                         else -> {
-                            isFlicked = 0
-                            // 左右に外れたので別のキーになるかもしれない
+                            isFlicked = FLICK_NONE
+                            // 左右に外れたので別のキーになるかもしれないので return しない
                         }
                     }
                 } else {
-                    isFlicked = 0
+                    isFlicked = FLICK_NONE
                     return true // フリックなし (に戻す)
                 }
             }
@@ -92,15 +93,26 @@ class AbbrevKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                 isCapsLocked = true
             }
             KEYCODE_ABBREV_ENTER -> if (!mService.handleEnter()) mService.pressEnter()
-            KEYCODE_ABBREV_CANCEL -> mService.handleCancel()
-            KEYCODE_ABBREV_ZENKAKU -> mService.processKey(primaryCode)
+            KEYCODE_ABBREV_TOJP -> {
+                val toggle = skkPrefs.toggleKanaKey
+                when (isFlicked) {
+                    (if (toggle) FLICK_NONE else FLICK_DOWN) -> mService.changeToFlick()
+                    (if (toggle) FLICK_DOWN else FLICK_NONE) -> mService.handleKanaKey()
+                }
+            }
+            KEYCODE_ABBREV_ZENKAKU -> {
+                when (isFlicked) {
+                    FLICK_NONE -> mService.processKey(primaryCode)
+                    FLICK_DOWN -> mService.handleCancel()
+                }
+            }
             else -> {
                 val shiftedCode = keyboard.shiftedCodes[primaryCode] ?: 0
                 val downCode = keyboard.downCodes[primaryCode] ?: 0
                 val code = when {
-                    isFlicked == -1 ->
+                    isFlicked == FLICK_DOWN ->
                         if (downCode > 0) downCode else primaryCode
-                    isShifted xor (isFlicked == 1) ->
+                    isShifted xor (isFlicked == FLICK_UP) ->
                         if (shiftedCode > 0) shiftedCode else primaryCode
                     else -> primaryCode
                 }
@@ -110,6 +122,16 @@ class AbbrevKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                 }
             }
         }
+    }
+
+    fun setKeyState(): AbbrevKeyboardView {
+        val kanaKey = keyboard.keys.find { it.codes[0] == KEYCODE_ABBREV_TOJP }
+        val toggle = skkPrefs.toggleKanaKey
+        kanaKey?.label = if (toggle) "Flick" else "かな"
+        kanaKey?.downLabel = if (toggle) "かな" else "Flick"
+
+        invalidateAllKeys()
+        return this
     }
 
     override fun onPress(primaryCode: Int) {}
@@ -127,9 +149,13 @@ class AbbrevKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
     override fun swipeUp() {}
 
     companion object {
-        private const val KEYCODE_ABBREV_CANCEL   = -1009
+        private const val KEYCODE_ABBREV_TOJP     = -1008
+        // private const val KEYCODE_ABBREV_CANCEL   = -1009
         private const val KEYCODE_ABBREV_ZENKAKU  = -1010
         private const val KEYCODE_ABBREV_ENTER    = -1011
+        private const val FLICK_UP = 1
+        private const val FLICK_NONE = 0
+        private const val FLICK_DOWN = -1
     }
 
 }

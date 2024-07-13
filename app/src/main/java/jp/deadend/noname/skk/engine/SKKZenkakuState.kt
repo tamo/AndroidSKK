@@ -3,6 +3,7 @@ package jp.deadend.noname.skk.engine
 import android.os.Build
 import jp.deadend.noname.skk.R
 import jp.deadend.noname.skk.hankaku2zenkaku
+// import jp.deadend.noname.skk.skkPrefs
 
 // 全角英数モード
 object SKKZenkakuState : SKKState {
@@ -14,7 +15,9 @@ object SKKZenkakuState : SKKState {
     }
 
     override fun handleKanaKey(context: SKKEngine) {
-        context.changeState(context.kanaState)
+        // ここで toggleKanaKey のとき ASCII にしなくていいのか？
+        // if (skkPrefs.toggleKanaKey) context.changeState(SKKASCIIState) else
+        context.changeState(context.kanaState, false) // 「かな」は状態だけ変更
     }
 
     override fun processKey(context: SKKEngine, pcode: Int) {
@@ -25,5 +28,10 @@ object SKKZenkakuState : SKKState {
 
     override fun handleCancel(context: SKKEngine): Boolean {
         return SKKHiraganaState.handleCancel(context)
+    }
+
+    override fun changeToFlick(context: SKKEngine): Boolean {
+        context.changeState(context.kanaState) // こちらはキーボードも変更
+        return true
     }
 }

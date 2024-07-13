@@ -53,9 +53,10 @@
     </Row>
 
     <Row app:rowEdgeFlags="bottom">
-        <Key app:codes="-1008" app:keyLabel="JP"
+        <Key app:codes="-1008" app:keyLabel="かな" app:downLabel="Flick"
                 app:keyWidth="20%p" app:keyEdgeFlags="left"/>
-        <Key app:codes="-1009" app:keyLabel="123" app:keyWidth="15%p"/>
+        <Key app:codes="-1009" app:keyLabel="記号" app:downLabel="CXL"
+                app:keyWidth="15%p"/>
         <Key app:codes="32" app:keyIcon="@drawable/ic_keyboard_spacebar"
                 app:keyWidth="30%p"/> <!-- app:isRepeatable="true" -->
         <Key app:keyLabel="." app:shiftedLabel=","

@@ -70,6 +70,7 @@ open class KeyboardView @JvmOverloads constructor(
 
     var isPreviewEnabled = true
     var backgroundAlpha = 255
+    var isZenkaku = false
 
     private var mLastX = 0
     private var mLastY = 0
@@ -390,9 +391,11 @@ open class KeyboardView @JvmOverloads constructor(
                     if (label.length > 1 && key.codes.size < 2) {
                         mPaint.textSize = mLabelTextSize.toFloat()
                         mPaint.typeface = Typeface.DEFAULT_BOLD
+                        mPaint.textScaleX = 1.0f
                     } else {
                         mPaint.textSize = mKeyTextSize.toFloat()
                         mPaint.typeface = Typeface.DEFAULT
+                        mPaint.textScaleX = if (isZenkaku) 1.4f else 1.0f
                     }
                     val lines = label.split("\n")
                     val numLines = lines.size
@@ -555,8 +558,7 @@ open class KeyboardView @JvmOverloads constructor(
         mPreviewText?.let { previewText ->
             if (keyIndex < 0 || keyIndex >= mKeyboard.keys.size) { return }
             val key = mKeyboard.keys[keyIndex]
-            if (key.icon != null || (key.label.length > 1 && key.codes.size < 2)) { return }
-            // show only single character keys
+            if (key.icon != null) { return }
 
             mPreviewNormalText = key.label
             mPreviewShiftedText = key.shiftedLabel

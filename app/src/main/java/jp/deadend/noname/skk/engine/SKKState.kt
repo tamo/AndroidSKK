@@ -7,4 +7,5 @@ interface SKKState {
     fun processKey(context: SKKEngine, pcode: Int)
     fun afterBackspace(context: SKKEngine)
     fun handleCancel(context: SKKEngine): Boolean
+    fun changeToFlick(context: SKKEngine): Boolean // ここで FlickJP に変更されたら true
 }

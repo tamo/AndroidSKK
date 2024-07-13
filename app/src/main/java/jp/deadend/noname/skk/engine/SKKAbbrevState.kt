@@ -14,7 +14,12 @@ object SKKAbbrevState : SKKState {
     }
 
     override fun handleKanaKey(context: SKKEngine) {
-        context.changeState(context.kanaState)
+        if (context.cameFromFlick) {
+            context.changeState(SKKHiraganaState)
+        } else {
+            context.changeState(SKKASCIIState) // qwerty を使う
+            context.changeState(SKKHiraganaState, false)
+        }
     }
 
     override fun processKey(context: SKKEngine, pcode: Int) {
@@ -27,7 +32,7 @@ object SKKAbbrevState : SKKState {
                 // 全角変換
                 val buf = kanjiKey.map { hankaku2zenkaku(it.code).toChar() }.joinToString("")
                 context.commitTextSKK(buf, 1)
-                context.changeState(context.kanaState)
+                handleKanaKey(context)
             }
             else -> {
                 kanjiKey.append(pcode.toChar())
@@ -45,6 +50,16 @@ object SKKAbbrevState : SKKState {
     }
 
     override fun handleCancel(context: SKKEngine): Boolean {
+        if (context.cameFromFlick) {
+            context.changeState(context.kanaState)
+        } else {
+            context.changeState(SKKASCIIState) // qwerty を使う
+            context.changeState(context.kanaState, false)
+        }
+        return true
+    }
+
+    override fun changeToFlick(context: SKKEngine): Boolean {
         context.changeState(context.kanaState)
         return true
     }

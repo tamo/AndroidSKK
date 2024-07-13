@@ -1,6 +1,7 @@
 package jp.deadend.noname.skk.engine
 
 import jp.deadend.noname.skk.isAlphabet
+import jp.deadend.noname.skk.skkPrefs
 
 // 変換候補選択中(▼モード)
 object SKKChooseState : SKKState {
@@ -9,10 +10,10 @@ object SKKChooseState : SKKState {
 
     override fun handleKanaKey(context: SKKEngine) {
         context.pickCurrentCandidate()
-        if (context.toggleKanaKey) {
+        if (skkPrefs.toggleKanaKey) {
             context.changeState(SKKASCIIState)
         } else {
-            context.changeState(context.kanaState)
+            context.changeState(SKKHiraganaState, false)
         }
     }
 
@@ -45,7 +46,7 @@ object SKKChooseState : SKKState {
     override fun afterBackspace(context: SKKEngine) {
         val kanjiKey = context.mKanjiKey
         if (kanjiKey.isEmpty()) {
-            context.changeState(context.kanaState)
+            context.changeState(context.kanaState, false)
         } else {
             if (isAlphabet(kanjiKey[0].code)) { // Abbrevモード
                 context.changeState(SKKAbbrevState)
@@ -64,5 +65,9 @@ object SKKChooseState : SKKState {
     override fun handleCancel(context: SKKEngine): Boolean {
         afterBackspace(context)
         return true
+    }
+
+    override fun changeToFlick(context: SKKEngine): Boolean {
+        return false
     }
 }

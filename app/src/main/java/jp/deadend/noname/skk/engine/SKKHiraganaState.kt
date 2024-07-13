@@ -3,6 +3,7 @@ package jp.deadend.noname.skk.engine
 import android.os.Build
 import jp.deadend.noname.skk.R
 import jp.deadend.noname.skk.isAlphabet
+import jp.deadend.noname.skk.skkPrefs
 
 // ひらがなモード
 object SKKHiraganaState : SKKState {
@@ -14,7 +15,7 @@ object SKKHiraganaState : SKKState {
     }
 
     override fun handleKanaKey(context: SKKEngine) {
-        if (context.toggleKanaKey) context.changeState(SKKASCIIState)
+        if (skkPrefs.toggleKanaKey) context.changeState(SKKASCIIState)
     }
 
     internal fun processKana(
@@ -84,5 +85,9 @@ object SKKHiraganaState : SKKState {
         } else {
             return context.reConversion()
         }
+    }
+
+    override fun changeToFlick(context: SKKEngine): Boolean {
+        return false
     }
 }

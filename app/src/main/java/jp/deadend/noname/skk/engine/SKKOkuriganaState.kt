@@ -1,13 +1,25 @@
 package jp.deadend.noname.skk.engine
 
 import jp.deadend.noname.skk.createTrimmedBuilder
+import jp.deadend.noname.skk.skkPrefs
 
 // 送り仮名入力中(▽モード，*つき)
 object SKKOkuriganaState : SKKState {
     override val isTransient = true
     override val icon = 0
 
-    override fun handleKanaKey(context: SKKEngine) {}
+    override fun handleKanaKey(context: SKKEngine) {
+        if (skkPrefs.toggleKanaKey) {
+            context.changeState(SKKASCIIState)
+        } else {
+            // 確定
+            context.apply {
+                changeState(SKKHiraganaState, false)
+                mComposing.setLength(0)
+                context.commitTextSKK(mKanjiKey, 1)
+            }
+        }
+    }
 
     override fun processKey(context: SKKEngine, pcode: Int) {
         // シフトキーの状態をチェック
@@ -83,5 +95,9 @@ object SKKOkuriganaState : SKKState {
         context.setComposingTextSKK(kanjiKey, 1)
 
         return true
+    }
+
+    override fun changeToFlick(context: SKKEngine): Boolean {
+        return false
     }
 }

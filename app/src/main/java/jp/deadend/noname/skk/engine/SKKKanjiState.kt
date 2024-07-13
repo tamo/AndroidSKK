@@ -4,13 +4,26 @@ import jp.deadend.noname.skk.createTrimmedBuilder
 import jp.deadend.noname.skk.hirakana2katakana
 import jp.deadend.noname.skk.isVowel
 import jp.deadend.noname.skk.katakana2hiragana
+import jp.deadend.noname.skk.skkPrefs
 
 // 漢字変換のためのひらがな入力中(▽モード)
 object SKKKanjiState : SKKState {
     override val isTransient = true
     override val icon = 0
 
-    override fun handleKanaKey(context: SKKEngine) {}
+    override fun handleKanaKey(context: SKKEngine) {
+        if (skkPrefs.toggleKanaKey) {
+            context.changeState(SKKASCIIState)
+        } else {
+            // 確定
+            context.apply {
+                commitTextSKK(mKanjiKey, 1)
+                mComposing.setLength(0)
+                mKanjiKey.setLength(0)
+                changeState(SKKHiraganaState, false)
+            }
+        }
+    }
 
     override fun processKey(context: SKKEngine, pcode: Int) {
         // シフトキーの状態をチェック
@@ -42,11 +55,14 @@ object SKKKanjiState : SKKState {
             'q'.code -> {
                 // カタカナ変換
                 if (kanjiKey.isNotEmpty()) {
-                    val str = if (context.isHiragana) hirakana2katakana(kanjiKey.toString())
-                    else kanjiKey.toString()
+                    val str = if (context.kanaState == SKKHiraganaState) {
+                        hirakana2katakana(kanjiKey.toString())
+                    } else {
+                        kanjiKey.toString() // すでにひらがななのでそのまま
+                    }
                     if (str != null) context.commitTextSKK(str, 1)
                 }
-                context.changeState(context.kanaState)
+                context.changeState(context.kanaState, false)
             }
 
             ' '.code, '>'.code -> {
@@ -88,7 +104,11 @@ object SKKKanjiState : SKKState {
 
                     if (hchr != null) {
                         composing.setLength(0)
-                        kanjiKey.append(if (context.isHiragana) hchr else katakana2hiragana(hchr))
+                        kanjiKey.append(if (context.kanaState == SKKHiraganaState) {
+                            hchr
+                        } else {
+                            katakana2hiragana(hchr)
+                        })
                         context.setComposingTextSKK(kanjiKey, 1)
                     } else {
                         context.setComposingTextSKK(kanjiKey.toString() + composing.toString(), 1)
@@ -108,7 +128,11 @@ object SKKKanjiState : SKKState {
     }
 
     override fun handleCancel(context: SKKEngine): Boolean {
-        context.changeState(context.kanaState)
+        context.changeState(context.kanaState, false)
         return true
+    }
+
+    override fun changeToFlick(context: SKKEngine): Boolean {
+        return false
     }
 }

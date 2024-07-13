@@ -3,6 +3,7 @@ package jp.deadend.noname.skk.engine
 import android.os.Build
 import jp.deadend.noname.skk.R
 import jp.deadend.noname.skk.hirakana2katakana
+import jp.deadend.noname.skk.skkPrefs
 
 // カタカナモード
 object SKKKatakanaState : SKKState {
@@ -14,7 +15,11 @@ object SKKKatakanaState : SKKState {
     }
 
     override fun handleKanaKey(context: SKKEngine) {
-        context.changeState(SKKHiraganaState)
+        if (skkPrefs.toggleKanaKey) {
+            context.changeState(SKKASCIIState)
+        } else {
+            context.changeState(SKKHiraganaState, false)
+        }
     }
 
     override fun processKey(context: SKKEngine, pcode: Int) {
@@ -32,5 +37,9 @@ object SKKKatakanaState : SKKState {
 
     override fun handleCancel(context: SKKEngine): Boolean {
         return SKKHiraganaState.handleCancel(context)
+    }
+
+    override fun changeToFlick(context: SKKEngine): Boolean {
+        return false
     }
 }

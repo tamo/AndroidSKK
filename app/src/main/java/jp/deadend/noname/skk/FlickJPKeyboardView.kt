@@ -13,6 +13,7 @@ import android.widget.PopupWindow
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import jp.deadend.noname.skk.databinding.PopupFlickguideBinding
+import jp.deadend.noname.skk.engine.SKKASCIIState
 import jp.deadend.noname.skk.engine.SKKEngine
 import jp.deadend.noname.skk.engine.SKKZenkakuState
 import java.util.EnumSet
@@ -67,6 +68,7 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
         a.append(KEYCODE_FLICK_JP_CHAR_TEN_NUM, arrayOf("，", "．", "－", "：", "／", "", ""))
         a.append(KEYCODE_FLICK_JP_CHAR_TEN_NUM_LEFT, arrayOf("＃", "￥", "＋", "＄", "＊", "", ""))
         a.append(KEYCODE_FLICK_JP_MOJI, arrayOf("カナ", "：", "10", "＞", "声", "", ""))
+        a.append(KEYCODE_FLICK_JP_TOQWERTY, arrayOf("abc", "", "全角", "", "qwe", "", ""))
     }
 
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs) {
@@ -154,7 +156,7 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
             mKutoutenKey.codes[0] = KEYCODE_FLICK_JP_CHAR_TEN
             mKutoutenKey.label = mKutoutenLabel
             mSpaceKey.label = ""
-            mQwertyKey.label = "ABC"
+            mQwertyKey.label = "ＡＢＣ\nabc\nqwerty"
         }
     }
 
@@ -832,7 +834,14 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
             KEYCODE_FLICK_JP_TOQWERTY -> if (isShifted) {
                 mService.processKey('/'.code)
             } else {
-                mService.processKey('l'.code)
+                when (mFlickState) {
+                    EnumSet.of(FlickState.NONE) -> mService.processKey('l'.code)
+                    EnumSet.of(FlickState.UP)   -> {
+                        mService.processKey('L'.code)
+                        mService.changeSoftKeyboard(SKKASCIIState)
+                    }
+                    EnumSet.of(FlickState.DOWN) -> mService.changeSoftKeyboard(SKKASCIIState)
+                }
             }
             KEYCODE_FLICK_JP_SPEECH -> mService.recognizeSpeech()
             KEYCODE_FLICK_JP_CHAR_A, KEYCODE_FLICK_JP_CHAR_KA, KEYCODE_FLICK_JP_CHAR_SA,

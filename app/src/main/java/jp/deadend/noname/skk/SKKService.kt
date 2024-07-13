@@ -35,9 +35,14 @@ import java.io.*
 class SKKService : InputMethodService() {
     private var mCandidateViewContainer: CandidateViewContainer? = null
     private var mCandidateView: CandidateView? = null
-    internal var mFlickJPInputView: FlickJPKeyboardView? = null
+    private var mFlickJPInputView: FlickJPKeyboardView? = null
     private var mQwertyInputView: QwertyKeyboardView? = null
     private var mAbbrevKeyboardView: AbbrevKeyboardView? = null
+
+    // 現在表示中の KeyboardView
+    private var mInputView: KeyboardView? = null
+    internal val isQwerty: Boolean
+        get() = (mInputView != null && mInputView == mQwertyInputView)
 
     private val mSpeechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
     private var mIsRecording = false
@@ -45,6 +50,14 @@ class SKKService : InputMethodService() {
     private var mStreamVolume = 0
 
     private lateinit var mEngine: SKKEngine
+    internal val engineState: SKKState
+        get() = mEngine.state
+    internal var isHiragana: Boolean
+        get() = mFlickJPInputView?.isHiragana ?: true
+        set(value) {
+            if (value) mFlickJPInputView?.setHiraganaMode()
+            else mFlickJPInputView?.setKatakanaMode()
+        }
 
     // onKeyDown()でEnterキーのイベントを消費したかどうかのフラグ．onKeyUp()で判定するのに使う
     private var isEnterUsed = false
@@ -264,8 +277,8 @@ class SKKService : InputMethodService() {
 
     private fun readPrefsForInputView() {
         val flick = mFlickJPInputView
-        val qwerty = mQwertyInputView
-        val abbrev = mAbbrevKeyboardView
+        val qwerty = mQwertyInputView?.setKeyState(engineState)
+        val abbrev = mAbbrevKeyboardView?.setKeyState()
         if (flick == null || qwerty == null || abbrev == null) return
 
         val context = when (skkPrefs.theme) {
@@ -408,10 +421,14 @@ class SKKService : InputMethodService() {
     override fun onCreateInputView(): View? {
         createInputView()
 
-        if (mEngine.state === SKKASCIIState) { return mQwertyInputView }
-        if (mEngine.state === SKKKatakanaState) { mFlickJPInputView?.setKatakanaMode() }
-
-        return mFlickJPInputView
+        return when (mEngine.state) {
+            SKKASCIIState -> mQwertyInputView?.setKeyState(SKKASCIIState)
+            SKKKatakanaState -> {
+                mFlickJPInputView?.setKatakanaMode()
+                if (skkPrefs.toggleKanaKey) mFlickJPInputView else mQwertyInputView
+            }
+            else -> if (skkPrefs.toggleKanaKey) mFlickJPInputView else mQwertyInputView
+        }
     }
 
     /**
@@ -906,40 +923,40 @@ class SKKService : InputMethodService() {
         if (!mUseSoftKeyboard) return
 
         // 長押しリピートの message が残っている可能性があるので止める
-        val currentKeyboardView = when (mEngine.state) {
-            SKKAbbrevState -> mAbbrevKeyboardView
-            SKKASCIIState -> mQwertyInputView
-            SKKChooseState, SKKHiraganaState, SKKKanjiState, SKKKatakanaState,
-            SKKNarrowingState, SKKOkuriganaState -> mFlickJPInputView
-            SKKZenkakuState -> mFlickJPInputView // よく分からない
-            else -> null
+        for (kv in arrayOf(mAbbrevKeyboardView, mFlickJPInputView, mQwertyInputView)) {
+            kv?.stopRepeatKey()
         }
-        currentKeyboardView?.stopRepeatKey()
 
-        when (state) {
-            SKKASCIIState -> {
-                val qwerty = mQwertyInputView ?: return
-                setInputView(qwerty)
-            }
-            SKKKanjiState -> {
-                val flick = mFlickJPInputView ?: return
-                setInputView(flick)
-            }
+        mQwertyInputView?.setKeyState(mEngine.state) // view だけ ASCII にする場合もあるので
+
+        val inputView = when (state) {
+            SKKASCIIState    -> mQwertyInputView ?: return
+            SKKKanjiState    -> mFlickJPInputView ?: return
             SKKHiraganaState -> {
-                val flick = mFlickJPInputView ?: return
-                flick.setHiraganaMode()
-                setInputView(flick)
+                mFlickJPInputView?.setHiraganaMode() ?: return
+                if (skkPrefs.toggleKanaKey || mInputView == mFlickJPInputView) mFlickJPInputView
+                else mQwertyInputView
             }
             SKKKatakanaState -> {
-                val flick = mFlickJPInputView ?: return
-                flick.setKatakanaMode()
-                setInputView(flick)
+                mFlickJPInputView?.setKatakanaMode() ?: return
+                if (skkPrefs.toggleKanaKey || mInputView == mFlickJPInputView) mFlickJPInputView
+                else mQwertyInputView
             }
-            SKKAbbrevState -> {
-                val abbrev = mAbbrevKeyboardView ?: return
-                setInputView(abbrev)
-            }
+            SKKAbbrevState   -> mAbbrevKeyboardView ?: return
+            else -> return
         }
+        setInputView(inputView)
+    }
+
+    fun changeToFlick() {
+        if (!engineState.changeToFlick(mEngine)) {
+            setInputView(mFlickJPInputView)
+        }
+    }
+
+    override fun setInputView(view: View?) {
+        super.setInputView(view)
+        mInputView = view as KeyboardView
     }
 
     override fun showStatusIcon(iconRes: Int) {
