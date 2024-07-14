@@ -85,7 +85,7 @@ class SKKUserDicTool : AppCompatActivity() {
                     } else {
                         val tuple = Tuple<String, String>()
                         while (browser.getNext(tuple)) {
-                            it.write(tuple.key.toString() + " " + tuple.value + "\n")
+                            it.write("${tuple.key} ${tuple.value}\n")
                         }
                     }
                 }
