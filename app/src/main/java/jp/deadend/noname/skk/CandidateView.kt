@@ -316,7 +316,6 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
     private fun updateScrollPosition(targetX: Int) {
         mScrollX = scrollX
         if (targetX != mScrollX) {
-            // TODO: Animate
             mTargetScrollX = targetX
             setScrollButtonsEnabled(targetX)
             invalidate()
@@ -353,7 +352,10 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
             MotionEvent.ACTION_UP -> {
                 // ここは生きている。
                 if (!mScrolled) {
-                    if (mSelectedIndex >= 0) mService.pickCandidateViewManually(mSelectedIndex)
+                    if (mSelectedIndex >= 0) {
+                        mService.pickCandidateViewManually(mSelectedIndex)
+                        performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+                    }
                 }
                 mSelectedIndex = -1
                 mTouchX = OUT_OF_BOUNDS
