@@ -279,6 +279,12 @@ open class KeyboardView @JvmOverloads constructor(
         set(value) {
             if (field != value) {
                 performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+                if (value != 0) mHandler.removeMessages(MSG_LONGPRESS)
+                else if (mCurrentKey != NOT_A_KEY) {
+                    mHandler.sendMessageDelayed(
+                        mHandler.obtainMessage(MSG_LONGPRESS), LONGPRESS_TIMEOUT.toLong()
+                    )
+                }
             }
             field = value
             mPreviewText?.text = adjustCase(
