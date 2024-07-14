@@ -68,7 +68,7 @@ class SKKPrefs(context: Context) {
         set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_fixed_popup), value).apply()
 
     var useMiniKey: Boolean
-        get() = prefs.getBoolean(res.getString(R.string.prefkey_mini_keyboard), false)
+        get() = prefs.getBoolean(res.getString(R.string.prefkey_mini_keyboard), true)
         set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_mini_keyboard), value).apply()
 
     var useSoftCancelKey: Boolean

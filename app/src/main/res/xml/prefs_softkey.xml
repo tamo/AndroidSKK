@@ -45,7 +45,7 @@
             app:key="@string/prefkey_mini_keyboard"
             app:title="アクセント文字の使用"
             app:summary="アルファベット長押しでポップアップを出します"
-            app:defaultValue="false"
+            app:defaultValue="true"
             app:iconSpaceReserved="false"
             />
         <androidx.preference.CheckBoxPreference
