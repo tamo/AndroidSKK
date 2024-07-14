@@ -623,8 +623,15 @@ class SKKEngine(
         mKanjiKey.setLength(0)
         mKanjiKey.append(regInfo.key)
         mComposing.setLength(0)
+        val maybeComposing = mKanjiKey.lastOrNull() ?: 0.toChar()
+        if (isAlphabet(maybeComposing.code)) {
+            mKanjiKey.deleteCharAt(mKanjiKey.lastIndex)
+            if (!skkPrefs.toggleKanaKey) {
+                mComposing.append(maybeComposing)
+            }
+        }
         changeState(SKKKanjiState)
-        setComposingTextSKK(mKanjiKey, 1)
+        setComposingTextSKK("${mKanjiKey}${mComposing}", 1)
         updateSuggestions(mKanjiKey.toString())
         mService.onFinishRegister()
     }
@@ -715,28 +722,31 @@ class SKKEngine(
         // setComposingTextSKK はひらがなを期待している
     }
 
-    internal fun pickCurrentCandidate() {
-        pickCandidate(mCurrentCandidateIndex)
+    internal fun pickCurrentCandidate(backspace: Boolean = false) {
+        pickCandidate(mCurrentCandidateIndex, backspace)
     }
 
-    private fun pickCandidate(index: Int) {
+    private fun pickCandidate(index: Int, backspace: Boolean = false) {
         if (state !== SKKChooseState && state !== SKKNarrowingState) return
         val candList = mCandidatesList ?: return
-        val candidate = processConcatAndEscape(removeAnnotation(candList[index]))
+        val candidate = StringBuilder(processConcatAndEscape(removeAnnotation(candList[index])))
 
         if (isPersonalizedLearning) {
             mUserDict.addEntry(mKanjiKey.toString(), candList[index], mOkurigana)
             // ユーザー辞書登録時はエスケープや注釈を消さない
         }
 
-        commitTextSKK(candidate, 1)
-        val okuri = if (mService.isHiragana) mOkurigana else hirakana2katakana(mOkurigana)
-        if (okuri != null) {
-            commitTextSKK(okuri, 1)
+        val okuri = StringBuilder(
+            (if (mService.isHiragana) mOkurigana else hirakana2katakana(mOkurigana)) ?: ""
+        )
+        if (backspace) {
+            if (okuri.isNotEmpty()) okuri.deleteCharAt(okuri.lastIndex)
+            else candidate.deleteCharAt(candidate.lastIndex)
         }
+        commitTextSKK("${candidate}${okuri}", 1)
         if (mRegistrationStack.isEmpty()) {
             mLastConversion = ConversionInfo(
-                candidate + (okuri ?: ""), candList, index, mKanjiKey.toString(), okuri
+                "${candidate}${okuri}", candList, index, mKanjiKey.toString(), okuri.toString()
             )
         }
 

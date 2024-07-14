@@ -9,14 +9,14 @@ object SKKOkuriganaState : SKKState {
     override val icon = 0
 
     override fun handleKanaKey(context: SKKEngine) {
-        if (skkPrefs.toggleKanaKey) {
-            context.changeState(SKKASCIIState)
-        } else {
-            // 確定
-            context.apply {
+        context.apply {
+            if (skkPrefs.toggleKanaKey) {
+                changeState(SKKASCIIState)
+            } else {
+                // 確定
                 changeState(SKKHiraganaState, false)
                 mComposing.setLength(0)
-                context.commitTextSKK(mKanjiKey, 1)
+                commitTextSKK(mKanjiKey, 1)
             }
         }
     }
@@ -27,72 +27,80 @@ object SKKOkuriganaState : SKKState {
         // 大文字なら，ローマ字変換のために小文字に戻す
         val pcodeLower = if (isUpper) Character.toLowerCase(pcode) else pcode
 
-        val composing = context.mComposing
-        val kanjiKey = context.mKanjiKey
-        val okurigana = context.mOkurigana
-
-        // l, L, / による暗黙の確定
-        if (context.changeInputMode(pcode)) {
-            composing.setLength(0)
-            context.commitTextSKK(kanjiKey, 1)
-        }
-        if (composing.length == 1 || okurigana == null) {
-            // 「ん」か「っ」を処理したらここで終わり
-            val hchr = RomajiConverter.checkSpecialConsonants(composing[0], pcodeLower)
-            if (hchr != null) {
-                context.mOkurigana = hchr
-                context.setComposingTextSKK(
-                        createTrimmedBuilder(kanjiKey)
-                                .append('*').append(hchr).append(pcodeLower.toChar())
-                        , 1
-                )
-                composing.setLength(0)
-                composing.append(pcodeLower.toChar())
-                return
+        context.apply {
+            // l, L, / による暗黙の確定
+            if (changeInputMode(pcode)) {
+                mComposing.setLength(0)
+                commitTextSKK(mKanjiKey, 1)
             }
-        }
-        // 送りがなが確定すれば変換，そうでなければComposingに積む
-        composing.append(pcodeLower.toChar())
-        val hchr = RomajiConverter.convert(composing.toString())
-        if (okurigana != null) { //「ん」か「っ」がある場合
-            if (hchr != null) {
-                composing.setLength(0)
-                context.mOkurigana = okurigana + hchr
-                context.conversionStart(kanjiKey)
-            } else {
-                context.setComposingTextSKK(
-                        createTrimmedBuilder(kanjiKey)
-                                .append('*').append(okurigana).append(composing)
-                        , 1
-                )
+            if (mComposing.length == 1 || mOkurigana == null) {
+                // 「ん」か「っ」を処理したらここで終わり
+                val hchr = RomajiConverter.checkSpecialConsonants(mComposing[0], pcodeLower)
+                if (hchr != null) {
+                    mOkurigana = hchr
+                    setComposingTextSKK(
+                        createTrimmedBuilder(mKanjiKey)
+                            .append('*').append(hchr).append(pcodeLower.toChar()), 1
+                    )
+                    mComposing.setLength(0)
+                    mComposing.append(pcodeLower.toChar())
+                    return
+                }
             }
-        } else {
-            if (hchr != null) {
-                composing.setLength(0)
-                context.mOkurigana = hchr
-                context.conversionStart(kanjiKey)
+            // 送りがなが確定すれば変換，そうでなければComposingに積む
+            mComposing.append(pcodeLower.toChar())
+            val hchr = RomajiConverter.convert(mComposing.toString())
+            if (mOkurigana != null) { //「ん」か「っ」がある場合
+                if (hchr != null) {
+                    mComposing.setLength(0)
+                    mOkurigana += hchr
+                    conversionStart(mKanjiKey)
+                } else {
+                    setComposingTextSKK(
+                        createTrimmedBuilder(mKanjiKey)
+                            .append('*').append(mOkurigana).append(mComposing), 1
+                    )
+                }
             } else {
-                context.setComposingTextSKK(
-                        createTrimmedBuilder(kanjiKey).append('*').append(composing), 1
-                )
+                if (hchr != null) {
+                    mComposing.setLength(0)
+                    mOkurigana = hchr
+                    conversionStart(mKanjiKey)
+                } else {
+                    if (!RomajiConverter.isIntermediateRomaji(mComposing.toString())) {
+                        mComposing.setLength(0) // これまでの composing は typo とみなしてやり直す
+                        mKanjiKey.deleteCharAt(mKanjiKey.lastIndex)
+                        changeState(SKKKanjiState, false)
+                        SKKKanjiState.processKey(context, Character.toUpperCase(pcode))
+                        return
+                    }
+                    setComposingTextSKK(
+                        createTrimmedBuilder(mKanjiKey).append('*').append(mComposing), 1
+                    )
+                }
             }
         }
     }
 
     override fun afterBackspace(context: SKKEngine) {
-        context.mComposing.setLength(0)
-        context.mOkurigana = null
-        context.setComposingTextSKK(context.mKanjiKey, 1)
-        context.changeState(SKKKanjiState)
+        context.apply {
+            mComposing.setLength(0) // 元から空のはず
+            mKanjiKey.deleteCharAt(mKanjiKey.lastIndex)
+            if (!mOkurigana.isNullOrEmpty()) mKanjiKey.append(mOkurigana) // 「っ」とか
+            mOkurigana = null
+            setComposingTextSKK(mKanjiKey, 1)
+            changeState(SKKKanjiState)
+        }
     }
 
     override fun handleCancel(context: SKKEngine): Boolean {
-        val kanjiKey = context.mKanjiKey
-        context.mComposing.setLength(0)
-        context.mOkurigana = null
-        kanjiKey.deleteCharAt(kanjiKey.length - 1)
-        context.changeState(SKKKanjiState)
-        context.setComposingTextSKK(kanjiKey, 1)
+        context.apply {
+            if (skkPrefs.toggleKanaKey) mComposing.setLength(0)
+            mOkurigana = null
+            mKanjiKey.deleteCharAt(mKanjiKey.lastIndex) // composing と同じ子音アルファベットのはず
+            changeState(SKKKanjiState)
+            setComposingTextSKK("${mKanjiKey}${mComposing}", 1)
+        }
 
         return true
     }

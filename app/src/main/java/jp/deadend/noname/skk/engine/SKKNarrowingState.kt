@@ -14,55 +14,63 @@ object SKKNarrowingState : SKKState {
     }
 
     override fun processKey(context: SKKEngine, pcode: Int) {
-        when {
-            pcode == ' '.code -> context.chooseAdjacentCandidate(true)
-            pcode == 'x'.code -> context.chooseAdjacentCandidate(false)
-            pcode == 'l'.code || pcode == 'L'.code || pcode == '/'.code -> {
-                // 暗黙の確定
-                context.pickCurrentCandidate()
-                context.changeInputMode(pcode)
-            }
-            isAlphabet(pcode) -> {
-                val composing = context.mComposing
-                val pcodeLower = if (Character.isUpperCase(pcode)) {
-                    Character.toLowerCase(pcode)
-                } else {
-                    pcode
+        context.apply {
+            val canRetry = mComposing.isNotEmpty() // 無限ループ防止
+            when {
+                pcode == ' '.code -> chooseAdjacentCandidate(true)
+                pcode == 'x'.code -> chooseAdjacentCandidate(false)
+                pcode == 'l'.code || pcode == 'L'.code || pcode == '/'.code -> {
+                    // 暗黙の確定
+                    pickCurrentCandidate()
+                    changeInputMode(pcode)
                 }
 
-                if (composing.length == 1) {
-                    val hchr = RomajiConverter.checkSpecialConsonants(composing[0], pcodeLower)
+                isAlphabet(pcode) -> {
+                    val pcodeLower = if (Character.isUpperCase(pcode)) {
+                        Character.toLowerCase(pcode)
+                    } else {
+                        pcode
+                    }
+
+                    if (mComposing.length == 1) {
+                        val hchr = RomajiConverter.checkSpecialConsonants(mComposing[0], pcodeLower)
+                        if (hchr != null) {
+                            mHint.append(hchr)
+                            mComposing.setLength(0)
+                            narrowCandidates(mHint.toString())
+                        }
+                    }
+                    mComposing.append(pcodeLower.toChar())
+                    val hchr = RomajiConverter.convert(mComposing.toString())
+
                     if (hchr != null) {
                         mHint.append(hchr)
-                        composing.setLength(0)
-                        context.narrowCandidates(mHint.toString())
+                        mComposing.setLength(0)
+                        narrowCandidates(mHint.toString())
+                    } else {
+                        if (!RomajiConverter.isIntermediateRomaji(mComposing.toString())) {
+                            mComposing.setLength(0) // これまでの composing は typo とみなす
+                            if (canRetry) return processKey(context, pcode) // 「ca」などもあるので再突入
+                        }
+                        setCurrentCandidateToComposing()
                     }
-                }
-                composing.append(pcodeLower.toChar())
-                val hchr = RomajiConverter.convert(composing.toString())
-
-                if (hchr != null) {
-                    mHint.append(hchr)
-                    composing.setLength(0)
-                    context.narrowCandidates(mHint.toString())
-                } else {
-                    context.setCurrentCandidateToComposing()
                 }
             }
         }
     }
 
     override fun afterBackspace(context: SKKEngine) {
-        if (mHint.isEmpty()) {
-            context.conversionStart(context.mKanjiKey)
-        } else {
-            val composing = context.mComposing
-            if (composing.isNotEmpty()) {
-                composing.deleteCharAt(composing.length - 1)
-                context.setCurrentCandidateToComposing()
+        context.apply {
+            if (mHint.isEmpty()) {
+                conversionStart(context.mKanjiKey)
             } else {
-                mHint.deleteCharAt(mHint.length - 1)
-                context.narrowCandidates(mHint.toString())
+                if (mComposing.isNotEmpty()) {
+                    mComposing.deleteCharAt(mComposing.lastIndex)
+                    setCurrentCandidateToComposing()
+                } else {
+                    mHint.deleteCharAt(mHint.lastIndex)
+                    narrowCandidates(mHint.toString())
+                }
             }
         }
     }

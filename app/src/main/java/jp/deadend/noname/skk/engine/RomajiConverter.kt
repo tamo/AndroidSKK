@@ -47,6 +47,16 @@ object RomajiConverter {
         "z]" to "』", "zh" to "←", "zj" to "↓", "zk" to "↑", "zl" to "→",
     )
 
+    private val mIntermediateRomajiSet = shortenRomajiSet(mRomajiMap.keys)
+    private fun shortenRomajiSet(set: Set<String>): Set<String> {
+        val shorter = set
+            .filter { it.length > 1 }
+            .map { it.substring(0, it.lastIndex) }
+            .toSet()
+        if (shorter.isEmpty()) return shorter
+        return shorter + shortenRomajiSet(shorter)
+    } // cha を ch にしただけだと c が無効なので少なくとも 2 回は実行しなければいけない
+
     private val mSmallKanaMap = mapOf(
         "あ" to "ぁ", "い" to "ぃ", "う" to "ぅ", "え" to "ぇ", "お" to "ぉ",
         "や" to "ゃ", "ゆ" to "ゅ", "よ" to "ょ", "つ" to "っ", "わ" to "ゎ",
@@ -134,4 +144,5 @@ object RomajiConverter {
         (first.code == second) -> "っ"
         else -> null
     }
+    fun isIntermediateRomaji(composing: String): Boolean = (composing in mIntermediateRomajiSet)
 }

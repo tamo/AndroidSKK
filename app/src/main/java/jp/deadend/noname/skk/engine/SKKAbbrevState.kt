@@ -14,47 +14,52 @@ object SKKAbbrevState : SKKState {
     }
 
     override fun handleKanaKey(context: SKKEngine) {
-        if (context.cameFromFlick) {
-            context.changeState(SKKHiraganaState)
-        } else {
-            context.changeState(SKKASCIIState) // qwerty を使う
-            context.changeState(SKKHiraganaState, false)
+        context.apply {
+            if (cameFromFlick) {
+                changeState(SKKHiraganaState)
+            } else {
+                changeState(SKKASCIIState) // qwerty を使う
+                changeState(SKKHiraganaState, false)
+            }
         }
     }
 
     override fun processKey(context: SKKEngine, pcode: Int) {
-        val kanjiKey = context.mKanjiKey
+        context.apply {
+            // スペースで変換するかそのままComposingに積む
+            when (pcode) {
+                ' '.code -> if (mKanjiKey.isNotEmpty()) conversionStart(mKanjiKey)
+                -1010 -> {
+                    // 全角変換
+                    val buf = mKanjiKey.map { hankaku2zenkaku(it.code).toChar() }.joinToString("")
+                    commitTextSKK(buf, 1)
+                    handleKanaKey(context)
+                }
 
-        // スペースで変換するかそのままComposingに積む
-        when (pcode) {
-            ' '.code -> if (kanjiKey.isNotEmpty()) context.conversionStart(kanjiKey)
-            -1010 -> {
-                // 全角変換
-                val buf = kanjiKey.map { hankaku2zenkaku(it.code).toChar() }.joinToString("")
-                context.commitTextSKK(buf, 1)
-                handleKanaKey(context)
-            }
-            else -> {
-                kanjiKey.append(pcode.toChar())
-                context.setComposingTextSKK(kanjiKey, 1)
-                context.updateSuggestions(kanjiKey.toString())
+                else -> {
+                    mKanjiKey.append(pcode.toChar())
+                    setComposingTextSKK(mKanjiKey, 1)
+                    updateSuggestions(mKanjiKey.toString())
+                }
             }
         }
     }
 
     override fun afterBackspace(context: SKKEngine) {
-        val kanjiKey = context.mKanjiKey.toString()
-
-        context.setComposingTextSKK(kanjiKey, 1)
-        context.updateSuggestions(kanjiKey)
+        context.apply {
+            setComposingTextSKK(mKanjiKey, 1)
+            updateSuggestions(mKanjiKey.toString())
+        }
     }
 
     override fun handleCancel(context: SKKEngine): Boolean {
-        if (context.cameFromFlick) {
-            context.changeState(context.kanaState)
-        } else {
-            context.changeState(SKKASCIIState) // qwerty を使う
-            context.changeState(context.kanaState, false)
+        context.apply {
+            if (cameFromFlick) {
+                changeState(kanaState)
+            } else {
+                changeState(SKKASCIIState) // qwerty を使う
+                changeState(kanaState, false)
+            }
         }
         return true
     }

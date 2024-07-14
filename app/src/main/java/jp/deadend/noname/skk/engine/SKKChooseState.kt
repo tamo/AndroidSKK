@@ -9,61 +9,74 @@ object SKKChooseState : SKKState {
     override val icon = 0
 
     override fun handleKanaKey(context: SKKEngine) {
-        context.pickCurrentCandidate()
-        if (skkPrefs.toggleKanaKey) {
-            context.changeState(SKKASCIIState)
-        } else {
-            context.changeState(SKKHiraganaState, false)
+        context.apply {
+            pickCurrentCandidate() // kanaState になる (カタカナかもしれない)
+            if (skkPrefs.toggleKanaKey) {
+                changeState(SKKASCIIState)
+            } else {
+                changeState(SKKHiraganaState, false)
+            }
         }
     }
 
     override fun processKey(context: SKKEngine, pcode: Int) {
-        when (pcode) {
-            ' '.code -> context.chooseAdjacentCandidate(true)
-            'x'.code -> context.chooseAdjacentCandidate(false)
-            '>'.code -> {
-                // 接尾辞入力
-                context.pickCurrentCandidate()
-                context.changeState(SKKKanjiState)
-                val kanjiKey = context.mKanjiKey
-                kanjiKey.append('>')
-                context.setComposingTextSKK(kanjiKey, 1)
-            }
-            'l'.code, 'L'.code, '/'.code -> {
-                // 暗黙の確定
-                context.pickCurrentCandidate()
-                context.changeInputMode(pcode)
-            }
-            ':'.code -> context.changeState(SKKNarrowingState)
-            else -> {
-                // 暗黙の確定
-                context.pickCurrentCandidate()
-                context.kanaState.processKey(context, pcode)
+        context.apply {
+            when (pcode) {
+                ' '.code -> chooseAdjacentCandidate(true)
+                'x'.code -> chooseAdjacentCandidate(false)
+                '>'.code -> {
+                    // 接尾辞入力
+                    pickCurrentCandidate()
+                    changeState(SKKKanjiState)
+                    mKanjiKey.append('>')
+                    setComposingTextSKK(mKanjiKey, 1)
+                }
+
+                'l'.code, 'L'.code, '/'.code -> {
+                    // 暗黙の確定
+                    pickCurrentCandidate()
+                    changeInputMode(pcode)
+                }
+
+                ':'.code -> changeState(SKKNarrowingState)
+                else -> {
+                    // 暗黙の確定
+                    pickCurrentCandidate()
+                    kanaState.processKey(context, pcode)
+                }
             }
         }
     }
 
     override fun afterBackspace(context: SKKEngine) {
-        val kanjiKey = context.mKanjiKey
-        if (kanjiKey.isEmpty()) {
-            context.changeState(context.kanaState, false)
-        } else {
-            if (isAlphabet(kanjiKey[0].code)) { // Abbrevモード
-                context.changeState(SKKAbbrevState)
-            } else { // 漢字変換中
-                context.mOkurigana = null
-                context.changeState(SKKKanjiState)
-                if (isAlphabet(kanjiKey[kanjiKey.length - 1].code)) {
-                    kanjiKey.deleteCharAt(kanjiKey.length - 1) // 送りがなのアルファベットを削除
-                }
-            }
-            context.setComposingTextSKK(kanjiKey, 1)
-            context.updateSuggestions(kanjiKey.toString())
+        context.apply {
+            pickCurrentCandidate(backspace = true)
         }
     }
 
     override fun handleCancel(context: SKKEngine): Boolean {
-        afterBackspace(context)
+        context.apply {
+            if (mKanjiKey.isEmpty()) { // どういうとき？
+                changeState(kanaState, false)
+            } else {
+                if (isAlphabet(mKanjiKey[0].code)) { // Abbrevモード
+                    changeState(SKKAbbrevState)
+                } else { // 漢字変換中
+                    mComposing.setLength(0) // 最初から空のはずだけど念のため
+                    mOkurigana = null // これは入っている可能性がある
+                    changeState(SKKKanjiState)
+                    val maybeComposing = mKanjiKey.lastOrNull() ?: 0.toChar()
+                    if (isAlphabet(maybeComposing.code)) {
+                        mKanjiKey.deleteCharAt(mKanjiKey.lastIndex) // 送りがなのアルファベットを削除
+                        if (!skkPrefs.toggleKanaKey) {
+                            mComposing.append(maybeComposing)
+                        }
+                    }
+                }
+                setComposingTextSKK("${mKanjiKey}${mComposing}", 1)
+                updateSuggestions(mKanjiKey.toString())
+            }
+        }
         return true
     }
 
