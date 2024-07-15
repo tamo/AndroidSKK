@@ -781,10 +781,7 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
                 // ! ( ) , . 0〜9 ? [ ]
                 mService.processKey(primaryCode)
             KEYCODE_FLICK_JP_PASTE -> {
-                val cm = mService.getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
-                val cs = cm.primaryClip?.getItemAt(0)?.text
-                val clip = cs?.toString() ?: ""
-                mService.commitTextSKK(clip, 1)
+                mService.pasteClip()
             }
             KEYCODE_FLICK_JP_GOOGLE -> {
                 mService.googleTransliterate()

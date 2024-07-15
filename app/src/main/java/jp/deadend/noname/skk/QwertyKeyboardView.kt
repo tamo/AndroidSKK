@@ -125,6 +125,7 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                 when (isFlicked) {
                     (if (toggle) FLICK_NONE else FLICK_DOWN) -> mService.changeToFlick()
                     (if (toggle) FLICK_DOWN else FLICK_NONE) -> mService.handleKanaKey()
+                    FLICK_UP -> mService.pasteClip()
                 }
             }
             KEYCODE_QWERTY_TOSYM -> {
@@ -134,6 +135,7 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                         isShifted = keyboard.isShifted
                         isCapsLocked = keyboard.isCapsLocked
                     }
+                    FLICK_UP -> mService.googleTransliterate()
                     FLICK_DOWN -> mService.handleCancel()
                 }
             }

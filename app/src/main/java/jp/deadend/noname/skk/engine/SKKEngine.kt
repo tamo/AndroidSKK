@@ -637,22 +637,32 @@ class SKKEngine(
     }
 
     internal fun googleTransliterate() {
-        if (mRegistrationStack.isEmpty()) { return }
+        if (mRegistrationStack.isEmpty()) {
+            if (mKanjiKey.isEmpty()) return
+        } else {
+            // candidate から選択しただけで登録されるので、onFinishRegister してから変換
+            val regInfo = mRegistrationStack.removeFirst() ?: return
+            mComposing.setLength(0)
+            mKanjiKey.setLength(0)
+            mKanjiKey.append(regInfo.key)
+            mOkurigana = regInfo.okurigana
+            mService.onFinishRegister()
+        }
+        dlog("googleTransliterate mKanjiKey=${mKanjiKey} mOkurigana=${mOkurigana}")
 
-        // candidate から選択しただけで登録されるので、cancelRegister してから変換
-        val original = mRegistrationStack.removeFirst()?.key ?: return
-        dlog("googleTransliterate $original")
-        mKanjiKey.setLength(0)
-        mKanjiKey.append(original)
-        mComposing.setLength(0)
         changeState(SKKKanjiState)
-        setComposingTextSKK(mKanjiKey, 1)
-        mService.onFinishRegister()
-
+        val query = if (mKanjiKey.isNotEmpty() && isAlphabet(mKanjiKey.last().code)) {
+            val trimmedKanjiKey = mKanjiKey.substring(0, mKanjiKey.lastIndex)
+            setComposingTextSKK("${trimmedKanjiKey}*${mOkurigana ?: ""}", 1)
+            "${trimmedKanjiKey}${mOkurigana ?: ""}"
+        } else {
+            setComposingTextSKK(mKanjiKey.toString(), 1)
+            mKanjiKey.toString() // たぶん送り仮名は存在しないはず
+        }
         val volleyQueue = Volley.newRequestQueue(mService)
         volleyQueue.add(
             JsonArrayRequest(
-                "https://www.google.com/transliterate?langpair=ja-Hira|ja&text=$original,",
+                "https://www.google.com/transliterate?langpair=ja-Hira|ja&text=${query},",
                 { response ->
                     dlog(" googleTransliterate response=${response.toString(4)}")
                     val list = mutableListOf<String>()
@@ -661,7 +671,11 @@ class SKKEngine(
                         if (jsonArray.length() == 0) { throw JSONException("no array") }
                         var i = 0
                         while (i < jsonArray.length()) {
-                            list.add(jsonArray.get(i).toString())
+                            val item = StringBuilder(jsonArray.get(i).toString())
+                            if (!mOkurigana.isNullOrEmpty() && item.length > mOkurigana!!.length) {
+                                item.deleteRange(item.length - mOkurigana!!.length, item.length)
+                            } // 本当は合致しているか確認するべきかもしれない
+                            list.add(item.toString())
                             i++
                         }
                     } catch (e: JSONException) {

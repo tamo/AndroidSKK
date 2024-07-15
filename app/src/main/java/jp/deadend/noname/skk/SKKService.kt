@@ -850,6 +850,13 @@ class SKKService : InputMethodService() {
         startActivity(mushroom)
     }
 
+    fun pasteClip()  {
+        val cm = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
+        val cs = cm.primaryClip?.getItemAt(0)?.text
+        val clip = cs?.toString() ?: ""
+        commitTextSKK(clip, 1)
+    }
+
     fun startSettings() {
         val settingsIntent = Intent(this, SKKSettingsActivity::class.java)
         settingsIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
