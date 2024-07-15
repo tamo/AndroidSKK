@@ -95,7 +95,7 @@ object SKKKanjiState : SKKState {
                                 if (mComposing.isNotEmpty()) {
                                     mComposing.setLength(0) // 「OkukR」のcomposingはrに (kはtypoとみなす)
                                 }
-                                if (!RomajiConverter.isIntermediateRomaji(pcodeLower.toString())) {
+                                if (!RomajiConverter.isIntermediateRomaji(pcodeLower.toChar().toString())) {
                                     return // 今回の pcode 自体が typo なので無視
                                 }
                             }
