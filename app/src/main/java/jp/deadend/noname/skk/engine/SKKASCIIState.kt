@@ -6,7 +6,7 @@ object SKKASCIIState : SKKState {
     override val icon = 0
 
     override fun handleKanaKey(context: SKKEngine) {
-        context.changeState(SKKHiraganaState, false) // Flickにするのは別キーなので内部だけひらがなに
+        context.changeState(SKKHiraganaState) // Flickにするのは別キーなので内部だけひらがなに
     }
 
     override fun processKey(context: SKKEngine, pcode: Int) {
@@ -18,7 +18,7 @@ object SKKASCIIState : SKKState {
     override fun handleCancel(context: SKKEngine) = false
 
     override fun changeToFlick(context: SKKEngine): Boolean {
-        context.changeState(context.kanaState, change = true) // 元の「ひら/カタ」で FlickJP に
+        context.changeState(context.kanaState, true) // 元の「ひら/カタ」で FlickJP に
         return true
     }
 }

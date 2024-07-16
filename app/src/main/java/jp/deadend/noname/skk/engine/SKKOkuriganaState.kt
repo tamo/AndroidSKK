@@ -11,10 +11,10 @@ object SKKOkuriganaState : SKKState {
     override fun handleKanaKey(context: SKKEngine) {
         context.apply {
             if (skkPrefs.toggleKanaKey) {
-                changeState(SKKASCIIState)
+                changeState(SKKASCIIState, true)
             } else {
                 // 確定
-                changeState(SKKHiraganaState, false)
+                changeState(SKKHiraganaState)
                 mComposing.setLength(0)
                 commitTextSKK(mKanjiKey, 1)
             }
@@ -70,7 +70,7 @@ object SKKOkuriganaState : SKKState {
                     if (!RomajiConverter.isIntermediateRomaji(mComposing.toString())) {
                         mComposing.setLength(0) // これまでの composing は typo とみなしてやり直す
                         mKanjiKey.deleteCharAt(mKanjiKey.lastIndex)
-                        changeState(SKKKanjiState, false)
+                        changeState(SKKKanjiState)
                         SKKKanjiState.processKey(context, Character.toUpperCase(pcode))
                         return
                     }
@@ -89,7 +89,7 @@ object SKKOkuriganaState : SKKState {
             if (!mOkurigana.isNullOrEmpty()) mKanjiKey.append(mOkurigana) // 「っ」とか
             mOkurigana = null
             setComposingTextSKK(mKanjiKey, 1)
-            changeState(SKKKanjiState, false)
+            changeState(SKKKanjiState)
         }
     }
 
@@ -98,7 +98,7 @@ object SKKOkuriganaState : SKKState {
             if (skkPrefs.toggleKanaKey) mComposing.setLength(0)
             mOkurigana = null
             mKanjiKey.deleteCharAt(mKanjiKey.lastIndex) // composing と同じ子音アルファベットのはず
-            changeState(SKKKanjiState, false)
+            changeState(SKKKanjiState)
             setComposingTextSKK("${mKanjiKey}${mComposing}", 1)
         }
 

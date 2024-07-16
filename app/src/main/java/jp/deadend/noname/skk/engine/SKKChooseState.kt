@@ -12,9 +12,9 @@ object SKKChooseState : SKKState {
         context.apply {
             pickCurrentCandidate() // kanaState になる (カタカナかもしれない)
             if (skkPrefs.toggleKanaKey) {
-                changeState(SKKASCIIState)
+                changeState(SKKASCIIState, true)
             } else {
-                changeState(SKKHiraganaState, change = false, recover = true)
+                changeState(SKKHiraganaState)
             }
         }
     }
@@ -27,7 +27,7 @@ object SKKChooseState : SKKState {
                 '>'.code -> {
                     // 接尾辞入力
                     pickCurrentCandidate()
-                    changeState(SKKKanjiState, false) // Abbrevキーボードのことは無視
+                    changeState(SKKKanjiState) // Abbrevキーボードのことは無視
                     mKanjiKey.append('>')
                     setComposingTextSKK(mKanjiKey, 1)
                 }
@@ -38,7 +38,7 @@ object SKKChooseState : SKKState {
                     changeInputMode(pcode)
                 }
 
-                ':'.code -> changeState(SKKNarrowingState, false) // Abbrevキーボードのことは無視
+                ':'.code -> changeState(SKKNarrowingState) // Abbrevキーボードのことは無視
                 else -> {
                     // 暗黙の確定
                     pickCurrentCandidate()
@@ -57,14 +57,14 @@ object SKKChooseState : SKKState {
     override fun handleCancel(context: SKKEngine): Boolean {
         context.apply {
             if (mKanjiKey.isEmpty()) { // どういうとき？
-                changeState(kanaState, change = false, recover = true)
+                changeState(kanaState)
             } else {
                 if (isAlphabet(mKanjiKey[0].code)) { // Abbrevモード
                     changeState(SKKAbbrevState)
                 } else { // 漢字変換中
                     mComposing.setLength(0) // 最初から空のはずだけど念のため
                     mOkurigana = null // これは入っている可能性がある
-                    changeState(SKKKanjiState, change = false) // Abbrevの可能性はない
+                    changeState(SKKKanjiState) // Abbrevの可能性はない
                     val maybeComposing = mKanjiKey.lastOrNull() ?: 0.toChar()
                     if (isAlphabet(maybeComposing.code)) {
                         mKanjiKey.deleteCharAt(mKanjiKey.lastIndex) // 送りがなのアルファベットを削除

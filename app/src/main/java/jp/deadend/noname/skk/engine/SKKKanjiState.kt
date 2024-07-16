@@ -14,13 +14,13 @@ object SKKKanjiState : SKKState {
     override fun handleKanaKey(context: SKKEngine) {
         context.apply {
             if (skkPrefs.toggleKanaKey) {
-                changeState(SKKASCIIState)
+                changeState(SKKASCIIState, true)
             } else {
                 // 確定
                 commitTextSKK(mKanjiKey, 1)
                 mComposing.setLength(0)
                 mKanjiKey.setLength(0)
-                changeState(SKKHiraganaState, false)
+                changeState(SKKHiraganaState)
             }
         }
     }
@@ -61,7 +61,7 @@ object SKKKanjiState : SKKState {
                         }
                         if (str != null) commitTextSKK(str, 1)
                     }
-                    changeState(kanaState, false)
+                    changeState(kanaState)
                 }
 
                 ' '.code, '>'.code -> {
@@ -104,7 +104,7 @@ object SKKKanjiState : SKKState {
                             setComposingTextSKK(
                                 createTrimmedBuilder(mKanjiKey).append('*').append(mComposing), 1
                             )
-                            changeState(SKKOkuriganaState, false)
+                            changeState(SKKOkuriganaState)
                         }
                     } else {
                         // 未確定
@@ -147,7 +147,7 @@ object SKKKanjiState : SKKState {
     }
 
     override fun handleCancel(context: SKKEngine): Boolean {
-        context.changeState(context.kanaState, false)
+        context.changeState(context.kanaState)
         return true
     }
 

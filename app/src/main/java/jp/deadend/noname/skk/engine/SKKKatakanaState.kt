@@ -16,9 +16,9 @@ object SKKKatakanaState : SKKState {
 
     override fun handleKanaKey(context: SKKEngine) {
         if (skkPrefs.toggleKanaKey) {
-            context.changeState(SKKASCIIState)
+            context.changeState(SKKASCIIState, true)
         } else {
-            context.changeState(SKKHiraganaState, false)
+            context.changeState(SKKHiraganaState)
         }
     }
 

@@ -114,7 +114,7 @@ class SKKEngine(
         }
 
         if (state.isTransient) {
-            changeState(kanaState, change = false, recover = true)
+            changeState(kanaState)
             return true
         } else if (!mRegistrationStack.isEmpty()) {
             reset()
@@ -132,7 +132,7 @@ class SKKEngine(
                     if (mService.isHiragana) mKanjiKey else hirakana2katakana(mKanjiKey.toString())!!,
                     1
                 )
-                changeState(kanaState, change = false, recover = (state === SKKAbbrevState))
+                changeState(kanaState)
             }
             else -> {
                 if (mComposing.isEmpty()) {
@@ -163,7 +163,7 @@ class SKKEngine(
         // 変換中のものがない場合
         if (clen == 0 && klen == 0) {
             if (state == SKKKanjiState || state == SKKAbbrevState) {
-                changeState(kanaState, change = false, recover = (state == SKKAbbrevState))
+                changeState(kanaState)
                 return true
             }
             val firstEntry = mRegistrationStack.peekFirst()?.entry
@@ -217,7 +217,7 @@ class SKKEngine(
         mCandidatesList = null
         when {
             state.isTransient -> {
-                changeState(kanaState, change = false, recover = true)
+                changeState(kanaState)
                 mService.showStatusIcon(state.icon)
             }
             state === SKKASCIIState -> mService.hideStatusIcon()
@@ -274,12 +274,12 @@ class SKKEngine(
                         mOkurigana = null
                         mKanjiKey.deleteCharAt(mKanjiKey.length - 1)
                     }
-                    changeState(SKKKanjiState, false)
+                    changeState(SKKKanjiState)
                     setComposingTextSKK(mKanjiKey, 1)
                     updateSuggestions(mKanjiKey.toString())
                 } else {
                     mKanjiKey.setLength(0)
-                    changeState(SKKAbbrevState, false)
+                    changeState(SKKAbbrevState)
                     setComposingTextSKK(mComposing, 1)
                     updateSuggestions(mComposing.toString())
                 }
@@ -309,7 +309,7 @@ class SKKEngine(
         }
 
         if (state.isTransient) {
-            changeState(kanaState, false)
+            changeState(kanaState)
         } else {
             reset()
             mRegistrationStack.clear()
@@ -381,7 +381,7 @@ class SKKEngine(
                     firstEntry.deleteCharAt(firstEntry.length - 1)
                     if (type == LAST_CONVERSION_SHIFT) {
                         mKanjiKey.append(katakana2hiragana(newLastChar))
-                        changeState(SKKKanjiState, false)
+                        changeState(SKKKanjiState)
                         setComposingTextSKK(mKanjiKey, 1)
                         updateSuggestions(mKanjiKey.toString())
                     } else {
@@ -392,7 +392,7 @@ class SKKEngine(
                     ic.deleteSurroundingText(1, 0)
                     if (type == LAST_CONVERSION_SHIFT) {
                         mKanjiKey.append(katakana2hiragana(newLastChar))
-                        changeState(SKKKanjiState, false) // Flickからしか到達できないのでfalse
+                        changeState(SKKKanjiState) // Abbrevから来ることはないはず
                         setComposingTextSKK(mKanjiKey, 1)
                         updateSuggestions(mKanjiKey.toString())
                     } else {
@@ -466,7 +466,7 @@ class SKKEngine(
     internal fun conversionStart(key: StringBuilder) {
         val str = key.toString()
 
-        changeState(SKKChooseState, false) // Abbrevからの場合はforceRecoverされる
+        changeState(SKKChooseState)
 
         var number = "#"
         val list = findCandidates(str) ?: Regex("\\d+").find(str)?.let {
@@ -513,7 +513,7 @@ class SKKEngine(
         if (mService.prepareReConversion(s)) {
             mUserDict.rollBack()
 
-            changeState(SKKChooseState, false)
+            changeState(SKKChooseState)
 
             mComposing.setLength(0)
             mKanjiKey.setLength(0)
@@ -594,7 +594,7 @@ class SKKEngine(
 
     private fun registerStart(str: String) {
         mRegistrationStack.addFirst(RegistrationInfo(str, mOkurigana))
-        changeState(kanaState, change = false, recover = true) // Abbrevキーボードからの可能性も考えて
+        changeState(kanaState)
         //setComposingTextSKK("", 1);
 
         mService.onStartRegister()
@@ -637,7 +637,7 @@ class SKKEngine(
                 mComposing.append(maybeComposing)
             }
         }
-        changeState(SKKKanjiState, false)
+        changeState(SKKKanjiState)
         setComposingTextSKK("${mKanjiKey}${mComposing}", 1)
         updateSuggestions(mKanjiKey.toString())
         mService.onFinishRegister()
@@ -657,7 +657,7 @@ class SKKEngine(
         }
         dlog("googleTransliterate mKanjiKey=${mKanjiKey} mOkurigana=${mOkurigana}")
 
-        changeState(SKKKanjiState, false)
+        changeState(SKKKanjiState)
         val query = if (mKanjiKey.isNotEmpty() && isAlphabet(mKanjiKey.last().code)) {
             val trimmedKanjiKey = mKanjiKey.substring(0, mKanjiKey.lastIndex)
             setComposingTextSKK("${trimmedKanjiKey}*${mOkurigana ?: ""}", 1)
@@ -692,7 +692,7 @@ class SKKEngine(
                             hirakana2katakana(mKanjiKey.toString()) ?: mKanjiKey.toString()
                         ))
                     } finally {
-                        changeState(SKKChooseState, false)
+                        changeState(SKKChooseState)
                         mCandidatesList = list
                         mCurrentCandidateIndex = 0
                         mService.setCandidates(list, "#")
@@ -786,7 +786,7 @@ class SKKEngine(
             )
         }
 
-        changeState(kanaState, change = false, recover = true)
+        changeState(kanaState)
     }
 
     private fun pickSuggestion(index: Int) {
@@ -856,7 +856,7 @@ class SKKEngine(
         // 入力モード変更操作．変更したらtrue
         when (pcode) {
             'q'.code -> {
-                changeState(if (mService.isHiragana) SKKKatakanaState else SKKHiraganaState, false)
+                changeState(if (mService.isHiragana) SKKKatakanaState else SKKHiraganaState)
                 return true
             }
             'l'.code ->  {
@@ -878,41 +878,35 @@ class SKKEngine(
         return false
     }
 
-    internal fun changeState(state: SKKState, change: Boolean = true, recover: Boolean = false) {
-        val oldState = this.state
-        val forceRecover = (oldState == SKKAbbrevState && state == SKKChooseState)
+    internal fun changeState(state: SKKState, force: Boolean = false) {
+        val willBeTemporaryView = state in listOf(SKKAbbrevState, SKKZenkakuState)
         val wasTemporaryView = mService.isTemporaryView
         this.state = state
 
-        if (!state.isTransient || change || forceRecover) {
+        val prevInputView = if (cameFromFlick) kanaState else SKKASCIIState
+        if (!state.isTransient || force || willBeTemporaryView || wasTemporaryView) {
             reset()
-            val prevInputView = if (cameFromFlick) kanaState else SKKASCIIState
-            if (change) {
-                changeSoftKeyboard(if (recover) prevInputView else state)
-            } else if (recover && wasTemporaryView) {
-                mService.changeSoftKeyboard(prevInputView) // 記録しないためmService版を直接叩く
-            } else when (state) {
-                // 内部状態だけ変更する
-                SKKHiraganaState -> mService.isHiragana = true
-                SKKKatakanaState -> mService.isHiragana = false
+            when {
+                force || willBeTemporaryView -> changeSoftKeyboard(state)
+                wasTemporaryView -> mService.changeSoftKeyboard(prevInputView) // cameFromFlick に記録しない
             }
             if (!mRegistrationStack.isEmpty()) setComposingTextSKK("", 1)
             // reset()で一旦消してるので， 登録中はここまで来てからComposingText復活
         }
 
         when (state) {
-            SKKAbbrevState -> {
-                setComposingTextSKK("", 1)
-                changeSoftKeyboard(state)
-                mService.showStatusIcon(state.icon)
-            }
-            SKKASCIIState -> mService.hideStatusIcon()
+            SKKHiraganaState -> mService.isHiragana = true
+            SKKKatakanaState -> mService.isHiragana = false
             SKKNarrowingState -> {
                 SKKNarrowingState.mHint.setLength(0)
                 SKKNarrowingState.mOriginalCandidates = null
                 setCurrentCandidateToComposing()
             }
-            else -> mService.showStatusIcon(state.icon)
+        }
+        if (state.icon != 0) {
+            mService.showStatusIcon(state.icon)
+        } else if (state == SKKASCIIState) {
+            mService.hideStatusIcon()
         }
     }
     private fun changeSoftKeyboard(state: SKKState) {

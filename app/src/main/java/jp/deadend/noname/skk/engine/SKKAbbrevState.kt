@@ -14,7 +14,7 @@ object SKKAbbrevState : SKKState {
     }
 
     override fun handleKanaKey(context: SKKEngine) {
-        context.changeState(SKKHiraganaState, change = false, recover = true)
+        context.changeState(SKKHiraganaState)
     }
 
     override fun processKey(context: SKKEngine, pcode: Int) {
@@ -46,12 +46,12 @@ object SKKAbbrevState : SKKState {
     }
 
     override fun handleCancel(context: SKKEngine): Boolean {
-        context.changeState(SKKHiraganaState, change = false, recover = true)
+        context.changeState(SKKHiraganaState)
         return true
     }
 
     override fun changeToFlick(context: SKKEngine): Boolean {
-        context.changeState(context.kanaState, change = true)
+        context.changeState(context.kanaState, true)
         return true
     }
 }
