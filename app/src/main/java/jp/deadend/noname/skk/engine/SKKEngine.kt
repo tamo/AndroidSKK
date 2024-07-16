@@ -768,15 +768,8 @@ class SKKEngine(
         } ?: mKanjiKey
 
         if (isPersonalizedLearning) {
-            if (number.isEmpty()) {
-                mUserDict.addEntry(kanjiKey.toString(), candList[index], mOkurigana)
-                // ユーザー辞書登録時はエスケープや注釈を消さない
-            } else {
-                for (i in 0..3) { // 半角数字、全角数字、単純漢数字、位取り漢数字で登録
-                    val value = candList[index].replace(number, "#${i}")
-                    mUserDict.addEntry(kanjiKey.toString(), value, mOkurigana)
-                }
-            }
+            mUserDict.addEntry(kanjiKey.toString(), candList[index], mOkurigana)
+            // ユーザー辞書登録時はエスケープや注釈を消さない
         }
 
         val okuri = StringBuilder(
