@@ -67,15 +67,23 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                 if (dx2 + dy2 > mFlickSensitivitySquared) {
                     when {
                         mSpacePressed -> {
-                            repeat(ceil(dx2 / 1500).toInt()) {
+                            if (dx2 > dy2) repeat(ceil(dx2 / 1500).toInt()) {
                                 if (dx < 0) {
                                     mService.keyDownUp(KeyEvent.KEYCODE_DPAD_LEFT)
                                 } else {
                                     mService.keyDownUp(KeyEvent.KEYCODE_DPAD_RIGHT)
                                 }
                                 mSpaceFlicked = true
+                            } else repeat(ceil(dy2 / 3000).toInt()) {
+                                if (dy < 0) {
+                                    mService.keyDownUp(KeyEvent.KEYCODE_DPAD_UP)
+                                } else {
+                                    mService.keyDownUp(KeyEvent.KEYCODE_DPAD_DOWN)
+                                }
+                                mSpaceFlicked = true
                             }
                             flickStartX = me.x
+                            flickStartY = me.y
                             return true
                         }
                         dy < 0 && dx2 < dy2 -> {
