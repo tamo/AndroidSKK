@@ -250,10 +250,11 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
         mContainer.setScrollButtonsEnabled(left, right)
     }
 
-    fun setContents(list: List<String>?) {
+    fun setContents(list: List<String>?, number: String) {
         mSuggestions.clear()
         if (list != null) {
-            for (str in list) {
+            for (rawstr in list) {
+                val str = processNumber(rawstr, number)
                 val semicolon = str.indexOf(";")
                 val newstr =
                     if (semicolon == -1) {

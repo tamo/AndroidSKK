@@ -6,6 +6,7 @@ import android.provider.OpenableColumns
 import java.io.*
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
+import kotlin.math.max
 
 //private val PAT_QUOTED = "\"(.+?)\"".toRegex()
 private val PAT_ESCAPE_NUM = """\\(\d+)""".toRegex()
@@ -57,6 +58,58 @@ fun isVowel(code: Int) = (code == 0x61 || code == 0x69 || code == 0x75 || code =
 fun removeAnnotation(str: String): String {
     val i = str.lastIndexOf(';') // セミコロンで解説が始まる
     return if (i == -1) str else str.substring(0, i)
+}
+
+fun processNumber(str: String, number: String): String {
+    return str
+        .replace("#0", number) // 半角
+        .replace("#1", number // 全角
+            .map { char ->
+                if (char.code in '0'.code..'9'.code) (char.code + '０'.code - '0'.code).toChar()
+                else char
+            }
+            .joinToString("")
+        )
+        .replace("#2", number // 単純漢数字
+            .map { char ->
+                if (char.code in '0'.code..'9'.code) "〇一二三四五六七八九"[char.code - '0'.code]
+                else char
+            }
+            .joinToString("")
+        )
+        .replace("#3", number // 位取りのある漢数字 (たぶんバグがある)
+            .reversed()
+            .mapIndexed { index, char ->
+                val sb = StringBuilder()
+                sb.append(
+                    when (char.code) {
+                        '1'.code -> if (index == 0) "一" else ""
+                        in '2'.code..'9'.code -> "二三四五六七八九"[char.code - '2'.code]
+                        else -> ""
+                    }
+                )
+                if (char != '0') sb.append(
+                    when (index % 4) {
+                        1 -> "十"
+                        2 -> "百"
+                        3 -> "千"
+                        else -> ""
+                    }
+                )
+                if (index in 4..20 && index % 4 == 0) {
+                    if (number.substring( // 4桁まるごと0000かどうか
+                            max(number.length - index - 4, 0),
+                            number.length - index
+                        ).toInt() > 0) {
+                        sb.append("一万億兆京垓"[index / 4])
+                    }
+                }
+                sb.toString()
+            }
+            .reversed()
+            .joinToString("")
+        )
+        .replace("#", number) // suggestion 用
 }
 
 fun processConcatAndEscape(str: String): String {

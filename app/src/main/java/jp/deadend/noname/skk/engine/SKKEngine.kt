@@ -468,7 +468,11 @@ class SKKEngine(
 
         changeState(SKKChooseState, false) // Abbrevからの場合はforceRecoverされる
 
-        val list = findCandidates(str)
+        var number = ""
+        val list = findCandidates(str) ?: Regex("\\d+").find(str)?.let {
+            number = it.value
+            findCandidates(str.replaceRange(it.range, "#"))
+        }
         if (list == null) {
             registerStart(str)
             return
@@ -476,7 +480,7 @@ class SKKEngine(
 
         mCandidatesList = list
         mCurrentCandidateIndex = 0
-        mService.setCandidates(list)
+        mService.setCandidates(list, number)
         setCurrentCandidateToComposing()
     }
 
@@ -495,7 +499,8 @@ class SKKEngine(
         if (narrowed.isNotEmpty()) {
             mCandidatesList = narrowed
             mCurrentCandidateIndex = 0
-            mService.setCandidates(narrowed)
+            val number = Regex("\\d+").find(mKanjiKey)?.value ?: ""
+            mService.setCandidates(narrowed, number)
         }
         setCurrentCandidateToComposing()
     }
@@ -516,7 +521,8 @@ class SKKEngine(
             mOkurigana = lastConv.okurigana
             mCandidatesList = lastConv.list
             mCurrentCandidateIndex = lastConv.index
-            mService.setCandidates(mCandidatesList)
+            val number = Regex("\\d+").find(lastConv.kanjiKey)?.value ?: ""
+            mService.setCandidates(mCandidatesList, number)
             mService.requestChooseCandidate(mCurrentCandidateIndex)
             setCurrentCandidateToComposing()
 
@@ -534,10 +540,15 @@ class SKKEngine(
                 addFound(this, set, str, (if (state === SKKASCIIState) mASCIIDict else mUserDict))
                 for (dic in mDicts) { addFound(this, set, str, dic) }
             }
+            val number = Regex("\\d+").find(str)?.also {
+                val replacedStr = str.replaceRange(it.range, "#")
+                addFound(this, set, replacedStr, (if (state === SKKASCIIState) mASCIIDict else mUserDict))
+                for (dic in mDicts) { addFound(this, set, replacedStr, dic) }
+            }?.value ?: ""
 
             mCandidatesList = set.toList()
             mCurrentCandidateIndex = 0
-            withContext(Dispatchers.Main) { mService.setCandidates(mCandidatesList) }
+            withContext(Dispatchers.Main) { mService.setCandidates(mCandidatesList, number) }
         }
 
         mUpdateSuggestionsJob.cancel()
@@ -684,7 +695,7 @@ class SKKEngine(
                         changeState(SKKChooseState, false)
                         mCandidatesList = list
                         mCurrentCandidateIndex = 0
-                        mService.setCandidates(list)
+                        mService.setCandidates(list, "")
                         setCurrentCandidateToComposing()
                     }
                 },
@@ -727,7 +738,13 @@ class SKKEngine(
 
     fun setCurrentCandidateToComposing() {
         val candList = mCandidatesList ?: return
-        val candidate = processConcatAndEscape(removeAnnotation(candList[mCurrentCandidateIndex]))
+        val number = Regex("\\d+").find(mKanjiKey)?.value ?: ""
+        val candidate = processConcatAndEscape(
+            processNumber(
+                removeAnnotation(candList[mCurrentCandidateIndex]),
+                number
+            )
+        )
         setComposingTextSKK(katakana2hiragana(candidate + (mOkurigana ?: ""))!!, 1)
         // setComposingTextSKK はひらがなを期待している
     }
@@ -741,9 +758,25 @@ class SKKEngine(
         val candList = mCandidatesList ?: return
         val candidate = StringBuilder(processConcatAndEscape(removeAnnotation(candList[index])))
 
+        var number = ""
+        val kanjiKey = Regex("\\d+").find(mKanjiKey)?.let { d ->
+            number = d.value
+            Regex("#[0-3]").find(candidate)?.let {
+                candidate.setRange(it.range.first, it.range.last + 1, processNumber(it.value, number))
+            }
+            mKanjiKey.replaceRange(d.range, "#")
+        } ?: mKanjiKey
+
         if (isPersonalizedLearning) {
-            mUserDict.addEntry(mKanjiKey.toString(), candList[index], mOkurigana)
-            // ユーザー辞書登録時はエスケープや注釈を消さない
+            if (number.isEmpty()) {
+                mUserDict.addEntry(kanjiKey.toString(), candList[index], mOkurigana)
+                // ユーザー辞書登録時はエスケープや注釈を消さない
+            } else {
+                for (i in 0..3) { // 半角数字、全角数字、単純漢数字、位取り漢数字で登録
+                    val value = candList[index].replace(number, "#${i}")
+                    mUserDict.addEntry(kanjiKey.toString(), value, mOkurigana)
+                }
+            }
         }
 
         val okuri = StringBuilder(
@@ -764,8 +797,9 @@ class SKKEngine(
     }
 
     private fun pickSuggestion(index: Int) {
+        val number = Regex("\\d+").find(mKanjiKey)?.value ?: "#"
         val candList = mCandidatesList ?: return
-        val s = candList[index]
+        val s = candList[index].replaceFirst("#", number)
 
         when (state) {
             SKKAbbrevState -> {

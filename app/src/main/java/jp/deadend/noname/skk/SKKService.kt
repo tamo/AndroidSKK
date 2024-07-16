@@ -906,10 +906,10 @@ class SKKService : InputMethodService() {
         mEngine.updateSuggestionsASCII()
     }
 
-    fun setCandidates(list: List<String>?) {
+    fun setCandidates(list: List<String>?, number: String) {
         if (list != null) {
             mCandidateViewContainer?.setAlpha(255)
-            mCandidateView?.setContents(list)
+            mCandidateView?.setContents(list, number)
         }
     }
 
@@ -918,7 +918,7 @@ class SKKService : InputMethodService() {
     }
 
     fun clearCandidatesView() {
-        mCandidateView?.setContents(listOf())
+        mCandidateView?.setContents(listOf(), "")
         mCandidateViewContainer?.setAlpha(96)
     }
 

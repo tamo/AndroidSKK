@@ -109,9 +109,11 @@ object SKKKanjiState : SKKState {
                     } else {
                         // 未確定
                         mComposing.append(pcodeLower.toChar())
-                        // 全角にする記号ならば全角，そうでなければローマ字変換
-                        val hchr = getZenkakuSeparator(mComposing.toString())
-                            ?: RomajiConverter.convert(mComposing.toString())
+                        val composing = mComposing.toString()
+                        // 全角にする記号ならば全角，そうでなければローマ字変換、だめなら数字かチェック
+                        val hchr = getZenkakuSeparator(composing)
+                            ?: RomajiConverter.convert(composing)
+                            ?: composing.toIntOrNull()?.toString()
 
                         if (hchr != null) {
                             mComposing.setLength(0)
