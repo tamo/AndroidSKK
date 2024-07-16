@@ -37,7 +37,7 @@ object SKKHiraganaState : SKKState {
             if (isUpper) {
                 // 漢字変換候補入力の開始。KanjiModeへの移行
                 // すでに composing がある場合はそこから KanjiMode だったものとする (mA = Ma)
-                changeState(SKKKanjiState)
+                changeState(SKKKanjiState, false)
                 SKKKanjiState.processKey(context, pcodeLower)
             } else {
                 mComposing.append(pcodeLower.toChar())

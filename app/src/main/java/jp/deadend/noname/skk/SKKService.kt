@@ -38,11 +38,12 @@ class SKKService : InputMethodService() {
     private var mFlickJPInputView: FlickJPKeyboardView? = null
     private var mQwertyInputView: QwertyKeyboardView? = null
     private var mAbbrevKeyboardView: AbbrevKeyboardView? = null
-
     // 現在表示中の KeyboardView
-    private var mInputView: KeyboardView? = null
-    internal val isQwerty: Boolean
-        get() = (mInputView != null && mInputView == mQwertyInputView)
+    private var mInputView: KeyboardView? = mFlickJPInputView
+    internal val isFlickJP: Boolean
+        get() = (mInputView != mQwertyInputView && mInputView != mAbbrevKeyboardView)
+    internal val isTemporaryView: Boolean
+        get() = (mInputView == mAbbrevKeyboardView || mEngine.state === SKKZenkakuState)
 
     private val mSpeechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
     private var mIsRecording = false
@@ -55,8 +56,14 @@ class SKKService : InputMethodService() {
     internal var isHiragana: Boolean
         get() = mFlickJPInputView?.isHiragana ?: true
         set(value) {
-            if (value) mFlickJPInputView?.setHiraganaMode()
-            else mFlickJPInputView?.setKatakanaMode()
+            if (value) {
+                mFlickJPInputView?.setHiraganaMode()
+                mQwertyInputView?.setKeyState(SKKHiraganaState)
+            }
+            else {
+                mFlickJPInputView?.setKatakanaMode()
+                mQwertyInputView?.setKeyState(SKKKatakanaState)
+            }
         }
 
     // onKeyDown()でEnterキーのイベントを消費したかどうかのフラグ．onKeyUp()で判定するのに使う
@@ -934,22 +941,15 @@ class SKKService : InputMethodService() {
             kv?.stopRepeatKey()
         }
 
-        mQwertyInputView?.setKeyState(mEngine.state) // view だけ ASCII にする場合もあるので
+        mQwertyInputView?.setKeyState(mEngine.state) // 整合性のため必ず通っておく
 
         val inputView = when (state) {
             SKKASCIIState    -> mQwertyInputView ?: return
             SKKKanjiState    -> mFlickJPInputView ?: return
-            SKKHiraganaState -> {
-                mFlickJPInputView?.setHiraganaMode() ?: return
-                if (skkPrefs.toggleKanaKey || mInputView == mFlickJPInputView) mFlickJPInputView
-                else mQwertyInputView
-            }
-            SKKKatakanaState -> {
-                mFlickJPInputView?.setKatakanaMode() ?: return
-                if (skkPrefs.toggleKanaKey || mInputView == mFlickJPInputView) mFlickJPInputView
-                else mQwertyInputView
-            }
+            SKKHiraganaState -> mFlickJPInputView?.setHiraganaMode() ?: return
+            SKKKatakanaState -> mFlickJPInputView?.setKatakanaMode() ?: return
             SKKAbbrevState   -> mAbbrevKeyboardView ?: return
+            SKKZenkakuState  -> mQwertyInputView ?: return
             else -> return
         }
         setInputView(inputView)

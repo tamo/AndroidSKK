@@ -89,7 +89,7 @@ object SKKOkuriganaState : SKKState {
             if (!mOkurigana.isNullOrEmpty()) mKanjiKey.append(mOkurigana) // 「っ」とか
             mOkurigana = null
             setComposingTextSKK(mKanjiKey, 1)
-            changeState(SKKKanjiState)
+            changeState(SKKKanjiState, false)
         }
     }
 
@@ -98,7 +98,7 @@ object SKKOkuriganaState : SKKState {
             if (skkPrefs.toggleKanaKey) mComposing.setLength(0)
             mOkurigana = null
             mKanjiKey.deleteCharAt(mKanjiKey.lastIndex) // composing と同じ子音アルファベットのはず
-            changeState(SKKKanjiState)
+            changeState(SKKKanjiState, false)
             setComposingTextSKK("${mKanjiKey}${mComposing}", 1)
         }
 

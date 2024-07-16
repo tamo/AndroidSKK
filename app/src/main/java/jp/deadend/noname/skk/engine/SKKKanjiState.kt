@@ -12,11 +12,11 @@ object SKKKanjiState : SKKState {
     override val icon = 0
 
     override fun handleKanaKey(context: SKKEngine) {
-        if (skkPrefs.toggleKanaKey) {
-            context.changeState(SKKASCIIState)
-        } else {
-            // 確定
-            context.apply {
+        context.apply {
+            if (skkPrefs.toggleKanaKey) {
+                changeState(SKKASCIIState)
+            } else {
+                // 確定
                 commitTextSKK(mKanjiKey, 1)
                 mComposing.setLength(0)
                 mKanjiKey.setLength(0)
@@ -104,7 +104,7 @@ object SKKKanjiState : SKKState {
                             setComposingTextSKK(
                                 createTrimmedBuilder(mKanjiKey).append('*').append(mComposing), 1
                             )
-                            changeState(SKKOkuriganaState)
+                            changeState(SKKOkuriganaState, false)
                         }
                     } else {
                         // 未確定

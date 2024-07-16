@@ -103,7 +103,7 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
         mService = listener
     }
 
-    internal fun setHiraganaMode() {
+    internal fun setHiraganaMode(): FlickJPKeyboardView {
         isHiragana = true
         for (key in keyboard.keys) {
             when (key.codes[0]) {
@@ -121,9 +121,10 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
             }
         }
         invalidateAllKeys()
+        return this
     }
 
-    internal fun setKatakanaMode() {
+    internal fun setKatakanaMode(): FlickJPKeyboardView {
         isHiragana = false
         for (key in keyboard.keys) {
             when (key.codes[0]) {
@@ -141,6 +142,7 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
             }
         }
         invalidateAllKeys()
+        return this
     }
 
     private fun findKeyByCode(keyboard: Keyboard, code: Int) =
@@ -835,7 +837,6 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
                     EnumSet.of(FlickState.NONE) -> mService.processKey('l'.code)
                     EnumSet.of(FlickState.UP)   -> {
                         mService.processKey('L'.code)
-                        mService.changeSoftKeyboard(SKKASCIIState)
                     }
                     EnumSet.of(FlickState.DOWN) -> mService.changeSoftKeyboard(SKKASCIIState)
                 }

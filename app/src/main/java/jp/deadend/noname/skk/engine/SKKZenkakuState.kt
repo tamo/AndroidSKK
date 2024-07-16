@@ -15,9 +15,7 @@ object SKKZenkakuState : SKKState {
     }
 
     override fun handleKanaKey(context: SKKEngine) {
-        // ここで toggleKanaKey のとき ASCII にしなくていいのか？
-        // if (skkPrefs.toggleKanaKey) context.changeState(SKKASCIIState) else
-        context.changeState(context.kanaState, false) // 「かな」は状態だけ変更
+        context.changeState(SKKHiraganaState, change = false, recover = true)
     }
 
     override fun processKey(context: SKKEngine, pcode: Int) {
@@ -31,7 +29,7 @@ object SKKZenkakuState : SKKState {
     }
 
     override fun changeToFlick(context: SKKEngine): Boolean {
-        context.changeState(context.kanaState) // こちらはキーボードも変更
+        context.changeState(context.kanaState, true) // こちらはキーボードも変更
         return true
     }
 }
