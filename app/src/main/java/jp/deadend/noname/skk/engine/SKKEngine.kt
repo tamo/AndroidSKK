@@ -881,6 +881,7 @@ class SKKEngine(
     internal fun changeState(state: SKKState, change: Boolean = true, recover: Boolean = false) {
         val oldState = this.state
         val forceRecover = (oldState == SKKAbbrevState && state == SKKChooseState)
+        val wasTemporaryView = mService.isTemporaryView
         this.state = state
 
         if (!state.isTransient || change || forceRecover) {
@@ -888,7 +889,7 @@ class SKKEngine(
             val prevState = if (cameFromFlick) kanaState else SKKASCIIState
             if (change) {
                 changeSoftKeyboard(if (recover) prevState else state)
-            } else if (recover && mService.isTemporaryView) {
+            } else if (recover && wasTemporaryView) {
                 mService.changeSoftKeyboard(prevState) // 記録しないためmService版を直接叩く
             } else when (state) {
                 // 内部状態だけ変更する
