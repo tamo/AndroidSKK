@@ -886,11 +886,11 @@ class SKKEngine(
 
         if (!state.isTransient || change || forceRecover) {
             reset()
-            val prevState = if (cameFromFlick) kanaState else SKKASCIIState
+            val prevInputView = if (cameFromFlick) kanaState else SKKASCIIState
             if (change) {
-                changeSoftKeyboard(if (recover) prevState else state)
+                changeSoftKeyboard(if (recover) prevInputView else state)
             } else if (recover && wasTemporaryView) {
-                mService.changeSoftKeyboard(prevState) // 記録しないためmService版を直接叩く
+                mService.changeSoftKeyboard(prevInputView) // 記録しないためmService版を直接叩く
             } else when (state) {
                 // 内部状態だけ変更する
                 SKKHiraganaState -> mService.isHiragana = true
