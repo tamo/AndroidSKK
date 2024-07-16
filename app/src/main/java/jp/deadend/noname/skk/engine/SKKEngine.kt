@@ -468,7 +468,7 @@ class SKKEngine(
 
         changeState(SKKChooseState, false) // Abbrevからの場合はforceRecoverされる
 
-        var number = ""
+        var number = "#"
         val list = findCandidates(str) ?: Regex("\\d+").find(str)?.let {
             number = it.value
             findCandidates(str.replaceRange(it.range, "#"))
@@ -499,7 +499,7 @@ class SKKEngine(
         if (narrowed.isNotEmpty()) {
             mCandidatesList = narrowed
             mCurrentCandidateIndex = 0
-            val number = Regex("\\d+").find(mKanjiKey)?.value ?: ""
+            val number = Regex("\\d+").find(mKanjiKey)?.value ?: "#"
             mService.setCandidates(narrowed, number)
         }
         setCurrentCandidateToComposing()
@@ -521,7 +521,7 @@ class SKKEngine(
             mOkurigana = lastConv.okurigana
             mCandidatesList = lastConv.list
             mCurrentCandidateIndex = lastConv.index
-            val number = Regex("\\d+").find(lastConv.kanjiKey)?.value ?: ""
+            val number = Regex("\\d+").find(lastConv.kanjiKey)?.value ?: "#"
             mService.setCandidates(mCandidatesList, number)
             mService.requestChooseCandidate(mCurrentCandidateIndex)
             setCurrentCandidateToComposing()
@@ -544,7 +544,7 @@ class SKKEngine(
                 val replacedStr = str.replaceRange(it.range, "#")
                 addFound(this, set, replacedStr, (if (state === SKKASCIIState) mASCIIDict else mUserDict))
                 for (dic in mDicts) { addFound(this, set, replacedStr, dic) }
-            }?.value ?: ""
+            }?.value ?: "#"
 
             mCandidatesList = set.toList()
             mCurrentCandidateIndex = 0
@@ -695,7 +695,7 @@ class SKKEngine(
                         changeState(SKKChooseState, false)
                         mCandidatesList = list
                         mCurrentCandidateIndex = 0
-                        mService.setCandidates(list, "")
+                        mService.setCandidates(list, "#")
                         setCurrentCandidateToComposing()
                     }
                 },
@@ -738,7 +738,7 @@ class SKKEngine(
 
     fun setCurrentCandidateToComposing() {
         val candList = mCandidatesList ?: return
-        val number = Regex("\\d+").find(mKanjiKey)?.value ?: ""
+        val number = Regex("\\d+").find(mKanjiKey)?.value ?: "#"
         val candidate = processConcatAndEscape(
             processNumber(
                 removeAnnotation(candList[mCurrentCandidateIndex]),
@@ -758,7 +758,7 @@ class SKKEngine(
         val candList = mCandidatesList ?: return
         val candidate = StringBuilder(processConcatAndEscape(removeAnnotation(candList[index])))
 
-        var number = ""
+        var number = "#"
         val kanjiKey = Regex("\\d+").find(mKanjiKey)?.let { d ->
             number = d.value
             Regex("#[0-3]").find(candidate)?.let {

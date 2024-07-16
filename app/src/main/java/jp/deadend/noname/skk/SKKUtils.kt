@@ -97,10 +97,10 @@ fun processNumber(str: String, number: String): String {
                     }
                 )
                 if (index in 4..20 && index % 4 == 0) {
-                    if (number.substring( // 4桁まるごと0000かどうか
+                    if ((number.substring( // 4桁まるごと0000かどうか
                             max(number.length - index - 4, 0),
                             number.length - index
-                        ).toInt() > 0) {
+                    ).toIntOrNull() ?: 0) > 0) {
                         sb.append("一万億兆京垓"[index / 4])
                     }
                 }

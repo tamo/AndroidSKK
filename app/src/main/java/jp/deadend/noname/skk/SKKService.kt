@@ -918,7 +918,7 @@ class SKKService : InputMethodService() {
     }
 
     fun clearCandidatesView() {
-        mCandidateView?.setContents(listOf(), "")
+        mCandidateView?.setContents(listOf(), "#")
         mCandidateViewContainer?.setAlpha(96)
     }
 
