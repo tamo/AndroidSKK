@@ -55,6 +55,10 @@ class SKKPrefs(context: Context) {
         get() = prefs.getBoolean(res.getString(R.string.prefkey_use_inset), false)
         set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_use_inset), value).apply()
 
+    var originalColor: Boolean
+        get() = prefs.getBoolean(res.getString(R.string.prefkey_ignore_high_contrast), false)
+        set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_ignore_high_contrast), value).apply()
+
     var useSoftKey: String
         get() = prefs.getString(res.getString(R.string.prefkey_use_softkey), null) ?: "auto"
         set(value) = prefs.edit().putString(res.getString(R.string.prefkey_use_softkey), value).apply()

@@ -19,7 +19,7 @@ package jp.deadend.noname.skk
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
-//import android.graphics.Path
+import android.graphics.Path
 import android.graphics.drawable.Drawable
 import android.util.AttributeSet
 import android.view.GestureDetector
@@ -54,7 +54,7 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
     private val mColorNormal: Int
     private val mColorRecommended: Int
     private val mColorOther: Int
-//    private val mTextPath: Path
+    private val mTextPath: Path
     private val mPaint = Paint()
 
     private var mTargetScrollX = 0
@@ -81,7 +81,7 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
         mColorNormal = ResourcesCompat.getColor(r, R.color.candidate_normal, null)
         mColorRecommended = ResourcesCompat.getColor(r, R.color.candidate_recommended, null)
         mColorOther = ResourcesCompat.getColor(r, R.color.candidate_other, null)
-//        mTextPath = Path()
+        mTextPath = Path()
 
         mScrollPixels = r.getDimensionPixelSize(R.dimen.candidates_scroll_size)
 
@@ -215,10 +215,16 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
             } else {
                 paint.color = mColorOther
             }
-            canvas.drawText(mSuggestions[i], (mWordX[i] + X_GAP).toFloat(), y.toFloat(), paint)
-// 高コントラストテキストの設定を無視したい場合は上の drawText を以下に変更
-//            paint.getTextPath(mSuggestions[i], 0, mSuggestions[i].length, (mWordX[i] + X_GAP).toFloat(), y.toFloat(), mTextPath);
-//            canvas.drawPath(mTextPath, paint);
+            if (skkPrefs.originalColor) { // 高コントラストテキストの設定を無視
+                paint.getTextPath(
+                    mSuggestions[i], 0, mSuggestions[i].length,
+                    (mWordX[i] + X_GAP).toFloat(), y.toFloat(),
+                    mTextPath
+                )
+                canvas.drawPath(mTextPath, paint)
+            } else {
+                canvas.drawText(mSuggestions[i], (mWordX[i] + X_GAP).toFloat(), y.toFloat(), paint)
+            }
             paint.color = mColorOther
             canvas.drawLine(
                     mWordX[i].toFloat() + mWordWidth[i].toFloat() + 0.5f, 0f,
