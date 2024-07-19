@@ -105,7 +105,7 @@ class SKKService : InputMethodService() {
         return super.onStartCommand(intent, flags, startId)
     }
 
-    internal fun extractDictionary(withL: Boolean = true, withASCII: Boolean = true): Boolean {
+    internal fun extractDictionary(): Boolean {
         try {
             dlog("dic extract start")
             mHandler.post {
@@ -114,8 +114,7 @@ class SKKService : InputMethodService() {
                 ).show()
             }
 
-            if (withL) unzipFile(resources.assets.open(DICT_ZIP_FILE), filesDir)
-            if (withASCII) unzipFile(resources.assets.open(DICT_ASCII_ZIP_FILE), filesDir)
+            unzipFile(resources.assets.open(DICT_ASCII_ZIP_FILE), filesDir)
 
             mHandler.post {
                 Toast.makeText(
@@ -139,26 +138,6 @@ class SKKService : InputMethodService() {
         val dd = filesDir.absolutePath
         dlog("dict dir: $dd")
 
-        SKKDictionary.newInstance(
-            dd + "/" + getString(R.string.dic_name_main), getString(R.string.btree_name)
-        )?.also {
-            result.add(it)
-        } ?: run {
-            dlog("dict open failed")
-            if (!extractDictionary(withL = true, withASCII = false)) { stopSelf() }
-            SKKDictionary.newInstance(
-                dd + "/" + getString(R.string.dic_name_main), getString(R.string.btree_name)
-            )?.also {
-                result.add(it)
-            } ?: run {
-                mHandler.post {
-                    Toast.makeText(
-                        applicationContext, getString(R.string.error_dic), Toast.LENGTH_LONG
-                    ).show()
-                }
-                stopSelf()
-            }
-        }
         val prefVal = PreferenceManager.getDefaultSharedPreferences(this)
                 .getString(getString(R.string.prefkey_optional_dics), "")
         if (!prefVal.isNullOrEmpty()) {
@@ -175,6 +154,7 @@ class SKKService : InputMethodService() {
 
     override fun onCreate() {
         super.onCreate()
+        instance = this
 
         Thread.setDefaultUncaughtExceptionHandler(MyUncaughtExceptionHandler(applicationContext))
 
@@ -186,7 +166,11 @@ class SKKService : InputMethodService() {
         }
 
         val dics = openDictionaries()
-        if (dics.isEmpty()) { stopSelf() }
+        if (dics.isEmpty()) {
+            val dicManagerIntent = Intent(this, SKKDicManager::class.java)
+                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            startActivity(dicManagerIntent)
+        }
 
         val userDic = SKKUserDictionary.newInstance(
             this,
@@ -595,6 +579,7 @@ class SKKService : InputMethodService() {
     override fun onDestroy() {
         mEngine.commitUserDictChanges()
         mSpeechRecognizer.destroy()
+        instance = null
 
         super.onDestroy()
     }
@@ -970,13 +955,23 @@ class SKKService : InputMethodService() {
         if (!mUseSoftKeyboard && iconRes != 0) super.showStatusIcon(iconRes)
     }
 
+    private fun ping() = true
+
     companion object {
+        private var instance: SKKService? = null
+        internal fun isRunning(): Boolean {
+            return try {
+                instance?.ping() ?: false
+            } catch (e: NullPointerException) {
+                false
+            }
+        }
+
         internal const val KEY_COMMAND = "jp.deadend.noname.skk.KEY_COMMAND"
         internal const val COMMAND_COMMIT_USERDIC = "jp.deadend.noname.skk.COMMAND_COMMIT_USERDIC"
         internal const val COMMAND_READ_PREFS = "jp.deadend.noname.skk.COMMAND_READ_PREFS"
         internal const val COMMAND_RELOAD_DICS = "jp.deadend.noname.skk.COMMAND_RELOAD_DICS"
         internal const val COMMAND_MUSHROOM = "jp.deadend.noname.skk.COMMAND_MUSHROOM"
-        internal const val DICT_ZIP_FILE = "skk_dict_btree_db.zip"
         internal const val DICT_ASCII_ZIP_FILE = "skk_asciidict.zip"
         private const val CHANNEL_ID = "skk_notification"
         private const val CHANNEL_NAME = "SKK"

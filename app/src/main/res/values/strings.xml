@@ -20,12 +20,12 @@
 
 	<string name="message_confirm_remove">このエントリを削除しますか？</string>
 	<string name="message_confirm_clear">現在のユーザー辞書の内容はすべて消去されます。よろしいですか？</string>
-	<string name="message_confirm_clear_dics">現在の変換辞書をすべて削除し、基本の辞書だけにします。よろしいですか？</string>
+	<string name="message_confirm_clear_dics">現在の変換辞書をすべて削除します。よろしいですか？</string>
 	<string name="message_written_to_external_storage">ユーザー辞書をテキスト形式で保存しました: %1$s</string>
 	<string name="message_confirm_remove_dic">この辞書を削除しますか？</string>
-	<string name="message_extracting_dic">変換辞書を解凍しています…</string>
-	<string name="message_dic_extracted">変換辞書を解凍しました</string>
-	<string name="message_main_dic">これは基本の変換辞書なので、削除できません</string>
+	<string name="message_confirm_download_dic">SKK %s 辞書をダウンロードしますか？</string>
+	<string name="message_extracting_dic">ASCII 辞書を解凍しています…</string>
+	<string name="message_dic_extracted">ASCII 辞書を解凍しました</string>
 
 	<string name="error_access_failed">アクセスできません: %1$s</string>
 	<string name="error_dic">辞書ファイルを開けません。設定画面から、辞書を初期化してみてください</string>
@@ -37,7 +37,7 @@
 	<string name="error_write_to_external_storage">テキスト形式の保存に失敗しました</string>
 	<string name="error_text_dic_coding">UTF-8のファイルではないようです</string>
 	<string name="error_dic_exists">この辞書はすでに存在します: %1$s</string>
-	<string name="error_extracting_dic_failed">変換辞書の解凍に失敗しました。一旦アンインストールしてみてください</string>
+	<string name="error_extracting_dic_failed">ASCII 辞書の解凍に失敗しました。一旦アンインストールしてみてください</string>
 
 	<string translatable="false" name="prefkey_kutouten_type">PrefKeyKutoutenType</string>
 	<string translatable="false" name="prefkey_prefix_mark">PrefKeyPrefixMark</string>
@@ -75,7 +75,6 @@
 	<string translatable="false" name="prefkey_optional_dics">PrefKeyOptionalDics</string>
 
 	<string translatable="false" name="btree_name">skk_dict</string>
-	<string translatable="false" name="dic_name_main">skk_dict_btree</string>
 	<string translatable="false" name="dic_name_user">skk_userdict</string>
 	<string translatable="false" name="dic_name_ascii">skk_asciidict</string>
 </resources>

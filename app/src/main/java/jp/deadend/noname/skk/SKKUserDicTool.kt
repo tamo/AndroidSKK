@@ -167,9 +167,11 @@ class SKKUserDicTool : AppCompatActivity() {
             }
         })
 
-        val intent = Intent(this@SKKUserDicTool, SKKService::class.java)
-        intent.putExtra(SKKService.KEY_COMMAND, SKKService.COMMAND_COMMIT_USERDIC)
-        startService(intent)
+        if (SKKService.isRunning()) {
+            val intent = Intent(this@SKKUserDicTool, SKKService::class.java)
+            intent.putExtra(SKKService.KEY_COMMAND, SKKService.COMMAND_COMMIT_USERDIC)
+            startService(intent)
+        }
 
         mAdapter = EntryAdapter(this, mEntryList)
         binding.userDictoolList.adapter = mAdapter

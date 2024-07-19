@@ -78,8 +78,10 @@ class SKKSettingsActivity : AppCompatActivity(),
     override fun onPause() {
         super.onPause()
 
-        val intent = Intent(this@SKKSettingsActivity, SKKService::class.java)
-        intent.putExtra(SKKService.KEY_COMMAND, SKKService.COMMAND_READ_PREFS)
-        startService(intent)
+        if (SKKService.isRunning()) {
+            val intent = Intent(this@SKKSettingsActivity, SKKService::class.java)
+            intent.putExtra(SKKService.KEY_COMMAND, SKKService.COMMAND_READ_PREFS)
+            startService(intent)
+        }
     }
 }

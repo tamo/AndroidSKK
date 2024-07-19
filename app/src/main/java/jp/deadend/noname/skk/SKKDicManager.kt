@@ -4,16 +4,20 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import androidx.preference.PreferenceManager
-import androidx.appcompat.app.AppCompatActivity
 import android.util.Log
-import android.view.*
+import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuItem
+import android.view.View
+import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import android.widget.CheckedTextView
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
-import java.io.IOException
-import java.nio.charset.CharacterCodingException
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.net.toUri
+import androidx.preference.PreferenceManager
 import jdbm.RecordManager
 import jdbm.RecordManagerFactory
 import jdbm.btree.BTree
@@ -23,18 +27,33 @@ import jp.deadend.noname.dialog.ConfirmationDialogFragment
 import jp.deadend.noname.dialog.SimpleMessageDialogFragment
 import jp.deadend.noname.dialog.TextInputDialogFragment
 import jp.deadend.noname.skk.databinding.ActivityDicManagerBinding
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
+import java.net.URL
 import java.util.zip.GZIPInputStream
 
 class SKKDicManager : AppCompatActivity() {
     private lateinit var binding: ActivityDicManagerBinding
+    private val mPrefOptDics: String by lazy {
+        PreferenceManager.getDefaultSharedPreferences(this)
+            .getString(getString(R.string.prefkey_optional_dics), "") ?: ""
+    }
     private val mDics = mutableListOf<Tuple<String, String>>()
     private var isModified = false
 
     private val addDicFileLauncher = registerForActivityResult(
                                         ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) { addDic(uri) }
+        if (uri != null) { addDic(loadDic(uri)) }
     }
 
+    private val commonDics = listOf(
+        "S", "M", "ML", "L", "L.unannotated", "jinmei", "geo", "station", "propernoun"
+    ).map { type -> Tuple("SKK ${type} 辞書", "/skk_dict_${type}") }
 
     public override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,20 +61,37 @@ class SKKDicManager : AppCompatActivity() {
         setContentView(binding.root)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
-        mDics.add(Tuple(getString(R.string.label_dicmanager_ldic), ""))
-        val optDics = PreferenceManager.getDefaultSharedPreferences(this)
-                .getString(getString(R.string.prefkey_optional_dics), "") ?: ""
-        if (optDics.isNotEmpty()) {
-            optDics.split("/").dropLastWhile { it.isEmpty() }.chunked(2).forEach {
+        // 一般的な辞書リストをまず列挙
+        commonDics.forEach { mDics.add(it) }
+        // インストール済みかどうかチェック
+        fileList()
+            .filter { it.startsWith("skk_dict_") && it.endsWith(".db") }
+            .forEach {
+                val entry = it.dropLast(".db".length)
+                val type = entry.drop("skk_dict_".length)
+                val dupIndex = mDics.indexOfFirst { dict ->
+                    dict.value == "/${entry}"
+                }
+                if (dupIndex == -1) {
+                    mDics.add(Tuple("SKK ${type} 辞書", entry))
+                } else {
+                    mDics[dupIndex].value = entry
+                }
+            }
+        // 設定済みの辞書
+        if (mPrefOptDics.isNotEmpty()) {
+            mPrefOptDics.split("/").dropLastWhile { it.isEmpty() }.chunked(2).forEach {
+                mDics.find { dict -> dict.value == it[1] }
+                    ?.let { dup -> mDics.remove(dup) } // 一般的な辞書の名前を prefs の名前に更新
                 mDics.add(Tuple(it[0], it[1]))
             }
         }
+        mDics.sortBy { it.key }
 
         binding.dicManagerList.adapter = TupleAdapter(this, mDics)
         binding.dicManagerList.onItemClickListener = AdapterView.OnItemClickListener { _, _, position, _ ->
-            if (position == 0) {
-                SimpleMessageDialogFragment.newInstance(getString(R.string.message_main_dic))
-                    .show(supportFragmentManager, "dialog")
+            if (mDics[position].value.startsWith('/')) {
+                downloadDic(mDics[position].value.drop("/skk_dict_".length))
             } else {
                 val dialog =
                     ConfirmationDialogFragment.newInstance(getString(R.string.message_confirm_remove_dic))
@@ -65,7 +101,11 @@ class SKKDicManager : AppCompatActivity() {
                             val dicName = mDics[position].value
                             deleteFile("$dicName.db")
                             deleteFile("$dicName.lg")
-                            mDics.removeAt(position)
+                            if (dicName.startsWith("skk_dict_")) {
+                                mDics[position].value = "/${dicName}"
+                            } else {
+                                mDics.removeAt(position)
+                            }
                             (binding.dicManagerList.adapter as TupleAdapter).notifyDataSetChanged()
                             isModified = true
                         }
@@ -78,21 +118,22 @@ class SKKDicManager : AppCompatActivity() {
     }
 
     override fun onPause() {
-        if (isModified) {
-            val dics = StringBuilder()
-            for (i in 1 until mDics.size) {
-                dics.append(mDics[i].key, "/", mDics[i].value, "/")
-            }
+        val dics = StringBuilder()
+        mDics
+            .filter { !it.value.startsWith('/') }
+            .forEach { dics.append(it.key, "/", it.value, "/") }
 
+        if (isModified && (mPrefOptDics != dics.toString())) {
             PreferenceManager.getDefaultSharedPreferences(this)
-                    .edit()
-                    .putString(getString(R.string.prefkey_optional_dics), dics.toString())
-                    .apply()
+                .edit()
+                .putString(getString(R.string.prefkey_optional_dics), dics.toString())
+                .apply()
 
-
-            val intent = Intent(this@SKKDicManager, SKKService::class.java)
-            intent.putExtra(SKKService.KEY_COMMAND, SKKService.COMMAND_RELOAD_DICS)
-            startService(intent)
+            if (SKKService.isRunning()) { // まだ起動していないなら不要
+                val intent = Intent(this@SKKDicManager, SKKService::class.java)
+                    .putExtra(SKKService.KEY_COMMAND, SKKService.COMMAND_RELOAD_DICS)
+                startService(intent)
+            }
         }
 
         super.onPause()
@@ -123,14 +164,15 @@ class SKKDicManager : AppCompatActivity() {
                                 ) { deleteFile(file) }
                             }
                             try {
-                                unzipFile(resources.assets.open(SKKService.DICT_ZIP_FILE), filesDir)
+                                unzipFile(resources.assets.open(SKKService.DICT_ASCII_ZIP_FILE), filesDir)
                             } catch (e: IOException) {
                                 SimpleMessageDialogFragment.newInstance(
                                     getString(R.string.error_extracting_dic_failed)
                                 ).show(supportFragmentManager, "dialog")
                             }
                             mDics.clear()
-                            mDics.add(Tuple(getString(R.string.label_dicmanager_ldic), ""))
+                            commonDics.forEach { mDics.add(it) }
+                            mDics.sortBy { it.key }
                             (binding.dicManagerList.adapter as TupleAdapter).notifyDataSetChanged()
                             isModified = true
                         }
@@ -144,38 +186,74 @@ class SKKDicManager : AppCompatActivity() {
         return true
     }
 
-    private fun addDic(uri: Uri) {
-        val dicFileBaseName = loadDic(uri)
-        if (dicFileBaseName != null) {
-            val dialog = TextInputDialogFragment.newInstance(getString(R.string.label_dicmanager_input_name))
-            dialog.setSingleLine(true)
-            dialog.isCancelable = false
-            dialog.setListener(
-                    object : TextInputDialogFragment.Listener {
-                        override fun onPositiveClick(result: String) {
-                            val dicName = if (result.isEmpty()) {
-                                getString(R.string.label_dicmanager_optionaldic)
-                            } else {
-                                result.replace("/", "")
-                            }
-                            var name = dicName
-                            var suffix = 1
-                            while (containsName(name)) {
-                                suffix++
-                                name = "$dicName($suffix)"
-                            }
-                            mDics.add(Tuple(name, dicFileBaseName))
-                            (binding.dicManagerList.adapter as TupleAdapter).notifyDataSetChanged()
-                            isModified = true
+    private fun downloadDic(type: String) {
+        val dialog =
+            ConfirmationDialogFragment.newInstance(getString(R.string.message_confirm_download_dic, type))
+        dialog.setListener(
+            object : ConfirmationDialogFragment.Listener {
+                override fun onPositiveClick() {
+                    MainScope().launch(Dispatchers.IO) {
+                        val path = File("${filesDir.absolutePath}/SKK-JISYO.${type}.gz")
+                        URL("https://skk-dev.github.io/dict/SKK-JISYO.${type}.gz")
+                            .openStream()
+                            .copyTo(FileOutputStream(path))
+                        withContext(Dispatchers.Main) {
+                            addDic(loadDic(path.toUri()), fixed = true)
                         }
+                    }.start()
+                }
 
-                        override fun onNegativeClick() {
-                            deleteFile("$dicFileBaseName.db")
-                            deleteFile("$dicFileBaseName.lg")
-                        }
-                    })
-            dialog.show(supportFragmentManager, "dialog")
+                override fun onNegativeClick() {}
+            }
+        )
+        dialog.show(supportFragmentManager, "dialog")
+    }
+
+    private fun addDic(dicFileBaseName: String?, fixed: Boolean = false) {
+        if (dicFileBaseName == null) return
+        val dictPrefix = "skk_dict_"
+        if (fixed && dicFileBaseName.startsWith(dictPrefix)) {
+            val dupIndex = mDics.indexOfFirst { it.value == "/${dicFileBaseName}" }
+            if (dupIndex == -1) {
+                val dictName = "SKK ${dicFileBaseName.drop(dictPrefix.length)} 辞書"
+                mDics.add(Tuple(dictName, dicFileBaseName))
+            } else {
+                mDics[dupIndex].value = dicFileBaseName
+            }
+            (binding.dicManagerList.adapter as TupleAdapter).notifyDataSetChanged()
+            isModified = true
+            return
         }
+
+        val dialog =
+            TextInputDialogFragment.newInstance(getString(R.string.label_dicmanager_input_name))
+        dialog.setSingleLine(true)
+        dialog.setPlaceHolder(dicFileBaseName)
+        dialog.setListener(
+            object : TextInputDialogFragment.Listener {
+                override fun onPositiveClick(result: String) {
+                    val dicName = if (result.isEmpty()) {
+                        getString(R.string.label_dicmanager_optionaldic)
+                    } else {
+                        result.replace("/", "")
+                    }
+                    var name = dicName
+                    var suffix = 1
+                    while (containsName(name)) {
+                        suffix++
+                        name = "$dicName($suffix)"
+                    }
+                    mDics.add(Tuple(name, dicFileBaseName))
+                    (binding.dicManagerList.adapter as TupleAdapter).notifyDataSetChanged()
+                    isModified = true
+                }
+
+                override fun onNegativeClick() {
+                    deleteFile("$dicFileBaseName.db")
+                    deleteFile("$dicFileBaseName.lg")
+                }
+            })
+        dialog.show(supportFragmentManager, "dialog")
     }
 
     private fun loadDic(uri: Uri): String? {
@@ -191,9 +269,9 @@ class SKKDicManager : AppCompatActivity() {
         val nameWithoutGZ = if (isGzip) name.substring(0, name.length - 3) else name
 
         val dicFileBaseName = if (name.startsWith("SKK-JISYO.")) {
-            "skk_dict_" + nameWithoutGZ.substring(10)
+            "skk_dict_" + nameWithoutGZ.substring("SKK-JISYO.".length)
         } else {
-            "skk_dict_" + nameWithoutGZ.replace(".", "_")
+            "dict_" + nameWithoutGZ.replace(".", "_")
         }
 
         val filesDir = filesDir
@@ -272,9 +350,10 @@ class SKKDicManager : AppCompatActivity() {
 
         override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
             val view = convertView
-                    ?: mLayoutInflater.inflate(android.R.layout.simple_list_item_1, parent, false)
+                    ?: mLayoutInflater.inflate(android.R.layout.simple_list_item_checked, parent, false)
             getItem(position)?.let {
                 (view as TextView).text = it.key
+                (view as CheckedTextView).isChecked = !it.value.startsWith('/')
             }
 
             return view

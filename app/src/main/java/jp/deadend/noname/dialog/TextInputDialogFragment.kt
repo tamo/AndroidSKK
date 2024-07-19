@@ -10,6 +10,7 @@ class TextInputDialogFragment : DialogFragment() {
     private var mListener: Listener? = null
     private lateinit var mEditText: EditText
     private var mSingleLine = false
+    private var mPlaceHolder = ""
 
     interface Listener {
         fun onPositiveClick(result: String)
@@ -24,11 +25,16 @@ class TextInputDialogFragment : DialogFragment() {
         mSingleLine = value
     }
 
+    fun setPlaceHolder(value: String) {
+        mPlaceHolder = value
+    }
+
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         mEditText = EditText(activity)
         if (mSingleLine) {
             mEditText.setSingleLine()
         }
+        mEditText.text.append(mPlaceHolder)
 
         return AlertDialog.Builder(requireContext())
                 .setMessage(arguments?.getString("message"))

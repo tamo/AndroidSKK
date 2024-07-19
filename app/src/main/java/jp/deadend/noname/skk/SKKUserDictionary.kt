@@ -133,7 +133,7 @@ class SKKUserDictionary private constructor (
     companion object {
         fun newInstance(context: SKKService, mDicFile: String, btreeName: String, isASCII: Boolean): SKKUserDictionary? {
             if (isASCII && !File(mDicFile).exists()) {
-                context.extractDictionary(withL = false, withASCII = true)
+                context.extractDictionary()
             }
             try {
                 val recman = RecordManagerFactory.createRecordManager(mDicFile)
