@@ -416,9 +416,9 @@ class SKKService : InputMethodService() {
             SKKASCIIState -> mQwertyInputView?.setKeyState(SKKASCIIState)
             SKKKatakanaState -> {
                 mFlickJPInputView?.setKatakanaMode()
-                if (skkPrefs.toggleKanaKey) mFlickJPInputView else mQwertyInputView
+                if (skkPrefs.preferFlick) mFlickJPInputView else mQwertyInputView
             }
-            else -> if (skkPrefs.toggleKanaKey) mFlickJPInputView else mQwertyInputView
+            else -> if (skkPrefs.preferFlick) mFlickJPInputView else mQwertyInputView
         }
     }
 

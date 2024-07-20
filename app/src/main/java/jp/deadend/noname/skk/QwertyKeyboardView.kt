@@ -129,10 +129,9 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                 mService.updateSuggestionsASCII()
             }
             KEYCODE_QWERTY_TOJP -> {
-                val toggle = skkPrefs.toggleKanaKey
                 when (isFlicked) {
-                    (if (toggle) FLICK_NONE else FLICK_DOWN) -> mService.changeToFlick()
-                    (if (toggle) FLICK_DOWN else FLICK_NONE) -> mService.handleKanaKey()
+                    if (skkPrefs.preferFlick) FLICK_NONE else FLICK_DOWN -> mService.changeToFlick()
+                    if (skkPrefs.preferFlick) FLICK_DOWN else FLICK_NONE -> mService.handleKanaKey()
                     FLICK_UP -> mService.pasteClip()
                 }
             }
@@ -187,9 +186,8 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
     fun setKeyState(state: SKKState): QwertyKeyboardView {
         val kanaKey = findKeyByCode(KEYCODE_QWERTY_TOJP)
         val kanaLabel = if (state.isTransient) "確定" else "かな"
-        val toggle = skkPrefs.toggleKanaKey
-        kanaKey?.label = if (toggle) "Flick" else kanaLabel
-        kanaKey?.downLabel = if (toggle) kanaLabel else "Flick"
+        kanaKey?.label = if (skkPrefs.preferFlick) "Flick" else kanaLabel
+        kanaKey?.downLabel = if (skkPrefs.preferFlick) kanaLabel else "Flick"
         kanaKey?.on = state === SKKHiraganaState // Kanji とか Choose とかで消えるのがイヤなら以下にする
         // kanaKey?.on = (state !in listOf(SKKASCIIState, SKKZenkakuState) && mService.isHiragana)
 

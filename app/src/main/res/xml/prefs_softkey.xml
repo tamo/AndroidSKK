@@ -15,6 +15,13 @@
             app:useSimpleSummaryProvider="true"
             app:iconSpaceReserved="false"
             />
+        <androidx.preference.CheckBoxPreference
+            app:key="@string/prefkey_use_flick"
+            app:title="フリック入力の優先"
+            app:summary="オフだと日本語もqwertyキーで入力します"
+            app:defaultValue="true"
+            app:iconSpaceReserved="false"
+            />
         <androidx.preference.ListPreference
             app:key="@string/prefkey_flick_sensitivity2"
             app:title="英字フリック感度 (高さが小さいときは「高」がおすすめ)"

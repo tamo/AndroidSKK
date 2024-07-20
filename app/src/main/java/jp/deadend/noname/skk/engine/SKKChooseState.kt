@@ -68,7 +68,7 @@ object SKKChooseState : SKKState {
                     val maybeComposing = mKanjiKey.lastOrNull() ?: 0.toChar()
                     if (isAlphabet(maybeComposing.code)) {
                         mKanjiKey.deleteCharAt(mKanjiKey.lastIndex) // 送りがなのアルファベットを削除
-                        if (!skkPrefs.toggleKanaKey) {
+                        if (!skkPrefs.preferFlick) { // Flickではアルファベットが残ると困る
                             mComposing.append(maybeComposing)
                         }
                     }

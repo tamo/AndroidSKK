@@ -23,7 +23,7 @@ class SKKEngine(
         private set
     internal val kanaState: SKKState
         get() = if (mService.isHiragana) SKKHiraganaState else SKKKatakanaState
-    internal var cameFromFlick: Boolean = skkPrefs.toggleKanaKey
+    internal var cameFromFlick: Boolean = skkPrefs.preferFlick
 
     // 候補のリスト．KanjiStateとAbbrevStateでは補完リスト，ChooseStateでは変換候補リストになる
     private var mCandidatesList: List<String>? = null
@@ -633,7 +633,7 @@ class SKKEngine(
         val maybeComposing = mKanjiKey.lastOrNull() ?: 0.toChar()
         if (isAlphabet(maybeComposing.code)) {
             mKanjiKey.deleteCharAt(mKanjiKey.lastIndex)
-            if (!skkPrefs.toggleKanaKey) {
+            if (!skkPrefs.preferFlick) { // Flickでアルファベットがあっても困る
                 mComposing.append(maybeComposing)
             }
         }

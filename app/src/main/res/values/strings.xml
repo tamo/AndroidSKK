@@ -4,7 +4,7 @@
 	<string name="label_mushroom">マッシュルーム</string>
 	<string name="label_pref_activity">SKK for Androidの設定</string>
 	<string name="label_pref_softkeyboard">ソフトウェアキーボードの設定</string>
-	<string name="label_pref_hardkeyboard">ハードウェアと Qwerty キーボードの設定</string>
+	<string name="label_pref_hardkeyboard">ハードウェアキーボードの設定</string>
 	<string name="label_dictool_activity">SKK ユーザー辞書ツール</string>
 	<string name="label_asciitool_activity">SKK ASCII 辞書ツール</string>
 	<string name="label_import">インポート</string>
@@ -53,6 +53,7 @@
 	<string translatable="false" name="prefkey_use_inset">PrefKeyInset</string>
 	<string translatable="false" name="prefkey_ignore_high_contrast">PrefKeyOriginalColor</string>
 	<string translatable="false" name="prefkey_use_softkey">PrefKeyUseSoftKey</string>
+	<string translatable="false" name="prefkey_use_flick">PrefKeyPreferFlick</string>
 	<string translatable="false" name="prefkey_use_popup">PrefKeyUsePopup</string>
 	<string translatable="false" name="prefkey_fixed_popup">PrefKeyFixedPopup</string>
 	<string translatable="false" name="prefkey_mini_keyboard">PrefKeyUseMiniKey</string>

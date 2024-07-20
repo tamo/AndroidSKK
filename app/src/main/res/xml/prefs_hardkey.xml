@@ -13,8 +13,8 @@
         />
     <androidx.preference.CheckBoxPreference
         app:key="@string/prefkey_toggle_kana_key"
-        app:title="かなキーを ASCII とのトグルに"
-        app:summary="ソフトウェアキーボードは，オンだとフリック優先，オフだと qwerty 優先です"
+        app:title="かなキーをASCIIとのトグルに"
+        app:summary="オンだと，かなモードでかなキーを押すとASCIIモードに戻ります"
         app:defaultValue="true"
         app:iconSpaceReserved="false"
         />

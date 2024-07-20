@@ -67,6 +67,10 @@ class SKKPrefs(context: Context) {
         get() = prefs.getBoolean(res.getString(R.string.prefkey_use_popup), true)
         set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_use_popup), value).apply()
 
+    var preferFlick: Boolean
+        get() = prefs.getBoolean(res.getString(R.string.prefkey_use_flick), true)
+        set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_use_flick), value).apply()
+
     var useFixedPopup: Boolean
         get() = prefs.getBoolean(res.getString(R.string.prefkey_fixed_popup), true)
         set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_fixed_popup), value).apply()
