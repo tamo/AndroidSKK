@@ -132,7 +132,7 @@ class SKKUserDictionary private constructor (
 
     companion object {
         fun newInstance(context: SKKService, mDicFile: String, btreeName: String, isASCII: Boolean): SKKUserDictionary? {
-            if (isASCII && !File(mDicFile).exists()) {
+            if (isASCII && !File("$mDicFile.db").exists()) {
                 context.extractDictionary()
             }
             try {
