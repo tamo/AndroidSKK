@@ -861,7 +861,7 @@ class SKKEngine(
             }
             'l'.code ->  {
                 if (mComposing.length != 1 || mComposing[0] != 'z') {
-                    changeState(SKKASCIIState)
+                    changeState(SKKASCIIState, true)
                     return true
                 }
             } // 「→」を入力するための例外
