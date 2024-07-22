@@ -338,6 +338,9 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
     }
 
     override fun onTouchEvent(me: MotionEvent): Boolean {
+        if (mSuggestions.isEmpty()) { // ドラッグで位置調整
+            return mContainer.binding.candidateLeft.dispatchTouchEvent(me)
+        }
         // スクロールした時にはここで処理されて終わりのようだ。ソースの頭で定義している。
         if (mGestureDetector.onTouchEvent(me)) { return true }
 

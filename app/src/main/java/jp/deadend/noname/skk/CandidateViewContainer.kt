@@ -17,15 +17,27 @@
 package jp.deadend.noname.skk
 
 import android.content.Context
+import android.content.res.Configuration
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.widget.LinearLayout
 import jp.deadend.noname.skk.databinding.ViewCandidatesBinding
 
 class CandidateViewContainer(screen: Context, attrs: AttributeSet) : LinearLayout(screen, attrs) {
-    private lateinit var binding: ViewCandidatesBinding
+    internal lateinit var binding: ViewCandidatesBinding
+    private lateinit var mService: SKKService
     private var mFontSize = -1
     private var mButtonWidth = screen.resources.getDimensionPixelSize(R.dimen.candidates_scrollbutton_width)
+
+    private var mLeftEnabled = false
+    private var mRightEnabled = false
+    private var mDragging = false
+    private var mDragStartLeft = 0
+    private var mDragStartX = 0f
+
+    fun setService(service: SKKService) {
+        mService = service
+    }
 
     override fun onFinishInflate() {
         super.onFinishInflate()
@@ -33,13 +45,50 @@ class CandidateViewContainer(screen: Context, attrs: AttributeSet) : LinearLayou
     }
 
     fun initViews() {
-        binding.candidateLeft.setOnTouchListener { _, event ->
-            if (event.action == MotionEvent.ACTION_DOWN) binding.candidates.scrollPrev()
+        val onTouchListener = OnTouchListener { view, event ->
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> when {
+                    view == binding.candidateLeft && mLeftEnabled -> {
+                        binding.candidates.scrollPrev()
+                    }
+                    view == binding.candidateRight && mRightEnabled -> {
+                        binding.candidates.scrollNext()
+                    }
+                    else -> {
+                        mDragStartLeft = mService.leftOffset
+                        mDragStartX = event.rawX
+                        mDragging = true
+                    }
+                }
+
+                MotionEvent.ACTION_MOVE -> if (mDragging) {
+                    val displayWidth = resources.displayMetrics.widthPixels
+                    val left = mDragStartLeft + (event.rawX - mDragStartX).toInt()
+                    mService.leftOffset = left.coerceIn(0, displayWidth - width)
+                    mService.setInputView(null)
+                }
+
+                MotionEvent.ACTION_UP -> {
+                    if (mDragging) {
+                        saveLeft(mService.leftOffset)
+                        mDragging = false
+                    } else {
+                        view.performClick() // ???
+                    }
+                }
+            }
             false
         }
-        binding.candidateRight.setOnTouchListener { _, event ->
-            if (event.action == MotionEvent.ACTION_DOWN) binding.candidates.scrollNext()
-            false
+        binding.candidateLeft.setOnTouchListener(onTouchListener)
+        binding.candidateRight.setOnTouchListener(onTouchListener)
+    }
+
+    private fun saveLeft(left: Int) {
+        val displayWidth = resources.displayMetrics.widthPixels
+        val leftRate = if (displayWidth == width) 0f else left / (displayWidth - width).toFloat()
+        when (resources.configuration.orientation) {
+            Configuration.ORIENTATION_LANDSCAPE -> skkPrefs.keyLeftLand = leftRate
+            else -> skkPrefs.keyLeftPort = leftRate
         }
     }
 
@@ -52,8 +101,8 @@ class CandidateViewContainer(screen: Context, attrs: AttributeSet) : LinearLayou
     }
 
     fun setScrollButtonsEnabled(left: Boolean, right: Boolean) {
-        binding.candidateLeft.isEnabled = left
-        binding.candidateRight.isEnabled = right
+        mLeftEnabled = left
+        mRightEnabled = right
         val alphaLeft = if (left) ALPHA_ON else ALPHA_OFF
         val alphaRight = if (right) ALPHA_ON else ALPHA_OFF
         binding.candidateLeft.alpha = alphaLeft / 255f

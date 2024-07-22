@@ -16,8 +16,6 @@ open class Keyboard {
     protected var defaultKeyWidth = 0
     protected var defaultKeyHeight = 0
 
-    private var leftOffset = 0
-
     private val mShiftKeys = arrayOf<Key?>(null, null)
     var isShifted = false
         set(value) {
@@ -235,9 +233,9 @@ open class Keyboard {
         }
     }
 
-    constructor(context: Context, xmlLayoutResId: Int, width: Int, height: Int) {
-        mDisplayWidth = width
-        mDisplayHeight = height
+    constructor(context: Context, xmlLayoutResId: Int, displayWidth: Int, displayHeight: Int) {
+        mDisplayWidth = displayWidth
+        mDisplayHeight = displayHeight
         defaultKeyWidth = mDisplayWidth / 10
         defaultKeyHeight = defaultKeyWidth
         loadKeyboard(context, context.resources.getXml(xmlLayoutResId))
@@ -291,7 +289,7 @@ open class Keyboard {
     }
 
     fun resize(newWidth: Int, newHeight: Int) {
-        if ((newWidth == width || newWidth == width - leftOffset) && newHeight == height) { return }
+        if ((newWidth == width) && newHeight == height) { return }
 
         var totalHeight = 0
         var maxWidth = 0
@@ -330,31 +328,6 @@ open class Keyboard {
 
     fun resizeByPercentageOfScreen(newWidth: Int, newHeight: Int) {
         resize(mDisplayWidth*newWidth/100, mDisplayHeight*newHeight/100)
-    }
-
-    fun setLeftOffset(keyboardPosition: String) {
-        val xOffset = when (keyboardPosition) {
-            "right" -> mDisplayWidth - (width - leftOffset)
-            "center" -> ((mDisplayWidth - (width - leftOffset)) / 2f).toInt()
-            else -> 0
-        }
-
-        for (row in rows) {
-            for (i in row.keys.indices) {
-                val key = row.keys[i]
-                if (i == 0) {
-                    key.horizontalGap -= leftOffset
-                    key.horizontalGap += xOffset
-                }
-                key.x -= leftOffset
-                key.x += xOffset
-            }
-        }
-        width -= leftOffset
-        width += xOffset
-        leftOffset = xOffset
-
-        computeNearestNeighbors()
     }
 
     fun setShifted(shiftState: Boolean): Boolean {

@@ -26,6 +26,7 @@ import android.util.TypedValue
 import android.view.KeyEvent
 import android.view.View
 import android.view.inputmethod.EditorInfo
+import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.core.content.res.ResourcesCompat
 
@@ -44,6 +45,7 @@ class SKKService : InputMethodService() {
         get() = (mInputView != mQwertyInputView && mInputView != mAbbrevKeyboardView)
     internal val isTemporaryView: Boolean
         get() = (mInputView == mAbbrevKeyboardView || mEngine.state === SKKZenkakuState)
+    internal var leftOffset = 0
 
     private val mSpeechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
     private var mIsRecording = false
@@ -295,16 +297,13 @@ class SKKService : InputMethodService() {
             }
         }
         val alpha = skkPrefs.backgroundAlpha
-        flick.prepareNewKeyboard(context, keyWidth, keyHeight, skkPrefs.keyPosition)
+        flick.prepareNewKeyboard(context, keyWidth, keyHeight)
         flick.backgroundAlpha = 255 * alpha / 100
 
         val qwertyWidth = (keyWidth * skkPrefs.keyWidthQwertyZoom / 100).coerceAtMost(100)
         qwerty.keyboard.resizeByPercentageOfScreen(qwertyWidth, keyHeight)
-        qwerty.keyboard.setLeftOffset(skkPrefs.keyPosition)
         qwerty.mSymbolsKeyboard.resizeByPercentageOfScreen(qwertyWidth, keyHeight)
-        qwerty.mSymbolsKeyboard.setLeftOffset(skkPrefs.keyPosition)
         abbrev.keyboard.resizeByPercentageOfScreen(qwertyWidth, keyHeight)
-        abbrev.keyboard.setLeftOffset(skkPrefs.keyPosition)
 
         val density = context.resources.displayMetrics.density
         val sensitivity = when (skkPrefs.flickSensitivity) {
@@ -519,6 +518,7 @@ class SKKService : InputMethodService() {
             }
 
             val container = View.inflate(context, R.layout.view_candidates, null) as CandidateViewContainer
+            container.setService(this)
             container.initViews()
             val view: CandidateView = container.findViewById(R.id.candidates)
             view.setService(this)
@@ -589,8 +589,19 @@ class SKKService : InputMethodService() {
 
     override fun onComputeInsets(outInsets: Insets?) {
         super.onComputeInsets(outInsets)
-        outInsets?.apply { contentTopInsets = visibleTopInsets }
-        // CandidatesViewに対して強制的にActivityをリサイズさせるためのhack
+        if (outInsets == null || mInputView == null || mCandidateViewContainer == null) return
+        outInsets.apply {
+            if (isFloating()) {
+                val height = mInputView!!.height + mCandidateViewContainer!!.height
+                contentTopInsets = height
+                touchableInsets = Insets.TOUCHABLE_INSETS_REGION
+                touchableRegion.set(leftOffset, 0, leftOffset + mInputView!!.keyboard.width, height)
+            } else {
+                contentTopInsets = visibleTopInsets
+                // CandidatesViewに対して強制的にActivityをリサイズさせるためのhack
+                touchableInsets = Insets.TOUCHABLE_INSETS_VISIBLE
+            }
+        }
     }
 
     /**
@@ -947,8 +958,48 @@ class SKKService : InputMethodService() {
     }
 
     override fun setInputView(view: View?) {
-        super.setInputView(view)
-        mInputView = view as KeyboardView
+        val displayWidth = resources.displayMetrics.widthPixels
+
+        if (view != null) { // null だと再描画だけ
+            super.setInputView(view)
+            mInputView = view as KeyboardView
+            val widthRate = when (resources.configuration.orientation) {
+                Configuration.ORIENTATION_PORTRAIT -> skkPrefs.keyWidthPort
+                Configuration.ORIENTATION_LANDSCAPE -> skkPrefs.keyWidthLand
+                else -> 100
+            }
+            val zoom = if (mInputView == mFlickJPInputView) 100 else skkPrefs.keyWidthQwertyZoom
+            val keyWidth = displayWidth * (widthRate * zoom).coerceAtMost(10000) / 10000f
+            leftOffset = ((displayWidth - keyWidth) * when (resources.configuration.orientation) {
+                Configuration.ORIENTATION_LANDSCAPE -> skkPrefs.keyLeftLand
+                else -> skkPrefs.keyLeftPort
+            }).toInt()
+        }
+
+        mInputView?.let { inputView ->
+            val right = displayWidth - leftOffset - inputView.keyboard.width
+            (inputView.parent as FrameLayout).let {
+                it.setPadding(leftOffset, 0, right, 0)
+            }
+            mCandidateViewContainer?.parent?.let {
+                (it as FrameLayout).setPadding(leftOffset, 0, right, 0)
+            }
+        }
+    }
+
+    private fun isFloating(): Boolean = skkPrefs.run {
+        val baseWidthRate = when (resources.configuration.orientation) {
+            Configuration.ORIENTATION_PORTRAIT -> keyWidthPort
+            Configuration.ORIENTATION_LANDSCAPE -> keyWidthLand
+            else -> 100 // readPrefsForInputView を参照
+        }
+        val zoom = if (mInputView == mFlickJPInputView) 100 else keyWidthQwertyZoom
+        (baseWidthRate * zoom).coerceAtMost(10000) / 100 < 50 &&
+                when (mOrientation) {
+                    Configuration.ORIENTATION_PORTRAIT -> keyHeightPort > 50
+                    Configuration.ORIENTATION_LANDSCAPE -> keyHeightLand > 50
+                    else -> false // 30 > 50
+                }
     }
 
     override fun showStatusIcon(iconRes: Int) {

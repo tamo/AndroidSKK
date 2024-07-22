@@ -190,13 +190,10 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
     }
 
     // width・height両方ともパーセント
-    internal fun prepareNewKeyboard(context: Context, width: Int, height: Int, position: String) {
+    internal fun prepareNewKeyboard(context: Context, width: Int, height: Int) {
         mJPKeyboard.resizeByPercentageOfScreen(width, height)
-        mJPKeyboard.setLeftOffset(position)
         mNumKeyboard.resizeByPercentageOfScreen(width, height)
-        mNumKeyboard.setLeftOffset(position)
         mVoiceKeyboard.resizeByPercentageOfScreen(width, height)
-        mVoiceKeyboard.setLeftOffset(position)
         keyboard = mJPKeyboard
         invalidateAllKeys()
 

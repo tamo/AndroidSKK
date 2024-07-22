@@ -111,9 +111,13 @@ class SKKPrefs(context: Context) {
         get() = prefs.getInt(res.getString(R.string.prefkey_key_width_qwerty_zoom), 200)
         set(value) = prefs.edit().putInt(res.getString(R.string.prefkey_key_width_qwerty_zoom), value).apply()
 
-    var keyPosition: String
-        get() = prefs.getString(res.getString(R.string.prefkey_key_position), null) ?: "center"
-        set(value) = prefs.edit().putString(res.getString(R.string.prefkey_key_position), value).apply()
+    var keyLeftPort: Float
+        get() = prefs.getFloat(res.getString(R.string.prefkey_key_left_port), 1f).coerceIn(0f, 1f)
+        set(value) = prefs.edit().putFloat(res.getString(R.string.prefkey_key_left_port), value.coerceIn(0f, 1f)).apply()
+
+    var keyLeftLand: Float
+        get() = prefs.getFloat(res.getString(R.string.prefkey_key_left_land), 1f).coerceIn(0f, 1f)
+        set(value) = prefs.edit().putFloat(res.getString(R.string.prefkey_key_left_land), value.coerceIn(0f, 1f)).apply()
 
     var typeURI: String
         get() = prefs.getString(res.getString(R.string.prefkey_type_uri), null) ?: "ignore"
