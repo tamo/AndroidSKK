@@ -892,7 +892,10 @@ class SKKEngine(
                     if (!isAlphabet(mKanjiKey.first().code) && isAlphabet(mKanjiKey.last().code)) {
                         mKanjiKey.deleteCharAt(mKanjiKey.lastIndex)
                     }
-                    commitTextSKK(mKanjiKey, 1)
+                    commitTextSKK(when (kanaState) {
+                        SKKKatakanaState -> hirakana2katakana(mKanjiKey.toString()) ?: ""
+                        else -> mKanjiKey.toString()
+                    }, 1)
                 }
                 if (mComposing.toString() == "n") {
                     commitTextSKK(when (kanaState) {
