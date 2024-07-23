@@ -450,6 +450,8 @@ class SKKEngine(
             } else if (state === SKKChooseState || state === SKKNarrowingState) {
                 ct.append("▼")
             }
+        } else if (text.isEmpty()) {
+            ct.append(" ")
         }
         ct.append(if (mService.isHiragana) text else hirakana2katakana(text.toString(), reversed = true))
         if (state === SKKNarrowingState) {
