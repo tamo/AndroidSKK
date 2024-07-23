@@ -46,6 +46,7 @@ object SKKAbbrevState : SKKState {
     }
 
     override fun handleCancel(context: SKKEngine): Boolean {
+        context.mKanjiKey.setLength(0) // 確定させない
         context.changeState(SKKHiraganaState)
         return true
     }

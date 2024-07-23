@@ -114,6 +114,7 @@ class SKKEngine(
         }
 
         if (state.isTransient) {
+            reset() // 確定なし
             changeState(kanaState)
             return true
         } else if (!mRegistrationStack.isEmpty()) {

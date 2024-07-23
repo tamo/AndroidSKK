@@ -16,10 +16,6 @@ object SKKKanjiState : SKKState {
             if (skkPrefs.toggleKanaKey) {
                 changeState(SKKASCIIState, true)
             } else {
-                // 確定
-                commitTextSKK(mKanjiKey, 1)
-                mComposing.setLength(0)
-                mKanjiKey.setLength(0)
                 changeState(SKKHiraganaState)
             }
         }
@@ -60,6 +56,7 @@ object SKKKanjiState : SKKState {
                             mKanjiKey.toString() // すでにひらがななのでそのまま
                         }
                         if (str != null) commitTextSKK(str, 1)
+                        mKanjiKey.setLength(0)
                     }
                     changeState(kanaState)
                 }
@@ -147,6 +144,7 @@ object SKKKanjiState : SKKState {
     }
 
     override fun handleCancel(context: SKKEngine): Boolean {
+        context.mKanjiKey.setLength(0) // 確定させない
         context.changeState(context.kanaState)
         return true
     }
