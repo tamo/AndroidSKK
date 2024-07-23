@@ -53,7 +53,7 @@ class SKKDicManager : AppCompatActivity() {
 
     private val commonDics = listOf(
         "S", "M", "ML", "L", "L.unannotated", "jinmei", "geo", "station", "propernoun"
-    ).map { type -> Tuple("SKK ${type} 辞書", "/skk_dict_${type}") }
+    ).map { type -> Tuple("SKK $type 辞書", "/skk_dict_${type}") }
 
     public override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -73,7 +73,7 @@ class SKKDicManager : AppCompatActivity() {
                     dict.value == "/${entry}"
                 }
                 if (dupIndex == -1) {
-                    mDics.add(Tuple("SKK ${type} 辞書", entry))
+                    mDics.add(Tuple("SKK $type 辞書", entry))
                 } else {
                     mDics[dupIndex].value = entry
                 }
