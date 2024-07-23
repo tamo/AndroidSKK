@@ -963,9 +963,7 @@ class SKKService : InputMethodService() {
 
         mInputView?.let { inputView ->
             val right = screenWidth - leftOffset - inputView.keyboard.width
-            (inputView.parent as FrameLayout).let {
-                it.setPadding(leftOffset, 0, right, 0)
-            }
+            (inputView.parent as FrameLayout).setPadding(leftOffset, 0, right, 0)
             mCandidateViewContainer?.parent?.let {
                 (it as FrameLayout).setPadding(leftOffset, 0, right, 0)
             }
