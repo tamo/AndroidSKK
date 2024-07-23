@@ -128,13 +128,7 @@ class SKKEngine(
     fun handleEnter(): Boolean {
         when (state) {
             SKKChooseState, SKKNarrowingState -> pickCandidate(mCurrentCandidateIndex)
-            SKKKanjiState, SKKOkuriganaState, SKKAbbrevState -> {
-                commitTextSKK(
-                    if (mService.isHiragana) mKanjiKey else hirakana2katakana(mKanjiKey.toString())!!,
-                    1
-                )
-                changeState(kanaState)
-            }
+            SKKKanjiState, SKKOkuriganaState, SKKAbbrevState -> changeState(kanaState)
             else -> {
                 if (mComposing.isEmpty()) {
                     if (!mRegistrationStack.isEmpty()) {
