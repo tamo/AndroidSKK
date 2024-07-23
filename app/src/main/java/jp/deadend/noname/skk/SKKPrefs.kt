@@ -63,6 +63,10 @@ class SKKPrefs(context: Context) {
         get() = prefs.getString(res.getString(R.string.prefkey_use_softkey), null) ?: "auto"
         set(value) = prefs.edit().putString(res.getString(R.string.prefkey_use_softkey), value).apply()
 
+    var showStatusIcon: Boolean
+        get() = prefs.getBoolean(res.getString(R.string.prefkey_show_status_icon), false)
+        set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_show_status_icon), value).apply()
+
     var usePopup: Boolean
         get() = prefs.getBoolean(res.getString(R.string.prefkey_use_popup), true)
         set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_use_popup), value).apply()

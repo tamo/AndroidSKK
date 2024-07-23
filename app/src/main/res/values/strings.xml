@@ -53,6 +53,7 @@
 	<string translatable="false" name="prefkey_use_inset">PrefKeyInset</string>
 	<string translatable="false" name="prefkey_ignore_high_contrast">PrefKeyOriginalColor</string>
 	<string translatable="false" name="prefkey_use_softkey">PrefKeyUseSoftKey</string>
+	<string translatable="false" name="prefkey_show_status_icon">PrefKeyShowStatusIcon</string>
 	<string translatable="false" name="prefkey_use_flick">PrefKeyPreferFlick</string>
 	<string translatable="false" name="prefkey_use_popup">PrefKeyUsePopup</string>
 	<string translatable="false" name="prefkey_fixed_popup">PrefKeyFixedPopup</string>

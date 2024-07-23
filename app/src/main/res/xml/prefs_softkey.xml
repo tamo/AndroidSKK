@@ -16,6 +16,13 @@
             app:iconSpaceReserved="false"
             />
         <androidx.preference.CheckBoxPreference
+            app:key="@string/prefkey_show_status_icon"
+            app:title="ステータスアイコンを表示"
+            app:summary="ソフトウェアキーボード使用時にも「あ」「ア」「Ａ」「ab」といった状態を表示します"
+            app:defaultValue="false"
+            app:iconSpaceReserved="false"
+            />
+        <androidx.preference.CheckBoxPreference
             app:key="@string/prefkey_use_flick"
             app:title="フリック入力の優先"
             app:summary="オフだと日本語もqwertyキーで入力します"

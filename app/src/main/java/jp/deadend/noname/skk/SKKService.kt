@@ -1001,7 +1001,7 @@ class SKKService : InputMethodService() {
     }
 
     override fun showStatusIcon(iconRes: Int) {
-        if (!mUseSoftKeyboard && iconRes != 0) super.showStatusIcon(iconRes)
+        if ((!mUseSoftKeyboard || skkPrefs.showStatusIcon) && iconRes != 0) super.showStatusIcon(iconRes)
     }
 
     private fun ping() = true
