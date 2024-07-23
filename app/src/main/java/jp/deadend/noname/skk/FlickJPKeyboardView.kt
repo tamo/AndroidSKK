@@ -19,8 +19,6 @@ import java.util.EnumSet
 class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
     private lateinit var mService: SKKService
 
-    internal var isHiragana = true
-
     private var mFlickSensitivitySquared = 100
     private var mCurveSensitivityMultiplier = 2.0f
     private var mLastPressedKey = KEYCODE_FLICK_JP_NONE
@@ -102,7 +100,7 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
     }
 
     internal fun setHiraganaMode(): FlickJPKeyboardView {
-        isHiragana = true
+        mService.isHiragana = true
         for (key in keyboard.keys) {
             when (key.codes[0]) {
                 KEYCODE_FLICK_JP_CHAR_A  -> key.label = "あ"
@@ -123,7 +121,7 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
     }
 
     internal fun setKatakanaMode(): FlickJPKeyboardView {
-        isHiragana = false
+        mService.isHiragana = false
         for (key in keyboard.keys) {
             when (key.codes[0]) {
                 KEYCODE_FLICK_JP_CHAR_A  -> key.label = "ア"
@@ -357,7 +355,7 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
                     // 例外：小さい「っ」
                     labels[9].text = "小"
                 }
-                if (mLastPressedKey == KEYCODE_FLICK_JP_CHAR_A && !isHiragana) {
+                if (mLastPressedKey == KEYCODE_FLICK_JP_CHAR_A && !mService.isHiragana) {
                     // 例外：「ヴ」
                     labels[10].text = "゛"
                 }
@@ -498,7 +496,7 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
             hasRightCurve = true
         }
         //「ヴ」は特別処理
-        if (!isHiragana
+        if (!mService.isHiragana
                 && mLastPressedKey == KEYCODE_FLICK_JP_CHAR_A
                 && mFlickState.contains(FlickState.UP)
         ) {
@@ -554,7 +552,7 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
                 if (isLeftCurve(flick)) {
                     mService.processKey('x'.code)
                     mService.processKey(vowel)
-                } else if (!isHiragana && flick == EnumSet.of(FlickState.UP, FlickState.CURVE_RIGHT)) {
+                } else if (!mService.isHiragana && flick == EnumSet.of(FlickState.UP, FlickState.CURVE_RIGHT)) {
                     mService.processKey('v'.code)
                     mService.processKey('u'.code)
                 } else if (isShifted) {
@@ -719,7 +717,7 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
             }
 
             for (i in 0..6) {
-                if (isHiragana) {
+                if (mService.isHiragana) {
                     mCurrentPopupLabels[i] = labels[i]
                 } else {
                     mCurrentPopupLabels[i] = checkNotNull(

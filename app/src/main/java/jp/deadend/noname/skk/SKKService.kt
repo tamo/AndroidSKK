@@ -61,14 +61,15 @@ class SKKService : InputMethodService() {
     private lateinit var mEngine: SKKEngine
     internal val engineState: SKKState
         get() = mEngine.state
-    internal var isHiragana: Boolean
-        get() = mFlickJPInputView?.isHiragana ?: true
-        set(value) {
-            if (value) {
+    internal var isHiragana: Boolean = true
+        set(willBeHiragana) {
+            val wasHiragana = isHiragana
+            field = willBeHiragana
+            if (willBeHiragana && !wasHiragana) {
                 mFlickJPInputView?.setHiraganaMode()
                 mQwertyInputView?.setKeyState(SKKHiraganaState)
             }
-            else {
+            else if (!willBeHiragana && wasHiragana){
                 mFlickJPInputView?.setKatakanaMode()
                 mQwertyInputView?.setKeyState(SKKKatakanaState)
             }
