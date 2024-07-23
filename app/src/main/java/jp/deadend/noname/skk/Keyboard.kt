@@ -326,10 +326,6 @@ open class Keyboard {
         computeNearestNeighbors()
     }
 
-    fun resizeByPercentageOfScreen(newWidth: Int, newHeight: Int) {
-        resize(mDisplayWidth*newWidth/100, mDisplayHeight*newHeight/100)
-    }
-
     fun setShifted(shiftState: Boolean): Boolean {
         for (shiftKey in mShiftKeys) {
             if (shiftKey != null) { shiftKey.on = shiftState }

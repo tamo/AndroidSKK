@@ -16,6 +16,7 @@ import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.content.ClipboardManager
+import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
@@ -46,6 +47,11 @@ class SKKService : InputMethodService() {
     internal val isTemporaryView: Boolean
         get() = (mInputView == mAbbrevKeyboardView || mEngine.state === SKKZenkakuState)
     internal var leftOffset = 0
+    // 画面サイズが実際に変わる前に onConfigurationChanged で受け取ってサイズ計算
+    private var mOrientation = Configuration.ORIENTATION_UNDEFINED
+    internal var screenWidth = 0
+    internal var screenHeight = 0
+    private lateinit var mConfig: Configuration
 
     private val mSpeechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
     private var mIsRecording = false
@@ -242,8 +248,9 @@ class SKKService : InputMethodService() {
         mAudioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
         mOrientation = resources.configuration.orientation
-        mScreenWidth = resources.displayMetrics.widthPixels
-        mScreenHeight = resources.displayMetrics.heightPixels
+        screenWidth = resources.displayMetrics.widthPixels
+        screenHeight = resources.displayMetrics.heightPixels
+        mConfig = Configuration(resources.configuration)
 
         readPrefs()
     }
@@ -279,10 +286,9 @@ class SKKService : InputMethodService() {
             "dark"  -> createNightModeContext(applicationContext, true)
             else    -> applicationContext
         }
-        val config = resources.configuration
         val keyHeight: Int
         val keyWidth: Int
-        when (config.orientation) {
+        when (mOrientation) {
             Configuration.ORIENTATION_PORTRAIT -> {
                 keyHeight = skkPrefs.keyHeightPort
                 keyWidth = skkPrefs.keyWidthPort
@@ -301,9 +307,11 @@ class SKKService : InputMethodService() {
         flick.backgroundAlpha = 255 * alpha / 100
 
         val qwertyWidth = (keyWidth * skkPrefs.keyWidthQwertyZoom / 100).coerceAtMost(100)
-        qwerty.keyboard.resizeByPercentageOfScreen(qwertyWidth, keyHeight)
-        qwerty.mSymbolsKeyboard.resizeByPercentageOfScreen(qwertyWidth, keyHeight)
-        abbrev.keyboard.resizeByPercentageOfScreen(qwertyWidth, keyHeight)
+        val widthPixel = screenWidth * qwertyWidth / 100
+        val heightPixel = screenHeight * keyHeight / 100
+        qwerty.keyboard.resize(widthPixel, heightPixel)
+        qwerty.mSymbolsKeyboard.resize(widthPixel, heightPixel)
+        abbrev.keyboard.resize(widthPixel, heightPixel)
 
         val density = context.resources.displayMetrics.density
         val sensitivity = when (skkPrefs.flickSensitivity) {
@@ -367,13 +375,26 @@ class SKKService : InputMethodService() {
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
-        mFlickJPInputView = null
-        mQwertyInputView = null
-        mAbbrevKeyboardView = null
-        mCandidateViewContainer?.removeAllViews()
-        mCandidateViewContainer = null
-        mCandidateView = null
-        super.onConfigurationChanged(newConfig)
+        mOrientation = newConfig.orientation
+        screenWidth = (newConfig.screenWidthDp * resources.displayMetrics.density).toInt()
+        screenHeight = (newConfig.screenHeightDp * resources.displayMetrics.density).toInt()
+
+        if ((newConfig.diff(mConfig) and
+                    (ActivityInfo.CONFIG_ORIENTATION or ActivityInfo.CONFIG_SCREEN_SIZE)) != 0)
+        { // 回転やサイズ変更には自前で対応
+            readPrefsForInputView()
+            setInputView(mInputView)
+        } else { // 他は全部リセットで対応
+            mFlickJPInputView = null
+            mQwertyInputView = null
+            mAbbrevKeyboardView = null
+            mCandidateViewContainer?.removeAllViews()
+            mCandidateViewContainer = null
+            mCandidateView = null
+            super.onConfigurationChanged(newConfig)
+        }
+
+        mConfig = Configuration(newConfig)
     }
 
     private fun createNightModeContext(context: Context, isNightMode: Boolean): Context {
@@ -539,30 +560,6 @@ class SKKService : InputMethodService() {
             mCandidateViewContainer?.setAlpha(96)
         }
         return mCandidateViewContainer!!
-    }
-
-    // 状態変化を onConfigurationChanged に頼ると取りこぼすので自前でチェック
-    // FIXME: 分割画面使用時に画面回転した場合など変な位置に表示されることがある
-    private var mOrientation = Configuration.ORIENTATION_UNDEFINED
-    private var mScreenWidth = 0
-    private var mScreenHeight = 0
-    override fun onStartInputView(editorInfo: EditorInfo?, restarting: Boolean) {
-        if (mOrientation != resources.configuration.orientation
-            || mScreenWidth != resources.displayMetrics.widthPixels
-            || mScreenHeight != resources.displayMetrics.heightPixels
-        ) {
-            mOrientation = resources.configuration.orientation
-            mScreenWidth = resources.displayMetrics.widthPixels
-            mScreenHeight = resources.displayMetrics.heightPixels
-
-            // なぜか一度隠しておいて showWindow(true) しないと後で隠れてしまう
-            requestHideSelf(0)
-            mHandler.postDelayed({
-                // なぜか readPrefsForInputView() ではサイズ修正されない
-                setInputView(onCreateInputView())
-                showWindow(true)
-            }, 800)
-        }
     }
 
     /**
@@ -958,26 +955,14 @@ class SKKService : InputMethodService() {
     }
 
     override fun setInputView(view: View?) {
-        val displayWidth = resources.displayMetrics.widthPixels
-
         if (view != null) { // null だと再描画だけ
             super.setInputView(view)
             mInputView = view as KeyboardView
-            val widthRate = when (resources.configuration.orientation) {
-                Configuration.ORIENTATION_PORTRAIT -> skkPrefs.keyWidthPort
-                Configuration.ORIENTATION_LANDSCAPE -> skkPrefs.keyWidthLand
-                else -> 100
-            }
-            val zoom = if (mInputView == mFlickJPInputView) 100 else skkPrefs.keyWidthQwertyZoom
-            val keyWidth = displayWidth * (widthRate * zoom).coerceAtMost(10000) / 10000f
-            leftOffset = ((displayWidth - keyWidth) * when (resources.configuration.orientation) {
-                Configuration.ORIENTATION_LANDSCAPE -> skkPrefs.keyLeftLand
-                else -> skkPrefs.keyLeftPort
-            }).toInt()
+            computeLeftOffset()
         }
 
         mInputView?.let { inputView ->
-            val right = displayWidth - leftOffset - inputView.keyboard.width
+            val right = screenWidth - leftOffset - inputView.keyboard.width
             (inputView.parent as FrameLayout).let {
                 it.setPadding(leftOffset, 0, right, 0)
             }
@@ -987,8 +972,22 @@ class SKKService : InputMethodService() {
         }
     }
 
+    private fun computeLeftOffset() {
+        val widthRate = when (mOrientation) {
+            Configuration.ORIENTATION_PORTRAIT -> skkPrefs.keyWidthPort
+            Configuration.ORIENTATION_LANDSCAPE -> skkPrefs.keyWidthLand
+            else -> 100
+        }
+        val zoom = if (mInputView == mFlickJPInputView) 100 else skkPrefs.keyWidthQwertyZoom
+        val keyWidth = screenWidth * (widthRate * zoom).coerceAtMost(10000) / 10000f
+        leftOffset = ((screenWidth - keyWidth) * when (mOrientation) {
+            Configuration.ORIENTATION_LANDSCAPE -> skkPrefs.keyLeftLand
+            else -> skkPrefs.keyLeftPort
+        }).toInt()
+    }
+
     private fun isFloating(): Boolean = skkPrefs.run {
-        val baseWidthRate = when (resources.configuration.orientation) {
+        val baseWidthRate = when (mOrientation) {
             Configuration.ORIENTATION_PORTRAIT -> keyWidthPort
             Configuration.ORIENTATION_LANDSCAPE -> keyWidthLand
             else -> 100 // readPrefsForInputView を参照

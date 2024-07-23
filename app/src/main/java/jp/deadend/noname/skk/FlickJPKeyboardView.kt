@@ -1,8 +1,6 @@
 package jp.deadend.noname.skk
 
-import android.content.ClipboardManager
 import android.content.Context
-import android.content.Context.CLIPBOARD_SERVICE
 import android.util.AttributeSet
 import android.util.SparseArray
 import android.view.HapticFeedbackConstants
@@ -191,9 +189,11 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
 
     // width・height両方ともパーセント
     internal fun prepareNewKeyboard(context: Context, width: Int, height: Int) {
-        mJPKeyboard.resizeByPercentageOfScreen(width, height)
-        mNumKeyboard.resizeByPercentageOfScreen(width, height)
-        mVoiceKeyboard.resizeByPercentageOfScreen(width, height)
+        val widthPixel = mService.screenWidth * width / 100
+        val heightPixel = mService.screenHeight * height / 100
+        mJPKeyboard.resize(widthPixel, heightPixel)
+        mNumKeyboard.resize(widthPixel, heightPixel)
+        mVoiceKeyboard.resize(widthPixel, heightPixel)
         keyboard = mJPKeyboard
         invalidateAllKeys()
 
