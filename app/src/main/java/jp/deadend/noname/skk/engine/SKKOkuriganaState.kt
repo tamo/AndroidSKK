@@ -13,10 +13,8 @@ object SKKOkuriganaState : SKKState {
             if (skkPrefs.toggleKanaKey) {
                 changeState(SKKASCIIState, true)
             } else {
-                // 確定
-                changeState(SKKHiraganaState)
                 mComposing.setLength(0)
-                commitTextSKK(mKanjiKey, 1)
+                changeState(SKKHiraganaState)
             }
         }
     }

@@ -39,9 +39,14 @@ object SKKKanjiState : SKKState {
             }
 
             when (pcodeLower) {
-                'l'.code, '/'.code -> {
+                'l'.code -> changeInputMode(pcode)
+
+                '/'.code -> { // abbrevはtransientなのでchangeInputModeで自動確定されない
                     // 暗黙の確定
-                    commitTextSKK(mKanjiKey, 1)
+                    commitTextSKK(when (kanaState) {
+                        SKKKatakanaState -> hirakana2katakana(mKanjiKey.toString()) ?: ""
+                        else -> mKanjiKey.toString()
+                    }, 1)
                     mComposing.setLength(0)
                     mKanjiKey.setLength(0)
                     changeInputMode(pcode)
