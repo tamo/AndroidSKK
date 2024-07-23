@@ -786,6 +786,7 @@ class SKKEngine(
             )
         }
 
+        reset()
         changeState(kanaState)
     }
 
@@ -885,6 +886,20 @@ class SKKEngine(
 
         val prevInputView = if (cameFromFlick) kanaState else SKKASCIIState
         if (!state.isTransient || force || willBeTemporaryView || wasTemporaryView) {
+            if (!state.isTransient) { // 暗黙の確定
+                if (mKanjiKey.isNotEmpty()) {
+                    if (!isAlphabet(mKanjiKey.first().code) && isAlphabet(mKanjiKey.last().code)) {
+                        mKanjiKey.deleteCharAt(mKanjiKey.lastIndex)
+                    }
+                    commitTextSKK(mKanjiKey, 1)
+                }
+                if (mComposing.toString() == "n") {
+                    commitTextSKK(when (kanaState) {
+                        SKKKatakanaState -> "ン"
+                        else -> "ん"
+                    }, 1)
+                }
+            }
             reset()
             when {
                 force || willBeTemporaryView -> changeSoftKeyboard(state)

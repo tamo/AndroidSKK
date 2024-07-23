@@ -28,12 +28,10 @@ object SKKOkuriganaState : SKKState {
         val pcodeLower = if (isUpper) Character.toLowerCase(pcode) else pcode
 
         context.apply {
-            // l, L, / による暗黙の確定
-            if (changeInputMode(pcode)) {
-                mComposing.setLength(0)
-                commitTextSKK(mKanjiKey, 1)
-            }
-            if (mComposing.length == 1 || mOkurigana == null) {
+            // l, L, q, / による暗黙の確定
+            if (changeInputMode(pcode)) return
+
+            if (mComposing.length == 1 && mOkurigana == null) {
                 // 「ん」か「っ」を処理したらここで終わり
                 val hchr = RomajiConverter.checkSpecialConsonants(mComposing[0], pcodeLower)
                 if (hchr != null) {
