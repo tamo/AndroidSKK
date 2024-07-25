@@ -67,12 +67,11 @@ class SKKService : InputMethodService() {
         set(willBeHiragana) {
             val wasHiragana = isHiragana
             field = willBeHiragana
-            if (willBeHiragana && !wasHiragana) {
-                mFlickJPInputView?.setHiraganaMode()
+            if (willBeHiragana) {
+                if (!wasHiragana) mFlickJPInputView?.setHiraganaMode()
                 mQwertyInputView?.setKeyState(SKKHiraganaState)
-            }
-            else if (!willBeHiragana && wasHiragana){
-                mFlickJPInputView?.setKatakanaMode()
+            } else {
+                if (wasHiragana) mFlickJPInputView?.setKatakanaMode()
                 mQwertyInputView?.setKeyState(SKKKatakanaState)
             }
         }
