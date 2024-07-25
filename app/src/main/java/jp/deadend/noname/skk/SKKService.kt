@@ -657,7 +657,9 @@ class SKKService : InputMethodService() {
         }
 
         if (engineState === SKKASCIIState && !mEngine.isRegistering) {
-            return super.onKeyDown(keyCode, event)
+            val result = super.onKeyDown(keyCode, event)
+            updateSuggestionsASCII()
+            return result
         }
 
         if (encodedKey == skkPrefs.cancelKey) {
@@ -813,6 +815,7 @@ class SKKService : InputMethodService() {
         val ic = currentInputConnection ?: return
         ic.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, keyEventCode))
         ic.sendKeyEvent(KeyEvent(KeyEvent.ACTION_UP, keyEventCode))
+        if (engineState === SKKASCIIState) updateSuggestionsASCII()
     }
 
     fun pressEnter() {
@@ -896,12 +899,14 @@ class SKKService : InputMethodService() {
         mIsRecording = true
     }
 
-    fun updateSuggestionsASCII() {
+    private fun updateSuggestionsASCII() {
         mEngine.updateSuggestionsASCII()
     }
 
     fun setCandidates(list: List<String>?, number: String) {
-        if (list != null) {
+        if (list.isNullOrEmpty()) {
+            clearCandidatesView()
+        } else {
             mCandidateViewContainer?.setAlpha(255)
             mCandidateView?.setContents(list, number)
         }

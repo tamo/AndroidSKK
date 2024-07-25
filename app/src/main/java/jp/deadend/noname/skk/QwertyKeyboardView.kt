@@ -113,7 +113,6 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
             Keyboard.KEYCODE_DELETE -> {
                 if (!isCapsLocked) isShifted = false
                 if (!mService.handleBackspace()) mService.keyDownUp(KeyEvent.KEYCODE_DEL)
-                mService.updateSuggestionsASCII()
             }
             Keyboard.KEYCODE_SHIFT -> {
                 isShifted = !isShifted
@@ -126,7 +125,6 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
             KEYCODE_QWERTY_ENTER -> {
                 if (!isCapsLocked) isShifted = false
                 if (!mService.handleEnter()) mService.pressEnter()
-                mService.updateSuggestionsASCII()
             }
             KEYCODE_QWERTY_TOJP -> {
                 when (isFlicked) {
@@ -157,10 +155,8 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                 }
             }
             else -> {
-                if (primaryCode == ' '.code && mSpaceFlicked) {
-                    mService.updateSuggestionsASCII()
-                    return
-                }
+                if (primaryCode == ' '.code && mSpaceFlicked) return
+
                 val shiftedCode = keyboard.shiftedCodes[primaryCode] ?: 0
                 val downCode = keyboard.downCodes[primaryCode] ?: 0
                 val code = when {
@@ -171,7 +167,6 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                     else -> primaryCode
                 }
                 mService.processKey(code)
-                mService.updateSuggestionsASCII()
                 if (keyboard === mLatinKeyboard && !isCapsLocked) {
                     isShifted = false
                 }

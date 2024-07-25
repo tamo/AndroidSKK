@@ -11,9 +11,12 @@ object SKKASCIIState : SKKState {
 
     override fun processKey(context: SKKEngine, pcode: Int) {
         context.commitTextSKK(pcode.toChar().toString(), 1)
+        context.updateSuggestionsASCII()
     }
 
-    override fun afterBackspace(context: SKKEngine) {}
+    override fun afterBackspace(context: SKKEngine) {
+        context.updateSuggestionsASCII()
+    }
 
     override fun handleCancel(context: SKKEngine) = false
 
