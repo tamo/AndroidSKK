@@ -339,12 +339,14 @@ open class KeyboardView @JvmOverloads constructor(
     }
 
     public override fun onDraw(canvas: Canvas) {
+        if (width == 0 || height == 0) return
         super.onDraw(canvas)
         if (mDrawPending || mBuffer == null || mKeyboardChanged) { onBufferDraw() }
         mBuffer?.let { canvas.drawBitmap(it, 0f, 0f, null) }
     }
 
     private fun onBufferDraw() {
+        if (width == 0 || height == 0) return
         if (mBuffer == null || mKeyboardChanged) {
             if (mBuffer == null || (mBuffer!!.width != width || mBuffer!!.height != height)) {
                 // Make sure our bitmap is at least 1x1

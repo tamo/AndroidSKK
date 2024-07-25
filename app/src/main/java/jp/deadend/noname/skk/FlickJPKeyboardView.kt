@@ -185,10 +185,7 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
         invalidateAllKeys()
     }
 
-    // width・height両方ともパーセント
-    internal fun prepareNewKeyboard(context: Context, width: Int, height: Int) {
-        val widthPixel = mService.screenWidth * width / 100
-        val heightPixel = mService.screenHeight * height / 100
+    internal fun prepareNewKeyboard(context: Context, widthPixel: Int, heightPixel: Int) {
         mJPKeyboard.resize(widthPixel, heightPixel)
         mNumKeyboard.resize(widthPixel, heightPixel)
         mVoiceKeyboard.resize(widthPixel, heightPixel)

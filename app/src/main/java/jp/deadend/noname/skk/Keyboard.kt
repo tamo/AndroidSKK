@@ -338,6 +338,7 @@ open class Keyboard {
     }
 
     private fun computeNearestNeighbors() {
+        if (width == 0 || height == 0) return
         // Round-up so we don't have any pixels outside the grid
         mCellWidth = (width + GRID_WIDTH - 1) / GRID_WIDTH
         mCellHeight = (height + GRID_HEIGHT - 1) / GRID_HEIGHT

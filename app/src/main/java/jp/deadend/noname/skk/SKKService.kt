@@ -49,9 +49,11 @@ class SKKService : InputMethodService() {
     internal var leftOffset = 0
     // 画面サイズが実際に変わる前に onConfigurationChanged で受け取ってサイズ計算
     private var mOrientation = Configuration.ORIENTATION_UNDEFINED
-    internal var screenWidth = 0
-    internal var screenHeight = 0
+    private var mScreenWidth = 0
+    private var mScreenHeight = 0
     private lateinit var mConfig: Configuration
+    // 入力中かどうか
+    private var mInputStarted = false
 
     private val mSpeechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
     private var mIsRecording = false
@@ -84,8 +86,6 @@ class SKKService : InputMethodService() {
     private var mSpacePressed = false
     private var mSandSUsed = false
 
-    private var mUseSoftKeyboard = false
-
     private val mHandler = Handler(Looper.getMainLooper())
 
     private var mPendingInput: String? = null
@@ -96,12 +96,7 @@ class SKKService : InputMethodService() {
                 dlog("commit user dictionary!")
                 mEngine.commitUserDictChanges()
             }
-            COMMAND_READ_PREFS -> {
-                requestHideSelf(0)
-                setInputView(onCreateInputView())
-                onCreateCandidatesView()
-                readPrefs()
-            }
+            COMMAND_READ_PREFS -> onConfigurationChanged(mConfig)
             COMMAND_RELOAD_DICS -> mEngine.reopenDictionaries(openDictionaries())
             COMMAND_MUSHROOM -> {
                 mPendingInput = intent.getStringExtra(SKKMushroom.REPLACE_KEY)
@@ -249,8 +244,8 @@ class SKKService : InputMethodService() {
         mAudioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
         mOrientation = resources.configuration.orientation
-        screenWidth = resources.displayMetrics.widthPixels
-        screenHeight = resources.displayMetrics.heightPixels
+        mScreenWidth = resources.displayMetrics.widthPixels
+        mScreenHeight = resources.displayMetrics.heightPixels
         mConfig = Configuration(resources.configuration)
 
         readPrefs()
@@ -262,18 +257,15 @@ class SKKService : InputMethodService() {
         mSandS = skkPrefs.useSandS
         mEngine.setZenkakuPunctuationMarks(skkPrefs.kutoutenType)
 
-        mUseSoftKeyboard = checkUseSoftKeyboard()
         updateInputViewShown()
 
         if (mFlickJPInputView != null) readPrefsForInputView()
-        val container = mCandidateViewContainer
-        container?.let {
-            val sp = skkPrefs.candidatesSize
-            val px = TypedValue.applyDimension(
-                    TypedValue.COMPLEX_UNIT_SP, sp.toFloat(), context.resources.displayMetrics
-            ).toInt()
-            container.setSize(px)
-        }
+
+        mCandidateViewContainer?.setSize(TypedValue.applyDimension(
+            TypedValue.COMPLEX_UNIT_SP,
+            skkPrefs.candidatesSize.toFloat(),
+            context.resources.displayMetrics
+        ).toInt())
     }
 
     private fun readPrefsForInputView() {
@@ -287,32 +279,25 @@ class SKKService : InputMethodService() {
             "dark"  -> createNightModeContext(applicationContext, true)
             else    -> applicationContext
         }
-        val keyHeight: Int
-        val keyWidth: Int
-        when (mOrientation) {
-            Configuration.ORIENTATION_PORTRAIT -> {
-                keyHeight = skkPrefs.keyHeightPort
-                keyWidth = skkPrefs.keyWidthPort
-            }
-            Configuration.ORIENTATION_LANDSCAPE -> {
-                keyHeight = skkPrefs.keyHeightLand
-                keyWidth = skkPrefs.keyWidthLand
-            }
-            else -> {
-                keyHeight = 30
-                keyWidth = 100
-            }
-        }
+        val keyHeight = if (!checkUseSoftKeyboard()) 0 else
+                mScreenHeight * when (mOrientation) {
+                    Configuration.ORIENTATION_PORTRAIT -> skkPrefs.keyHeightPort
+                    Configuration.ORIENTATION_LANDSCAPE -> skkPrefs.keyHeightLand
+                    else -> 30
+                } / 100
+        val flickWidth = mScreenWidth * when (mOrientation) {
+            Configuration.ORIENTATION_PORTRAIT -> skkPrefs.keyWidthPort
+            Configuration.ORIENTATION_LANDSCAPE -> skkPrefs.keyWidthLand
+            else -> 100
+        } / 100
         val alpha = skkPrefs.backgroundAlpha
-        flick.prepareNewKeyboard(context, keyWidth, keyHeight)
+        flick.prepareNewKeyboard(context, flickWidth, keyHeight)
         flick.backgroundAlpha = 255 * alpha / 100
 
-        val qwertyWidth = (keyWidth * skkPrefs.keyWidthQwertyZoom / 100).coerceAtMost(100)
-        val widthPixel = screenWidth * qwertyWidth / 100
-        val heightPixel = screenHeight * keyHeight / 100
-        qwerty.keyboard.resize(widthPixel, heightPixel)
-        qwerty.mSymbolsKeyboard.resize(widthPixel, heightPixel)
-        abbrev.keyboard.resize(widthPixel, heightPixel)
+        val qwertyWidth = (flickWidth * skkPrefs.keyWidthQwertyZoom / 100).coerceAtMost(mScreenWidth)
+        qwerty.keyboard.resize(qwertyWidth, keyHeight)
+        qwerty.mSymbolsKeyboard.resize(qwertyWidth, keyHeight)
+        abbrev.keyboard.resize(qwertyWidth, keyHeight)
 
         val density = context.resources.displayMetrics.density
         val sensitivity = when (skkPrefs.flickSensitivity) {
@@ -326,30 +311,12 @@ class SKKService : InputMethodService() {
         abbrev.backgroundAlpha = 255 * alpha / 100
     }
 
-    private fun checkUseSoftKeyboard(): Boolean {
-        var result = true
-        when (skkPrefs.useSoftKey) {
-            "on" -> {
-                dlog("software keyboard forced")
-                result = true
-            }
-            "off" -> {
-                dlog("software keyboard disabled")
-                result = false
-            }
-            else -> {
-                val config = resources.configuration
-                if (config.hardKeyboardHidden == Configuration.HARDKEYBOARDHIDDEN_NO) {
-                    result = false
-                } else if (config.hardKeyboardHidden == Configuration.HARDKEYBOARDHIDDEN_YES) {
-                    result = true
-                }
-            }
-        }
-
-        if (result) hideStatusIcon()
-
-        return result
+    private fun checkUseSoftKeyboard(
+        default: Boolean = super.onEvaluateInputViewShown()
+    ): Boolean = when (skkPrefs.useSoftKey) {
+        "on" -> true.also { dlog("software keyboard forced") }
+        "off" -> false.also { dlog("software keyboard disabled") }
+        else -> default
     }
 
     override fun onBindInput() {
@@ -366,19 +333,23 @@ class SKKService : InputMethodService() {
      * is called after creation and any configuration change.
      */
     override fun onInitializeInterface() {
-        mUseSoftKeyboard = checkUseSoftKeyboard()
+        setInputView(onCreateInputView())
+        readPrefs()
         updateInputViewShown()
     }
 
     override fun onEvaluateInputViewShown(): Boolean {
-        super.onEvaluateInputViewShown()
-        return mUseSoftKeyboard
+        // candidatesView は inputViewShown に依存するはず
+        val atLeastCandidatesAreShown = skkPrefs.useCandidatesView ||
+                checkUseSoftKeyboard(super.onEvaluateInputViewShown())
+        setCandidatesViewShown(atLeastCandidatesAreShown)
+        return atLeastCandidatesAreShown
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         mOrientation = newConfig.orientation
-        screenWidth = (newConfig.screenWidthDp * resources.displayMetrics.density).toInt()
-        screenHeight = (newConfig.screenHeightDp * resources.displayMetrics.density).toInt()
+        mScreenWidth = (newConfig.screenWidthDp * resources.displayMetrics.density).toInt()
+        mScreenHeight = (newConfig.screenHeightDp * resources.displayMetrics.density).toInt()
 
         if ((newConfig.diff(mConfig) and
                     (ActivityInfo.CONFIG_ORIENTATION or ActivityInfo.CONFIG_SCREEN_SIZE)) != 0)
@@ -389,11 +360,9 @@ class SKKService : InputMethodService() {
             mFlickJPInputView = null
             mQwertyInputView = null
             mAbbrevKeyboardView = null
-            mCandidateViewContainer?.removeAllViews()
-            mCandidateViewContainer = null
-            mCandidateView = null
             super.onConfigurationChanged(newConfig)
         }
+        // このあと onInitializeInterface に続く
 
         mConfig = Configuration(newConfig)
     }
@@ -431,6 +400,7 @@ class SKKService : InputMethodService() {
     }
 
     override fun onCreateInputView(): View? {
+        setCandidatesView(onCreateCandidatesView())
         createInputView()
 
         return when (mEngine.state) {
@@ -462,11 +432,6 @@ class SKKService : InputMethodService() {
             mSandSUsed = false
         }
 
-        // ここで作成しておいて、表示するかどうかは onCreateCandidatesView 内で判定する
-        if (mFlickJPInputView == null) {
-            setCandidatesViewShown(true)
-        }
-
         // restarting なら composingText だけ再描画して再利用できるので reset しない
         if (!restarting) {
             mEngine.resetOnStartInput()
@@ -475,6 +440,15 @@ class SKKService : InputMethodService() {
             requestHideSelf(0)
             return
         }
+
+        // ここからは入力することが確定している
+        mInputStarted = true
+        showStatusIcon(engineState.icon)
+        // 現在の実装では、表示しないときもUIを作っておかないとあとで表示するとき困る
+        if (mFlickJPInputView == null) {
+            onInitializeInterface()
+        }
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             mEngine.isPersonalizedLearning =
                 (attribute.imeOptions and EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING) == 0
@@ -532,35 +506,49 @@ class SKKService : InputMethodService() {
      * needs to be generated, like [.onCreateInputView].
      */
     override fun onCreateCandidatesView(): View {
-        if (mCandidateViewContainer == null) {
-            val context = when (skkPrefs.theme) {
-                "light" -> createNightModeContext(applicationContext, false)
-                "dark" -> createNightModeContext(applicationContext, true)
-                else -> applicationContext
+        mCandidateViewContainer?.let { return it }
+
+        val context = when (skkPrefs.theme) {
+            "light" -> createNightModeContext(applicationContext, false)
+            "dark" -> createNightModeContext(applicationContext, true)
+            else -> applicationContext
+        }
+
+        return (View.inflate(context, R.layout.view_candidates, null) as CandidateViewContainer)
+            .apply {
+                setService(this@SKKService)
+                initViews()
+                setSize(
+                    TypedValue.applyDimension(
+                        TypedValue.COMPLEX_UNIT_SP,
+                        skkPrefs.candidatesSize.toFloat(),
+                        context.resources.displayMetrics
+                    ).toInt()
+                )
+                setAlpha(96)
+
+                mCandidateView = findViewById<CandidateView>(R.id.candidates)
+                    .also { view ->
+                        view.setService(this@SKKService)
+                        view.setContainer(this)
+                    }
             }
+    }
 
-            val container = View.inflate(context, R.layout.view_candidates, null) as CandidateViewContainer
-            container.setService(this)
-            container.initViews()
-            val view: CandidateView = container.findViewById(R.id.candidates)
-            view.setService(this)
-            view.setContainer(container)
-            mCandidateView = view
+    override fun setCandidatesView(view: View?) {
+        (view?.parent as? FrameLayout)?.removeView(view)
+        super.setCandidatesView(view)
+        mCandidateViewContainer = view as CandidateViewContainer
+    }
 
-            val sp = skkPrefs.candidatesSize
-            val px = TypedValue.applyDimension(
-                TypedValue.COMPLEX_UNIT_SP, sp.toFloat(), context.resources.displayMetrics
-            ).toInt()
-            container.setSize(px)
+    override fun onStartInputView(editorInfo: EditorInfo?, restarting: Boolean) {
+        super.onStartInputView(editorInfo, restarting)
+        showStatusIcon(engineState.icon)
+    }
 
-            setCandidatesView(container)
-            mCandidateViewContainer = container
-        }
-        if (isInputViewShown && (mUseSoftKeyboard || skkPrefs.useCandidatesView)) {
-            setCandidatesViewShown(true)
-            mCandidateViewContainer?.setAlpha(96)
-        }
-        return mCandidateViewContainer!!
+    override fun onFinishInputView(finishingInput: Boolean) {
+        super.onFinishInputView(finishingInput)
+        hideStatusIcon()
     }
 
     /**
@@ -569,6 +557,8 @@ class SKKService : InputMethodService() {
      */
     override fun onFinishInput() {
         super.onFinishInput()
+        hideStatusIcon()
+        mInputStarted = false
 
         mQwertyInputView?.handleBack()
         mAbbrevKeyboardView?.handleBack()
@@ -834,13 +824,11 @@ class SKKService : InputMethodService() {
     }
 
     fun onStartRegister() {
-        val flick = mFlickJPInputView ?: return
-        if (mUseSoftKeyboard) flick.setRegisterMode(true)
+        mFlickJPInputView?.setRegisterMode(true)
     }
 
     fun onFinishRegister() {
-        val flick = mFlickJPInputView ?: return
-        if (mUseSoftKeyboard) flick.setRegisterMode(false)
+        mFlickJPInputView?.setRegisterMode(false)
     }
 
     fun sendToMushroom() {
@@ -933,8 +921,6 @@ class SKKService : InputMethodService() {
     }
 
     fun changeSoftKeyboard(state: SKKState) {
-        if (!mUseSoftKeyboard) return
-
         // 長押しリピートの message が残っている可能性があるので止める
         for (kv in arrayOf(mAbbrevKeyboardView, mFlickJPInputView, mQwertyInputView)) {
             kv?.stopRepeatKey()
@@ -942,7 +928,7 @@ class SKKService : InputMethodService() {
 
         mQwertyInputView?.setKeyState(mEngine.state) // 整合性のため必ず通っておく
 
-        val inputView = when (state) {
+        setInputView(when (state) {
             SKKASCIIState    -> mQwertyInputView ?: return
             SKKKanjiState    -> mFlickJPInputView ?: return
             SKKHiraganaState -> mFlickJPInputView?.setHiraganaMode() ?: return
@@ -950,8 +936,7 @@ class SKKService : InputMethodService() {
             SKKAbbrevState   -> mAbbrevKeyboardView ?: return
             SKKZenkakuState  -> mQwertyInputView ?: return
             else -> return
-        }
-        setInputView(inputView)
+        })
     }
 
     fun changeToFlick() {
@@ -961,18 +946,28 @@ class SKKService : InputMethodService() {
     }
 
     override fun setInputView(view: View?) {
-        if (view != null) { // null だと再描画だけ
-            super.setInputView(view)
-            mInputView = view as KeyboardView
+        // view が null のときはここをスキップして再描画だけする (ドラッグで位置調整のとき使う)
+        (view as? KeyboardView)?.let { inputView ->
+            inputView.parent?.let { (it as FrameLayout).removeView(view) }
+            val height = if (!checkUseSoftKeyboard()) 0 else
+                mScreenHeight * when (mOrientation) {
+                    Configuration.ORIENTATION_PORTRAIT -> skkPrefs.keyHeightPort
+                    Configuration.ORIENTATION_LANDSCAPE -> skkPrefs.keyHeightLand
+                    else -> 30
+                } / 100
+            inputView.keyboard.resize(inputView.keyboard.width, height)
+            inputView.requestLayout()
+            super.setInputView(inputView)
+            mInputView = inputView
             computeLeftOffset()
         }
 
-        mInputView?.let { inputView ->
-            val right = screenWidth - leftOffset - inputView.keyboard.width
-            (inputView.parent as FrameLayout).setPadding(leftOffset, 0, right, 0)
-            mCandidateViewContainer?.parent?.let {
-                (it as FrameLayout).setPadding(leftOffset, 0, right, 0)
-            }
+        val right = mScreenWidth - leftOffset - mInputView!!.keyboard.width
+        mInputView!!.parent?.let {
+            (it as FrameLayout).setPadding(leftOffset, 0, right, 0)
+        }
+        mCandidateViewContainer?.parent?.let {
+            (it as FrameLayout).setPadding(leftOffset, 0, right, 0)
         }
     }
 
@@ -983,8 +978,8 @@ class SKKService : InputMethodService() {
             else -> 100
         }
         val zoom = if (mInputView == mFlickJPInputView) 100 else skkPrefs.keyWidthQwertyZoom
-        val keyWidth = screenWidth * (widthRate * zoom).coerceAtMost(10000) / 10000f
-        leftOffset = ((screenWidth - keyWidth) * when (mOrientation) {
+        val keyWidth = mScreenWidth * (widthRate * zoom).coerceAtMost(10000) / 10000f
+        leftOffset = ((mScreenWidth - keyWidth) * when (mOrientation) {
             Configuration.ORIENTATION_LANDSCAPE -> skkPrefs.keyLeftLand
             else -> skkPrefs.keyLeftPort
         }).toInt()
@@ -1006,7 +1001,11 @@ class SKKService : InputMethodService() {
     }
 
     override fun showStatusIcon(iconRes: Int) {
-        if ((!mUseSoftKeyboard || skkPrefs.showStatusIcon) && iconRes != 0) super.showStatusIcon(iconRes)
+        if ((mInputStarted && (!checkUseSoftKeyboard() || skkPrefs.showStatusIcon))
+            && iconRes != 0)
+        {
+            super.showStatusIcon(iconRes)
+        }
     }
 
     private fun ping() = true
