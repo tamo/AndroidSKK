@@ -278,12 +278,7 @@ class SKKService : InputMethodService() {
             "dark"  -> createNightModeContext(applicationContext, true)
             else    -> applicationContext
         }
-        val keyHeight = if (!checkUseSoftKeyboard()) 0 else
-                mScreenHeight * when (mOrientation) {
-                    Configuration.ORIENTATION_PORTRAIT -> skkPrefs.keyHeightPort
-                    Configuration.ORIENTATION_LANDSCAPE -> skkPrefs.keyHeightLand
-                    else -> 30
-                } / 100
+        val keyHeight = keyboardHeight()
         val flickWidth = mScreenWidth * when (mOrientation) {
             Configuration.ORIENTATION_PORTRAIT -> skkPrefs.keyWidthPort
             Configuration.ORIENTATION_LANDSCAPE -> skkPrefs.keyWidthLand
@@ -948,13 +943,7 @@ class SKKService : InputMethodService() {
         // view が null のときはここをスキップして再描画だけする (ドラッグで位置調整のとき使う)
         (view as? KeyboardView)?.let { inputView ->
             inputView.parent?.let { (it as FrameLayout).removeView(view) }
-            val height = if (!checkUseSoftKeyboard()) 0 else
-                mScreenHeight * when (mOrientation) {
-                    Configuration.ORIENTATION_PORTRAIT -> skkPrefs.keyHeightPort
-                    Configuration.ORIENTATION_LANDSCAPE -> skkPrefs.keyHeightLand
-                    else -> 30
-                } / 100
-            inputView.keyboard.resize(inputView.keyboard.width, height)
+            inputView.keyboard.resize(inputView.keyboard.width, keyboardHeight())
             inputView.requestLayout()
             super.setInputView(inputView)
             mInputView = inputView
@@ -969,6 +958,13 @@ class SKKService : InputMethodService() {
             (it as FrameLayout).setPadding(leftOffset, 0, right, 0)
         }
     }
+
+    private fun keyboardHeight() = if (!checkUseSoftKeyboard()) 0 else
+        mScreenHeight * when (mOrientation) {
+            Configuration.ORIENTATION_PORTRAIT -> skkPrefs.keyHeightPort
+            Configuration.ORIENTATION_LANDSCAPE -> skkPrefs.keyHeightLand
+            else -> 30
+        } / 100
 
     private fun computeLeftOffset() {
         val widthRate = when (mOrientation) {
