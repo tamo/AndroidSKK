@@ -24,7 +24,7 @@ class SKKPrefs(context: Context) {
         set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_use_candidates_view), value).apply()
 
     var candidatesSize: Int
-        get() = prefs.getInt(res.getString(R.string.prefkey_candidates_size), 18)
+        get() = prefs.getInt(res.getString(R.string.prefkey_candidates_size), 30)
         set(value) = prefs.edit().putInt(res.getString(R.string.prefkey_candidates_size), value).apply()
 
     var kanaKey: Int

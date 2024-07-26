@@ -22,8 +22,8 @@
     <androidx.preference.SeekBarPreference
         app:key="@string/prefkey_candidates_size"
         app:min="12"
-        android:max="48"
-        app:defaultValue="18"
+        android:max="60"
+        app:defaultValue="30"
         app:title="候補表示の文字サイズ"
         app:showSeekBarValue="true"
         app:iconSpaceReserved="false"
