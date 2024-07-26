@@ -51,7 +51,6 @@ class SKKService : InputMethodService() {
     private var mOrientation = Configuration.ORIENTATION_UNDEFINED
     private var mScreenWidth = 0
     private var mScreenHeight = 0
-    private lateinit var mConfig: Configuration
     // 入力中かどうか
     private var mInputStarted = false
 
@@ -95,7 +94,7 @@ class SKKService : InputMethodService() {
                 dlog("commit user dictionary!")
                 mEngine.commitUserDictChanges()
             }
-            COMMAND_READ_PREFS -> onConfigurationChanged(mConfig)
+            COMMAND_READ_PREFS -> onConfigurationChanged(Configuration(resources.configuration))
             COMMAND_RELOAD_DICS -> mEngine.reopenDictionaries(openDictionaries())
             COMMAND_MUSHROOM -> {
                 mPendingInput = intent.getStringExtra(SKKMushroom.REPLACE_KEY)
@@ -245,7 +244,6 @@ class SKKService : InputMethodService() {
         mOrientation = resources.configuration.orientation
         mScreenWidth = resources.displayMetrics.widthPixels
         mScreenHeight = resources.displayMetrics.heightPixels
-        mConfig = Configuration(resources.configuration)
 
         readPrefs()
     }
@@ -344,21 +342,7 @@ class SKKService : InputMethodService() {
         mOrientation = newConfig.orientation
         mScreenWidth = (newConfig.screenWidthDp * resources.displayMetrics.density).toInt()
         mScreenHeight = (newConfig.screenHeightDp * resources.displayMetrics.density).toInt()
-
-        if ((newConfig.diff(mConfig) and
-                    (ActivityInfo.CONFIG_ORIENTATION or ActivityInfo.CONFIG_SCREEN_SIZE)) != 0)
-        { // 回転やサイズ変更には自前で対応
-            readPrefsForInputView()
-            setInputView(mInputView)
-        } else { // 他は全部リセットで対応
-            mFlickJPInputView = null
-            mQwertyInputView = null
-            mAbbrevKeyboardView = null
-            super.onConfigurationChanged(newConfig)
-        }
-        // このあと onInitializeInterface に続く
-
-        mConfig = Configuration(newConfig)
+        super.onConfigurationChanged(newConfig) // これが onInitializeInterface を呼ぶ
     }
 
     private fun createNightModeContext(context: Context, isNightMode: Boolean): Context {
@@ -395,15 +379,19 @@ class SKKService : InputMethodService() {
 
     override fun onCreateInputView(): View? {
         setCandidatesView(onCreateCandidatesView())
+
+        val wasFlick =
+            if (mInputView == null) skkPrefs.preferFlick
+            else (mInputView == mFlickJPInputView)
         createInputView()
 
         return when (mEngine.state) {
-            SKKASCIIState -> mQwertyInputView?.setKeyState(SKKASCIIState)
-            SKKKatakanaState -> {
-                mFlickJPInputView?.setKatakanaMode()
-                if (skkPrefs.preferFlick) mFlickJPInputView else mQwertyInputView
+            SKKASCIIState, SKKZenkakuState -> mQwertyInputView?.setKeyState(mEngine.state)
+            SKKAbbrevState -> mAbbrevKeyboardView
+            else -> {
+                if (!isHiragana) mFlickJPInputView?.setKatakanaMode()
+                if (wasFlick) mFlickJPInputView else mQwertyInputView?.setKeyState(mEngine.state)
             }
-            else -> if (skkPrefs.preferFlick) mFlickJPInputView else mQwertyInputView
         }
     }
 
@@ -500,8 +488,6 @@ class SKKService : InputMethodService() {
      * needs to be generated, like [.onCreateInputView].
      */
     override fun onCreateCandidatesView(): View {
-        mCandidateViewContainer?.let { return it }
-
         val context = when (skkPrefs.theme) {
             "light" -> createNightModeContext(applicationContext, false)
             "dark" -> createNightModeContext(applicationContext, true)
