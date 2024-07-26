@@ -529,6 +529,7 @@ class SKKService : InputMethodService() {
     override fun onFinishInputView(finishingInput: Boolean) {
         super.onFinishInputView(finishingInput)
         hideStatusIcon()
+        clearCandidatesView()
     }
 
     /**
@@ -538,6 +539,7 @@ class SKKService : InputMethodService() {
     override fun onFinishInput() {
         super.onFinishInput()
         hideStatusIcon()
+        clearCandidatesView()
         mInputStarted = false
 
         mQwertyInputView?.handleBack()
