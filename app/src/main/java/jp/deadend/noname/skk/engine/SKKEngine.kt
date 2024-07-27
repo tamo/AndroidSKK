@@ -591,6 +591,7 @@ class SKKEngine(
 
     private fun registerStart(str: String) {
         mRegistrationStack.addFirst(RegistrationInfo(str, mOkurigana))
+        reset()
         changeState(kanaState)
         //setComposingTextSKK("", 1);
 
