@@ -8,7 +8,6 @@ import jp.deadend.noname.skk.engine.SKKASCIIState
 import jp.deadend.noname.skk.engine.SKKHiraganaState
 import jp.deadend.noname.skk.engine.SKKState
 import jp.deadend.noname.skk.engine.SKKZenkakuState
-import kotlin.math.ceil
 
 class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
     private lateinit var mService: SKKService
@@ -67,23 +66,25 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                 if (dx2 + dy2 > mFlickSensitivitySquared) {
                     when {
                         mSpacePressed -> {
-                            if (dx2 > dy2) repeat(ceil(dx2 / 1500).toInt()) {
+                            if (dx2 > dy2 && dx2 > mFlickSensitivitySquared) {
                                 if (dx < 0) {
                                     mService.keyDownUp(KeyEvent.KEYCODE_DPAD_LEFT)
                                 } else {
                                     mService.keyDownUp(KeyEvent.KEYCODE_DPAD_RIGHT)
                                 }
                                 mSpaceFlicked = true
-                            } else repeat(ceil(dy2 / 3000).toInt()) {
+                                flickStartX = me.x
+                                flickStartY = me.y
+                            } else if (dx2 < dy2 && dy2 > mFlickSensitivitySquared) {
                                 if (dy < 0) {
                                     mService.keyDownUp(KeyEvent.KEYCODE_DPAD_UP)
                                 } else {
                                     mService.keyDownUp(KeyEvent.KEYCODE_DPAD_DOWN)
                                 }
                                 mSpaceFlicked = true
+                                flickStartY = me.y
+                                flickStartX = me.x
                             }
-                            flickStartX = me.x
-                            flickStartY = me.y
                             return true
                         }
                         dy < 0 && dx2 < dy2 -> {
