@@ -578,7 +578,7 @@ class SKKEngine(
     private fun getPrefixASCII(): String {
         val ic = mService.currentInputConnection ?: return ""
         val tbc = ic.getTextBeforeCursor(ASCII_WORD_MAX_LENGTH, 0) ?: return ""
-        return tbc.split(Regex("\\P{Alnum}")).last() // 広く取るなら \P{Graph} だけど
+        return tbc.split(Regex("[^a-zA-Z0-9]")).last()
     }
 
     private fun deleteSuffixASCII() {
