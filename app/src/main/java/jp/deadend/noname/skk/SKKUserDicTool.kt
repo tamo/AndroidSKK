@@ -305,22 +305,28 @@ class SKKUserDicTool : AppCompatActivity() {
         val tuple = Tuple<String, String>()
 
         mEntryList.clear()
-        try {
-            val browser = mBtree.browse()
-            if (browser == null) {
-                onFailToOpenUserDict()
-                return
-            }
+        MainScope().launch(Dispatchers.IO) {
+            try {
+                val browser = mBtree.browse()
+                if (browser == null) {
+                    withContext(Dispatchers.Main) {
+                        onFailToOpenUserDict()
+                    }
+                    return@launch
+                }
 
-            while (browser.getNext(tuple)) {
-                mEntryList.add(Tuple(tuple.key, tuple.value))
+                while (browser.getNext(tuple)) {
+                    mEntryList.add(Tuple(tuple.key, tuple.value))
+                }
+                withContext(Dispatchers.Main) {
+                    mAdapter.notifyDataSetChanged()
+                }
+            } catch (e: IOException) {
+                withContext(Dispatchers.Main) {
+                    onFailToOpenUserDict()
+                }
             }
-        } catch (e: IOException) {
-            onFailToOpenUserDict()
-            return
-        }
-
-        mAdapter.notifyDataSetChanged()
+        }.start()
     }
 
     private class EntryAdapter(

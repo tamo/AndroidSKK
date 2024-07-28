@@ -6,6 +6,9 @@ import jdbm.btree.BTree
 import jdbm.helper.StringComparator
 import jdbm.RecordManager
 import jdbm.RecordManagerFactory
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.launch
 import java.io.File
 
 class SKKUserDictionary private constructor (
@@ -133,7 +136,11 @@ class SKKUserDictionary private constructor (
     companion object {
         fun newInstance(context: SKKService, mDicFile: String, btreeName: String, isASCII: Boolean): SKKUserDictionary? {
             if (isASCII && !File("$mDicFile.db").exists()) {
-                context.extractDictionary()
+                val job = MainScope().launch(Dispatchers.IO) {
+                    context.extractDictionary()
+                }
+                job.start()
+                while (!job.isCompleted) { Thread.sleep(100) }
             }
             try {
                 val recman = RecordManagerFactory.createRecordManager(mDicFile)

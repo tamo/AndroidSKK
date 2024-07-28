@@ -3,6 +3,9 @@ package jp.deadend.noname.skk
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.launch
 import java.io.*
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
@@ -159,30 +162,32 @@ fun getFileNameFromUri(context: Context, uri: Uri): String? {
 
 @Throws(IOException::class)
 internal fun unzipFile(input: InputStream, outDir: File) {
-    val zis = ZipInputStream(BufferedInputStream(input))
-    var ze: ZipEntry
-    while (zis.nextEntry.also { ze = it } != null) {
-        val f = File(outDir, ze.name)
-        if (!f.canonicalPath.startsWith(outDir.canonicalPath)) {
-            throw IOException("zip path traversal")
-        }
-        if (f.isDirectory) {
-            f.mkdirs()
-        } else {
-            f.parentFile?.mkdirs()
-            val bos = BufferedOutputStream(FileOutputStream(f))
-            val buf = ByteArray(1024)
-
-            var size = zis.read(buf, 0, buf.size)
-            while (size > -1) {
-                bos.write(buf, 0, size)
-                size = zis.read(buf, 0, buf.size)
+    MainScope().launch(Dispatchers.IO) {
+        val zis = ZipInputStream(BufferedInputStream(input))
+        var ze: ZipEntry
+        while (zis.nextEntry.also { ze = it } != null) {
+            val f = File(outDir, ze.name)
+            if (!f.canonicalPath.startsWith(outDir.canonicalPath)) {
+                throw IOException("zip path traversal")
             }
+            if (f.isDirectory) {
+                f.mkdirs()
+            } else {
+                f.parentFile?.mkdirs()
+                val bos = BufferedOutputStream(FileOutputStream(f))
+                val buf = ByteArray(1024)
 
-            bos.close()
+                var size = zis.read(buf, 0, buf.size)
+                while (size > -1) {
+                    bos.write(buf, 0, size)
+                    size = zis.read(buf, 0, buf.size)
+                }
+
+                bos.close()
+            }
+            zis.closeEntry()
         }
-        zis.closeEntry()
-    }
-    zis.close()
+        zis.close()
+    }.start()
 }
 
