@@ -48,7 +48,7 @@ class SKKDicManager : AppCompatActivity() {
 
     private val addDicFileLauncher = registerForActivityResult(
                                         ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) { addDic(loadDic(uri)) }
+        if (uri != null) { loadDic(uri) }
     }
 
     private val commonDics = listOf(
@@ -191,19 +191,27 @@ class SKKDicManager : AppCompatActivity() {
             ConfirmationDialogFragment.newInstance(getString(R.string.message_confirm_download_dic, type))
         dialog.setListener(
             object : ConfirmationDialogFragment.Listener {
+                val path = File("${filesDir.absolutePath}/SKK-JISYO.${type}.gz")
+
                 override fun onPositiveClick() {
                     MainScope().launch(Dispatchers.IO) {
-                        val path = File("${filesDir.absolutePath}/SKK-JISYO.${type}.gz")
+                        if (path.exists()) {
+                            deleteFile(path.name)
+                        }
                         URL("https://skk-dev.github.io/dict/SKK-JISYO.${type}.gz")
                             .openStream()
                             .copyTo(FileOutputStream(path))
                         withContext(Dispatchers.Main) {
-                            addDic(loadDic(path.toUri()), fixed = true)
+                            loadDic(path)
                         }
                     }.start()
                 }
 
-                override fun onNegativeClick() {}
+                override fun onNegativeClick() {
+                    if (path.exists()) {
+                        loadDic(path)
+                    }
+                }
             }
         )
         dialog.show(supportFragmentManager, "dialog")
@@ -256,13 +264,17 @@ class SKKDicManager : AppCompatActivity() {
         dialog.show(supportFragmentManager, "dialog")
     }
 
-    private fun loadDic(uri: Uri): String? {
+    private fun loadDic(file: File) {
+        return loadDic(file.toUri(), fixed = true)
+    }
+
+    private fun loadDic(uri: Uri, fixed: Boolean = false) {
         val name = getFileNameFromUri(this, uri)
         if (name == null) {
             SimpleMessageDialogFragment.newInstance(
                 getString(R.string.error_open_dicfile)
             ).show(supportFragmentManager, "dialog")
-            return null
+            return
         }
 
         val isGzip = name.endsWith(".gz")
@@ -280,64 +292,72 @@ class SKKDicManager : AppCompatActivity() {
             SimpleMessageDialogFragment.newInstance(
                 getString(R.string.error_access_failed, filesDir)
             ).show(supportFragmentManager, "dialog")
-            return null
+            return
         }
         if (filesList.any { it.name == "$dicFileBaseName.db" }) {
             SimpleMessageDialogFragment.newInstance(
                 getString(R.string.error_dic_exists, dicFileBaseName)
             ).show(supportFragmentManager, "dialog")
-            return null
+            return
         }
 
-        var recMan: RecordManager? = null
-        try {
-            recMan = RecordManagerFactory.createRecordManager(
+        MainScope().launch(Dispatchers.IO) {
+            var recMan: RecordManager? = null
+            try {
+                recMan = RecordManagerFactory.createRecordManager(
                     filesDir.absolutePath + "/" + dicFileBaseName
-            )
-            val btree = BTree<String, String>(recMan, StringComparator())
-            recMan.setNamedObject(getString(R.string.btree_name), btree.recordId)
-            recMan.commit()
+                )
+                val btree = BTree<String, String>(recMan, StringComparator())
+                recMan.setNamedObject(getString(R.string.btree_name), btree.recordId)
+                recMan.commit()
 
-            val charset = if (contentResolver.openInputStream(uri)!!.use { inputStream ->
-                    val processedInputStream = if (isGzip) GZIPInputStream(inputStream) else inputStream
-                    isTextDicInEucJp(processedInputStream)
-            }) "EUC-JP" else "UTF-8"
-            contentResolver.openInputStream(uri)?.use { inputStream ->
-                val processedInputStream = if (isGzip) GZIPInputStream(inputStream) else inputStream
-                loadFromTextDic(processedInputStream, charset, recMan, btree, false)
-            }
-        } catch (e: IOException) {
-            if (e is CharacterCodingException) {
-                SimpleMessageDialogFragment.newInstance(
-                    getString(R.string.error_text_dic_coding)
-                ).show(supportFragmentManager, "dialog")
-            } else {
-                SimpleMessageDialogFragment.newInstance(
-                    getString(R.string.error_file_load, name)
-                ).show(supportFragmentManager, "dialog")
-            }
-            Log.e("SKK", "SKKDicManager#loadDic() Error: $e")
-            if (recMan != null) {
-                try {
-                    recMan.close()
-                } catch (ee: IOException) {
-                    Log.e("SKK", "SKKDicManager#loadDic() can't close(): $ee")
+                val charset = if (contentResolver.openInputStream(uri)!!.use { inputStream ->
+                        val processedInputStream =
+                            if (isGzip) GZIPInputStream(inputStream) else inputStream
+                        isTextDicInEucJp(processedInputStream)
+                    }) "EUC-JP" else "UTF-8"
+                contentResolver.openInputStream(uri)?.use { inputStream ->
+                    val processedInputStream =
+                        if (isGzip) GZIPInputStream(inputStream) else inputStream
+                    loadFromTextDic(processedInputStream, charset, recMan, btree, false)
                 }
+            } catch (e: IOException) {
+                withContext(Dispatchers.Main) {
+                    if (e is CharacterCodingException) {
+                        SimpleMessageDialogFragment.newInstance(
+                            getString(R.string.error_text_dic_coding)
+                        ).show(supportFragmentManager, "dialog")
+                    } else {
+                        SimpleMessageDialogFragment.newInstance(
+                            getString(R.string.error_file_load, name)
+                        ).show(supportFragmentManager, "dialog")
+                    }
+                }
+                Log.e("SKK", "SKKDicManager#loadDic() Error: $e")
+                if (recMan != null) {
+                    try {
+                        recMan.close()
+                    } catch (ee: IOException) {
+                        Log.e("SKK", "SKKDicManager#loadDic() can't close(): $ee")
+                    }
 
+                }
+                deleteFile("$dicFileBaseName.db")
+                deleteFile("$dicFileBaseName.lg")
+                return@launch
             }
-            deleteFile("$dicFileBaseName.db")
-            deleteFile("$dicFileBaseName.lg")
-            return null
-        }
 
-        try {
-            recMan.close()
-        } catch (ee: IOException) {
-            Log.e("SKK", "SKKDicManager#loadDic() can't close(): $ee")
-            return null
-        }
+            try {
+                recMan.close()
+            } catch (ee: IOException) {
+                Log.e("SKK", "SKKDicManager#loadDic() can't close(): $ee")
+                return@launch
+            }
 
-        return dicFileBaseName
+            withContext(Dispatchers.Main) {
+                addDic(dicFileBaseName, fixed)
+            }
+        }.start()
     }
 
     private fun containsName(s: String) = mDics.any { s == it.key }
