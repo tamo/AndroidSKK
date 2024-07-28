@@ -6,7 +6,10 @@ import jdbm.btree.BTree
 import jdbm.helper.Tuple
 import jdbm.helper.TupleBrowser
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.launch
 import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStream
@@ -59,7 +62,8 @@ internal fun loadFromTextDic(
     charset: String,
     recMan: RecordManager,
     btree: BTree<String, String>,
-    overwrite: Boolean
+    overwrite: Boolean,
+    callback: (count: Int) -> Unit
 ) {
     val decoder = Charset.forName(charset).newDecoder()
     decoder.onMalformedInput(CodingErrorAction.REPORT)
@@ -79,11 +83,11 @@ internal fun loadFromTextDic(
                 }
 
                 if (++count % 1000 == 0) { recMan.commit() }
+                callback(count)
             }
         }
+        recMan.commit()
     }
-
-    recMan.commit()
 }
 
 interface SKKDictionaryInterface {

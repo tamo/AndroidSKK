@@ -31,6 +31,8 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.zip.GZIPInputStream
+import kotlin.math.floor
+import kotlin.math.sqrt
 
 class SKKUserDicTool : AppCompatActivity() {
     private lateinit var mDicName: String
@@ -40,36 +42,54 @@ class SKKUserDicTool : AppCompatActivity() {
     private var mEntryList = mutableListOf<Tuple<String, String>>()
     private var mFoundList = mutableListOf<Tuple<String, String>>()
     private lateinit var mAdapter: EntryAdapter
+    private lateinit var mSearchView: SearchView
     private lateinit var mSearchAdapter: EntryAdapter
     private var mSearchJob: Job = Job()
 
     private val importFileLauncher = registerForActivityResult(
                                         ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) {
-            openUserDict()
+        if (uri == null) return@registerForActivityResult
+        mAdapter.clear()
+        openUserDict()
+        MainScope().launch(Dispatchers.IO) {
             try {
-                val name = getFileNameFromUri(this, uri)
+                val name = getFileNameFromUri(this@SKKUserDicTool, uri)
                 val isGzip = name!!.endsWith(".gz")
+
+                withContext(Dispatchers.Main) { mSearchView.queryHint = "文字セット識別中" }
                 val charset = if (contentResolver.openInputStream(uri)!!.use { inputStream ->
                     val processedInputStream = if (isGzip) GZIPInputStream(inputStream) else inputStream
                     isTextDicInEucJp(processedInputStream)
                 }) "EUC-JP" else "UTF-8"
+
+                withContext(Dispatchers.Main) { mSearchView.queryHint = "インポート中" }
                 contentResolver.openInputStream(uri)?.use { inputStream ->
                     val processedInputStream = if (isGzip) GZIPInputStream(inputStream) else inputStream
-                    loadFromTextDic(processedInputStream, charset, mRecMan, mBtree, false)
+                    loadFromTextDic(processedInputStream, charset, mRecMan, mBtree, false) {
+                        if (floor(sqrt(it.toFloat())) % 50 == 0f) MainScope().launch { // 味わい進捗
+                            mSearchView.queryHint = "インポート中 ${it}行目"
+                        }
+                    }
                 }
             } catch (e: IOException) {
-                if (e is CharacterCodingException) {
-                    SimpleMessageDialogFragment.newInstance(
-                        getString(R.string.error_text_dic_coding)
-                    ).show(supportFragmentManager, "dialog")
-                } else {
-                    SimpleMessageDialogFragment.newInstance(
-                        getString(R.string.error_file_load, getFileNameFromUri(this, uri))
-                    ).show(supportFragmentManager, "dialog")
+                withContext(Dispatchers.Main) {
+                    if (e is CharacterCodingException) {
+                        SimpleMessageDialogFragment.newInstance(
+                            getString(R.string.error_text_dic_coding)
+                        ).show(supportFragmentManager, "dialog")
+                    } else {
+                        SimpleMessageDialogFragment.newInstance(
+                            getString(
+                                R.string.error_file_load,
+                                getFileNameFromUri(this@SKKUserDicTool, uri)
+                            )
+                        ).show(supportFragmentManager, "dialog")
+                    }
                 }
             }
-            updateListItems()
+            withContext(Dispatchers.Main) {
+                updateListItems()
+            }
         }
     }
 
@@ -111,6 +131,9 @@ class SKKUserDicTool : AppCompatActivity() {
         binding.userDictoolList.emptyView = binding.EmptyListItem
         binding.userDictoolList.onItemClickListener =
                 AdapterView.OnItemClickListener { parent, _, position, _ ->
+            if (!mSearchView.isEnabled) { // 読み込み中
+                return@OnItemClickListener
+            }
             val dialog = ConfirmationDialogFragment.newInstance(getString(R.string.message_confirm_remove))
             dialog.setListener(
                 object : ConfirmationDialogFragment.Listener {
@@ -129,13 +152,21 @@ class SKKUserDicTool : AppCompatActivity() {
             dialog.show(supportFragmentManager, "dialog")
         }
 
-        binding.userDictoolSearch.setOnQueryTextListener(object: SearchView.OnQueryTextListener {
+        mSearchView = binding.userDictoolSearch
+        mSearchView.setOnQueryTextListener(object: SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
-                binding.userDictoolSearch.clearFocus()
+                mSearchView.clearFocus()
                 return true
             }
 
             override fun onQueryTextChange(newText: String?): Boolean {
+                if (!mSearchView.isEnabled) {
+                    if (mSearchView.query.isNotEmpty()) {
+                        mSearchView.setQuery("", false)
+                    }
+                    return true
+                }
+
                 mSearchJob.cancel()
                 if (newText == null) {
                     binding.userDictoolList.adapter = mAdapter
@@ -186,14 +217,17 @@ class SKKUserDicTool : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.menu_user_dic_tool_import -> {
+                closeUserDict()
                 importFileLauncher.launch(arrayOf("*/*"))
                 return true
             }
             R.id.menu_user_dic_tool_export -> {
+                closeUserDict()
                 exportFileLauncher.launch(mDicName + ".txt")
                 return true
             }
             R.id.menu_user_dic_tool_clear -> {
+                closeUserDict()
                 val cfDialog = ConfirmationDialogFragment.newInstance(
                         getString(R.string.message_confirm_clear)
                 )
@@ -214,7 +248,10 @@ class SKKUserDicTool : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
 
-        if (!isOpened) openUserDict()
+        if (!isOpened) {
+            openUserDict()
+            updateListItems()
+        }
     }
 
     public override fun onPause() {
@@ -240,8 +277,7 @@ class SKKUserDicTool : AppCompatActivity() {
 
         dlog("New user dictionary created")
         isOpened = true
-        mEntryList.clear()
-        mAdapter.notifyDataSetChanged()
+        mAdapter.clear()
     }
 
     private fun onFailToOpenUserDict() {
@@ -263,48 +299,47 @@ class SKKUserDicTool : AppCompatActivity() {
             )
             recID = mRecMan.getNamedObject(getString(R.string.btree_name))
         } catch (e: IOException) {
-                onFailToOpenUserDict()
-                return
-            }
+            onFailToOpenUserDict()
+            return
+        }
 
-            if (recID == 0L) {
-                onFailToOpenUserDict()
-                return
-            } else {
-                try {
-                    mBtree = BTree<String, String>().load(mRecMan, recID)
-                } catch (e: IOException) {
+        if (recID == 0L) {
+            onFailToOpenUserDict()
+            return
+        } else {
+            try {
+                mBtree = BTree<String, String>().load(mRecMan, recID)
+            } catch (e: IOException) {
                 onFailToOpenUserDict()
                 return
             }
 
             isOpened = true
         }
-
-        updateListItems()
     }
 
     private fun closeUserDict() {
         if (!isOpened) return
         try {
+            isOpened = false
             mRecMan.commit()
             mRecMan.close()
-            isOpened = false
         } catch (e: IOException) {
             throw RuntimeException(e)
         }
+        mAdapter.clear()
     }
 
     private fun updateListItems() {
         if (!isOpened) {
-            mEntryList.clear()
-            mAdapter.notifyDataSetChanged()
+            mAdapter.clear()
             return
         }
 
         val tuple = Tuple<String, String>()
 
-        mEntryList.clear()
+        mSearchView.isEnabled = false
+        mAdapter.clear()
         MainScope().launch(Dispatchers.IO) {
             try {
                 val browser = mBtree.browse()
@@ -315,11 +350,21 @@ class SKKUserDicTool : AppCompatActivity() {
                     return@launch
                 }
 
-                while (browser.getNext(tuple)) {
-                    mEntryList.add(Tuple(tuple.key, tuple.value))
+                val buffer = mutableListOf<Tuple<String, String>>()
+                val bufferSize = 1000
+                while (isOpened && browser.getNext(tuple)) {
+                    buffer.add(Tuple(tuple.key, tuple.value))
+                    if (buffer.size < bufferSize) continue
+                    withContext(Dispatchers.Main) {
+                        mAdapter.addAll(buffer)
+                        mSearchView.queryHint = "読み込み中 ${100 * mAdapter.count / mBtree.size()}%"
+                    }
+                    buffer.clear()
                 }
                 withContext(Dispatchers.Main) {
-                    mAdapter.notifyDataSetChanged()
+                    if (isOpened) mAdapter.addAll(buffer)
+                    mSearchView.isEnabled = true
+                    mSearchView.queryHint = ""
                 }
             } catch (e: IOException) {
                 withContext(Dispatchers.Main) {

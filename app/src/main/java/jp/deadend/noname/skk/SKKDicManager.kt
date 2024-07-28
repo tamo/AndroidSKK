@@ -13,7 +13,6 @@ import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.CheckedTextView
-import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.net.toUri
@@ -36,6 +35,8 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.net.URL
 import java.util.zip.GZIPInputStream
+import kotlin.math.floor
+import kotlin.math.sqrt
 
 class SKKDicManager : AppCompatActivity() {
     private lateinit var binding: ActivityDicManagerBinding
@@ -89,9 +90,9 @@ class SKKDicManager : AppCompatActivity() {
         mDics.sortBy { it.key }
 
         binding.dicManagerList.adapter = TupleAdapter(this, mDics)
-        binding.dicManagerList.onItemClickListener = AdapterView.OnItemClickListener { _, _, position, _ ->
+        binding.dicManagerList.onItemClickListener = AdapterView.OnItemClickListener { _, itemView, position, _ ->
             if (mDics[position].value.startsWith('/')) {
-                downloadDic(mDics[position].value.drop("/skk_dict_".length))
+                downloadDic(mDics[position].value.drop("/skk_dict_".length), itemView as CheckedTextView)
             } else {
                 val dialog =
                     ConfirmationDialogFragment.newInstance(getString(R.string.message_confirm_remove_dic))
@@ -186,7 +187,7 @@ class SKKDicManager : AppCompatActivity() {
         return true
     }
 
-    private fun downloadDic(type: String) {
+    private fun downloadDic(type: String, itemView: CheckedTextView? = null) {
         val dialog =
             ConfirmationDialogFragment.newInstance(getString(R.string.message_confirm_download_dic, type))
         dialog.setListener(
@@ -202,14 +203,14 @@ class SKKDicManager : AppCompatActivity() {
                             .openStream()
                             .copyTo(FileOutputStream(path))
                         withContext(Dispatchers.Main) {
-                            loadDic(path)
+                            loadDic(path, itemView)
                         }
                     }.start()
                 }
 
                 override fun onNegativeClick() {
                     if (path.exists()) {
-                        loadDic(path)
+                        loadDic(path, itemView)
                     }
                 }
             }
@@ -264,11 +265,11 @@ class SKKDicManager : AppCompatActivity() {
         dialog.show(supportFragmentManager, "dialog")
     }
 
-    private fun loadDic(file: File) {
-        return loadDic(file.toUri(), fixed = true)
+    private fun loadDic(file: File, itemView: CheckedTextView? = null) {
+        return loadDic(file.toUri(), itemView, fixed = true)
     }
 
-    private fun loadDic(uri: Uri, fixed: Boolean = false) {
+    private fun loadDic(uri: Uri, itemView: CheckedTextView? = null, fixed: Boolean = false) {
         val name = getFileNameFromUri(this, uri)
         if (name == null) {
             SimpleMessageDialogFragment.newInstance(
@@ -316,10 +317,15 @@ class SKKDicManager : AppCompatActivity() {
                             if (isGzip) GZIPInputStream(inputStream) else inputStream
                         isTextDicInEucJp(processedInputStream)
                     }) "EUC-JP" else "UTF-8"
+                val itemName = itemView?.text ?: ""
                 contentResolver.openInputStream(uri)?.use { inputStream ->
                     val processedInputStream =
                         if (isGzip) GZIPInputStream(inputStream) else inputStream
-                    loadFromTextDic(processedInputStream, charset, recMan, btree, false)
+                    loadFromTextDic(processedInputStream, charset, recMan, btree, false) {
+                        if (itemView != null &&floor(sqrt(it.toFloat())) % 50 == 0f) {
+                            MainScope().launch { itemView.text = "$itemName ($it 行目)" }
+                        }
+                    }
                 }
             } catch (e: IOException) {
                 withContext(Dispatchers.Main) {
@@ -368,12 +374,13 @@ class SKKDicManager : AppCompatActivity() {
     ) : ArrayAdapter<Tuple<String, String>>(context, 0, items) {
         private val mLayoutInflater = LayoutInflater.from(context)
 
-        override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-            val view = convertView
-                    ?: mLayoutInflater.inflate(android.R.layout.simple_list_item_checked, parent, false)
+        override fun getView(position: Int, convertView: View?, parent: ViewGroup): CheckedTextView {
+            val view = (convertView
+                ?: mLayoutInflater.inflate(android.R.layout.simple_list_item_checked, parent, false))
+                    as CheckedTextView
             getItem(position)?.let {
-                (view as TextView).text = it.key
-                (view as CheckedTextView).isChecked = !it.value.startsWith('/')
+                view.text = it.key
+                view.isChecked = !it.value.startsWith('/')
             }
 
             return view
