@@ -10,6 +10,7 @@ import android.view.WindowManager
 import android.widget.PopupWindow
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
+import androidx.core.content.res.ResourcesCompat
 import jp.deadend.noname.skk.databinding.PopupFlickguideBinding
 import jp.deadend.noname.skk.engine.SKKASCIIState
 import jp.deadend.noname.skk.engine.SKKEngine
@@ -43,6 +44,12 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
     private val mKutoutenKey: Keyboard.Key
     private val mSpaceKey: Keyboard.Key
     private val mQwertyKey: Keyboard.Key
+    private val mShiftKeyJP: Keyboard.Key
+    private val mShiftKeyNum: Keyboard.Key
+    private val mShiftKeyVoice: Keyboard.Key
+    private val mKanaKeyJP: Keyboard.Key
+    private val mKanaKeyNum: Keyboard.Key
+    private val mKanaKeyVoice: Keyboard.Key
 
     //フリックガイドTextView用
     private val mFlickGuideLabelList = SparseArray<Array<String>>()
@@ -76,11 +83,21 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
         mKutoutenKey = checkNotNull(findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_CHAR_TEN)) { "BUG: no kutoten key" }
         mSpaceKey = checkNotNull(findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_SPACE)) { "BUG: no space key" }
         mQwertyKey = checkNotNull(findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_TOQWERTY)) { "BUG: no qwerty key" }
+        mShiftKeyJP = mJPKeyboard.keys[0]
+        mKanaKeyJP = checkNotNull(findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_MOJI)) { "BUG: no moji key" }
+
         mNumKeyboard = Keyboard(context, R.xml.keys_flick_number)
+        mShiftKeyNum = mNumKeyboard.keys[0]
+        mKanaKeyNum = checkNotNull(findKeyByCode(mNumKeyboard, KEYCODE_FLICK_JP_TOKANA)) { "BUG: no kana key in num" }
+
         mVoiceKeyboard = Keyboard(context, R.xml.keys_flick_voice)
+        mShiftKeyVoice = mVoiceKeyboard.keys[0]
+        mKanaKeyVoice = checkNotNull(findKeyByCode(mVoiceKeyboard, KEYCODE_FLICK_JP_TOKANA)) { "BUG: no kana key in voice" }
+
         keyboard = mJPKeyboard
     }
 
+/*
     constructor(context: Context, attrs: AttributeSet?, defStyle: Int) : super(context, attrs, defStyle) {
         onKeyboardActionListener = this
         isPreviewEnabled = false
@@ -90,13 +107,57 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
         mKutoutenKey = checkNotNull(findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_CHAR_TEN)) { "BUG: no kutoten key" }
         mSpaceKey = checkNotNull(findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_SPACE)) { "BUG: no space key" }
         mQwertyKey = checkNotNull(findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_TOQWERTY)) { "BUG: no qwerty key" }
+        mShiftKeyJP = mJPKeyboard.keys[0]
+        mKanaKeyJP = checkNotNull(findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_MOJI)) { "BUG: no moji key" }
+
         mNumKeyboard = Keyboard(context, R.xml.keys_flick_number)
+        mShiftKeyNum = mNumKeyboard.keys[0]
+        mKanaKeyNum = checkNotNull(findKeyByCode(mNumKeyboard, KEYCODE_FLICK_JP_TOKANA)) { "BUG: no kana key in num" }
+
         mVoiceKeyboard = Keyboard(context, R.xml.keys_flick_voice)
+        mShiftKeyVoice = mVoiceKeyboard.keys[0]
+        mKanaKeyVoice = checkNotNull(findKeyByCode(mVoiceKeyboard, KEYCODE_FLICK_JP_TOKANA)) { "BUG: no kana key in voice" }
+
         keyboard = mJPKeyboard
     }
+*/
 
     fun setService(listener: SKKService) {
         mService = listener
+    }
+
+    private fun setShiftPosition() {
+        val defaultShiftKeys = arrayOf(mShiftKeyJP, mShiftKeyNum, mShiftKeyVoice)
+        val defaultKanaKeys = arrayOf(mKanaKeyJP, mKanaKeyNum, mKanaKeyVoice)
+        val (shiftKeys, kanaKeys) = if (!skkPrefs.changeShift) {
+            defaultShiftKeys to defaultKanaKeys
+        } else {
+            defaultKanaKeys to defaultShiftKeys
+        }
+
+        for (shiftKey in shiftKeys) {
+            shiftKey.codes[0] = 0
+            shiftKey.label = ""
+            shiftKey.icon = null
+        }
+        shiftKeys[0].codes[0] = Keyboard.KEYCODE_SHIFT
+        shiftKeys[0].icon = ResourcesCompat.getDrawable(
+            resources, R.drawable.ic_keyboard_shift, null
+        )?.also {
+            it.setBounds(0, 0, it.intrinsicWidth, it.intrinsicHeight)
+        }
+
+        for (kanaKey in kanaKeys) {
+            kanaKey.codes[0] = KEYCODE_FLICK_JP_TOKANA
+            kanaKey.label = "かな"
+            kanaKey.icon = null
+        }
+        kanaKeys[0].codes[0] = KEYCODE_FLICK_JP_MOJI
+        kanaKeys[0].label = if (mService.isHiragana) "10\n：カナ＞\n声" else "10\n：かな＞\n声"
+
+        for (keyboard in arrayOf(mJPKeyboard, mNumKeyboard, mVoiceKeyboard)) {
+            keyboard.reloadShiftKeys()
+        }
     }
 
     internal fun setHiraganaMode(): FlickJPKeyboardView {
@@ -210,6 +271,8 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
             "mid" -> 1.0f
             else -> 2.0f
         }
+        // シフトかな交換
+        setShiftPosition()
         // 句読点
         when (skkPrefs.kutoutenType) {
             "en" -> {

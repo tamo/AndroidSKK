@@ -484,6 +484,23 @@ open class Keyboard {
         a.recycle()
     }
 
+    fun reloadShiftKeys() {
+        mShiftKeys.mapIndexedNotNull { index, key ->
+            modifierKeys.remove(key)
+            mShiftKeys[index] = null
+        }
+        keys.filter { it.codes[0] == KEYCODE_SHIFT }
+            .forEach {
+                for (i in mShiftKeys.indices) {
+                    if (mShiftKeys[i] == null) {
+                        mShiftKeys[i] = it
+                        break
+                    }
+                }
+                modifierKeys.add(it)
+            }
+    }
+
     fun resetKeys() {
         for (key in keys) {
             key.on = false

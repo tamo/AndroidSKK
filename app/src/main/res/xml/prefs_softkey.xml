@@ -64,6 +64,13 @@
                 app:dependency="@string/prefkey_use_soft_cancel_key"
                 app:iconSpaceReserved="false"
                 />
+            <androidx.preference.CheckBoxPreference
+                app:key="@string/prefkey_exchange_shift_kana"
+                app:title="かなとシフトキーの位置交換"
+                app:summary="かなキーが下でシフトキーが上になります"
+                app:defaultValue="false"
+                app:iconSpaceReserved="false"
+                />
         </androidx.preference.PreferenceCategory>
         <androidx.preference.PreferenceCategory
             app:title="英字キーボード"

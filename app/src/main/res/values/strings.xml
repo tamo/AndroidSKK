@@ -60,6 +60,7 @@
 	<string translatable="false" name="prefkey_mini_keyboard">PrefKeyUseMiniKey</string>
 	<string translatable="false" name="prefkey_use_soft_cancel_key">PrefKeyUseSoftCancelKey</string>
 	<string translatable="false" name="prefkey_use_soft_trans_key">PrefKeyUseSoftTransKey</string>
+	<string translatable="false" name="prefkey_exchange_shift_kana">PrefKeyChangeShift</string>
 	<string translatable="false" name="prefkey_key_height_port">PrefKeyKeyHeightPort</string>
 	<string translatable="false" name="prefkey_key_height_land">PrefKeyKeyHeightLand</string>
 	<string translatable="false" name="prefkey_key_width_port">PrefKeyKeyWidthPort</string>
