@@ -93,7 +93,10 @@ class SKKService : InputMethodService() {
                 dlog("commit user dictionary!")
                 mEngine.commitUserDictChanges()
             }
-            COMMAND_READ_PREFS -> onConfigurationChanged(Configuration(resources.configuration))
+            COMMAND_READ_PREFS -> {
+                onConfigurationChanged(Configuration(resources.configuration))
+                onInitializeInterface()
+            }
             COMMAND_RELOAD_DICS -> mEngine.reopenDictionaries(openDictionaries())
             COMMAND_MUSHROOM -> {
                 mPendingInput = intent.getStringExtra(SKKMushroom.REPLACE_KEY)
