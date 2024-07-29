@@ -54,4 +54,22 @@
     <androidx.preference.Preference
         app:fragment="jp.deadend.noname.skk.SKKSettingsActivity$SettingsSoftKeyFragment"
         app:title="@string/label_pref_softkeyboard"/>
+    <androidx.preference.PreferenceCategory
+        app:title="@string/label_dicmanager_reset"
+        app:icon="@android:drawable/ic_notification_clear_all">
+        <androidx.preference.Preference
+            app:title="@string/label_dictool_activity" >
+            <intent android:action="android.intent.action.MAIN"
+                android:data="@string/dic_name_user_recreate"
+                android:targetPackage="jp.deadend.noname.skk"
+                android:targetClass="jp.deadend.noname.skk.SKKUserDicTool" />
+        </androidx.preference.Preference>
+        <androidx.preference.Preference
+            app:title="@string/label_asciitool_activity" >
+            <intent android:action="android.intent.action.MAIN"
+                android:data="@string/dic_name_ascii_recreate"
+                android:targetPackage="jp.deadend.noname.skk"
+                android:targetClass="jp.deadend.noname.skk.SKKUserDicTool" />
+        </androidx.preference.Preference>
+    </androidx.preference.PreferenceCategory>
 </androidx.preference.PreferenceScreen>

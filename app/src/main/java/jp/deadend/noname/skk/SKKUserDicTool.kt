@@ -138,14 +138,18 @@ class SKKUserDicTool : AppCompatActivity() {
             dialog.setListener(
                 object : ConfirmationDialogFragment.Listener {
                     override fun onPositiveClick() {
+                        val adapter = parent.adapter as EntryAdapter
+                        val item = adapter.getItem(position)!!
+                        dlog("remove $item from $mDicName")
                         try {
-                            mBtree.remove(mEntryList[position].key)
+                            mBtree.remove(item.key)
                         } catch (e: IOException) {
                             throw RuntimeException(e)
                         }
 
-                        mEntryList.removeAt(position)
-                        (parent.adapter as EntryAdapter).notifyDataSetChanged()
+                        mEntryList.remove(item)
+                        mFoundList.remove(item)
+                        adapter.notifyDataSetChanged()
                     }
                     override fun onNegativeClick() {}
                 })
@@ -249,8 +253,24 @@ class SKKUserDicTool : AppCompatActivity() {
         super.onResume()
 
         if (!isOpened) {
-            openUserDict()
-            updateListItems()
+            if (mDicName.first() == '*') {
+                mDicName = mDicName.drop(1)
+                val cfDialog = ConfirmationDialogFragment.newInstance(
+                    getString(R.string.message_confirm_clear)
+                )
+                cfDialog.setListener(
+                    object : ConfirmationDialogFragment.Listener {
+                        override fun onPositiveClick() { recreateUserDic() }
+                        override fun onNegativeClick() {
+                            openUserDict()
+                            if (isOpened) updateListItems()
+                        }
+                    })
+                cfDialog.show(supportFragmentManager, "dialog")
+            } else {
+                openUserDict()
+                if (isOpened) updateListItems()
+            }
         }
     }
 

@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.text.format.Formatter.formatShortFileSize
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
@@ -28,6 +29,7 @@ import jp.deadend.noname.dialog.TextInputDialogFragment
 import jp.deadend.noname.skk.databinding.ActivityDicManagerBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -40,6 +42,8 @@ import kotlin.math.sqrt
 
 class SKKDicManager : AppCompatActivity() {
     private lateinit var binding: ActivityDicManagerBinding
+    private val mAdapter: TupleAdapter
+        get() = binding.dicManagerList.adapter as TupleAdapter
     private val mPrefOptDics: String by lazy {
         PreferenceManager.getDefaultSharedPreferences(this)
             .getString(getString(R.string.prefkey_optional_dics), "") ?: ""
@@ -49,7 +53,7 @@ class SKKDicManager : AppCompatActivity() {
 
     private val addDicFileLauncher = registerForActivityResult(
                                         ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) { loadDic(uri) }
+        if (uri != null) { loadDic(uri, -1, false) }
     }
 
     private val commonDics = listOf(
@@ -63,7 +67,7 @@ class SKKDicManager : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         // 一般的な辞書リストをまず列挙
-        commonDics.forEach { mDics.add(it) }
+        mDics.addAll(commonDics)
         // インストール済みかどうかチェック
         fileList()
             .filter { it.startsWith("skk_dict_") && it.endsWith(".db") }
@@ -90,24 +94,25 @@ class SKKDicManager : AppCompatActivity() {
         mDics.sortBy { it.key }
 
         binding.dicManagerList.adapter = TupleAdapter(this, mDics)
-        binding.dicManagerList.onItemClickListener = AdapterView.OnItemClickListener { _, itemView, position, _ ->
+        binding.dicManagerList.onItemClickListener = AdapterView.OnItemClickListener { _, _, position, _ ->
             if (mDics[position].value.startsWith('/')) {
-                downloadDic(mDics[position].value.drop("/skk_dict_".length), itemView as CheckedTextView)
+                downloadDic(mDics[position].value.drop("/skk_dict_".length), position)
             } else {
                 val dialog =
                     ConfirmationDialogFragment.newInstance(getString(R.string.message_confirm_remove_dic))
                 dialog.setListener(
                     object : ConfirmationDialogFragment.Listener {
                         override fun onPositiveClick() {
-                            val dicName = mDics[position].value
-                            deleteFile("$dicName.db")
-                            deleteFile("$dicName.lg")
-                            if (dicName.startsWith("skk_dict_")) {
-                                mDics[position].value = "/${dicName}"
-                            } else {
-                                mDics.removeAt(position)
+                            val item = mAdapter.getItem(position)!!
+                            val dicName = item.key
+                            val dicPath = item.value
+                            deleteFile("$dicPath.db")
+                            deleteFile("$dicPath.lg")
+                            mAdapter.remove(item)
+                            if (dicPath.startsWith("skk_dict_")) {
+                                mAdapter.insert(Tuple(dicName, "/$dicPath"), position)
                             }
-                            (binding.dicManagerList.adapter as TupleAdapter).notifyDataSetChanged()
+                            mAdapter.notifyDataSetChanged()
                             isModified = true
                         }
 
@@ -171,10 +176,13 @@ class SKKDicManager : AppCompatActivity() {
                                     getString(R.string.error_extracting_dic_failed)
                                 ).show(supportFragmentManager, "dialog")
                             }
-                            mDics.clear()
-                            commonDics.forEach { mDics.add(it) }
-                            mDics.sortBy { it.key }
-                            (binding.dicManagerList.adapter as TupleAdapter).notifyDataSetChanged()
+                            mAdapter.apply {
+                                clear()
+                                addAll(commonDics)
+                                val comparator = StringComparator()
+                                sort { a, b -> comparator.compare(a.key, b.key) }
+                                notifyDataSetChanged()
+                            }
                             isModified = true
                         }
                         override fun onNegativeClick() {}
@@ -187,7 +195,7 @@ class SKKDicManager : AppCompatActivity() {
         return true
     }
 
-    private fun downloadDic(type: String, itemView: CheckedTextView? = null) {
+    private fun downloadDic(type: String, position: Int) {
         val dialog =
             ConfirmationDialogFragment.newInstance(getString(R.string.message_confirm_download_dic, type))
         dialog.setListener(
@@ -199,18 +207,40 @@ class SKKDicManager : AppCompatActivity() {
                         if (path.exists()) {
                             deleteFile(path.name)
                         }
+                        var isDownloading = true
+                        if (position != -1) launch { // 先に進捗表示を設置しておく
+                            val item = mAdapter.getItem(position)!!
+                            val itemName = item.key
+                            while (true) {
+                                delay(300)
+                                if (isDownloading) {
+                                    val size = formatShortFileSize(applicationContext, path.length())
+                                    withContext(Dispatchers.Main) {
+                                        item.key = "$itemName ($size)"
+                                        mAdapter.notifyDataSetChanged()
+                                    }
+                                } else { // 終了
+                                    withContext(Dispatchers.Main) {
+                                        item.key = itemName
+                                        mAdapter.notifyDataSetChanged()
+                                    }
+                                    break
+                                }
+                            }
+                        }
                         URL("https://skk-dev.github.io/dict/SKK-JISYO.${type}.gz")
                             .openStream()
                             .copyTo(FileOutputStream(path))
+                        isDownloading = false
                         withContext(Dispatchers.Main) {
-                            loadDic(path, itemView)
+                            loadCommonDic(path, position)
                         }
                     }.start()
                 }
 
                 override fun onNegativeClick() {
                     if (path.exists()) {
-                        loadDic(path, itemView)
+                        loadCommonDic(path, position)
                     }
                 }
             }
@@ -218,26 +248,21 @@ class SKKDicManager : AppCompatActivity() {
         dialog.show(supportFragmentManager, "dialog")
     }
 
-    private fun addDic(dicFileBaseName: String?, fixed: Boolean = false) {
+    private fun addDic(dicFileBaseName: String?, position: Int, loader: (Int) -> Unit = {}) {
         if (dicFileBaseName == null) return
-        val dictPrefix = "skk_dict_"
-        if (fixed && dicFileBaseName.startsWith(dictPrefix)) {
-            val dupIndex = mDics.indexOfFirst { it.value == "/${dicFileBaseName}" }
-            if (dupIndex == -1) {
-                val dictName = "SKK ${dicFileBaseName.drop(dictPrefix.length)} 辞書"
-                mDics.add(Tuple(dictName, dicFileBaseName))
-            } else {
-                mDics[dupIndex].value = dicFileBaseName
-            }
-            (binding.dicManagerList.adapter as TupleAdapter).notifyDataSetChanged()
+
+        if (position != -1) { // 既存のものを loadDic した後の処理
+            mAdapter.getItem(position)!!.value = dicFileBaseName
+            mAdapter.notifyDataSetChanged()
             isModified = true
             return
         }
 
+        // 新規 item を作ってから loader で loadDic する
         val dialog =
             TextInputDialogFragment.newInstance(getString(R.string.label_dicmanager_input_name))
         dialog.setSingleLine(true)
-        dialog.setPlaceHolder(dicFileBaseName)
+        dialog.setPlaceHolder(dicFileBaseName.removePrefix("/").removePrefix("dict_"))
         dialog.setListener(
             object : TextInputDialogFragment.Listener {
                 override fun onPositiveClick(result: String) {
@@ -252,9 +277,11 @@ class SKKDicManager : AppCompatActivity() {
                         suffix++
                         name = "$dicName($suffix)"
                     }
-                    mDics.add(Tuple(name, dicFileBaseName))
-                    (binding.dicManagerList.adapter as TupleAdapter).notifyDataSetChanged()
+                    val item = Tuple(name, "/$dicFileBaseName")
+                    mAdapter.add(item)
                     isModified = true
+
+                    loader(mAdapter.getPosition(item))
                 }
 
                 override fun onNegativeClick() {
@@ -265,11 +292,11 @@ class SKKDicManager : AppCompatActivity() {
         dialog.show(supportFragmentManager, "dialog")
     }
 
-    private fun loadDic(file: File, itemView: CheckedTextView? = null) {
-        return loadDic(file.toUri(), itemView, fixed = true)
+    private fun loadCommonDic(file: File, position: Int) {
+        return loadDic(file.toUri(), position, true)
     }
 
-    private fun loadDic(uri: Uri, itemView: CheckedTextView? = null, fixed: Boolean = false) {
+    private fun loadDic(uri: Uri, position: Int, common: Boolean) {
         val name = getFileNameFromUri(this, uri)
         if (name == null) {
             SimpleMessageDialogFragment.newInstance(
@@ -281,7 +308,7 @@ class SKKDicManager : AppCompatActivity() {
         val isGzip = name.endsWith(".gz")
         val nameWithoutGZ = if (isGzip) name.substring(0, name.length - 3) else name
 
-        val dicFileBaseName = if (name.startsWith("SKK-JISYO.")) {
+        val dicFileBaseName = if (common && name.startsWith("SKK-JISYO.")) {
             "skk_dict_" + nameWithoutGZ.substring("SKK-JISYO.".length)
         } else {
             "dict_" + nameWithoutGZ.replace(".", "_")
@@ -296,13 +323,33 @@ class SKKDicManager : AppCompatActivity() {
             return
         }
         if (filesList.any { it.name == "$dicFileBaseName.db" }) {
-            SimpleMessageDialogFragment.newInstance(
+            val dialog = ConfirmationDialogFragment.newInstance(
                 getString(R.string.error_dic_exists, dicFileBaseName)
-            ).show(supportFragmentManager, "dialog")
+            )
+            dialog.setListener(
+                object : ConfirmationDialogFragment.Listener {
+                    override fun onPositiveClick() {
+                        deleteFile("$dicFileBaseName.db")
+                        deleteFile("$dicFileBaseName.lg")
+                        loadDic(uri, position, common)
+                    }
+                    override fun onNegativeClick() {}
+                }
+            )
+            dialog.show(supportFragmentManager, "dialog")
+            return
+        }
+
+        if (position == -1) { // view がないと進捗が分からないので addDic してからやり直し
+            addDic("/$dicFileBaseName", -1) {
+                loadDic(uri, it, false)
+            }
             return
         }
 
         MainScope().launch(Dispatchers.IO) {
+            val item = mAdapter.getItem(position)
+            val itemName = item?.key
             var recMan: RecordManager? = null
             try {
                 recMan = RecordManagerFactory.createRecordManager(
@@ -312,20 +359,30 @@ class SKKDicManager : AppCompatActivity() {
                 recMan.setNamedObject(getString(R.string.btree_name), btree.recordId)
                 recMan.commit()
 
+                if (item != null) withContext(Dispatchers.Main) {
+                    item.key = "$itemName (識別中)"
+                    mAdapter.notifyDataSetChanged()
+                }
                 val charset = if (contentResolver.openInputStream(uri)!!.use { inputStream ->
                         val processedInputStream =
                             if (isGzip) GZIPInputStream(inputStream) else inputStream
                         isTextDicInEucJp(processedInputStream)
                     }) "EUC-JP" else "UTF-8"
-                val itemName = itemView?.text ?: ""
                 contentResolver.openInputStream(uri)?.use { inputStream ->
                     val processedInputStream =
                         if (isGzip) GZIPInputStream(inputStream) else inputStream
                     loadFromTextDic(processedInputStream, charset, recMan, btree, false) {
-                        if (itemView != null &&floor(sqrt(it.toFloat())) % 50 == 0f) {
-                            MainScope().launch { itemView.text = "$itemName ($it 行目)" }
+                        if (floor(sqrt(it.toFloat())) % 70 == 0f) {
+                            if (item != null) MainScope().launch {
+                                item.key = "$itemName ($it 行目)"
+                                mAdapter.notifyDataSetChanged()
+                            }
                         }
                     }
+                }
+                if (item != null) withContext(Dispatchers.Main) {
+                    item.key = itemName
+                    mAdapter.notifyDataSetChanged()
                 }
             } catch (e: IOException) {
                 withContext(Dispatchers.Main) {
@@ -337,6 +394,10 @@ class SKKDicManager : AppCompatActivity() {
                         SimpleMessageDialogFragment.newInstance(
                             getString(R.string.error_file_load, name)
                         ).show(supportFragmentManager, "dialog")
+                    }
+                    if (item != null) {
+                        mAdapter.remove(item)
+                        mAdapter.notifyDataSetChanged()
                     }
                 }
                 Log.e("SKK", "SKKDicManager#loadDic() Error: $e")
@@ -361,7 +422,7 @@ class SKKDicManager : AppCompatActivity() {
             }
 
             withContext(Dispatchers.Main) {
-                addDic(dicFileBaseName, fixed)
+                addDic(dicFileBaseName.removePrefix("/"), position)
             }
         }.start()
     }
