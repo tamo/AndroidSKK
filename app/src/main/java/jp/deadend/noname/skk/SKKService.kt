@@ -341,9 +341,10 @@ class SKKService : InputMethodService() {
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
-        mOrientation = newConfig.orientation
-        mScreenWidth = (newConfig.screenWidthDp * resources.displayMetrics.density).toInt()
-        mScreenHeight = (newConfig.screenHeightDp * resources.displayMetrics.density).toInt()
+        assert(newConfig.orientation == resources.configuration.orientation)
+        mOrientation = resources.configuration.orientation
+        mScreenWidth = resources.displayMetrics.widthPixels
+        mScreenHeight = resources.displayMetrics.heightPixels
         super.onConfigurationChanged(newConfig) // これが onInitializeInterface を呼ぶ
     }
 
