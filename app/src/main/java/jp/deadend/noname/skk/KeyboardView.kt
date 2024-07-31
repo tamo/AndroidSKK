@@ -27,6 +27,7 @@ import android.widget.TextView
 import kotlin.math.abs
 
 open class KeyboardView @JvmOverloads constructor(
+    service: SKKService,
     context: Context,
     attrs: AttributeSet?,
     defStyleAttr: Int = R.attr.keyboardViewStyle,
@@ -44,7 +45,8 @@ open class KeyboardView @JvmOverloads constructor(
         fun swipeUp()
     }
 
-    private var mKeyboard = Keyboard(context, R.xml.keys_null)
+    public val mService = service
+    private lateinit var mKeyboard: Keyboard
     private var mCurrentPreviewKeyIndex = NOT_A_KEY
     private var mLabelTextSize = 0
     private var mKeyTextSize = 0
@@ -658,6 +660,7 @@ open class KeyboardView @JvmOverloads constructor(
 
     protected open fun onLongPress(key: Keyboard.Key): Boolean {
         if (!skkPrefs.useMiniKey) { return false }
+        if (key.popupCharacters.isNullOrEmpty()) { return false }
         val popupKeyboardId = key.popupResId
         if (popupKeyboardId != 0) {
             val cached = mMiniKeyboardCache[key]
@@ -693,15 +696,11 @@ open class KeyboardView @JvmOverloads constructor(
                         onKeyboardActionListener?.onRelease(primaryCode)
                     }
                 }
-                val popupChars = key.popupCharacters
-                miniKeyboardView.keyboard = if (popupChars != null) {
-                    Keyboard(
-                        context, popupKeyboardId,
-                        popupChars, -1, paddingLeft + paddingRight
-                    )
-                } else {
-                    Keyboard(context, popupKeyboardId)
-                }
+                miniKeyboardView.keyboard = Keyboard(
+                    context, popupKeyboardId,
+                    mService.mScreenWidth, mService.mScreenHeight,
+                    key.popupCharacters!!, -1, paddingLeft + paddingRight
+                )
                 miniKeyboardView.setPopupParent(this)
                 mKeyBackground?.let { miniKeyboardView.setKeyBackground(it) } // for inset
                 miniKeyboardContainer.measure(

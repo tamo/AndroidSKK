@@ -48,8 +48,8 @@ class SKKService : InputMethodService() {
     internal var leftOffset = 0
     // 画面サイズが実際に変わる前に onConfigurationChanged で受け取ってサイズ計算
     private var mOrientation = Configuration.ORIENTATION_UNDEFINED
-    private var mScreenWidth = 0
-    private var mScreenHeight = 0
+    internal var mScreenWidth = 0
+    internal var mScreenHeight = 0
     // 入力中かどうか
     private var mInputStarted = false
 
@@ -362,12 +362,9 @@ class SKKService : InputMethodService() {
             else    -> applicationContext
         }
 
-        mFlickJPInputView = FlickJPKeyboardView(context, null)
-        mFlickJPInputView?.setService(this)
-        mQwertyInputView = QwertyKeyboardView(context, null)
-        mQwertyInputView?.setService(this)
-        mAbbrevKeyboardView = AbbrevKeyboardView(context, null)
-        mAbbrevKeyboardView?.setService(this)
+        mFlickJPInputView = FlickJPKeyboardView(this, context, null)
+        mQwertyInputView = QwertyKeyboardView(this, context, null)
+        mAbbrevKeyboardView = AbbrevKeyboardView(this, context, null)
 
         if (skkPrefs.useInset) {
             ResourcesCompat.getDrawable(context.resources, R.drawable.key_bg_inset, null)?.let {
