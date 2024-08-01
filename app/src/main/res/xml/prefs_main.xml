@@ -8,7 +8,7 @@
         app:entries="@array/kutouten_entries"
         app:entryValues="@array/kutouten_values"
         app:dialogTitle="句読点のタイプ"
-        app:defaultValue="en"
+        app:defaultValue="jp"
         app:useSimpleSummaryProvider="true"
         app:iconSpaceReserved="false"
         />

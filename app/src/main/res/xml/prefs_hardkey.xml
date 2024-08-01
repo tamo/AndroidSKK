@@ -15,7 +15,7 @@
         app:key="@string/prefkey_toggle_kana_key"
         app:title="かなキーをASCIIとのトグルに"
         app:summary="オンだと，かなモードでかなキーを押すとASCIIモードに戻ります"
-        app:defaultValue="true"
+        app:defaultValue="false"
         app:iconSpaceReserved="false"
         />
     <jp.deadend.noname.skk.SetKeyPreference

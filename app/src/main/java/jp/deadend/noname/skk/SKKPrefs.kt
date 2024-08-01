@@ -11,41 +11,84 @@ class SKKPrefs(context: Context) {
 //        get() = prefs.getInt(res.getString(R.string.pref_key_prefversion), -1)
 //        set(value) = prefs.edit().putInt(res.getString(R.string.pref_key_prefversion), value).apply()
 
+    // prefs_main
     var kutoutenType: String
-        get() = prefs.getString(res.getString(R.string.prefkey_kutouten_type), null) ?: "en"
+        get() = prefs.getString(res.getString(R.string.prefkey_kutouten_type), null) ?: "jp"
         set(value) = prefs.edit().putString(res.getString(R.string.prefkey_kutouten_type), value).apply()
 
     var prefixMark: Boolean
         get() = prefs.getBoolean(res.getString(R.string.prefkey_prefix_mark), true)
         set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_prefix_mark), value).apply()
 
-    var useCandidatesView: Boolean
-        get() = prefs.getBoolean(res.getString(R.string.prefkey_use_candidates_view), true)
-        set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_use_candidates_view), value).apply()
-
     var candidatesSize: Int
         get() = prefs.getInt(res.getString(R.string.prefkey_candidates_size), 30)
         set(value) = prefs.edit().putInt(res.getString(R.string.prefkey_candidates_size), value).apply()
 
+    // prefs_hardkey
     var kanaKey: Int
         get() = prefs.getInt(res.getString(R.string.prefkey_kana_key), 612) // 612はCtrl+j
         set(value) = prefs.edit().putInt(res.getString(R.string.prefkey_kana_key), value).apply()
+
+    var toggleKanaKey: Boolean
+        get() = prefs.getBoolean(res.getString(R.string.prefkey_toggle_kana_key), false)
+        set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_toggle_kana_key), value).apply()
 
     var cancelKey: Int
         get() = prefs.getInt(res.getString(R.string.prefkey_cancel_key), 564) // 564はCtrl+g
         set(value) = prefs.edit().putInt(res.getString(R.string.prefkey_cancel_key), value).apply()
 
-    var toggleKanaKey: Boolean
-        get() = prefs.getBoolean(res.getString(R.string.prefkey_toggle_kana_key), true)
-        set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_toggle_kana_key), value).apply()
+    var useCandidatesView: Boolean
+        get() = prefs.getBoolean(res.getString(R.string.prefkey_use_candidates_view), true)
+        set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_use_candidates_view), value).apply()
+
+    var useStickyMeta: Boolean
+        get() = prefs.getBoolean(res.getString(R.string.prefkey_sticky_meta), false)
+        set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_sticky_meta), value).apply()
+
+    var useSandS: Boolean
+        get() = prefs.getBoolean(res.getString(R.string.prefkey_sands), false)
+        set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_sands), value).apply()
+
+    // prefs_softkey
+    var useSoftKey: String
+        get() = prefs.getString(res.getString(R.string.prefkey_use_softkey), null) ?: "auto"
+        set(value) = prefs.edit().putString(res.getString(R.string.prefkey_use_softkey), value).apply()
+
+    var showStatusIcon: Boolean
+        get() = prefs.getBoolean(res.getString(R.string.prefkey_show_status_icon), true)
+        set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_show_status_icon), value).apply()
+
+    var preferFlick: Boolean
+        get() = prefs.getBoolean(res.getString(R.string.prefkey_use_flick), true)
+        set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_use_flick), value).apply()
+
+    var usePopup: Boolean
+        get() = prefs.getBoolean(res.getString(R.string.prefkey_use_popup), true)
+        set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_use_popup), value).apply()
+
+    var useFixedPopup: Boolean
+        get() = prefs.getBoolean(res.getString(R.string.prefkey_fixed_popup), true)
+        set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_fixed_popup), value).apply()
+
+    var useSoftCancelKey: Boolean
+        get() = prefs.getBoolean(res.getString(R.string.prefkey_use_soft_cancel_key), false)
+        set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_use_soft_cancel_key), value).apply()
+
+    var useSoftTransKey: Boolean
+        get() = prefs.getBoolean(res.getString(R.string.prefkey_use_soft_trans_key), true)
+        set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_use_soft_trans_key), value).apply()
+
+    var changeShift: Boolean
+        get() = prefs.getBoolean(res.getString(R.string.prefkey_exchange_shift_kana), true)
+        set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_exchange_shift_kana), value).apply()
 
     var flickSensitivity: String
-        get() = prefs.getString(res.getString(R.string.prefkey_flick_sensitivity2), null) ?: "mid"
+        get() = prefs.getString(res.getString(R.string.prefkey_flick_sensitivity2), null) ?: "high"
         set(value) = prefs.edit().putString(res.getString(R.string.prefkey_flick_sensitivity2), value).apply()
 
-    var curveSensitivity: String
-        get() = prefs.getString(res.getString(R.string.prefkey_curve_sensitivity), null) ?: "high"
-        set(value) = prefs.edit().putString(res.getString(R.string.prefkey_curve_sensitivity), value).apply()
+    var useMiniKey: Boolean
+        get() = prefs.getBoolean(res.getString(R.string.prefkey_mini_keyboard), true)
+        set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_mini_keyboard), value).apply()
 
     var theme: String
         get() = prefs.getString(res.getString(R.string.prefkey_theme), null) ?: "default"
@@ -55,77 +98,33 @@ class SKKPrefs(context: Context) {
         get() = prefs.getBoolean(res.getString(R.string.prefkey_use_inset), false)
         set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_use_inset), value).apply()
 
-    var originalColor: Boolean
-        get() = prefs.getBoolean(res.getString(R.string.prefkey_ignore_high_contrast), false)
-        set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_ignore_high_contrast), value).apply()
-
-    var useSoftKey: String
-        get() = prefs.getString(res.getString(R.string.prefkey_use_softkey), null) ?: "auto"
-        set(value) = prefs.edit().putString(res.getString(R.string.prefkey_use_softkey), value).apply()
-
-    var showStatusIcon: Boolean
-        get() = prefs.getBoolean(res.getString(R.string.prefkey_show_status_icon), false)
-        set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_show_status_icon), value).apply()
-
-    var usePopup: Boolean
-        get() = prefs.getBoolean(res.getString(R.string.prefkey_use_popup), true)
-        set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_use_popup), value).apply()
-
-    var preferFlick: Boolean
-        get() = prefs.getBoolean(res.getString(R.string.prefkey_use_flick), true)
-        set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_use_flick), value).apply()
-
-    var useFixedPopup: Boolean
-        get() = prefs.getBoolean(res.getString(R.string.prefkey_fixed_popup), true)
-        set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_fixed_popup), value).apply()
-
-    var useMiniKey: Boolean
-        get() = prefs.getBoolean(res.getString(R.string.prefkey_mini_keyboard), true)
-        set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_mini_keyboard), value).apply()
-
-    var useSoftCancelKey: Boolean
-        get() = prefs.getBoolean(res.getString(R.string.prefkey_use_soft_cancel_key), false)
-        set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_use_soft_cancel_key), value).apply()
-
-    var useSoftTransKey: Boolean
-        get() = prefs.getBoolean(res.getString(R.string.prefkey_use_soft_trans_key), false)
-        set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_use_soft_trans_key), value).apply()
-
-    var changeShift: Boolean
-        get() = prefs.getBoolean(res.getString(R.string.prefkey_exchange_shift_kana), false)
-        set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_exchange_shift_kana), value).apply()
-
     var backgroundAlpha: Int
         get() = prefs.getInt(res.getString(R.string.prefkey_background_alpha), 100)
         set(value) = prefs.edit().putInt(res.getString(R.string.prefkey_background_alpha), value).apply()
+
+    var originalColor: Boolean
+        get() = prefs.getBoolean(res.getString(R.string.prefkey_ignore_high_contrast), false)
+        set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_ignore_high_contrast), value).apply()
 
     var keyHeightPort: Int
         get() = prefs.getInt(res.getString(R.string.prefkey_key_height_port), 30)
         set(value) = prefs.edit().putInt(res.getString(R.string.prefkey_key_height_port), value).apply()
 
-    var keyHeightLand: Int
-        get() = prefs.getInt(res.getString(R.string.prefkey_key_height_land), 30)
-        set(value) = prefs.edit().putInt(res.getString(R.string.prefkey_key_height_land), value).apply()
-
     var keyWidthPort: Int
         get() = prefs.getInt(res.getString(R.string.prefkey_key_width_port), 100)
         set(value) = prefs.edit().putInt(res.getString(R.string.prefkey_key_width_port), value).apply()
 
+    var keyHeightLand: Int
+        get() = prefs.getInt(res.getString(R.string.prefkey_key_height_land), 51)
+        set(value) = prefs.edit().putInt(res.getString(R.string.prefkey_key_height_land), value).apply()
+
     var keyWidthLand: Int
-        get() = prefs.getInt(res.getString(R.string.prefkey_key_width_land), 100)
+        get() = prefs.getInt(res.getString(R.string.prefkey_key_width_land), 30)
         set(value) = prefs.edit().putInt(res.getString(R.string.prefkey_key_width_land), value).apply()
 
     var keyWidthQwertyZoom: Int
         get() = prefs.getInt(res.getString(R.string.prefkey_key_width_qwerty_zoom), 200)
         set(value) = prefs.edit().putInt(res.getString(R.string.prefkey_key_width_qwerty_zoom), value).apply()
-
-    var keyLeftPort: Float
-        get() = prefs.getFloat(res.getString(R.string.prefkey_key_left_port), 1f).coerceIn(0f, 1f)
-        set(value) = prefs.edit().putFloat(res.getString(R.string.prefkey_key_left_port), value.coerceIn(0f, 1f)).apply()
-
-    var keyLeftLand: Float
-        get() = prefs.getFloat(res.getString(R.string.prefkey_key_left_land), 1f).coerceIn(0f, 1f)
-        set(value) = prefs.edit().putFloat(res.getString(R.string.prefkey_key_left_land), value.coerceIn(0f, 1f)).apply()
 
     var typeURI: String
         get() = prefs.getString(res.getString(R.string.prefkey_type_uri), null) ?: "ignore"
@@ -147,12 +146,13 @@ class SKKPrefs(context: Context) {
         get() = prefs.getString(res.getString(R.string.prefkey_type_text), null) ?: "ignore"
         set(value) = prefs.edit().putString(res.getString(R.string.prefkey_type_text), value).apply()
 
-    var useStickyMeta: Boolean
-        get() = prefs.getBoolean(res.getString(R.string.prefkey_sticky_meta), false)
-        set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_sticky_meta), value).apply()
+    // CandidateViewContainer
+    var keyLeftPort: Float
+        get() = prefs.getFloat(res.getString(R.string.prefkey_key_left_port), 1f).coerceIn(0f, 1f)
+        set(value) = prefs.edit().putFloat(res.getString(R.string.prefkey_key_left_port), value.coerceIn(0f, 1f)).apply()
 
-    var useSandS: Boolean
-        get() = prefs.getBoolean(res.getString(R.string.prefkey_sands), false)
-        set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_sands), value).apply()
+    var keyLeftLand: Float
+        get() = prefs.getFloat(res.getString(R.string.prefkey_key_left_land), 1f).coerceIn(0f, 1f)
+        set(value) = prefs.edit().putFloat(res.getString(R.string.prefkey_key_left_land), value.coerceIn(0f, 1f)).apply()
 
 }

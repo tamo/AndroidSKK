@@ -48,7 +48,6 @@
 	<string translatable="false" name="prefkey_use_candidates_view">PrefKeyUseCandidatesView</string>
 	<string translatable="false" name="prefkey_flick_sensitivity">PrefKeyFlickSensitivity</string>
 	<string translatable="false" name="prefkey_flick_sensitivity2">PrefKeyFlickSensitivity2</string>
-	<string translatable="false" name="prefkey_curve_sensitivity">PrefKeyCurveSensitivitye</string>
 	<string translatable="false" name="prefkey_theme">PrefKeyTheme</string>
 	<string translatable="false" name="prefkey_use_inset">PrefKeyInset</string>
 	<string translatable="false" name="prefkey_ignore_high_contrast">PrefKeyOriginalColor</string>

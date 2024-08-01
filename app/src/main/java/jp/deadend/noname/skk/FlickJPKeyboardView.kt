@@ -21,7 +21,6 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
     private lateinit var mService: SKKService
 
     private var mFlickSensitivitySquared = 100
-    private var mCurveSensitivityMultiplier = 2.0f
     private var mLastPressedKey = KEYCODE_FLICK_JP_NONE
     private var mFlickState = EnumSet.of(FlickState.NONE)
     private var mFlickStartX = -1f
@@ -240,12 +239,6 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
             else   -> (24 * density + 0.5f).toInt()
         }
         mFlickSensitivitySquared = sensitivity * sensitivity
-        // カーブフリック感度
-        mCurveSensitivityMultiplier = when (skkPrefs.curveSensitivity) {
-            "low" -> 0.5f
-            "mid" -> 1.0f
-            else -> 2.0f
-        }
         // シフトかな交換
         setShiftPosition()
         // 句読点
