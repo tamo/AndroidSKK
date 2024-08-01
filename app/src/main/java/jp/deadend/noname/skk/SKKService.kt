@@ -279,11 +279,11 @@ class SKKService : InputMethodService() {
             else    -> applicationContext
         }
         val keyHeight = keyboardHeight()
-        val flickWidth = mScreenWidth * when (mOrientation) {
+        val flickWidth = when (mOrientation) {
             Configuration.ORIENTATION_PORTRAIT -> skkPrefs.keyWidthPort
             Configuration.ORIENTATION_LANDSCAPE -> skkPrefs.keyWidthLand
-            else -> 100
-        } / 100
+            else -> mScreenWidth
+        }
         val alpha = skkPrefs.backgroundAlpha
         flick.prepareNewKeyboard(context, flickWidth, keyHeight)
         flick.backgroundAlpha = 255 * alpha / 100
@@ -958,6 +958,14 @@ class SKKService : InputMethodService() {
         }
     }
 
+    private fun keyboardWidth() =
+        (when (mOrientation) {
+            Configuration.ORIENTATION_PORTRAIT -> skkPrefs.keyWidthPort
+            Configuration.ORIENTATION_LANDSCAPE -> skkPrefs.keyWidthLand
+            else -> mScreenWidth
+        } * (if (isFlickJP) 100 else skkPrefs.keyWidthQwertyZoom) / 100)
+            .coerceAtMost(mScreenWidth)
+
     private fun keyboardHeight() = if (!checkUseSoftKeyboard()) 0 else
         mScreenHeight * when (mOrientation) {
             Configuration.ORIENTATION_PORTRAIT -> skkPrefs.keyHeightPort
@@ -966,34 +974,18 @@ class SKKService : InputMethodService() {
         } / 100
 
     private fun computeLeftOffset() {
-        val widthRate = when (mOrientation) {
-            Configuration.ORIENTATION_PORTRAIT -> skkPrefs.keyWidthPort
-            Configuration.ORIENTATION_LANDSCAPE -> skkPrefs.keyWidthLand
-            else -> 100
-        }
-        val zoom = if (mInputView == mFlickJPInputView) 100 else skkPrefs.keyWidthQwertyZoom
-        val keyWidth = mScreenWidth * (widthRate * zoom).coerceAtMost(10000) / 10000f
-        leftOffset = ((mScreenWidth - keyWidth) * when (mOrientation) {
+        leftOffset = ((mScreenWidth - keyboardWidth()) * when (mOrientation) {
             Configuration.ORIENTATION_LANDSCAPE -> skkPrefs.keyLeftLand
             else -> skkPrefs.keyLeftPort
         }).toInt()
     }
 
-    private fun isFloating(): Boolean = skkPrefs.run {
-        val baseWidthRate = when (mOrientation) {
-            Configuration.ORIENTATION_PORTRAIT -> keyWidthPort
-            Configuration.ORIENTATION_LANDSCAPE -> keyWidthLand
-            else -> 100 // readPrefsForInputView を参照
-        }
-        val zoom = if (mInputView == mFlickJPInputView) 100 else keyWidthQwertyZoom
-        val widthThreshold = 100 - 100 * mScreenHeight / mScreenWidth // 高さ程度が残るかどうか
-        (baseWidthRate * zoom).coerceAtMost(10000) / 100 < widthThreshold
-//                && when (mOrientation) {
-//                    Configuration.ORIENTATION_PORTRAIT -> keyHeightPort > 50
-//                    Configuration.ORIENTATION_LANDSCAPE -> keyHeightLand > 30
-//                    else -> false // 30 > 30..50
-//                }
-    }
+    private fun isFloating(): Boolean = keyboardWidth() < mScreenWidth - mScreenHeight
+//            && when (mOrientation) {
+//                Configuration.ORIENTATION_PORTRAIT -> skkPrefs.keyHeightPort > 50
+//                Configuration.ORIENTATION_LANDSCAPE -> skkPrefs.keyHeightLand > 30
+//                else -> false // 30 > 30..50
+//            }
 
     override fun showStatusIcon(iconRes: Int) {
         if ((mInputStarted && (!checkUseSoftKeyboard() || skkPrefs.showStatusIcon))

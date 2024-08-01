@@ -85,7 +85,7 @@ class CandidateViewContainer(screen: Context, attrs: AttributeSet) : LinearLayou
                                     event.getRawX(event.findPointerIndex(mActivePointerIds[0]))
                         )
                         val newWidth = (mPinchStartWidth - mPinchStartDistance + currentDistance)
-                            .toInt().coerceIn(1, displayWidth)
+                            .toInt().coerceIn(101, displayWidth)
                         val newLeftOffset =
                             mDragStartLeft + (mPinchStartDistance - currentDistance).toInt() / 2
                         mService.leftOffset = newLeftOffset.coerceIn(0, displayWidth - newWidth)
@@ -134,12 +134,12 @@ class CandidateViewContainer(screen: Context, attrs: AttributeSet) : LinearLayou
 
     private fun saveWidth() {
         val displayWidth = resources.displayMetrics.widthPixels
-        val widthRate = 100f * width / displayWidth /
-                if (mService.isFlickJP) 1f else skkPrefs.keyWidthQwertyZoom / 100f
+        val widthToSave = width * 100 /
+                if (mService.isFlickJP) 100 else skkPrefs.keyWidthQwertyZoom
         when (resources.configuration.orientation) {
             Configuration.ORIENTATION_LANDSCAPE ->
-                skkPrefs.keyWidthLand = widthRate.toInt()
-            else -> skkPrefs.keyWidthPort = widthRate.toInt()
+                skkPrefs.keyWidthLand = widthToSave.coerceIn(101, displayWidth)
+            else -> skkPrefs.keyWidthPort = widthToSave.coerceIn(101, displayWidth)
         }
     }
 
