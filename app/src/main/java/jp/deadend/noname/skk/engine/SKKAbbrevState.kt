@@ -1,17 +1,13 @@
 package jp.deadend.noname.skk.engine
 
-import android.os.Build
 import jp.deadend.noname.skk.R
 import jp.deadend.noname.skk.hankaku2zenkaku
 
 // Abbrevモード(▽モード)
 object SKKAbbrevState : SKKState {
     override val isTransient = true
-    override val icon = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+    override val icon =
         R.drawable.ic_abbrev
-    } else {
-        R.drawable.immodeic_eng2jp
-    }
 
     override fun handleKanaKey(context: SKKEngine) {
         context.changeState(SKKHiraganaState)

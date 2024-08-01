@@ -12,11 +12,11 @@
 	<string name="label_clear_userdic">ユーザー辞書初期化</string>
 	<string name="label_no_entry_found">エントリがありません</string>
 	<string name="label_dicmanager_activity">SKK 辞書管理</string>
-	<string name="label_dicmanager_ldic">SKK L辞書</string>
 	<string name="label_dicmanager_optionaldic">SKK 追加辞書</string>
 	<string name="label_dicmanager_add">辞書を追加</string>
 	<string name="label_dicmanager_input_name">辞書の名前を入力</string>
 	<string name="label_dicmanager_reset">辞書を初期化</string>
+	<string name="descr_closeButton">閉じる</string>
 
 	<string name="message_confirm_remove">このエントリを削除しますか？</string>
 	<string name="message_confirm_clear">現在のユーザー辞書の内容はすべて消去されます。よろしいですか？</string>
@@ -28,7 +28,6 @@
 	<string name="message_dic_extracted">ASCII 辞書を解凍しました</string>
 
 	<string name="error_access_failed">アクセスできません: %1$s</string>
-	<string name="error_dic">辞書ファイルを開けません。設定画面から、辞書を初期化してみてください</string>
 	<string name="error_open_dicfile">辞書ファイルを開けません</string>
 	<string name="error_user_dic">ユーザー辞書が開けません。設定画面から、ユーザー辞書を初期化してみてください</string>
 	<string name="error_open_user_dic">ユーザー辞書を開くときにエラーが発生しました。初期化してもよろしいですか？</string>
@@ -46,7 +45,6 @@
 	<string translatable="false" name="prefkey_cancel_key">PrefKeyCancelKey</string>
 	<string translatable="false" name="prefkey_candidates_size">PrefKeyCandidatesSize</string>
 	<string translatable="false" name="prefkey_use_candidates_view">PrefKeyUseCandidatesView</string>
-	<string translatable="false" name="prefkey_flick_sensitivity">PrefKeyFlickSensitivity</string>
 	<string translatable="false" name="prefkey_flick_sensitivity2">PrefKeyFlickSensitivity2</string>
 	<string translatable="false" name="prefkey_theme">PrefKeyTheme</string>
 	<string translatable="false" name="prefkey_use_inset">PrefKeyInset</string>

@@ -6,10 +6,7 @@ import jdbm.btree.BTree
 import jdbm.helper.Tuple
 import jdbm.helper.TupleBrowser
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.ensureActive
-import kotlinx.coroutines.launch
 import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStream

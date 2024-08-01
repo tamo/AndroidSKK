@@ -1,15 +1,14 @@
 package jp.deadend.noname.skk
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.view.KeyEvent
 import android.util.AttributeSet
 import android.view.MotionEvent
 
-class AbbrevKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
+@SuppressLint("ViewConstructor")
+class AbbrevKeyboardView(service: SKKService, context: Context, attrs: AttributeSet?) : KeyboardView(service, context, attrs), KeyboardView.OnKeyboardActionListener {
     private var mFlickSensitivitySquared = 100
-
-    constructor(service: SKKService, context: Context, attrs: AttributeSet?) : super(service, context, attrs)
-    constructor(service: SKKService, context: Context, attrs: AttributeSet?, defStyle: Int) : super(service, context, attrs, defStyle)
 
     init {
         keyboard = Keyboard(context, R.xml.abbrev, mService.mScreenWidth, mService.mScreenHeight)

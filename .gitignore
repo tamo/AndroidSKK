@@ -20,6 +20,7 @@ local.properties
 /app/.project
 /app/.classpath
 .externalNativeBuild
+.kotlin/
 
 .project
 .settings/

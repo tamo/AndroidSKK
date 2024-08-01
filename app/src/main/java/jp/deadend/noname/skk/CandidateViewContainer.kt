@@ -78,24 +78,23 @@ class CandidateViewContainer(screen: Context, attrs: AttributeSet) : LinearLayou
                 }
 
                 MotionEvent.ACTION_MOVE -> {
-                    val displayWidth = resources.displayMetrics.widthPixels
                     if (mActivePointerIds.count() > 1) { // 幅の調整
                         val currentDistance = abs(
                             event.getRawX(event.findPointerIndex(mActivePointerIds[1])) -
                                     event.getRawX(event.findPointerIndex(mActivePointerIds[0]))
                         )
                         val newWidth = (mPinchStartWidth - mPinchStartDistance + currentDistance)
-                            .toInt().coerceIn(101, displayWidth)
+                            .toInt().coerceIn(101, mService.mScreenWidth)
                         val newLeftOffset =
                             mDragStartLeft + (mPinchStartDistance - currentDistance).toInt() / 2
-                        mService.leftOffset = newLeftOffset.coerceIn(0, displayWidth - newWidth)
+                        mService.leftOffset = newLeftOffset.coerceIn(0, mService.mScreenWidth - newWidth)
                         mService.setInputViewWidth(newWidth)
                     } else if (mDragging) { // 位置の調整
                         val newLeftOffset = mDragStartLeft + (
                                 event.getRawX(event.findPointerIndex(mActivePointerIds[0])) -
                                         mDragStartX
                                 ).toInt()
-                        mService.leftOffset = newLeftOffset.coerceIn(0, displayWidth - width)
+                        mService.leftOffset = newLeftOffset.coerceIn(0, mService.mScreenWidth - width)
                         mService.setInputView(null)
                     }
                 }
@@ -134,13 +133,12 @@ class CandidateViewContainer(screen: Context, attrs: AttributeSet) : LinearLayou
     }
 
     private fun saveWidth() {
-        val displayWidth = resources.displayMetrics.widthPixels
         val widthToSave = width * 100 /
                 if (mService.isFlickJP) 100 else skkPrefs.keyWidthQwertyZoom
         when (resources.configuration.orientation) {
             Configuration.ORIENTATION_LANDSCAPE ->
-                skkPrefs.keyWidthLand = widthToSave.coerceIn(101, displayWidth)
-            else -> skkPrefs.keyWidthPort = widthToSave.coerceIn(101, displayWidth)
+                skkPrefs.keyWidthLand = widthToSave.coerceIn(101, mService.mScreenWidth)
+            else -> skkPrefs.keyWidthPort = widthToSave.coerceIn(101, mService.mScreenWidth)
         }
     }
 

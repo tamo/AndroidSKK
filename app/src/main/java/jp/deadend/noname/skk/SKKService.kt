@@ -3,23 +3,22 @@ package jp.deadend.noname.skk
 import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.inputmethodservice.InputMethodService
 import android.media.AudioManager
+import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import androidx.preference.PreferenceManager
+import android.os.StrictMode
+import android.provider.Settings
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
-import android.content.ClipboardManager
-import android.content.pm.PackageManager
-import android.net.Uri
-import android.os.Build
-import android.provider.Settings
 import android.text.InputType
 import android.util.Log
 import android.util.TypedValue
@@ -29,6 +28,7 @@ import android.view.inputmethod.EditorInfo
 import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.core.content.res.ResourcesCompat
+import androidx.preference.PreferenceManager
 
 import jp.deadend.noname.skk.engine.*
 import java.io.*
@@ -157,17 +157,24 @@ class SKKService : InputMethodService() {
     }
 
     override fun onCreate() {
+        if (BuildConfig.DEBUG) {
+            StrictMode.setThreadPolicy(
+                StrictMode.ThreadPolicy.Builder()
+                    .detectNetwork()
+                    .detectCustomSlowCalls()
+                    .penaltyLog()
+                    .build()
+            )
+        }
         super.onCreate()
         instance = this
 
         Thread.setDefaultUncaughtExceptionHandler(MyUncaughtExceptionHandler(applicationContext))
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_DEFAULT)
-            val notificationManager: NotificationManager =
-                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.createNotificationChannel(channel)
-        }
+        val channel = NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_DEFAULT)
+        val notificationManager: NotificationManager =
+            getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.createNotificationChannel(channel)
 
         val dics = openDictionaries()
         if (dics.isEmpty()) {
@@ -431,10 +438,8 @@ class SKKService : InputMethodService() {
             onInitializeInterface()
         }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            mEngine.isPersonalizedLearning =
-                (attribute.imeOptions and EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING) == 0
-        }
+        mEngine.isPersonalizedLearning =
+            (attribute.imeOptions and EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING) == 0
         val keyboardType = when (attribute.inputType and InputType.TYPE_MASK_CLASS) {
             InputType.TYPE_CLASS_NUMBER -> skkPrefs.typeNumber
             InputType.TYPE_CLASS_PHONE -> skkPrefs.typePhone
@@ -842,18 +847,16 @@ class SKKService : InputMethodService() {
 //            mSpeechRecognizer.stopListening()
             return
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) { // checkSelfPermission は api 23 必要
-            if (listOf(Manifest.permission.RECORD_AUDIO).any { // 将来複数必要になったときのため List.any
-                checkSelfPermission(it) == PackageManager.PERMISSION_DENIED
-            }) {
-                // requestPermissions は activity が必要なので雑に設定画面を出すだけにする
-                startActivity(
-                    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-                        .setData(Uri.fromParts("package", packageName, null))
-                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                )
-                return
-            }
+        if (listOf(Manifest.permission.RECORD_AUDIO).any { // 将来複数必要になったときのため List.any
+            checkSelfPermission(it) == PackageManager.PERMISSION_DENIED
+        }) {
+            // requestPermissions は activity が必要なので雑に設定画面を出すだけにする
+            startActivity(
+                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                    .setData(Uri.fromParts("package", packageName, null))
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            )
+            return
         }
         mStreamVolume = mAudioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
         mAudioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 0, 0)
@@ -992,6 +995,7 @@ class SKKService : InputMethodService() {
         }
     }
 
+    @Suppress("SameReturnValue")
     private fun ping() = true
 
     companion object {

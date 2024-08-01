@@ -227,7 +227,7 @@ class SKKUserDicTool : AppCompatActivity() {
             }
             R.id.menu_user_dic_tool_export -> {
                 closeUserDict()
-                exportFileLauncher.launch(mDicName + ".txt")
+                exportFileLauncher.launch("$mDicName.txt")
                 return true
             }
             R.id.menu_user_dic_tool_clear -> {

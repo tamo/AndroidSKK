@@ -1,5 +1,6 @@
 package jp.deadend.noname.skk
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -9,7 +10,6 @@ import android.graphics.PorterDuff
 import android.graphics.Rect
 import android.graphics.Typeface
 import android.graphics.drawable.Drawable
-import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.Message
@@ -26,6 +26,7 @@ import android.widget.PopupWindow
 import android.widget.TextView
 import kotlin.math.abs
 
+@SuppressLint("ViewConstructor")
 open class KeyboardView @JvmOverloads constructor(
     service: SKKService,
     context: Context,
@@ -45,7 +46,7 @@ open class KeyboardView @JvmOverloads constructor(
         fun swipeUp()
     }
 
-    public val mService = service
+    val mService = service
     private lateinit var mKeyboard: Keyboard
     private var mCurrentPreviewKeyIndex = NOT_A_KEY
     private var mLabelTextSize = 0
@@ -224,10 +225,8 @@ open class KeyboardView @JvmOverloads constructor(
             mPreviewPopup.setBackgroundDrawable(null)
             mPreviewPopup.isClippingEnabled = false
             mPreviewPopup.animationStyle = 0
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                mPreviewPopup.enterTransition = null
-                mPreviewPopup.exitTransition = null
-            }
+            mPreviewPopup.enterTransition = null
+            mPreviewPopup.exitTransition = null
         } else {
             isPreviewEnabled = false
         }
@@ -1117,7 +1116,7 @@ open class KeyboardView @JvmOverloads constructor(
 
     companion object {
         private const val NOT_A_KEY = -1
-        private val KEY_DELETE = intArrayOf(Keyboard.KEYCODE_DELETE)
+        // private val KEY_DELETE = intArrayOf(Keyboard.KEYCODE_DELETE)
         private val LONG_PRESSABLE_STATE_SET = intArrayOf(R.attr.state_long_pressable)
         private const val MSG_SHOW_PREVIEW = 1
         private const val MSG_REMOVE_PREVIEW = 2
@@ -1129,7 +1128,7 @@ open class KeyboardView @JvmOverloads constructor(
         private const val REPEAT_INTERVAL = 50 // ~20 keys per second
         private const val REPEAT_START_DELAY = 400
         private val LONGPRESS_TIMEOUT = ViewConfiguration.getLongPressTimeout()
-        private const val MAX_NEARBY_KEYS = 12
+        // private const val MAX_NEARBY_KEYS = 12
         private const val MULTITAP_INTERVAL = 800 // milliseconds
         private const val BACKGROUND_DIM_AMOUNT = 0.6f
     }

@@ -1,5 +1,6 @@
 package jp.deadend.noname.skk
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.util.AttributeSet
 import android.util.SparseArray
@@ -17,6 +18,7 @@ import jp.deadend.noname.skk.engine.SKKEngine
 import jp.deadend.noname.skk.engine.SKKZenkakuState
 import java.util.EnumSet
 
+@SuppressLint("ViewConstructor")
 class FlickJPKeyboardView(service: SKKService, context: Context, attrs: AttributeSet?) : KeyboardView(service, context, attrs), KeyboardView.OnKeyboardActionListener {
     private var mFlickSensitivitySquared = 100
     private var mLastPressedKey = KEYCODE_FLICK_JP_NONE

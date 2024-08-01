@@ -247,22 +247,15 @@ open class Keyboard {
         loadKeyboard(context, context.resources.getXml(xmlLayoutResId))
     }
 
-    /*
-    constructor(context: Context, xmlLayoutResId: Int) {
-        val dm = context.resources.displayMetrics
-        mDisplayWidth = dm.widthPixels
-        mDisplayHeight = dm.heightPixels
-        defaultKeyWidth = mDisplayWidth / 10
-        defaultKeyHeight = defaultKeyWidth
-        loadKeyboard(context, context.resources.getXml(xmlLayoutResId))
-    }
-    */
-
     constructor(
         context: Context, layoutTemplateResId: Int,
         displayWidth: Int, displayHeight: Int,
         characters: CharSequence, columns: Int, horizontalPadding: Int
     ) : this(context, layoutTemplateResId, displayWidth, displayHeight) {
+        initMiniKey(characters, columns, horizontalPadding)
+    }
+
+    private fun initMiniKey(characters: CharSequence, columns: Int, horizontalPadding: Int) {
         var x = 0
         var y = 0
         var column = 0
@@ -529,9 +522,9 @@ open class Keyboard {
         const val EDGE_TOP = 0x04
         const val EDGE_BOTTOM = 0x08
         const val KEYCODE_SHIFT = -1
-        const val KEYCODE_MODE_CHANGE = -2
-        const val KEYCODE_CANCEL = -3
-        const val KEYCODE_DONE = -4
+        // const val KEYCODE_MODE_CHANGE = -2
+        // const val KEYCODE_CANCEL = -3
+        // const val KEYCODE_DONE = -4
         const val KEYCODE_DELETE = -5
         const val KEYCODE_ALT = -6
         const val KEYCODE_CAPSLOCK = -7

@@ -1,5 +1,6 @@
 package jp.deadend.noname.skk
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.view.KeyEvent
 import android.view.MotionEvent
@@ -9,7 +10,8 @@ import jp.deadend.noname.skk.engine.SKKHiraganaState
 import jp.deadend.noname.skk.engine.SKKState
 import jp.deadend.noname.skk.engine.SKKZenkakuState
 
-class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
+@SuppressLint("ViewConstructor")
+class QwertyKeyboardView(service: SKKService, context: Context, attrs: AttributeSet?) : KeyboardView(service, context, attrs), KeyboardView.OnKeyboardActionListener {
     val mLatinKeyboard = Keyboard(context, R.xml.qwerty, mService.mScreenWidth, mService.mScreenHeight)
     val mSymbolsKeyboard = Keyboard(context, R.xml.symbols, mService.mScreenWidth, mService.mScreenHeight)
 
@@ -17,9 +19,6 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
 
     private var mSpacePressed = false
     private var mSpaceFlicked = false
-
-    constructor(service: SKKService, context: Context, attrs: AttributeSet?) : super(service, context, attrs)
-    constructor(service: SKKService, context: Context, attrs: AttributeSet?, defStyle: Int) : super(service, context, attrs, defStyle)
 
     init {
         keyboard = mLatinKeyboard

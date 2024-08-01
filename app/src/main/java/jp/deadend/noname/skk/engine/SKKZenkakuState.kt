@@ -1,18 +1,15 @@
 package jp.deadend.noname.skk.engine
 
-import android.os.Build
 import jp.deadend.noname.skk.R
 import jp.deadend.noname.skk.hankaku2zenkaku
+
 // import jp.deadend.noname.skk.skkPrefs
 
 // 全角英数モード
 object SKKZenkakuState : SKKState {
     override val isTransient = false
-    override val icon = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+    override val icon =
         R.drawable.ic_full_alphabet
-    } else {
-        R.drawable.immodeic_full_alphabet
-    }
 
     override fun handleKanaKey(context: SKKEngine) {
         context.changeState(SKKHiraganaState)
