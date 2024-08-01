@@ -86,8 +86,10 @@ open class Keyboard {
         var icon: Drawable? = null
         var iconPreview: Drawable? = null
         var width: Int
+        var defaultWidth: Int
         var height: Int
         var horizontalGap: Int
+        var defaultHorizontalGap: Int
         var sticky = false
         var repeatable = false
 
@@ -110,7 +112,9 @@ open class Keyboard {
         init {
             height = parent.defaultHeight
             width = parent.defaultWidth
+            defaultWidth = width
             horizontalGap = parent.defaultHorizontalGap
+            defaultHorizontalGap = parent.defaultHorizontalGap
             edgeFlags = parent.rowEdgeFlags
         }
 
@@ -121,12 +125,14 @@ open class Keyboard {
             width = getDimensionOrFraction(
                 a, R.styleable.Keyboard_keyWidth, keyboard.mDisplayWidth, parent.defaultWidth
             )
+            defaultWidth = width
             height = getDimensionOrFraction(
                 a, R.styleable.Keyboard_keyHeight, keyboard.mDisplayHeight, parent.defaultHeight
             )
             horizontalGap = getDimensionOrFraction(
                 a, R.styleable.Keyboard_horizontalGap, keyboard.mDisplayWidth, parent.defaultHorizontalGap
             )
+            defaultHorizontalGap = horizontalGap
             a.recycle()
             a = res.obtainAttributes(Xml.asAttributeSet(parser), R.styleable.Keyboard_Key)
             this.x += horizontalGap
@@ -295,7 +301,7 @@ open class Keyboard {
         var maxWidth = 0
         for (row in rows) {
             var totalWidth = 0
-            for (key in row.keys) { totalWidth += key.horizontalGap + key.width }
+            for (key in row.keys) { totalWidth += key.defaultHorizontalGap + key.defaultWidth }
             if (totalWidth > maxWidth) { maxWidth = totalWidth }
 
                 totalHeight += row.defaultHeight + row.verticalGap
@@ -310,8 +316,8 @@ open class Keyboard {
             row.verticalGap = (row.verticalGap * vScaleFactor).toInt()
             x = 0
             for (key in row.keys) {
-                key.width = (key.width * hScaleFactor).toInt()
-                key.horizontalGap = (key.horizontalGap * hScaleFactor).toInt()
+                key.width = (key.defaultWidth * hScaleFactor).toInt()
+                key.horizontalGap = (key.defaultHorizontalGap * hScaleFactor).toInt()
                 key.x = x + key.horizontalGap
                 x += key.horizontalGap + key.width
                 key.height = row.defaultHeight
