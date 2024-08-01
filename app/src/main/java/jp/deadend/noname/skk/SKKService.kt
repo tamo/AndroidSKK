@@ -978,12 +978,13 @@ class SKKService : InputMethodService() {
             else -> 100 // readPrefsForInputView を参照
         }
         val zoom = if (mInputView == mFlickJPInputView) 100 else keyWidthQwertyZoom
-        (baseWidthRate * zoom).coerceAtMost(10000) / 100 < 50 &&
-                when (mOrientation) {
-                    Configuration.ORIENTATION_PORTRAIT -> keyHeightPort > 50
-                    Configuration.ORIENTATION_LANDSCAPE -> keyHeightLand > 50
-                    else -> false // 30 > 50
-                }
+        val widthThreshold = 100 - 100 * mScreenHeight / mScreenWidth // 高さ程度が残るかどうか
+        (baseWidthRate * zoom).coerceAtMost(10000) / 100 < widthThreshold
+//                && when (mOrientation) {
+//                    Configuration.ORIENTATION_PORTRAIT -> keyHeightPort > 50
+//                    Configuration.ORIENTATION_LANDSCAPE -> keyHeightLand > 30
+//                    else -> false // 30 > 30..50
+//                }
     }
 
     override fun showStatusIcon(iconRes: Int) {
