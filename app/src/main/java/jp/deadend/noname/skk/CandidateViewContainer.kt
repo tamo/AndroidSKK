@@ -124,8 +124,9 @@ class CandidateViewContainer(screen: Context, attrs: AttributeSet) : LinearLayou
     }
 
     private fun saveLeft(left: Int) {
-        val displayWidth = resources.displayMetrics.widthPixels
-        val leftRate = if (displayWidth == width) 0f else left / (displayWidth - width).toFloat()
+        val leftRate =
+            if (mService.mScreenWidth <= width) 0f
+            else left / (mService.mScreenWidth - width).toFloat()
         when (resources.configuration.orientation) {
             Configuration.ORIENTATION_LANDSCAPE -> skkPrefs.keyLeftLand = leftRate
             else -> skkPrefs.keyLeftPort = leftRate

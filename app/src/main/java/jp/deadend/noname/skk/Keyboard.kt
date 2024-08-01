@@ -247,6 +247,7 @@ open class Keyboard {
         loadKeyboard(context, context.resources.getXml(xmlLayoutResId))
     }
 
+    /*
     constructor(context: Context, xmlLayoutResId: Int) {
         val dm = context.resources.displayMetrics
         mDisplayWidth = dm.widthPixels
@@ -255,11 +256,13 @@ open class Keyboard {
         defaultKeyHeight = defaultKeyWidth
         loadKeyboard(context, context.resources.getXml(xmlLayoutResId))
     }
+    */
 
     constructor(
         context: Context, layoutTemplateResId: Int,
+        displayWidth: Int, displayHeight: Int,
         characters: CharSequence, columns: Int, horizontalPadding: Int
-    ) : this(context, layoutTemplateResId) {
+    ) : this(context, layoutTemplateResId, displayWidth, displayHeight) {
         var x = 0
         var y = 0
         var column = 0

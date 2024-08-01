@@ -17,9 +17,7 @@ import jp.deadend.noname.skk.engine.SKKEngine
 import jp.deadend.noname.skk.engine.SKKZenkakuState
 import java.util.EnumSet
 
-class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(context, attrs), KeyboardView.OnKeyboardActionListener {
-    private lateinit var mService: SKKService
-
+class FlickJPKeyboardView(service: SKKService, context: Context, attrs: AttributeSet?) : KeyboardView(service, context, attrs), KeyboardView.OnKeyboardActionListener {
     private var mFlickSensitivitySquared = 100
     private var mLastPressedKey = KEYCODE_FLICK_JP_NONE
     private var mFlickState = EnumSet.of(FlickState.NONE)
@@ -78,26 +76,22 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
         isPreviewEnabled = false
         setBackgroundColor(0x00000000)
 
-        mJPKeyboard = Keyboard(context, R.xml.keys_flick_jp)
+        mJPKeyboard = Keyboard(context, R.xml.keys_flick_jp, mService.mScreenWidth, mService.mScreenHeight)
         mKutoutenKey = checkNotNull(findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_CHAR_TEN)) { "BUG: no kutoten key" }
         mSpaceKey = checkNotNull(findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_SPACE)) { "BUG: no space key" }
         mQwertyKey = checkNotNull(findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_TOQWERTY)) { "BUG: no qwerty key" }
         mShiftKeyJP = mJPKeyboard.keys[0]
         mKanaKeyJP = checkNotNull(findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_MOJI)) { "BUG: no moji key" }
 
-        mNumKeyboard = Keyboard(context, R.xml.keys_flick_number)
+        mNumKeyboard = Keyboard(context, R.xml.keys_flick_number, mService.mScreenWidth, mService.mScreenHeight)
         mShiftKeyNum = mNumKeyboard.keys[0]
         mKanaKeyNum = checkNotNull(findKeyByCode(mNumKeyboard, KEYCODE_FLICK_JP_TOKANA)) { "BUG: no kana key in num" }
 
-        mVoiceKeyboard = Keyboard(context, R.xml.keys_flick_voice)
+        mVoiceKeyboard = Keyboard(context, R.xml.keys_flick_voice, mService.mScreenWidth, mService.mScreenHeight)
         mShiftKeyVoice = mVoiceKeyboard.keys[0]
         mKanaKeyVoice = checkNotNull(findKeyByCode(mVoiceKeyboard, KEYCODE_FLICK_JP_TOKANA)) { "BUG: no kana key in voice" }
 
         keyboard = mJPKeyboard
-    }
-
-    fun setService(listener: SKKService) {
-        mService = listener
     }
 
     private fun setShiftPosition() {

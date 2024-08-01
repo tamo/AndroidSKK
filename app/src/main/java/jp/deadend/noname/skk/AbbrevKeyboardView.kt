@@ -6,15 +6,13 @@ import android.util.AttributeSet
 import android.view.MotionEvent
 
 class AbbrevKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
-    private lateinit var mService: SKKService
-    private val mKeyboard = Keyboard(context, R.xml.abbrev)
     private var mFlickSensitivitySquared = 100
 
-    constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
-    constructor(context: Context, attrs: AttributeSet?, defStyle: Int) : super(context, attrs, defStyle)
+    constructor(service: SKKService, context: Context, attrs: AttributeSet?) : super(service, context, attrs)
+    constructor(service: SKKService, context: Context, attrs: AttributeSet?, defStyle: Int) : super(service, context, attrs, defStyle)
 
     init {
-        keyboard = mKeyboard
+        keyboard = Keyboard(context, R.xml.abbrev, mService.mScreenWidth, mService.mScreenHeight)
         onKeyboardActionListener = this
         setKeyState()
     }
@@ -23,10 +21,6 @@ class AbbrevKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
         super.onDetachedFromWindow()
         isShifted = false
         isCapsLocked = false
-    }
-
-    fun setService(listener: SKKService) {
-        mService = listener
     }
 
     fun setFlickSensitivity(sensitivity: Int) {

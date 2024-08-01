@@ -10,18 +10,16 @@ import jp.deadend.noname.skk.engine.SKKState
 import jp.deadend.noname.skk.engine.SKKZenkakuState
 
 class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
-    private lateinit var mService: SKKService
-
-    val mLatinKeyboard = Keyboard(context, R.xml.qwerty)
-    val mSymbolsKeyboard = Keyboard(context, R.xml.symbols)
+    val mLatinKeyboard = Keyboard(context, R.xml.qwerty, mService.mScreenWidth, mService.mScreenHeight)
+    val mSymbolsKeyboard = Keyboard(context, R.xml.symbols, mService.mScreenWidth, mService.mScreenHeight)
 
     private var mFlickSensitivitySquared = 100
 
     private var mSpacePressed = false
     private var mSpaceFlicked = false
 
-    constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
-    constructor(context: Context, attrs: AttributeSet?, defStyle: Int) : super(context, attrs, defStyle)
+    constructor(service: SKKService, context: Context, attrs: AttributeSet?) : super(service, context, attrs)
+    constructor(service: SKKService, context: Context, attrs: AttributeSet?, defStyle: Int) : super(service, context, attrs, defStyle)
 
     init {
         keyboard = mLatinKeyboard
@@ -32,10 +30,6 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
         super.onDetachedFromWindow()
         isShifted = false
         isCapsLocked = false
-    }
-
-    fun setService(listener: SKKService) {
-        mService = listener
     }
 
     fun setFlickSensitivity(sensitivity: Int) {
