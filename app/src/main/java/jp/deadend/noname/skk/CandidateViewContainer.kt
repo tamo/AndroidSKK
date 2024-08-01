@@ -22,6 +22,7 @@ import android.util.AttributeSet
 import android.view.MotionEvent
 import android.widget.LinearLayout
 import jp.deadend.noname.skk.databinding.ViewCandidatesBinding
+import kotlin.math.abs
 
 class CandidateViewContainer(screen: Context, attrs: AttributeSet) : LinearLayout(screen, attrs) {
     internal lateinit var binding: ViewCandidatesBinding
@@ -31,9 +32,12 @@ class CandidateViewContainer(screen: Context, attrs: AttributeSet) : LinearLayou
 
     private var mLeftEnabled = false
     private var mRightEnabled = false
+    private var mActivePointerIds = mutableListOf<Int>()
     private var mDragging = false
     private var mDragStartLeft = 0
     private var mDragStartX = 0f
+    private var mPinchStartWidth = 0
+    private var mPinchStartDistance = 0f
 
     fun setService(service: SKKService) {
         mService = service
@@ -46,7 +50,7 @@ class CandidateViewContainer(screen: Context, attrs: AttributeSet) : LinearLayou
 
     fun initViews() {
         val onTouchListener = OnTouchListener { view, event ->
-            when (event.action) {
+            when (event.action and MotionEvent.ACTION_MASK) {
                 MotionEvent.ACTION_DOWN -> when {
                     view == binding.candidateLeft && mLeftEnabled -> {
                         binding.candidates.scrollPrev()
@@ -55,29 +59,65 @@ class CandidateViewContainer(screen: Context, attrs: AttributeSet) : LinearLayou
                         binding.candidates.scrollNext()
                     }
                     else -> {
+                        mActivePointerIds = mutableListOf(event.getPointerId(0))
                         mDragStartLeft = mService.leftOffset
-                        mDragStartX = event.rawX
+                        mDragStartX = event.getRawX(event.findPointerIndex(mActivePointerIds[0]))
                         mDragging = true
                     }
                 }
 
-                MotionEvent.ACTION_MOVE -> if (mDragging) {
-                    val displayWidth = resources.displayMetrics.widthPixels
-                    val left = mDragStartLeft + (event.rawX - mDragStartX).toInt()
-                    mService.leftOffset = left.coerceIn(0, displayWidth - width)
-                    mService.setInputView(null)
+                MotionEvent.ACTION_POINTER_DOWN -> { // 2本目以降の指追加
+                    mActivePointerIds.add(event.getPointerId(event.actionIndex))
+                    assert(mActivePointerIds.count() > 1)
+                    mDragStartLeft = mService.leftOffset
+                    mPinchStartWidth = width
+                    mPinchStartDistance = abs(
+                        event.getRawX(event.findPointerIndex(mActivePointerIds[1])) -
+                                event.getRawX(event.findPointerIndex(mActivePointerIds[0]))
+                    )
                 }
 
-                MotionEvent.ACTION_UP -> {
-                    if (mDragging) {
-                        saveLeft(mService.leftOffset)
-                        mDragging = false
-                    } else {
-                        view.performClick() // ???
+                MotionEvent.ACTION_MOVE -> {
+                    val displayWidth = resources.displayMetrics.widthPixels
+                    if (mActivePointerIds.count() > 1) { // 幅の調整
+                        val currentDistance = abs(
+                            event.getRawX(event.findPointerIndex(mActivePointerIds[1])) -
+                                    event.getRawX(event.findPointerIndex(mActivePointerIds[0]))
+                        )
+                        val newWidth = (mPinchStartWidth - mPinchStartDistance + currentDistance)
+                            .toInt().coerceIn(1, displayWidth)
+                        val newLeftOffset =
+                            mDragStartLeft + (mPinchStartDistance - currentDistance).toInt() / 2
+                        mService.leftOffset = newLeftOffset.coerceIn(0, displayWidth - newWidth)
+                        mService.setInputViewWidth(newWidth)
+                    } else if (mDragging) { // 位置の調整
+                        val newLeftOffset = mDragStartLeft + (
+                                event.getRawX(event.findPointerIndex(mActivePointerIds[0])) -
+                                        mDragStartX
+                                ).toInt()
+                        mService.leftOffset = newLeftOffset.coerceIn(0, displayWidth - width)
+                        mService.setInputView(null)
+                    }
+                }
+
+                MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_UP -> {
+                    mActivePointerIds.remove(event.getPointerId(event.actionIndex))
+                    if (mActivePointerIds.count() == 1) {
+                        saveWidth()
+                        // もう一度ドラッグに戻る
+                        mDragStartLeft = mService.leftOffset
+                        mDragStartX = event.getRawX(event.findPointerIndex(mActivePointerIds[0]))
+                    } else if (mActivePointerIds.isEmpty()) {
+                        if (mDragging) {
+                            saveLeft(mService.leftOffset)
+                            mDragging = false
+                        } else {
+                            view.performClick() // ???
+                        }
                     }
                 }
             }
-            false
+            true
         }
         binding.candidateLeft.setOnTouchListener(onTouchListener)
         binding.candidateRight.setOnTouchListener(onTouchListener)
@@ -89,6 +129,17 @@ class CandidateViewContainer(screen: Context, attrs: AttributeSet) : LinearLayou
         when (resources.configuration.orientation) {
             Configuration.ORIENTATION_LANDSCAPE -> skkPrefs.keyLeftLand = leftRate
             else -> skkPrefs.keyLeftPort = leftRate
+        }
+    }
+
+    private fun saveWidth() {
+        val displayWidth = resources.displayMetrics.widthPixels
+        val widthRate = 100f * width / displayWidth /
+                if (mService.isFlickJP) 1f else skkPrefs.keyWidthQwertyZoom / 100f
+        when (resources.configuration.orientation) {
+            Configuration.ORIENTATION_LANDSCAPE ->
+                skkPrefs.keyWidthLand = widthRate.toInt()
+            else -> skkPrefs.keyWidthPort = widthRate.toInt()
         }
     }
 

@@ -930,6 +930,14 @@ class SKKService : InputMethodService() {
         }
     }
 
+    internal fun setInputViewWidth(width: Int) {
+        mInputView?.let { inputView ->
+            inputView.keyboard.resize(width, keyboardHeight())
+            inputView.requestLayout()
+            setInputView(null)
+        }
+    }
+
     override fun setInputView(view: View?) {
         // view が null のときはここをスキップして再描画だけする (ドラッグで位置調整のとき使う)
         (view as? KeyboardView)?.let { inputView ->
