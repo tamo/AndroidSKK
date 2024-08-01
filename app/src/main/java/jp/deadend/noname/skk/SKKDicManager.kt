@@ -212,7 +212,7 @@ class SKKDicManager : AppCompatActivity() {
                             val item = mAdapter.getItem(position)!!
                             val itemName = item.key
                             while (true) {
-                                delay(300)
+                                delay(100)
                                 if (isDownloading) {
                                     val size = formatShortFileSize(applicationContext, path.length())
                                     withContext(Dispatchers.Main) {
@@ -232,6 +232,7 @@ class SKKDicManager : AppCompatActivity() {
                             .openStream()
                             .copyTo(FileOutputStream(path))
                         isDownloading = false
+                        delay(110) // 進捗表示が消えるのを待つ
                         withContext(Dispatchers.Main) {
                             loadCommonDic(path, position)
                         }
