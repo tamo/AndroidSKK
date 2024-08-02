@@ -16,6 +16,7 @@
 			android:allowBackup="true"
 			android:name=".SKKApplication"
 			android:icon="@drawable/icon"
+			android:supportsRtl="false"
 		>
 		<service android:name=".SKKService"
 			android:permission="android.permission.BIND_INPUT_METHOD"
