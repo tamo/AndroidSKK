@@ -1,6 +1,5 @@
 package jp.deadend.noname.skk
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.util.AttributeSet
 import android.util.SparseArray
@@ -18,8 +17,7 @@ import jp.deadend.noname.skk.engine.SKKEngine
 import jp.deadend.noname.skk.engine.SKKZenkakuState
 import java.util.EnumSet
 
-@SuppressLint("ViewConstructor")
-class FlickJPKeyboardView(service: SKKService, context: Context, attrs: AttributeSet?) : KeyboardView(service, context, attrs), KeyboardView.OnKeyboardActionListener {
+class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(context, attrs), KeyboardView.OnKeyboardActionListener {
     private var mFlickSensitivitySquared = 100
     private var mLastPressedKey = KEYCODE_FLICK_JP_NONE
     private var mFlickState = EnumSet.of(FlickState.NONE)
@@ -35,20 +33,38 @@ class FlickJPKeyboardView(service: SKKService, context: Context, attrs: Attribut
     private val mPopupOffset = intArrayOf(0, 0)
     private val mFixedPopupPos = intArrayOf(0, 0)
 
-    val mJPKeyboard: Keyboard
-    val mNumKeyboard: Keyboard
-    private val mVoiceKeyboard: Keyboard
+    val mJPKeyboard: Keyboard by lazy {
+        Keyboard(context, R.xml.keys_flick_jp, mService.mScreenWidth, mService.mScreenHeight)
+    }
+    val mNumKeyboard: Keyboard by lazy {
+        Keyboard(context, R.xml.keys_flick_number, mService.mScreenWidth, mService.mScreenHeight)
+    }
+    private val mVoiceKeyboard: Keyboard by lazy {
+        Keyboard(context, R.xml.keys_flick_voice, mService.mScreenWidth, mService.mScreenHeight)
+    }
 
     private var mKutoutenLabel = "？\n． ，！\n…"
-    private val mKutoutenKey: Keyboard.Key
-    private val mSpaceKey: Keyboard.Key
-    private val mQwertyKey: Keyboard.Key
-    private val mShiftKeyJP: Keyboard.Key
-    private val mShiftKeyNum: Keyboard.Key
-    private val mShiftKeyVoice: Keyboard.Key
-    private val mKanaKeyJP: Keyboard.Key
-    private val mKanaKeyNum: Keyboard.Key
-    private val mKanaKeyVoice: Keyboard.Key
+    private val mKutoutenKey: Keyboard.Key by lazy {
+        checkNotNull(findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_CHAR_TEN)) { "BUG: no kutoten key" }
+    }
+    private val mSpaceKey: Keyboard.Key by lazy {
+        checkNotNull(findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_SPACE)) { "BUG: no space key" }
+    }
+    private val mQwertyKey: Keyboard.Key by lazy {
+        checkNotNull(findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_TOQWERTY)) { "BUG: no qwerty key" }
+    }
+    private val mShiftKeyJP: Keyboard.Key by lazy { mJPKeyboard.keys[0] }
+    private val mShiftKeyNum: Keyboard.Key by lazy { mNumKeyboard.keys[0] }
+    private val mShiftKeyVoice: Keyboard.Key by lazy { mVoiceKeyboard.keys[0] }
+    private val mKanaKeyJP: Keyboard.Key by lazy {
+        checkNotNull(findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_MOJI)) { "BUG: no moji key" }
+    }
+    private val mKanaKeyNum: Keyboard.Key by lazy {
+        checkNotNull(findKeyByCode(mNumKeyboard, KEYCODE_FLICK_JP_TOKANA)) { "BUG: no kana key in num" }
+    }
+    private val mKanaKeyVoice: Keyboard.Key by lazy {
+        checkNotNull(findKeyByCode(mVoiceKeyboard, KEYCODE_FLICK_JP_TOKANA)) { "BUG: no kana key in voice" }
+    }
 
     //フリックガイドTextView用
     private val mFlickGuideLabelList = SparseArray<Array<String>>()
@@ -73,25 +89,11 @@ class FlickJPKeyboardView(service: SKKService, context: Context, attrs: Attribut
         a.append(KEYCODE_FLICK_JP_TOQWERTY, arrayOf("abc", "", "全角", "", "qwe", "", ""))
     }
 
-    init {
+    override fun setService(service: SKKService) {
+        super.setService(service)
         onKeyboardActionListener = this
         isPreviewEnabled = false
         setBackgroundColor(0x00000000)
-
-        mJPKeyboard = Keyboard(context, R.xml.keys_flick_jp, mService.mScreenWidth, mService.mScreenHeight)
-        mKutoutenKey = checkNotNull(findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_CHAR_TEN)) { "BUG: no kutoten key" }
-        mSpaceKey = checkNotNull(findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_SPACE)) { "BUG: no space key" }
-        mQwertyKey = checkNotNull(findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_TOQWERTY)) { "BUG: no qwerty key" }
-        mShiftKeyJP = mJPKeyboard.keys[0]
-        mKanaKeyJP = checkNotNull(findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_MOJI)) { "BUG: no moji key" }
-
-        mNumKeyboard = Keyboard(context, R.xml.keys_flick_number, mService.mScreenWidth, mService.mScreenHeight)
-        mShiftKeyNum = mNumKeyboard.keys[0]
-        mKanaKeyNum = checkNotNull(findKeyByCode(mNumKeyboard, KEYCODE_FLICK_JP_TOKANA)) { "BUG: no kana key in num" }
-
-        mVoiceKeyboard = Keyboard(context, R.xml.keys_flick_voice, mService.mScreenWidth, mService.mScreenHeight)
-        mShiftKeyVoice = mVoiceKeyboard.keys[0]
-        mKanaKeyVoice = checkNotNull(findKeyByCode(mVoiceKeyboard, KEYCODE_FLICK_JP_TOKANA)) { "BUG: no kana key in voice" }
 
         keyboard = mJPKeyboard
     }

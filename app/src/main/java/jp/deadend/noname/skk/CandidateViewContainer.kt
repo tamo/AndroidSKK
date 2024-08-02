@@ -122,10 +122,10 @@ class CandidateViewContainer(screen: Context, attrs: AttributeSet) : LinearLayou
         binding.candidateRight.setOnTouchListener(onTouchListener)
     }
 
-    private fun saveLeft(left: Int) {
+    private fun saveLeft(leftOffset: Int) {
         val leftRate =
             if (mService.mScreenWidth <= width) 0f
-            else left / (mService.mScreenWidth - width).toFloat()
+            else leftOffset / (mService.mScreenWidth - width).toFloat()
         when (resources.configuration.orientation) {
             Configuration.ORIENTATION_LANDSCAPE -> skkPrefs.keyLeftLand = leftRate
             else -> skkPrefs.keyLeftPort = leftRate

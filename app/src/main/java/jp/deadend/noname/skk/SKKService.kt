@@ -369,9 +369,12 @@ class SKKService : InputMethodService() {
             else    -> applicationContext
         }
 
-        mFlickJPInputView = FlickJPKeyboardView(this, context, null)
-        mQwertyInputView = QwertyKeyboardView(this, context, null)
-        mAbbrevKeyboardView = AbbrevKeyboardView(this, context, null)
+        mFlickJPInputView = FlickJPKeyboardView(context, null)
+        mFlickJPInputView?.setService(this)
+        mQwertyInputView = QwertyKeyboardView(context, null)
+        mQwertyInputView?.setService(this)
+        mAbbrevKeyboardView = AbbrevKeyboardView(context, null)
+        mAbbrevKeyboardView?.setService(this)
 
         if (skkPrefs.useInset) {
             ResourcesCompat.getDrawable(context.resources, R.drawable.key_bg_inset, null)?.let {

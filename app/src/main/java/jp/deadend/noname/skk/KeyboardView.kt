@@ -1,6 +1,5 @@
 package jp.deadend.noname.skk
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -26,9 +25,7 @@ import android.widget.PopupWindow
 import android.widget.TextView
 import kotlin.math.abs
 
-@SuppressLint("ViewConstructor")
 open class KeyboardView @JvmOverloads constructor(
-    service: SKKService,
     context: Context,
     attrs: AttributeSet?,
     defStyleAttr: Int = R.attr.keyboardViewStyle,
@@ -46,8 +43,8 @@ open class KeyboardView @JvmOverloads constructor(
         fun swipeUp()
     }
 
-    val mService = service
     private lateinit var mKeyboard: Keyboard
+    lateinit var mService: SKKService
     private var mCurrentPreviewKeyIndex = NOT_A_KEY
     private var mLabelTextSize = 0
     private var mKeyTextSize = 0
@@ -248,6 +245,10 @@ open class KeyboardView @JvmOverloads constructor(
         mGestureDetector.setIsLongpressEnabled(false)
 
         resetMultiTap()
+    }
+
+    open fun setService(service: SKKService) {
+        mService = service
     }
 
     var keyboard: Keyboard
