@@ -582,6 +582,19 @@ class SKKService : InputMethodService() {
         }
     }
 
+    override fun onUpdateSelection(
+        oldSelStart: Int, oldSelEnd: Int,
+        newSelStart: Int, newSelEnd: Int,
+        candidatesStart: Int, candidatesEnd: Int
+    ) {
+        super.onUpdateSelection(
+            oldSelStart, oldSelEnd,
+            newSelStart, newSelEnd,
+            candidatesStart, candidatesEnd
+        )
+        updateSuggestionsASCII()
+    }
+
     /**
      * Use this to monitor key events being delivered to the
      * application. We get first crack at them, and can either resume
@@ -795,7 +808,7 @@ class SKKService : InputMethodService() {
         val ic = currentInputConnection ?: return
         ic.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, keyEventCode))
         ic.sendKeyEvent(KeyEvent(KeyEvent.ACTION_UP, keyEventCode))
-        if (engineState === SKKASCIIState) updateSuggestionsASCII()
+        updateSuggestionsASCII()
     }
 
     fun pressEnter() {
