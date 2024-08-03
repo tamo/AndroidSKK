@@ -10,7 +10,7 @@ object SKKASCIIState : SKKState {
     }
 
     override fun processKey(context: SKKEngine, pcode: Int) {
-        context.commitTextSKK(pcode.toChar().toString(), 1)
+        context.commitTextSKK(pcode.toChar().toString())
         context.updateSuggestionsASCII()
     }
 

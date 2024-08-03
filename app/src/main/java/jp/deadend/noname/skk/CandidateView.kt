@@ -291,6 +291,8 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
         invalidate()
     }
 
+//    fun getContent(index: Int) = mSuggestions.getOrElse(index) { "" }
+
     fun scrollPrev() {
         mScrollX = scrollX
         var i = 0

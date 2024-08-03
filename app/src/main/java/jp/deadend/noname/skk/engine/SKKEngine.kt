@@ -38,7 +38,6 @@ class SKKEngine(
     internal var mOkurigana: String? = null
     // 実際に表示されているもの
     internal val mComposingText = StringBuilder()
-    internal var mCursorPosition = 1
 
     // 全角で入力する記号リスト
     private val mZenkakuSeparatorMap = mutableMapOf(
@@ -137,7 +136,7 @@ class SKKEngine(
                         return false
                     }
                 } else {
-                    commitTextSKK(mComposing, 1)
+                    commitTextSKK(mComposing)
                     mComposing.setLength(0)
                 }
             }
@@ -165,7 +164,7 @@ class SKKEngine(
             if (firstEntry != null) {
                 if (firstEntry.isNotEmpty()) {
                     firstEntry.deleteCharAt(firstEntry.length - 1)
-                    setComposingTextSKK("", 1)
+                    setComposingTextSKK("")
                 }
             } else {
                 return state.isTransient
@@ -189,19 +188,17 @@ class SKKEngine(
     /**
      * commitTextのラッパー 登録作業中なら登録内容に追加し，表示を更新
      * @param text
-     * @param newCursorPosition
      */
-    fun commitTextSKK(text: CharSequence, newCursorPosition: Int) {
+    fun commitTextSKK(text: CharSequence) {
         val ic = mService.currentInputConnection ?: return
 
         val firstEntry = mRegistrationStack.peekFirst()?.entry
         if (firstEntry != null) {
             firstEntry.append(text)
-            setComposingTextSKK("", newCursorPosition)
+            setComposingTextSKK("")
         } else {
-            ic.commitText(text, newCursorPosition)
+            ic.commitText(text, 1)
             mComposingText.setLength(0)
-            mCursorPosition = newCursorPosition
         }
     }
 
@@ -241,7 +238,7 @@ class SKKEngine(
         mService.requestChooseCandidate(mCurrentCandidateIndex)
         mKanjiKey.setLength(0)
         mKanjiKey.append(candList[mCurrentCandidateIndex])
-        setComposingTextSKK(mKanjiKey, 1)
+        setComposingTextSKK(mKanjiKey)
     }
 
     fun chooseAdjacentCandidate(isForward: Boolean) {
@@ -270,12 +267,12 @@ class SKKEngine(
                         mKanjiKey.deleteCharAt(mKanjiKey.length - 1)
                     }
                     changeState(SKKKanjiState)
-                    setComposingTextSKK(mKanjiKey, 1)
+                    setComposingTextSKK(mKanjiKey)
                     updateSuggestions(mKanjiKey.toString())
                 } else {
                     mKanjiKey.setLength(0)
                     changeState(SKKAbbrevState)
-                    setComposingTextSKK(mComposing, 1)
+                    setComposingTextSKK(mComposing)
                     updateSuggestions(mComposing.toString())
                 }
 
@@ -316,10 +313,9 @@ class SKKEngine(
     // 小文字大文字変換，濁音，半濁音に使う
     fun changeLastChar(type: String) {
         when {
-            state === SKKKanjiState && mComposing.isEmpty() -> {
+            state === SKKKanjiState && mComposing.isEmpty() && mKanjiKey.isNotEmpty() -> {
                 val s = mKanjiKey.toString() // ▽あい
                 val idx = s.length - 1
-                if (idx < 0) { return } // ▽
                 if (idx < 1 && type == LAST_CONVERSION_SHIFT) { return } // ▽あ
                 val newLastChar = RomajiConverter.convertLastChar(s.substring(idx), type) ?: return
 
@@ -330,14 +326,13 @@ class SKKEngine(
                     conversionStart(mKanjiKey) // ▼合い
                 } else {
                     mKanjiKey.append(newLastChar)
-                    setComposingTextSKK(mKanjiKey, 1)
+                    setComposingTextSKK(mKanjiKey)
                     updateSuggestions(mKanjiKey.toString())
                 }
             }
-            state === SKKNarrowingState && mComposing.isEmpty() -> {
+            state === SKKNarrowingState && mComposing.isEmpty() && SKKNarrowingState.mHint.isNotEmpty() -> {
                 val hint = SKKNarrowingState.mHint // ▼藹 hint: わ
                 val idx = hint.length - 1
-                if (idx < 0) { return } // ▼藹 hint:
                 if (type == LAST_CONVERSION_SHIFT) { return }
                 val newLastChar = RomajiConverter.convertLastChar(hint.substring(idx), type) ?: return
 
@@ -352,7 +347,7 @@ class SKKEngine(
                 if (type == LAST_CONVERSION_SHIFT) {
                     handleCancel() // ▽あ (mOkurigana = null)
                     mKanjiKey.append(newOkuri) // ▽あい
-                    setComposingTextSKK(mKanjiKey, 1)
+                    setComposingTextSKK(mKanjiKey)
                     updateSuggestions(mKanjiKey.toString())
                     return
                 }
@@ -377,23 +372,22 @@ class SKKEngine(
                     if (type == LAST_CONVERSION_SHIFT) {
                         mKanjiKey.append(katakana2hiragana(newLastChar))
                         changeState(SKKKanjiState)
-                        setComposingTextSKK(mKanjiKey, 1)
+                        setComposingTextSKK(mKanjiKey)
                         updateSuggestions(mKanjiKey.toString())
                     } else {
                         firstEntry.append(newLastChar)
-                        setComposingTextSKK("", 1)
+                        setComposingTextSKK("")
                     }
                 } else {
                     ic.deleteSurroundingText(1, 0)
                     if (type == LAST_CONVERSION_SHIFT) {
                         mKanjiKey.append(katakana2hiragana(newLastChar))
                         changeState(SKKKanjiState) // Abbrevから来ることはないはず
-                        setComposingTextSKK(mKanjiKey, 1)
+                        setComposingTextSKK(mKanjiKey)
                         updateSuggestions(mKanjiKey.toString())
                     } else {
                         ic.commitText(newLastChar, 1)
                         mComposingText.setLength(0)
-                        mCursorPosition = 1
                     }
                 }
             }
@@ -405,13 +399,11 @@ class SKKEngine(
     /**
      * setComposingTextのラッパー 変換モードマーク等を追加する
      * @param text
-     * @param newCursorPosition
      */
-    internal fun setComposingTextSKK(text: CharSequence, newCursorPosition: Int) {
+    internal fun setComposingTextSKK(text: CharSequence) {
         val ic = mService.currentInputConnection ?: return
         val ct = mComposingText
         ct.setLength(0)
-        mCursorPosition = newCursorPosition
 
         if (!mRegistrationStack.isEmpty()) {
             val depth = mRegistrationStack.size
@@ -452,7 +444,7 @@ class SKKEngine(
             ct.append(" hint: ", SKKNarrowingState.mHint, mComposing)
         }
 
-        ic.setComposingText(ct, newCursorPosition)
+        ic.setComposingText(ct, 1)
     }
 
     /***
@@ -615,10 +607,10 @@ class SKKEngine(
             mUserDict.commitChanges()
             commitTextSKK(regInfo.entry.append(
                 (if (mService.isHiragana) regInfo.okurigana else hirakana2katakana(regInfo.okurigana)) ?: ""
-            ), 1) // entry は生で登録するが okurigana はひらがな
+            )) // entry は生で登録するが okurigana はひらがな
         }
         reset()
-        if (!mRegistrationStack.isEmpty()) setComposingTextSKK("", 1)
+        if (!mRegistrationStack.isEmpty()) setComposingTextSKK("")
 
         mService.onFinishRegister()
     }
@@ -636,7 +628,7 @@ class SKKEngine(
             }
         }
         changeState(SKKKanjiState)
-        setComposingTextSKK("${mKanjiKey}${mComposing}", 1)
+        setComposingTextSKK("${mKanjiKey}${mComposing}")
         updateSuggestions(mKanjiKey.toString())
         mService.onFinishRegister()
     }
@@ -658,10 +650,10 @@ class SKKEngine(
         changeState(SKKKanjiState)
         val query = if (mKanjiKey.isNotEmpty() && isAlphabet(mKanjiKey.last().code)) {
             val trimmedKanjiKey = mKanjiKey.substring(0, mKanjiKey.lastIndex)
-            setComposingTextSKK("${trimmedKanjiKey}*${mOkurigana ?: ""}", 1)
+            setComposingTextSKK("${trimmedKanjiKey}*${mOkurigana ?: ""}")
             "${trimmedKanjiKey}${mOkurigana ?: ""}"
         } else {
-            setComposingTextSKK(mKanjiKey.toString(), 1)
+            setComposingTextSKK(mKanjiKey.toString())
             mKanjiKey.toString() // たぶん送り仮名は存在しないはず
         }
         val volleyQueue = Volley.newRequestQueue(mService)
@@ -743,7 +735,7 @@ class SKKEngine(
                 number
             )
         )
-        setComposingTextSKK(katakana2hiragana(candidate + (mOkurigana ?: ""))!!, 1)
+        setComposingTextSKK(katakana2hiragana(candidate + (mOkurigana ?: ""))!!)
         // setComposingTextSKK はひらがなを期待している
     }
 
@@ -756,11 +748,11 @@ class SKKEngine(
         val candList = mCandidatesList ?: return
         val candidate = StringBuilder(processConcatAndEscape(removeAnnotation(candList[index])))
 
-        var number = "#"
         val kanjiKey = Regex("\\d+").find(mKanjiKey)?.let { d ->
-            number = d.value
             Regex("#[0-3]").find(candidate)?.let {
-                candidate.setRange(it.range.first, it.range.last + 1, processNumber(it.value, number))
+                candidate.setRange(
+                    it.range.first, it.range.last + 1,
+                    processNumber(it.value, d.value))
             }
             mKanjiKey.replaceRange(d.range, "#")
         } ?: mKanjiKey
@@ -777,7 +769,7 @@ class SKKEngine(
             if (okuri.isNotEmpty()) okuri.deleteCharAt(okuri.lastIndex)
             else candidate.deleteCharAt(candidate.lastIndex)
         }
-        commitTextSKK("${candidate}${okuri}", 1)
+        commitTextSKK("${candidate}${okuri}")
         if (mRegistrationStack.isEmpty()) {
             mLastConversion = ConversionInfo(
                 "${candidate}${okuri}", candList, index, mKanjiKey.toString(), okuri.toString()
@@ -795,7 +787,7 @@ class SKKEngine(
 
         when (state) {
             SKKAbbrevState -> {
-                setComposingTextSKK(s, 1)
+                setComposingTextSKK(s)
                 mKanjiKey.setLength(0)
                 mKanjiKey.append(s)
                 conversionStart(mKanjiKey)
@@ -803,7 +795,7 @@ class SKKEngine(
 
             SKKKanjiState -> {
                 val hira = if (mService.isHiragana) s else katakana2hiragana(s)!!
-                setComposingTextSKK(hira, 1) // 向こうでカタカナにするので
+                setComposingTextSKK(hira) // 向こうでカタカナにするので
                 val li = hira.length - 1
                 val last = hira.codePointAt(li)
                 if (isAlphabet(last)) {
@@ -833,7 +825,7 @@ class SKKEngine(
                     mASCIIDict.addEntry(s, maxFreq.toString(), mOkurigana)
                     mASCIIDict.commitChanges()
                 }
-                commitTextSKK(s.subSequence(getPrefixASCII().length, s.length), 1)
+                commitTextSKK(s.subSequence(getPrefixASCII().length, s.length))
                 deleteSuffixASCII()
                 reset()
             }
@@ -848,7 +840,6 @@ class SKKEngine(
         mService.clearCandidatesView()
         mService.currentInputConnection.setComposingText("", 1)
         mComposingText.setLength(0)
-        mCursorPosition = 1
     }
 
     internal fun changeInputMode(pcode: Int): Boolean {
@@ -885,13 +876,13 @@ class SKKEngine(
             commitTextSKK(when (kanaState) {
                 SKKKatakanaState -> hirakana2katakana(mKanjiKey.toString()) ?: ""
                 else -> mKanjiKey.toString()
-            }, 1)
+            })
         }
         if (mComposing.toString() == "n") {
             commitTextSKK(when (kanaState) {
                 SKKKatakanaState -> "ン"
                 else -> "ん"
-            }, 1)
+            })
         }
         reset()
     }
@@ -912,7 +903,7 @@ class SKKEngine(
                 force || willBeTemporaryView -> changeSoftKeyboard(state)
                 wasTemporaryView -> mService.changeSoftKeyboard(prevInputView) // cameFromFlick に記録しない
             }
-            if (!mRegistrationStack.isEmpty()) setComposingTextSKK("", 1)
+            if (!mRegistrationStack.isEmpty()) setComposingTextSKK("")
             // reset()で一旦消してるので， 登録中はここまで来てからComposingText復活
         }
 

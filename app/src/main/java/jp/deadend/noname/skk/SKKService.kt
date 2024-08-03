@@ -239,7 +239,7 @@ class SKKService : InputMethodService() {
                 results?.let {
                     it.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.let { matches ->
                         if (matches.size == 1) {
-                            commitTextSKK(matches[0], 1)
+                            commitTextSKK(matches[0])
                         } else {
                             mFlickJPInputView?.speechRecognitionResultsList(matches)
                         }
@@ -489,7 +489,7 @@ class SKKService : InputMethodService() {
             else ->
                 if (restarting) {
                     currentInputConnection
-                        .setComposingText(mEngine.mComposingText, mEngine.mCursorPosition)
+                        .setComposingText(mEngine.mComposingText, 1)
                 } else {
                     mEngine.resetOnStartInput()
                 }
@@ -757,8 +757,8 @@ class SKKService : InputMethodService() {
     fun changeLastChar(type: String) {
         mEngine.changeLastChar(type)
     }
-    fun commitTextSKK(text: CharSequence, newCursorPosition: Int) {
-        mEngine.commitTextSKK(text, newCursorPosition)
+    fun commitTextSKK(text: CharSequence) {
+        mEngine.commitTextSKK(text)
     }
     fun googleTransliterate() {
         mEngine.googleTransliterate()
@@ -766,6 +766,10 @@ class SKKService : InputMethodService() {
     fun pickCandidateViewManually(index: Int) {
         mEngine.pickCandidateViewManually(index)
     }
+
+//    fun getTextBeforeCursor(length: Int): CharSequence? {
+//        return currentInputConnection?.getTextBeforeCursor(length, 0)
+//    }
 
     fun handleBackspace(): Boolean {
         if (mStickyShift) mShiftKey.useState()
@@ -848,7 +852,7 @@ class SKKService : InputMethodService() {
         val cm = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
         val cs = cm.primaryClip?.getItemAt(0)?.text
         val clip = cs?.toString() ?: ""
-        commitTextSKK(clip, 1)
+        commitTextSKK(clip)
     }
 
     fun startSettings() {
@@ -865,6 +869,11 @@ class SKKService : InputMethodService() {
         if (listOf(Manifest.permission.RECORD_AUDIO).any { // 将来複数必要になったときのため List.any
             checkSelfPermission(it) == PackageManager.PERMISSION_DENIED
         }) {
+            mHandler.post {
+                Toast.makeText(
+                    applicationContext, getText(R.string.error_permission_record_audio), Toast.LENGTH_LONG
+                ).show()
+            }
             // requestPermissions は activity が必要なので雑に設定画面を出すだけにする
             startActivity(
                 Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)

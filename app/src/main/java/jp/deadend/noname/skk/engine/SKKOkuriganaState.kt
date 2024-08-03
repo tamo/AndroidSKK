@@ -36,7 +36,7 @@ object SKKOkuriganaState : SKKState {
                     mOkurigana = hchr
                     setComposingTextSKK(
                         createTrimmedBuilder(mKanjiKey)
-                            .append('*').append(hchr).append(pcodeLower.toChar()), 1
+                            .append('*').append(hchr).append(pcodeLower.toChar())
                     )
                     mComposing.setLength(0)
                     mComposing.append(pcodeLower.toChar())
@@ -54,7 +54,7 @@ object SKKOkuriganaState : SKKState {
                 } else {
                     setComposingTextSKK(
                         createTrimmedBuilder(mKanjiKey)
-                            .append('*').append(mOkurigana).append(mComposing), 1
+                            .append('*').append(mOkurigana).append(mComposing)
                     )
                 }
             } else {
@@ -71,7 +71,7 @@ object SKKOkuriganaState : SKKState {
                         return
                     }
                     setComposingTextSKK(
-                        createTrimmedBuilder(mKanjiKey).append('*').append(mComposing), 1
+                        createTrimmedBuilder(mKanjiKey).append('*').append(mComposing)
                     )
                 }
             }
@@ -84,7 +84,7 @@ object SKKOkuriganaState : SKKState {
             mKanjiKey.deleteCharAt(mKanjiKey.lastIndex)
             if (!mOkurigana.isNullOrEmpty()) mKanjiKey.append(mOkurigana) // 「っ」とか
             mOkurigana = null
-            setComposingTextSKK(mKanjiKey, 1)
+            setComposingTextSKK(mKanjiKey)
             changeState(SKKKanjiState)
         }
     }
@@ -95,7 +95,7 @@ object SKKOkuriganaState : SKKState {
             mOkurigana = null
             mKanjiKey.deleteCharAt(mKanjiKey.lastIndex) // composing と同じ子音アルファベットのはず
             changeState(SKKKanjiState)
-            setComposingTextSKK("${mKanjiKey}${mComposing}", 1)
+            setComposingTextSKK("${mKanjiKey}${mComposing}")
         }
 
         return true

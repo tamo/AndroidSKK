@@ -681,21 +681,21 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
             }
             KEYCODE_FLICK_JP_CHAR_TEN_NUM -> {
                 when (flick) {
-                    EnumSet.of(FlickState.NONE)  -> mService.commitTextSKK(",", 1)
-                    EnumSet.of(FlickState.LEFT)  -> mService.commitTextSKK(".", 1)
-                    EnumSet.of(FlickState.UP)    -> mService.commitTextSKK("-", 1)
-                    EnumSet.of(FlickState.RIGHT) -> mService.commitTextSKK(":", 1)
-                    EnumSet.of(FlickState.DOWN)  -> mService.commitTextSKK("/", 1)
+                    EnumSet.of(FlickState.NONE)  -> mService.commitTextSKK(",")
+                    EnumSet.of(FlickState.LEFT)  -> mService.commitTextSKK(".")
+                    EnumSet.of(FlickState.UP)    -> mService.commitTextSKK("-")
+                    EnumSet.of(FlickState.RIGHT) -> mService.commitTextSKK(":")
+                    EnumSet.of(FlickState.DOWN)  -> mService.commitTextSKK("/")
                 }
                 return
             }
             KEYCODE_FLICK_JP_CHAR_TEN_NUM_LEFT -> {
                 when (flick) {
-                    EnumSet.of(FlickState.NONE)  -> mService.commitTextSKK("#", 1)
-                    EnumSet.of(FlickState.LEFT)  -> mService.commitTextSKK("￥", 1)
-                    EnumSet.of(FlickState.UP)    -> mService.commitTextSKK("+", 1)
-                    EnumSet.of(FlickState.RIGHT) -> mService.commitTextSKK("$", 1)
-                    EnumSet.of(FlickState.DOWN)  -> mService.commitTextSKK("*", 1)
+                    EnumSet.of(FlickState.NONE)  -> mService.commitTextSKK("#")
+                    EnumSet.of(FlickState.LEFT)  -> mService.commitTextSKK("￥")
+                    EnumSet.of(FlickState.UP)    -> mService.commitTextSKK("+")
+                    EnumSet.of(FlickState.RIGHT) -> mService.commitTextSKK("$")
+                    EnumSet.of(FlickState.DOWN)  -> mService.commitTextSKK("*")
                 }
                 return
             }
@@ -911,11 +911,11 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
                     leftSymbol.length,
                     array[which].length - rightSymbol.length
                 )
-                mService.commitTextSKK(prefix, 1)
+                mService.commitTextSKK(prefix)
                 if (chosen.isNotEmpty()) {
-                    mService.commitTextSKK(chosen, 1)
+                    mService.commitTextSKK(chosen)
                 }
-                mService.commitTextSKK(suffix, 1)
+                mService.commitTextSKK(suffix)
             }
         }
 

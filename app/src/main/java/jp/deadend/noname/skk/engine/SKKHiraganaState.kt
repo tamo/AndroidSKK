@@ -49,7 +49,7 @@ object SKKHiraganaState : SKKState {
                             mComposing.setLength(0) // これまでの composing は typo とみなす
                             if (canRetry) return processKana(context, pcode, commitFunc) // 「ca」などもあるので再突入
                         }
-                        setComposingTextSKK(mComposing, 1)
+                        setComposingTextSKK(mComposing)
                     } else {
                         commitFunc(context, pcodeLower.toChar().toString())
                     }
@@ -61,13 +61,13 @@ object SKKHiraganaState : SKKState {
     override fun processKey(context: SKKEngine, pcode: Int) {
         if (context.changeInputMode(pcode)) return
         processKana(context, pcode) { engine, hchr ->
-            engine.commitTextSKK(hchr, 1)
+            engine.commitTextSKK(hchr)
             engine.mComposing.setLength(0)
         }
     }
 
     override fun afterBackspace(context: SKKEngine) {
-        context.setComposingTextSKK(context.mComposing, 1)
+        context.setComposingTextSKK(context.mComposing)
     }
 
     override fun handleCancel(context: SKKEngine): Boolean {

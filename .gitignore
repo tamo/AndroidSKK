@@ -26,3 +26,5 @@ local.properties
 .settings/
 
 /svg
+
+/release

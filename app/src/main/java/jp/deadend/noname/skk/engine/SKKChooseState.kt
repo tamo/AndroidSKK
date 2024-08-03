@@ -29,7 +29,7 @@ object SKKChooseState : SKKState {
                     pickCurrentCandidate()
                     changeState(SKKKanjiState) // Abbrevキーボードのことは無視
                     mKanjiKey.append('>')
-                    setComposingTextSKK(mKanjiKey, 1)
+                    setComposingTextSKK(mKanjiKey)
                 }
 
                 'l'.code, 'L'.code, '/'.code -> {
@@ -73,7 +73,7 @@ object SKKChooseState : SKKState {
                         }
                     }
                 }
-                setComposingTextSKK("${mKanjiKey}${mComposing}", 1)
+                setComposingTextSKK("${mKanjiKey}${mComposing}")
                 updateSuggestions(mKanjiKey.toString())
             }
         }

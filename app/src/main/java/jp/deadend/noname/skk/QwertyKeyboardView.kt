@@ -37,6 +37,11 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
         isCapsLocked = false
     }
 
+    override fun handleBack(): Boolean {
+        mService.clearCandidatesView()
+        return super.handleBack()
+    }
+
     fun setFlickSensitivity(sensitivity: Int) {
         mFlickSensitivitySquared = sensitivity * sensitivity
     }

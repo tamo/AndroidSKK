@@ -21,13 +21,13 @@ object SKKAbbrevState : SKKState {
                 -1010 -> {
                     // 全角変換
                     val buf = mKanjiKey.map { hankaku2zenkaku(it.code).toChar() }.joinToString("")
-                    commitTextSKK(buf, 1)
+                    commitTextSKK(buf)
                     handleKanaKey(context)
                 }
 
                 else -> {
                     mKanjiKey.append(pcode.toChar())
-                    setComposingTextSKK(mKanjiKey, 1)
+                    setComposingTextSKK(mKanjiKey)
                     updateSuggestions(mKanjiKey.toString())
                 }
             }
@@ -36,7 +36,7 @@ object SKKAbbrevState : SKKState {
 
     override fun afterBackspace(context: SKKEngine) {
         context.apply {
-            setComposingTextSKK(mKanjiKey, 1)
+            setComposingTextSKK(mKanjiKey)
             updateSuggestions(mKanjiKey.toString())
         }
     }

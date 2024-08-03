@@ -996,7 +996,7 @@ open class KeyboardView @JvmOverloads constructor(
         }
     }
 
-    fun handleBack(): Boolean {
+    open fun handleBack(): Boolean {
         if (mPopupKeyboard.isShowing) {
             dismissPopupKeyboard()
             return true
