@@ -8,7 +8,7 @@ object SKKASCIIState : SKKState {
     override fun handleKanaKey(context: SKKEngine) = context.changeState(SKKHiraganaState)
 
     override fun processKey(context: SKKEngine, pcode: Int) {
-        context.commitTextSKK(pcode.toChar().toString(), 1)
+        context.commitTextSKK(pcode.toChar().toString())
     }
 
     override fun afterBackspace(context: SKKEngine) {}

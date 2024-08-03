@@ -38,6 +38,7 @@
 	<string name="error_text_dic_coding">UTF-8のファイルではないようです</string>
 	<string name="error_dic_exists">この辞書はすでに存在します: %1$s</string>
 	<string name="error_extracting_dic_failed">変換辞書の解凍に失敗しました。一旦アンインストールしてみてください</string>
+	<string name="error_permission_record_audio">「マイク」の使用を許可してください</string>
 
 	<string translatable="false" name="prefkey_kutouten_type">PrefKeyKutoutenType</string>
 	<string translatable="false" name="prefkey_kana_key">PrefKeyKanaKey</string>

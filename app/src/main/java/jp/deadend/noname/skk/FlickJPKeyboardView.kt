@@ -608,10 +608,10 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
             }
             KEYCODE_FLICK_JP_CHAR_TEN_NUM -> {
                 when (flick) {
-                    FLICK_STATE_NONE  -> mService.commitTextSKK(",", 0)
-                    FLICK_STATE_LEFT  -> mService.commitTextSKK(".", 0)
-                    FLICK_STATE_UP    -> mService.commitTextSKK("-", 0)
-                    FLICK_STATE_RIGHT -> mService.commitTextSKK(":", 0)
+                    FLICK_STATE_NONE  -> mService.commitTextSKK(",")
+                    FLICK_STATE_LEFT  -> mService.commitTextSKK(".")
+                    FLICK_STATE_UP    -> mService.commitTextSKK("-")
+                    FLICK_STATE_RIGHT -> mService.commitTextSKK(":")
                 }
                 return
             }
@@ -721,7 +721,7 @@ class FlickJPKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener 
                 val cm = mService.getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
                 val cs = cm.text
                 val clip = cs?.toString() ?: ""
-                mService.commitTextSKK(clip, 1)
+                mService.commitTextSKK(clip)
             }
         }
     }

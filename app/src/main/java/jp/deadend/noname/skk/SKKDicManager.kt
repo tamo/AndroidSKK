@@ -90,6 +90,7 @@ class SKKDicManager : AppCompatActivity() {
 
 
             val intent = Intent(SKKService.ACTION_COMMAND)
+            intent.setPackage(packageName)
             intent.putExtra(SKKService.KEY_COMMAND, SKKService.COMMAND_RELOAD_DICS)
             sendBroadcast(intent)
         }

@@ -21,7 +21,7 @@ object SKKKatakanaState : SKKState {
         if (context.changeInputMode(pcode, false)) return
         SKKHiraganaState.processKana(context, pcode) { engine, hchr ->
             val str = hirakana2katakana(hchr)
-            if (str != null) engine.commitTextSKK(str, 1)
+            if (str != null) engine.commitTextSKK(str)
             engine.mComposing.setLength(0)
         }
     }

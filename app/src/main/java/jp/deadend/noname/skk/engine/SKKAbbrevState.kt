@@ -26,7 +26,7 @@ object SKKAbbrevState : SKKState {
             -1010 -> {
                 // 全角変換
                 val buf = kanjiKey.map { hankaku2zenkaku(it.code).toChar() }.joinToString("")
-                context.commitTextSKK(buf, 1)
+                context.commitTextSKK(buf)
                 context.changeState(SKKHiraganaState)
             }
             else -> {

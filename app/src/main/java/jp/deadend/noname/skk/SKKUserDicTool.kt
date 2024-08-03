@@ -110,6 +110,7 @@ class SKKUserDicTool : AppCompatActivity() {
         }
 
         val intent = Intent(SKKService.ACTION_COMMAND)
+        intent.setPackage(packageName)
         intent.putExtra(SKKService.KEY_COMMAND, SKKService.COMMAND_COMMIT_USERDIC)
         sendBroadcast(intent)
 

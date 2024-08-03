@@ -109,7 +109,7 @@ class SKKEngine(
         when (state) {
             SKKChooseState, SKKNarrowingState -> pickCandidate(mCurrentCandidateIndex)
             SKKKanjiState, SKKOkuriganaState, SKKAbbrevState -> {
-                commitTextSKK(mKanjiKey, 1)
+                commitTextSKK(mKanjiKey)
                 changeState(SKKHiraganaState)
             }
             else -> {
@@ -120,7 +120,7 @@ class SKKEngine(
                         return false
                     }
                 } else {
-                    commitTextSKK(mComposing, 1)
+                    commitTextSKK(mComposing)
                     mComposing.setLength(0)
                 }
             }
@@ -172,17 +172,16 @@ class SKKEngine(
     /**
      * commitTextのラッパー 登録作業中なら登録内容に追加し，表示を更新
      * @param text
-     * @param newCursorPosition
      */
-    fun commitTextSKK(text: CharSequence, newCursorPosition: Int) {
+    fun commitTextSKK(text: CharSequence) {
         val ic = mService.currentInputConnection ?: return
 
         val firstEntry = mRegistrationStack.peekFirst()?.entry
         if (firstEntry != null) {
             firstEntry.append(text)
-            setComposingTextSKK("", newCursorPosition)
+            setComposingTextSKK("", 1)
         } else {
-            ic.commitText(text, newCursorPosition)
+            ic.commitText(text, 1)
         }
     }
 
@@ -298,7 +297,7 @@ class SKKEngine(
     // 小文字大文字変換，濁音，半濁音に使う
     fun changeLastChar(type: String) {
         when {
-            state === SKKKanjiState && mComposing.isEmpty() -> {
+            state === SKKKanjiState && mComposing.isEmpty() && mKanjiKey.isNotEmpty() -> {
                 val s = mKanjiKey.toString()
                 val idx = s.length - 1
                 val newLastChar = RomajiConverter.convertLastChar(s.substring(idx), type) ?: return
@@ -308,7 +307,7 @@ class SKKEngine(
                 setComposingTextSKK(mKanjiKey, 1)
                 updateSuggestions(mKanjiKey.toString())
             }
-            state === SKKNarrowingState && mComposing.isEmpty() -> {
+            state === SKKNarrowingState && mComposing.isEmpty() && SKKNarrowingState.mHint.isNotEmpty() -> {
                 val hint = SKKNarrowingState.mHint
                 val idx = hint.length - 1
                 val newLastChar = RomajiConverter.convertLastChar(hint.substring(idx), type) ?: return
@@ -504,9 +503,9 @@ class SKKEngine(
             mUserDict.addEntry(regInfo.key, regEntryStr, regInfo.okurigana)
             mUserDict.commitChanges()
             if (regInfo.okurigana.isNullOrEmpty()) {
-                commitTextSKK(regInfo.entry, 1)
+                commitTextSKK(regInfo.entry)
             } else {
-                commitTextSKK(regInfo.entry.append(regInfo.okurigana), 1)
+                commitTextSKK(regInfo.entry.append(regInfo.okurigana))
             }
         }
         reset()
@@ -580,10 +579,10 @@ class SKKEngine(
         mUserDict.addEntry(mKanjiKey.toString(), candList[index], mOkurigana)
         // ユーザー辞書登録時はエスケープや注釈を消さない
 
-        commitTextSKK(candidate, 1)
+        commitTextSKK(candidate)
         val okuri = mOkurigana
         if (okuri != null) {
-            commitTextSKK(okuri, 1)
+            commitTextSKK(okuri)
             if (mRegistrationStack.isEmpty()) {
                 mLastConversion = ConversionInfo(
                         candidate + okuri, candList, index, mKanjiKey.toString(), okuri

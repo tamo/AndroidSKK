@@ -18,7 +18,7 @@ object SKKZenkakuState : SKKState {
     }
 
     override fun processKey(context: SKKEngine, pcode: Int) {
-        context.commitTextSKK(hankaku2zenkaku(pcode).toChar().toString(), 1)
+        context.commitTextSKK(hankaku2zenkaku(pcode).toChar().toString())
     }
 
     override fun afterBackspace(context: SKKEngine) {}

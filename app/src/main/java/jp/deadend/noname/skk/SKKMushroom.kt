@@ -31,6 +31,7 @@ class SKKMushroom : AppCompatActivity() {
                 val s = if (extras == null) "" else extras.getString(REPLACE_KEY)
 
                 val retIntent = Intent(ACTION_BROADCAST)
+                retIntent.setPackage(packageName)
                 retIntent.addCategory(CATEGORY_BROADCAST)
                 retIntent.putExtra(REPLACE_KEY, s)
                 sendBroadcast(retIntent)
@@ -38,8 +39,8 @@ class SKKMushroom : AppCompatActivity() {
             finish()
         }
 
-    override fun onCreate(icicle: Bundle?) {
-        super.onCreate(icicle)
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
         binding = ActivityListBinding.inflate(layoutInflater)
         setContentView(binding.root)
 

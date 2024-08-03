@@ -4,9 +4,15 @@ import android.content.Context
 import android.view.KeyEvent
 import android.view.MotionEvent
 import android.util.AttributeSet
+import java.io.BufferedReader
+import java.io.IOException
+import java.io.InputStream
+import java.io.InputStreamReader
 
 class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
     private lateinit var mService: SKKService
+    private val mInputHistory = StringBuilder() // suggestion用に入力の履歴を覚えておく
+    private val mList = mutableListOf<String>() // suggestion用の単語リスト(頻度順)
 
     private val mLatinKeyboard = Keyboard(context, R.xml.qwerty)
     private val mSymbolsKeyboard = Keyboard(context, R.xml.symbols)
@@ -28,6 +34,23 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
         isShifted = false
+    }
+
+    override fun handleBack(): Boolean {
+        clearSuggestions()
+        return super.handleBack()
+    }
+
+    @Throws(IOException::class)
+    internal fun loadFrequencyList(inputStream: InputStream) {
+        mList.clear()
+        BufferedReader(InputStreamReader(inputStream)).use { bufferedReader ->
+            bufferedReader.forEachLine { line ->
+                if (line.length > 3) { mList.add(line) }
+                // 短い単語はsuggestionに入れない
+                // 読んだ順に入れるだけなので、ファイルの内容自体が頻度順に並んでいることが前提
+            }
+        }
     }
 
     fun setService(listener: SKKService) {
@@ -77,6 +100,13 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
         when (primaryCode) {
             Keyboard.KEYCODE_DELETE -> {
                 if (!mService.handleBackspace()) mService.keyDownUp(KeyEvent.KEYCODE_DEL)
+                if (mInputHistory.length > 1) {
+                    mInputHistory.deleteCharAt(mInputHistory.length - 1)
+                    updateAsciiSuggestions(mInputHistory.toString())
+                } else if (mInputHistory.length == 1) {
+                    clearSuggestions()
+                }
+                return
             }
             Keyboard.KEYCODE_SHIFT -> {
                 isShifted = !isShifted
@@ -100,9 +130,38 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                 } else {
                     primaryCode
                 }
-                mService.commitTextSKK(code.toChar().toString(), 1)
                 if (keyboard == mLatinKeyboard && isShifted) { isShifted = false }
+
+                mService.commitTextSKK(code.toChar().toString())
+                if (code.toChar().isLetter()) {
+                    mInputHistory.append(code.toChar())
+                    mService.getTextBeforeCursor(mInputHistory.length)?.let {
+                        if (!mInputHistory.contentEquals(it)) {
+                            mInputHistory.clear()
+                            mInputHistory.append(code.toChar())
+                        }
+                        updateAsciiSuggestions(mInputHistory.toString())
+                        return
+                    }
+                }
             }
+        }
+
+        clearSuggestions()
+    }
+
+    private fun updateAsciiSuggestions(str: String) {
+        mService.setCandidates(
+            mList.filter { it.startsWith(str) }.take(20)
+        )
+    }
+
+    fun getHistoryLength() = mInputHistory.length
+
+    fun clearSuggestions() {
+        if (mInputHistory.isNotEmpty()) {
+            mInputHistory.clear()
+            mService.clearCandidatesView()
         }
     }
 

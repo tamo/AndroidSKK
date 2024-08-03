@@ -1,5 +1,6 @@
 package jp.deadend.noname.skk
 
+import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.BroadcastReceiver
@@ -17,7 +18,10 @@ import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.content.ClipboardManager
+import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import android.text.InputType
 import android.util.Log
 import android.util.TypedValue
@@ -217,7 +221,7 @@ class SKKService : InputMethodService() {
                 results?.let {
                     it.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.let { matches ->
                         if (matches.size == 1) {
-                            commitTextSKK(matches[0], 0)
+                            commitTextSKK(matches[0])
                         } else {
                             val intent = Intent(this@SKKService, SKKSpeechRecognitionResultsList::class.java)
                             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
@@ -295,6 +299,8 @@ class SKKService : InputMethodService() {
         qwerty.setFlickSensitivity(sensitivity)
         qwerty.backgroundAlpha = 255 * alpha / 100
         abbrev.backgroundAlpha = 255 * alpha / 100
+
+        qwerty.loadFrequencyList(resources.assets.open(FREQUENCY_LIST_FILE))
     }
 
     private fun checkUseSoftKeyboard(): Boolean {
@@ -467,7 +473,7 @@ class SKKService : InputMethodService() {
             container.setSize(px)
             setCandidatesView(container)
 
-            val view = container.findViewById(R.id.candidates) as CandidateView
+            val view: CandidateView = container.findViewById(R.id.candidates)
             view.setService(this)
             view.setContainer(container)
             mCandidateView = view
@@ -670,11 +676,30 @@ class SKKService : InputMethodService() {
     fun changeLastChar(type: String) {
         mEngine.changeLastChar(type)
     }
-    fun commitTextSKK(text: CharSequence, newCursorPosition: Int) {
-        mEngine.commitTextSKK(text, newCursorPosition)
+    fun commitTextSKK(text: CharSequence) {
+        mEngine.commitTextSKK(text)
     }
     fun pickCandidateViewManually(index: Int) {
-        mEngine.pickCandidateViewManually(index)
+        if (mEngine.state === SKKASCIIState) {
+            mQwertyInputView?.let { qwerty ->
+                mCandidateView?.let { cand ->
+                    val ic = currentInputConnection ?: return
+                    ic.deleteSurroundingText(qwerty.getHistoryLength(), 0)
+                    ic.commitText(cand.getContent(index), 1)
+                }
+                qwerty.clearSuggestions()
+            }
+        } else {
+            mEngine.pickCandidateViewManually(index)
+        }
+    }
+
+    fun getTextBeforeCursor(length: Int): CharSequence? {
+        currentInputConnection?.let {
+            return it.getTextBeforeCursor(length, 0)
+        }
+
+        return null
     }
 
     fun handleBackspace(): Boolean {
@@ -760,6 +785,24 @@ class SKKService : InputMethodService() {
 //            mSpeechRecognizer.stopListening()
             return
         }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) { // checkSelfPermission は api 23 必要
+            if (listOf(Manifest.permission.RECORD_AUDIO).any { // 将来複数必要になったときのため List.any
+                    checkSelfPermission(it) == PackageManager.PERMISSION_DENIED
+                }) {
+                mHandler.post {
+                    Toast.makeText(
+                        applicationContext, getText(R.string.error_permission_record_audio), Toast.LENGTH_LONG
+                    ).show()
+                }
+                // requestPermissions は activity が必要なので雑に設定画面を出すだけにする
+                startActivity(
+                    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                        .setData(Uri.fromParts("package", packageName, null))
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                )
+                return
+            }
+        }
         mStreamVolume = mAudioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
         mAudioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 0, 0)
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
@@ -837,6 +880,7 @@ class SKKService : InputMethodService() {
         internal const val COMMAND_RELOAD_DICS = "jp.deadend.noname.skk.COMMAND_RELOAD_DICS"
         internal const val COMMAND_SPEECH_RECOGNITION = "jp.deadend.noname.skk.COMMAND_SPEECH_RECOGNITION"
         internal const val DICT_ZIP_FILE = "skk_dict_btree_db.zip"
+        internal const val FREQUENCY_LIST_FILE = "en_US_wordlist.txt"
         private const val CHANNEL_ID = "skk_notification"
         private const val CHANNEL_NAME = "SKK"
     }

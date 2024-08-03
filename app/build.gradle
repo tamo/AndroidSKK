@@ -8,8 +8,8 @@ android {
         applicationId "jp.deadend.noname.skk"
         minSdkVersion 21
         targetSdk 34
-        versionCode 38
-        versionName "3.6.2"
+        versionCode 39
+        versionName "3.7"
     }
 
     buildTypes {
@@ -32,7 +32,7 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = "17"
+        jvmTarget = '17'
     }
 }
 
@@ -41,6 +41,7 @@ dependencies {
 /*    implementation 'androidx.legacy:legacy-support-v4:1.0.0-beta01' */
     implementation 'androidx.appcompat:appcompat:1.7.0'
     implementation 'androidx.preference:preference-ktx:1.2.1'
+    implementation 'androidx.core:core-ktx:1.13.1'
 }
 repositories {
     mavenCentral()

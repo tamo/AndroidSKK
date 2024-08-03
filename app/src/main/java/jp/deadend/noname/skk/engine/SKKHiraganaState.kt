@@ -36,7 +36,7 @@ object SKKHiraganaState : SKKState {
         if (isUpper) {
             // 漢字変換候補入力の開始。KanjiModeへの移行
             if (composing.isNotEmpty()) {
-                context.commitTextSKK(composing, 1)
+                context.commitTextSKK(composing)
                 composing.setLength(0)
             }
             context.changeState(SKKKanjiState)
@@ -53,7 +53,7 @@ object SKKHiraganaState : SKKState {
                 if (isAlphabet(pcodeLower)) {
                     context.setComposingTextSKK(composing, 1)
                 } else {
-                    context.commitTextSKK(composing, 1)
+                    context.commitTextSKK(composing)
                     composing.setLength(0)
                 }
             }
@@ -63,7 +63,7 @@ object SKKHiraganaState : SKKState {
     override fun processKey(context: SKKEngine, pcode: Int) {
         if (context.changeInputMode(pcode, true)) return
         processKana(context, pcode) { engine, hchr ->
-            engine.commitTextSKK(hchr, 1)
+            engine.commitTextSKK(hchr)
             engine.mComposing.setLength(0)
         }
     }

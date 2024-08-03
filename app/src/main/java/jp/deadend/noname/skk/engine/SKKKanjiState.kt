@@ -32,7 +32,7 @@ object SKKKanjiState : SKKState {
             // カタカナ変換
             if (kanjiKey.isNotEmpty()) {
                 val str = hirakana2katakana(kanjiKey.toString())
-                if (str != null) context.commitTextSKK(str, 1)
+                if (str != null) context.commitTextSKK(str)
             }
             context.changeState(SKKHiraganaState)
         } else if (pcodeLower == ' '.code || pcodeLower == '>'.code) {

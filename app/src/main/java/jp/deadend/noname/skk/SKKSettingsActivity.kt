@@ -3,7 +3,6 @@ package jp.deadend.noname.skk
 import android.content.Intent
 import android.os.Bundle
 import android.view.MenuItem
-import androidx.activity.addCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
@@ -80,6 +79,7 @@ class SKKSettingsActivity : AppCompatActivity(),
         super.onPause()
 
         val intent = Intent(SKKService.ACTION_COMMAND)
+        intent.setPackage(packageName)
         intent.putExtra(SKKService.KEY_COMMAND, SKKService.COMMAND_READ_PREFS)
         sendBroadcast(intent)
     }

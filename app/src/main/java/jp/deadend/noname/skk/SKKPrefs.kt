@@ -81,11 +81,11 @@ class SKKPrefs(context: Context) {
 
     var keyWidthPort: Int
         get() = prefs.getInt(res.getString(R.string.prefkey_key_width_port), 100)
-        set(value) = prefs.edit().putInt(res.getString(R.string.prefkey_key_height_port), value).apply()
+        set(value) = prefs.edit().putInt(res.getString(R.string.prefkey_key_width_port), value).apply()
 
     var keyWidthLand: Int
         get() = prefs.getInt(res.getString(R.string.prefkey_key_width_land), 100)
-        set(value) = prefs.edit().putInt(res.getString(R.string.prefkey_key_height_land), value).apply()
+        set(value) = prefs.edit().putInt(res.getString(R.string.prefkey_key_width_land), value).apply()
 
     var keyPosition: String
         get() = prefs.getString(res.getString(R.string.prefkey_key_position), null) ?: "center"
