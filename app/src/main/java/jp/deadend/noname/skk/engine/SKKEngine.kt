@@ -877,6 +877,25 @@ class SKKEngine(
         return false
     }
 
+    internal fun commitComposing() {
+        if (mKanjiKey.isNotEmpty()) {
+            if (!isAlphabet(mKanjiKey.first().code) && isAlphabet(mKanjiKey.last().code)) {
+                mKanjiKey.deleteCharAt(mKanjiKey.lastIndex)
+            }
+            commitTextSKK(when (kanaState) {
+                SKKKatakanaState -> hirakana2katakana(mKanjiKey.toString()) ?: ""
+                else -> mKanjiKey.toString()
+            }, 1)
+        }
+        if (mComposing.toString() == "n") {
+            commitTextSKK(when (kanaState) {
+                SKKKatakanaState -> "ン"
+                else -> "ん"
+            }, 1)
+        }
+        reset()
+    }
+
     internal fun changeState(state: SKKState, force: Boolean = false) {
         val willBeTemporaryView = state in listOf(SKKAbbrevState, SKKZenkakuState)
         val wasTemporaryView = mService.isTemporaryView
@@ -884,24 +903,11 @@ class SKKEngine(
 
         val prevInputView = if (cameFromFlick) kanaState else SKKASCIIState
         if (!state.isTransient || force || willBeTemporaryView || wasTemporaryView) {
-            if (!state.isTransient) { // 暗黙の確定
-                if (mKanjiKey.isNotEmpty()) {
-                    if (!isAlphabet(mKanjiKey.first().code) && isAlphabet(mKanjiKey.last().code)) {
-                        mKanjiKey.deleteCharAt(mKanjiKey.lastIndex)
-                    }
-                    commitTextSKK(when (kanaState) {
-                        SKKKatakanaState -> hirakana2katakana(mKanjiKey.toString()) ?: ""
-                        else -> mKanjiKey.toString()
-                    }, 1)
-                }
-                if (mComposing.toString() == "n") {
-                    commitTextSKK(when (kanaState) {
-                        SKKKatakanaState -> "ン"
-                        else -> "ん"
-                    }, 1)
-                }
+            if (!state.isTransient) {
+                commitComposing() // 暗黙の確定
+            } else {
+                reset()
             }
-            reset()
             when {
                 force || willBeTemporaryView -> changeSoftKeyboard(state)
                 wasTemporaryView -> mService.changeSoftKeyboard(prevInputView) // cameFromFlick に記録しない

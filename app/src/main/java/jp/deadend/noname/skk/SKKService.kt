@@ -412,8 +412,13 @@ class SKKService : InputMethodService() {
      * all of the detailed information about the target of our edits.
      */
     override fun onStartInput(attribute: EditorInfo, restarting: Boolean) {
+        if (attribute.inputType == InputType.TYPE_NULL) {
+            requestHideSelf(0)
+            return
+        }
         super.onStartInput(attribute, restarting)
-        if (!mPendingInput.isNullOrEmpty() && attribute.inputType != InputType.TYPE_NULL) {
+
+        if (!mPendingInput.isNullOrEmpty()) {
             currentInputConnection.commitText(mPendingInput!!, 1)
             mPendingInput = null
         }
@@ -424,25 +429,16 @@ class SKKService : InputMethodService() {
             mSandSUsed = false
         }
 
-        // restarting なら composingText だけ再描画して再利用できるので reset しない
-        if (!restarting) {
-            mEngine.resetOnStartInput()
-        }
-        if (attribute.inputType == InputType.TYPE_NULL) {
-            requestHideSelf(0)
-            return
-        }
-
-        // ここからは入力することが確定している
         mInputStarted = true
         showStatusIcon(engineState.icon)
-        // 現在の実装では、表示しないときもUIを作っておかないとあとで表示するとき困る
+        // 現在の実装では、表示しないとき (ハードキー利用時など) もUIを作っておかないとあとで表示するとき困る
         if (mFlickJPInputView == null) {
             onInitializeInterface()
         }
 
         mEngine.isPersonalizedLearning =
             (attribute.imeOptions and EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING) == 0
+
         val keyboardType = when (attribute.inputType and InputType.TYPE_MASK_CLASS) {
             InputType.TYPE_CLASS_NUMBER -> skkPrefs.typeNumber
             InputType.TYPE_CLASS_PHONE -> skkPrefs.typePhone
@@ -463,31 +459,40 @@ class SKKService : InputMethodService() {
         }
         when (keyboardType) {
             "flick-jp" -> {
+                mEngine.resetOnStartInput()
                 if (mEngine.state === SKKASCIIState) handleKanaKey()
                 if (mFlickJPInputView?.keyboard !== mFlickJPInputView?.mJPKeyboard) {
                     mFlickJPInputView?.keyboard = mFlickJPInputView!!.mJPKeyboard
                 }
             }
             "flick-num" -> {
+                mEngine.resetOnStartInput()
                 if (mEngine.state === SKKASCIIState) handleKanaKey()
                 if (mFlickJPInputView?.keyboard !== mFlickJPInputView?.mNumKeyboard) {
                     mFlickJPInputView?.keyboard = mFlickJPInputView!!.mNumKeyboard
                 }
             }
             "qwerty" -> {
+                mEngine.resetOnStartInput()
                 if (mEngine.state !== SKKASCIIState) mEngine.processKey('l'.code)
                 if (mQwertyInputView?.keyboard !== mQwertyInputView?.mLatinKeyboard) {
                     mQwertyInputView?.keyboard = mQwertyInputView!!.mLatinKeyboard
                 }
             }
             "symbols" -> {
+                mEngine.resetOnStartInput()
                 if (mEngine.state !== SKKASCIIState) mEngine.processKey('l'.code)
                 if (mQwertyInputView?.keyboard !== mQwertyInputView!!.mSymbolsKeyboard) {
                     mQwertyInputView?.keyboard = mQwertyInputView!!.mSymbolsKeyboard
                 }
             }
-            else -> if (restarting) currentInputConnection
-                .setComposingText(mEngine.mComposingText, mEngine.mCursorPosition)
+            else ->
+                if (restarting) {
+                    currentInputConnection
+                        .setComposingText(mEngine.mComposingText, mEngine.mCursorPosition)
+                } else {
+                    mEngine.resetOnStartInput()
+                }
         }
     }
 
@@ -535,6 +540,7 @@ class SKKService : InputMethodService() {
     }
 
     override fun onFinishInputView(finishingInput: Boolean) {
+        mEngine.commitComposing()
         super.onFinishInputView(finishingInput)
         hideStatusIcon()
         clearCandidatesView()
@@ -545,6 +551,7 @@ class SKKService : InputMethodService() {
      * this to reset our state.
      */
     override fun onFinishInput() {
+        mEngine.commitComposing()
         super.onFinishInput()
         hideStatusIcon()
         clearCandidatesView()
