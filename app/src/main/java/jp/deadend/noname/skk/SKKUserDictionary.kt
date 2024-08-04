@@ -6,17 +6,19 @@ import jdbm.btree.BTree
 import jdbm.helper.StringComparator
 import jdbm.RecordManager
 import jdbm.RecordManagerFactory
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.MainScope
-import kotlinx.coroutines.launch
 import java.io.File
+import kotlin.coroutines.CoroutineContext
 
 class SKKUserDictionary private constructor (
+    private val mService: SKKService,
     override val mRecMan: RecordManager,
     override val mRecID: Long,
     override val mBTree: BTree<String, String>,
     override val mIsASCII: Boolean
 ): SKKDictionaryInterface {
+    override val coroutineContext: CoroutineContext
+        get() = mService.coroutineContext
+
     private var mOldKey: String = ""
     private var mOldValue: String = ""
 
@@ -136,11 +138,7 @@ class SKKUserDictionary private constructor (
     companion object {
         fun newInstance(context: SKKService, mDicFile: String, btreeName: String, isASCII: Boolean): SKKUserDictionary? {
             if (isASCII && !File("$mDicFile.db").exists()) {
-                val job = MainScope().launch(Dispatchers.IO) {
-                    context.extractDictionary()
-                }
-                job.start()
-                while (!job.isCompleted) { Thread.sleep(100) }
+                context.extractDictionary()
             }
             try {
                 val recman = RecordManagerFactory.createRecordManager(mDicFile)
@@ -150,9 +148,9 @@ class SKKUserDictionary private constructor (
                     recman.setNamedObject(btreeName, btree.recordId)
                     recman.commit()
                     dlog("New user dictionary created")
-                    return SKKUserDictionary(recman, recid, btree, isASCII)
+                    return SKKUserDictionary(context, recman, recid, btree, isASCII)
                 } else {
-                    return SKKUserDictionary(recman, recid, BTree<String, String>().load(recman, recid), isASCII)
+                    return SKKUserDictionary(context, recman, recid, BTree<String, String>().load(recman, recid), isASCII)
                 }
             } catch (e: Exception) {
                 Log.e("SKK", "Error in opening the dictionary: $e")

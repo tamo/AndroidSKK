@@ -5,12 +5,16 @@ import java.io.IOException
 import jdbm.RecordManager
 import jdbm.RecordManagerFactory
 import jdbm.btree.BTree
+import kotlin.coroutines.CoroutineContext
 
 class SKKDictionary private constructor (
-        override val mRecMan: RecordManager,
-        override val mRecID: Long,
-        override val mBTree: BTree<String, String>
+    private val mService: SKKService,
+    override val mRecMan: RecordManager,
+    override val mRecID: Long,
+    override val mBTree: BTree<String, String>
 ): SKKDictionaryInterface {
+    override val coroutineContext: CoroutineContext
+        get() = mService.coroutineContext
     override val mIsASCII = false
 
     fun getCandidates(rawKey: String): List<String>? {
@@ -36,13 +40,13 @@ class SKKDictionary private constructor (
     }
 
     companion object {
-        fun newInstance(mDicFile: String, btreeName: String): SKKDictionary? {
+        fun newInstance(context: SKKService, mDicFile: String, btreeName: String): SKKDictionary? {
             return try {
                 val recman = RecordManagerFactory.createRecordManager(mDicFile)
                 val recid = recman.getNamedObject(btreeName)
                 val btree = BTree<String, String>().load(recman, recid)
 
-                SKKDictionary(recman, recid, btree)
+                SKKDictionary(context, recman, recid, btree)
             } catch (e: Exception) {
                 Log.e("SKK", "Error in opening the dictionary: $e")
 

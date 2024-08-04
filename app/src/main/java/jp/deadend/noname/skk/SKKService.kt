@@ -27,13 +27,27 @@ import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.widget.FrameLayout
 import android.widget.Toast
+import androidx.core.app.ActivityCompat
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.preference.PreferenceManager
+import kotlin.coroutines.CoroutineContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancelChildren
 
 import jp.deadend.noname.skk.engine.*
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import java.io.*
 
-class SKKService : InputMethodService() {
+class SKKService : InputMethodService(), CoroutineScope {
+    override val coroutineContext: CoroutineContext
+        get() = Dispatchers.Main
+
     private var mCandidateViewContainer: CandidateViewContainer? = null
     private var mCandidateView: CandidateView? = null
     private var mFlickJPInputView: FlickJPKeyboardView? = null
@@ -148,7 +162,7 @@ class SKKService : InputMethodService() {
             val vals = prefVal.split("/").dropLastWhile { it.isEmpty() }
             for (i in 1 until vals.size step 2) {
                 SKKDictionary.newInstance(
-                    dd + "/" + vals[i], getString(R.string.btree_name)
+                    this, dd + "/" + vals[i], getString(R.string.btree_name)
                 )?.let { result.add(it) }
             }
         }
@@ -156,6 +170,7 @@ class SKKService : InputMethodService() {
         return result
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun onCreate() {
         if (BuildConfig.DEBUG) {
             StrictMode.setThreadPolicy(
@@ -176,43 +191,60 @@ class SKKService : InputMethodService() {
             getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.createNotificationChannel(channel)
 
-        val dics = openDictionaries()
-        if (dics.isEmpty()) {
-            val dicManagerIntent = Intent(this, SKKDicManager::class.java)
-                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            startActivity(dicManagerIntent)
-        }
-
-        val userDic = SKKUserDictionary.newInstance(
-            this,
-            filesDir.absolutePath + "/" + getString(R.string.dic_name_user),
-            getString(R.string.btree_name),
-            isASCII = false
-        )
-        if (userDic == null) {
-            mHandler.post {
-                Toast.makeText(
-                    applicationContext, getString(R.string.error_user_dic), Toast.LENGTH_LONG
-                ).show()
+        runBlocking {
+            val dicsJob = async(Dispatchers.IO) {
+                openDictionaries()
             }
-            stopSelf()
-        }
-        val asciiDic = SKKUserDictionary.newInstance(
-            this,
-            filesDir.absolutePath + "/" + getString(R.string.dic_name_ascii),
-            getString(R.string.btree_name),
-            isASCII = true
-        )
-        if (asciiDic == null) {
-            mHandler.post {
-                Toast.makeText(
-                    applicationContext, getString(R.string.error_user_dic), Toast.LENGTH_LONG
-                ).show()
-            }
-            stopSelf()
-        }
 
-        mEngine = SKKEngine(this@SKKService, dics, userDic!!, asciiDic!!)
+            val userJob = async(Dispatchers.IO) {
+                checkNotNull(
+                    SKKUserDictionary.newInstance(
+                        this@SKKService,
+                        filesDir.absolutePath + "/" + getString(R.string.dic_name_user),
+                        getString(R.string.btree_name),
+                        isASCII = false
+                    )
+                ) {
+                    mHandler.post {
+                        Toast.makeText(
+                            applicationContext, getString(R.string.error_user_dic), Toast.LENGTH_LONG
+                        ).show()
+                    }
+                    stopSelf()
+                }
+            }
+
+            val asciiJob = async(Dispatchers.IO) {
+                checkNotNull(
+                    SKKUserDictionary.newInstance(
+                        this@SKKService,
+                        filesDir.absolutePath + "/" + getString(R.string.dic_name_ascii),
+                        getString(R.string.btree_name),
+                        isASCII = true
+                    )
+                ) {
+                    mHandler.post {
+                        Toast.makeText(
+                            applicationContext,
+                            getString(R.string.error_user_dic),
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                    stopSelf()
+                }
+            }
+
+            dicsJob.join()
+            val dics = dicsJob.getCompleted()
+            if (dics.isEmpty()) {
+                val dicManagerIntent = Intent(this@SKKService, SKKDicManager::class.java)
+                    .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                startActivity(dicManagerIntent)
+            }
+            userJob.join()
+            asciiJob.join()
+            mEngine = SKKEngine(this@SKKService, dics, userJob.getCompleted(), asciiJob.getCompleted())
+        }
 
         mSpeechRecognizer.setRecognitionListener(object : RecognitionListener {
             private fun restoreState() {
@@ -567,6 +599,7 @@ class SKKService : InputMethodService() {
         instance = null
 
         super.onDestroy()
+        coroutineContext.cancelChildren()
     }
 
     // never use fullscreen mode

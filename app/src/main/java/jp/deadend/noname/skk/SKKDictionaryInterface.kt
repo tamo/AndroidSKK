@@ -87,13 +87,13 @@ internal fun loadFromTextDic(
     }
 }
 
-interface SKKDictionaryInterface {
+interface SKKDictionaryInterface: CoroutineScope {
     val mRecMan: RecordManager
     val mRecID: Long
     val mBTree: BTree<String, String>
     val mIsASCII: Boolean
 
-    fun findKeys(scope: CoroutineScope, rawKey: String): List<String> {
+    fun findKeys(rawKey: String): List<String> {
         val key = katakana2hiragana(rawKey) ?: return listOf()
         val list = mutableListOf<Tuple<String, Int>>()
         val tuple = Tuple<String, String>()
@@ -105,7 +105,7 @@ interface SKKDictionaryInterface {
             browser = mBTree.browse(key) ?: return listOf()
 
             while (list.size < if (mIsASCII) 100 else 5) {
-                scope.ensureActive() // ここでキャンセルされる
+                ensureActive() // ここでキャンセルされる
                 if (!browser.getNext(tuple)) break
                 str = tuple.key
                 if (!str.startsWith(key)) break

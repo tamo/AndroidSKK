@@ -6,19 +6,22 @@ import jp.deadend.noname.skk.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONException
 import java.util.ArrayDeque
+import kotlin.coroutines.CoroutineContext
 
 class SKKEngine(
         private val mService: SKKService,
         private var mDicts: List<SKKDictionary>,
         private val mUserDict: SKKUserDictionary,
         private val mASCIIDict: SKKUserDictionary
-) {
+): CoroutineScope {
+    override val coroutineContext: CoroutineContext
+        get() = mService.coroutineContext
+
     var state: SKKState = SKKHiraganaState
         private set
     internal val kanaState: SKKState
@@ -522,49 +525,47 @@ class SKKEngine(
     }
 
     internal fun updateSuggestions(str: String) {
-        val job = MainScope().launch(Dispatchers.Default) {
-            val set = mutableSetOf<String>()
-
-            if (str.isNotEmpty()) {
-                addFound(this, set, str, (if (state === SKKASCIIState) mASCIIDict else mUserDict))
-                for (dic in mDicts) { addFound(this, set, str, dic) }
-            }
-            val number = Regex("\\d+").find(str)?.also {
-                val replacedStr = str.replaceRange(it.range, "#")
-                addFound(this, set, replacedStr, (if (state === SKKASCIIState) mASCIIDict else mUserDict))
-                for (dic in mDicts) { addFound(this, set, replacedStr, dic) }
-            }?.value ?: "#"
-
-            mCandidatesList = set.toList()
-            mCurrentCandidateIndex = 0
-            withContext(Dispatchers.Main) { mService.setCandidates(mCandidatesList, number) }
-        }
-
         mUpdateSuggestionsJob.cancel()
         mUpdateSuggestionsJob.invokeOnCompletion {
-            mUpdateSuggestionsJob = job
+            mUpdateSuggestionsJob = launch(Dispatchers.Default) {
+                val set = mutableSetOf<String>()
+
+                if (str.isNotEmpty()) {
+                    addFound(set, str, (if (state === SKKASCIIState) mASCIIDict else mUserDict))
+                    for (dic in mDicts) { addFound(set, str, dic) }
+                }
+                val number = Regex("\\d+").find(str)?.also {
+                    val replacedStr = str.replaceRange(it.range, "#")
+                    addFound(set, replacedStr, (if (state === SKKASCIIState) mASCIIDict else mUserDict))
+                    for (dic in mDicts) { addFound(set, replacedStr, dic) }
+                }?.value ?: "#"
+
+                mCandidatesList = set.toList()
+                mCurrentCandidateIndex = 0
+                withContext(coroutineContext) { mService.setCandidates(mCandidatesList, number) }
+            }
             mUpdateSuggestionsJob.start()
         }
     }
+
     private fun addFound(
-        scope: CoroutineScope,
         target: MutableSet<String>,
         key: String,
         dic: SKKDictionaryInterface
     ) {
         if (mService.isHiragana) {
-            target.addAll(dic.findKeys(scope, key))
-        } else for (hiraSuggestion in dic.findKeys(scope, key)) {
+            target.addAll(dic.findKeys(key))
+        } else for (hiraSuggestion in dic.findKeys(key)) {
             target.add(hirakana2katakana(hiraSuggestion, reversed = true)!!)
         }
     }
 
     internal fun updateSuggestionsASCII() {
         if (state !== SKKASCIIState) return
-        MainScope().launch(Dispatchers.Default) {
+        launch(Dispatchers.Default) {
             delay(50) // バックスペースなどの処理が間に合っていないことがあるので
             updateSuggestions(getPrefixASCII())
-        }.start()
+        }
     }
 
     private fun getPrefixASCII(): String {

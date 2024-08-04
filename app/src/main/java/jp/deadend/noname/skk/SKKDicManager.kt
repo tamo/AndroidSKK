@@ -27,9 +27,12 @@ import jp.deadend.noname.dialog.ConfirmationDialogFragment
 import jp.deadend.noname.dialog.SimpleMessageDialogFragment
 import jp.deadend.noname.dialog.TextInputDialogFragment
 import jp.deadend.noname.skk.databinding.ActivityDicManagerBinding
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -37,10 +40,13 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.net.URL
 import java.util.zip.GZIPInputStream
+import kotlin.coroutines.CoroutineContext
 import kotlin.math.floor
 import kotlin.math.sqrt
 
-class SKKDicManager : AppCompatActivity() {
+class SKKDicManager : AppCompatActivity(), CoroutineScope {
+    override val coroutineContext: CoroutineContext
+        get() = Dispatchers.Main
     private lateinit var binding: ActivityDicManagerBinding
     private val mAdapter: TupleAdapter
         get() = binding.dicManagerList.adapter as TupleAdapter
@@ -203,40 +209,38 @@ class SKKDicManager : AppCompatActivity() {
                 val path = File("${filesDir.absolutePath}/SKK-JISYO.${type}.gz")
 
                 override fun onPositiveClick() {
-                    MainScope().launch(Dispatchers.IO) {
+                    launch(Dispatchers.IO) {
                         if (path.exists()) {
                             deleteFile(path.name)
                         }
-                        var isDownloading = true
-                        if (position != -1) launch { // 先に進捗表示を設置しておく
-                            val item = mAdapter.getItem(position)!!
-                            val itemName = item.key
+                        val item = mAdapter.getItem(position)!!
+                        val itemName = item.key
+                        val progressJob = if (position != -1) launch { // 先に進捗表示を設置しておく
                             while (true) {
                                 delay(100)
-                                if (isDownloading) {
-                                    val size = formatShortFileSize(applicationContext, path.length())
-                                    withContext(Dispatchers.Main) {
-                                        item.key = "$itemName ($size)"
-                                        mAdapter.notifyDataSetChanged()
-                                    }
-                                } else { // 終了
-                                    withContext(Dispatchers.Main) {
-                                        item.key = itemName
-                                        mAdapter.notifyDataSetChanged()
-                                    }
-                                    break
+                                ensureActive()
+                                val size = formatShortFileSize(applicationContext, path.length())
+                                withContext(Dispatchers.Main) {
+                                    item.key = "$itemName ($size)"
+                                    mAdapter.notifyDataSetChanged()
                                 }
                             }
-                        }
+                        } else null
+                        progressJob?.start()
                         URL("https://skk-dev.github.io/dict/SKK-JISYO.${type}.gz")
                             .openStream()
                             .copyTo(FileOutputStream(path))
-                        isDownloading = false
-                        delay(110) // 進捗表示が消えるのを待つ
+                        progressJob?.let {
+                            it.cancelAndJoin()
+                            withContext(Dispatchers.Main) {
+                                item.key = itemName
+                                mAdapter.notifyDataSetChanged()
+                            }
+                        }
                         withContext(Dispatchers.Main) {
                             loadCommonDic(path, position)
                         }
-                    }.start()
+                    }
                 }
 
                 override fun onNegativeClick() {
@@ -348,7 +352,7 @@ class SKKDicManager : AppCompatActivity() {
             return
         }
 
-        MainScope().launch(Dispatchers.IO) {
+        launch(Dispatchers.IO) {
             val item = mAdapter.getItem(position)
             val itemName = item?.key
             var recMan: RecordManager? = null
@@ -374,7 +378,7 @@ class SKKDicManager : AppCompatActivity() {
                         if (isGzip) GZIPInputStream(inputStream) else inputStream
                     loadFromTextDic(processedInputStream, charset, recMan, btree, false) {
                         if (floor(sqrt(it.toFloat())) % 70 == 0f) {
-                            if (item != null) MainScope().launch {
+                            if (item != null) launch(Dispatchers.Main) {
                                 item.key = "$itemName ($it 行目)"
                                 mAdapter.notifyDataSetChanged()
                             }
@@ -425,7 +429,7 @@ class SKKDicManager : AppCompatActivity() {
             withContext(Dispatchers.Main) {
                 addDic(dicFileBaseName.removePrefix("/"), position)
             }
-        }.start()
+        }
     }
 
     private fun containsName(s: String) = mDics.any { s == it.key }

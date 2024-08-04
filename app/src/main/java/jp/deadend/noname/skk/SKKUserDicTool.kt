@@ -24,6 +24,7 @@ import jdbm.helper.Tuple
 import jp.deadend.noname.dialog.ConfirmationDialogFragment
 import jp.deadend.noname.dialog.SimpleMessageDialogFragment
 import jp.deadend.noname.skk.databinding.ActivityUserDicToolBinding
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
@@ -31,10 +32,14 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.zip.GZIPInputStream
+import kotlin.coroutines.CoroutineContext
 import kotlin.math.floor
 import kotlin.math.sqrt
 
-class SKKUserDicTool : AppCompatActivity() {
+class SKKUserDicTool : AppCompatActivity(), CoroutineScope {
+    override val coroutineContext: CoroutineContext
+        get() = Dispatchers.Main
+
     private lateinit var mDicName: String
     private lateinit var mRecMan: RecordManager
     private lateinit var mBtree: BTree<String, String>
@@ -51,7 +56,7 @@ class SKKUserDicTool : AppCompatActivity() {
         if (uri == null) return@registerForActivityResult
         mAdapter.clear()
         openUserDict()
-        MainScope().launch(Dispatchers.IO) {
+        launch(Dispatchers.IO) {
             try {
                 val name = getFileNameFromUri(this@SKKUserDicTool, uri)
                 val isGzip = name!!.endsWith(".gz")
@@ -93,14 +98,15 @@ class SKKUserDicTool : AppCompatActivity() {
         }
     }
 
-    private val exportFileLauncher =
-        registerForActivityResult(ActivityResultContracts.CreateDocument("text/plain")) { uri ->
-        if (uri != null) {
-            openUserDict()
+    private val exportFileLauncher = registerForActivityResult(
+        ActivityResultContracts.CreateDocument("text/plain")) { uri ->
+        if (uri == null) return@registerForActivityResult
+        openUserDict()
+        launch(Dispatchers.IO) {
             try {
                 contentResolver.openOutputStream(uri, "wt")?.bufferedWriter()?.use {
                     val browser = mBtree.browse()
-                    if (browser == null) {
+                    if (browser == null) withContext(Dispatchers.Main) {
                         onFailToOpenUserDict()
                     } else {
                         val tuple = Tuple<String, String>()
@@ -110,14 +116,21 @@ class SKKUserDicTool : AppCompatActivity() {
                     }
                 }
             } catch (e: Exception) {
-                SimpleMessageDialogFragment.newInstance(
-                    getString(R.string.error_write_to_external_storage)
-                ).show(supportFragmentManager, "dialog")
+                withContext(Dispatchers.Main) {
+                    SimpleMessageDialogFragment.newInstance(
+                        getString(R.string.error_write_to_external_storage)
+                    ).show(supportFragmentManager, "dialog")
+                }
             }
 
-            SimpleMessageDialogFragment.newInstance(
-                getString(R.string.message_written_to_external_storage, getFileNameFromUri(this, uri))
-            ).show(supportFragmentManager, "dialog")
+            withContext(Dispatchers.Main) {
+                SimpleMessageDialogFragment.newInstance(
+                    getString(
+                        R.string.message_written_to_external_storage,
+                        getFileNameFromUri(this@SKKUserDicTool, uri)
+                    )
+                ).show(supportFragmentManager, "dialog")
+            }
         }
     }
 
@@ -181,21 +194,20 @@ class SKKUserDicTool : AppCompatActivity() {
                     catch (e: Exception) { null }
                 }
                 mFoundList.clear()
-                val searchJob = MainScope().launch(Dispatchers.Default) {
-                    mFoundList.addAll(mEntryList.filter {
-                        ensureActive() // ここでキャンセルされる
-                        if (regex != null) {
-                            regex!!.containsMatchIn(it.key) || regex!!.containsMatchIn(it.value)
-                        } else {
-                            newText in it.key || newText in it.value
-                        }
-                    })
-                    withContext(Dispatchers.Main) {
-                        binding.userDictoolList.adapter = mSearchAdapter
-                    }
-                }
                 mSearchJob.invokeOnCompletion {
-                    mSearchJob = searchJob
+                    mSearchJob = launch(Dispatchers.Default) {
+                        mFoundList.addAll(mEntryList.filter {
+                            ensureActive() // ここでキャンセルされる
+                            if (regex != null) {
+                                regex!!.containsMatchIn(it.key) || regex!!.containsMatchIn(it.value)
+                            } else {
+                                newText in it.key || newText in it.value
+                            }
+                        })
+                        withContext(Dispatchers.Main) {
+                            binding.userDictoolList.adapter = mSearchAdapter
+                        }
+                    }
                     mSearchJob.start()
                 }
                 return true
@@ -360,13 +372,11 @@ class SKKUserDicTool : AppCompatActivity() {
 
         mSearchView.isEnabled = false
         mAdapter.clear()
-        MainScope().launch(Dispatchers.IO) {
+        launch(Dispatchers.IO) {
             try {
                 val browser = mBtree.browse()
                 if (browser == null) {
-                    withContext(Dispatchers.Main) {
-                        onFailToOpenUserDict()
-                    }
+                    withContext(Dispatchers.Main) { onFailToOpenUserDict() }
                     return@launch
                 }
 
@@ -387,9 +397,7 @@ class SKKUserDicTool : AppCompatActivity() {
                     mSearchView.queryHint = ""
                 }
             } catch (e: IOException) {
-                withContext(Dispatchers.Main) {
-                    onFailToOpenUserDict()
-                }
+                withContext(Dispatchers.Main) { onFailToOpenUserDict() }
             }
         }.start()
     }
