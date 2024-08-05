@@ -3,6 +3,7 @@ package jp.deadend.noname.skk
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import android.view.LayoutInflater
 import android.view.Menu
@@ -23,6 +24,7 @@ import jdbm.helper.StringComparator
 import jdbm.helper.Tuple
 import jp.deadend.noname.dialog.ConfirmationDialogFragment
 import jp.deadend.noname.dialog.SimpleMessageDialogFragment
+import jp.deadend.noname.skk.SKKService.Companion.DICT_ASCII_ZIP_FILE
 import jp.deadend.noname.skk.databinding.ActivityUserDicToolBinding
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -30,6 +32,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import java.util.zip.GZIPInputStream
 import kotlin.coroutines.CoroutineContext
@@ -249,7 +252,7 @@ class SKKUserDicTool : AppCompatActivity(), CoroutineScope {
                 )
                 cfDialog.setListener(
                     object : ConfirmationDialogFragment.Listener {
-                        override fun onPositiveClick() { recreateUserDic() }
+                        override fun onPositiveClick() { recreateUserDic(extract = false) }
                         override fun onNegativeClick() {}
                     })
                 cfDialog.show(supportFragmentManager, "dialog")
@@ -265,23 +268,30 @@ class SKKUserDicTool : AppCompatActivity(), CoroutineScope {
         super.onResume()
 
         if (!isOpened) {
-            if (mDicName.first() == '*') {
-                mDicName = mDicName.drop(1)
-                val cfDialog = ConfirmationDialogFragment.newInstance(
-                    getString(R.string.message_confirm_clear)
-                )
-                cfDialog.setListener(
-                    object : ConfirmationDialogFragment.Listener {
-                        override fun onPositiveClick() { recreateUserDic() }
-                        override fun onNegativeClick() {
-                            openUserDict()
-                            if (isOpened) updateListItems()
-                        }
-                    })
-                cfDialog.show(supportFragmentManager, "dialog")
-            } else {
-                openUserDict()
-                if (isOpened) updateListItems()
+            when (val commandChar = mDicName.first()) {
+                '*', '+' -> {
+                    mDicName = mDicName.drop(1)
+                    val cfDialog = ConfirmationDialogFragment.newInstance(
+                        getString(R.string.message_confirm_clear)
+                    )
+                    cfDialog.setListener(
+                        object : ConfirmationDialogFragment.Listener {
+                            override fun onPositiveClick() {
+                                recreateUserDic(commandChar == '+')
+                            }
+
+                            override fun onNegativeClick() {
+                                openUserDict()
+                                if (isOpened) updateListItems()
+                            }
+                        })
+                    cfDialog.show(supportFragmentManager, "dialog")
+                }
+
+                else -> {
+                    openUserDict()
+                    if (isOpened) updateListItems()
+                }
             }
         }
     }
@@ -292,11 +302,19 @@ class SKKUserDicTool : AppCompatActivity(), CoroutineScope {
         super.onPause()
     }
 
-    private fun recreateUserDic() {
+    private fun recreateUserDic(extract: Boolean) {
         closeUserDict()
 
-        deleteFile("$mDicName.db")
-        deleteFile("$mDicName.lg")
+        runBlocking(Dispatchers.IO) {
+            deleteFile("$mDicName.db")
+            deleteFile("$mDicName.lg")
+
+            if (extract) try {
+                unzipFile(resources.assets.open(DICT_ASCII_ZIP_FILE), filesDir)
+            } catch (e: IOException) {
+                Log.e("SKK", "I/O error in extracting dictionary files: $e")
+            }
+        }
 
         try {
             mRecMan = RecordManagerFactory.createRecordManager(filesDir.absolutePath + "/" + mDicName)
@@ -316,7 +334,7 @@ class SKKUserDicTool : AppCompatActivity(), CoroutineScope {
         val dialog = ConfirmationDialogFragment.newInstance(getString(R.string.error_open_user_dic))
         dialog.setListener(
             object : ConfirmationDialogFragment.Listener {
-                override fun onPositiveClick() { recreateUserDic() }
+                override fun onPositiveClick() { recreateUserDic(extract = false) }
                 override fun onNegativeClick() { finish() }
             })
         dialog.show(supportFragmentManager, "dialog")

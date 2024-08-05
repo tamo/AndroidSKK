@@ -1,11 +1,18 @@
 package jp.deadend.noname.skk
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.view.MenuItem
+import android.view.inputmethod.InputMethodManager
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
+
 
 class SKKSettingsActivity : AppCompatActivity(),
     PreferenceFragmentCompat.OnPreferenceStartFragmentCallback {
@@ -42,8 +49,25 @@ class SKKSettingsActivity : AppCompatActivity(),
 //        title = getString(R.string.title_activity_settings)
 
         supportFragmentManager.beginTransaction()
-                .replace(android.R.id.content, SettingsMainFragment())
-                .commit()
+            .replace(android.R.id.content, SettingsMainFragment())
+            .commit()
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ActivityCompat.checkSelfPermission(
+                applicationContext, Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            ActivityCompat.requestPermissions(
+                this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1
+            )
+        }
+
+        // 初回起動時などキーボードが登録されていない場合のチェック
+        // この前に権限要求が表示されていても、これはこれで表示されるので大丈夫のはず
+        val imManager = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
+        val imList = imManager.enabledInputMethodList
+        if ("${packageName}/.SKKService" !in imList.map { it.id })
+            startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS))
     }
 
     override fun onPreferenceStartFragment(caller: PreferenceFragmentCompat, pref: Preference): Boolean {

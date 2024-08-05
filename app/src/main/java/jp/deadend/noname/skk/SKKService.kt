@@ -3,6 +3,7 @@ package jp.deadend.noname.skk
 import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
@@ -11,6 +12,7 @@ import android.content.res.Configuration
 import android.inputmethodservice.InputMethodService
 import android.media.AudioManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -27,22 +29,19 @@ import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.widget.FrameLayout
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.preference.PreferenceManager
+import jp.deadend.noname.skk.engine.*
 import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancelChildren
-
-import jp.deadend.noname.skk.engine.*
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.async
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import java.io.*
+
 
 class SKKService : InputMethodService(), CoroutineScope {
     override val coroutineContext: CoroutineContext
@@ -142,11 +141,13 @@ class SKKService : InputMethodService(), CoroutineScope {
             return true
         } catch (e: IOException) {
             Log.e("SKK", "I/O error in extracting dictionary files: $e")
-            mHandler.post {
-                Toast.makeText(
-                    applicationContext, getText(R.string.error_extracting_dic_failed), Toast.LENGTH_LONG
-                ).show()
-            }
+            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                .setData(Uri.fromParts("package", packageName, null))
+                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            val pendingIntent = PendingIntent.getActivity(
+                applicationContext, 0, intent, PendingIntent.FLAG_IMMUTABLE
+            )
+            notify(NOTIFY_ID_DETAILS, "深刻なエラー", getText(R.string.error_extracting_dic_failed), pendingIntent)
             return false
         }
     }
@@ -158,6 +159,7 @@ class SKKService : InputMethodService(), CoroutineScope {
 
         val prefVal = PreferenceManager.getDefaultSharedPreferences(this)
                 .getString(getString(R.string.prefkey_optional_dics), "")
+        dlog("dict pref: $prefVal")
         if (!prefVal.isNullOrEmpty()) {
             val vals = prefVal.split("/").dropLastWhile { it.isEmpty() }
             for (i in 1 until vals.size step 2) {
@@ -170,7 +172,6 @@ class SKKService : InputMethodService(), CoroutineScope {
         return result
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     override fun onCreate() {
         if (BuildConfig.DEBUG) {
             StrictMode.setThreadPolicy(
@@ -182,7 +183,6 @@ class SKKService : InputMethodService(), CoroutineScope {
             )
         }
         super.onCreate()
-        instance = this
 
         Thread.setDefaultUncaughtExceptionHandler(MyUncaughtExceptionHandler(applicationContext))
 
@@ -190,61 +190,51 @@ class SKKService : InputMethodService(), CoroutineScope {
         val notificationManager: NotificationManager =
             getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.createNotificationChannel(channel)
+        // 事前に権限を持っていないと、onCreate 内では権限要求を出せないみたいなので注意！
 
-        runBlocking {
-            val dicsJob = async(Dispatchers.IO) {
-                openDictionaries()
-            }
-
-            val userJob = async(Dispatchers.IO) {
-                checkNotNull(
-                    SKKUserDictionary.newInstance(
-                        this@SKKService,
-                        filesDir.absolutePath + "/" + getString(R.string.dic_name_user),
-                        getString(R.string.btree_name),
-                        isASCII = false
-                    )
-                ) {
-                    mHandler.post {
-                        Toast.makeText(
-                            applicationContext, getString(R.string.error_user_dic), Toast.LENGTH_LONG
-                        ).show()
-                    }
-                    stopSelf()
-                }
-            }
-
-            val asciiJob = async(Dispatchers.IO) {
-                checkNotNull(
-                    SKKUserDictionary.newInstance(
-                        this@SKKService,
-                        filesDir.absolutePath + "/" + getString(R.string.dic_name_ascii),
-                        getString(R.string.btree_name),
-                        isASCII = true
-                    )
-                ) {
-                    mHandler.post {
-                        Toast.makeText(
-                            applicationContext,
-                            getString(R.string.error_user_dic),
-                            Toast.LENGTH_LONG
-                        ).show()
-                    }
-                    stopSelf()
-                }
-            }
-
-            dicsJob.join()
-            val dics = dicsJob.getCompleted()
-            if (dics.isEmpty()) {
-                val dicManagerIntent = Intent(this@SKKService, SKKDicManager::class.java)
-                    .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                startActivity(dicManagerIntent)
-            }
-            userJob.join()
-            asciiJob.join()
-            mEngine = SKKEngine(this@SKKService, dics, userJob.getCompleted(), asciiJob.getCompleted())
+        val dics = openDictionaries()
+        if (dics.isEmpty()) {
+            val intent = Intent(applicationContext, SKKDicManager::class.java)
+                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            val pendingIntent = PendingIntent.getActivity(
+                applicationContext, 0, intent, PendingIntent.FLAG_IMMUTABLE
+            )
+            notify(NOTIFY_ID_ERROR_DIC, "辞書を設定してください", getString(R.string.error_open_dicfile), pendingIntent)
         }
+
+        val userDic = SKKUserDictionary.newInstance(
+            this@SKKService,
+            filesDir.absolutePath + "/" + getString(R.string.dic_name_user),
+            getString(R.string.btree_name),
+            isASCII = false
+        )
+        if (userDic == null) {
+            val intent = Intent(applicationContext, SKKSettingsActivity::class.java)
+                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            val pendingIntent = PendingIntent.getActivity(
+                applicationContext, 0, intent, PendingIntent.FLAG_IMMUTABLE
+            )
+            notify(NOTIFY_ID_ERROR_DIC, "ユーザー辞書エラー", getString(R.string.error_user_dic), pendingIntent)
+            return super.onDestroy()
+        }
+
+        val asciiDic = SKKUserDictionary.newInstance(
+            this@SKKService,
+            filesDir.absolutePath + "/" + getString(R.string.dic_name_ascii),
+            getString(R.string.btree_name),
+            isASCII = true
+        )
+        if (asciiDic == null) {
+            val intent = Intent(applicationContext, SKKSettingsActivity::class.java)
+                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            val pendingIntent = PendingIntent.getActivity(
+                applicationContext, 0, intent, PendingIntent.FLAG_IMMUTABLE
+            )
+            notify(NOTIFY_ID_ERROR_DIC, "ASCII辞書エラー", getString(R.string.error_user_dic), pendingIntent)
+            return super.onDestroy()
+        }
+
+        mEngine = SKKEngine(this@SKKService, dics, userDic, asciiDic)
 
         mSpeechRecognizer.setRecognitionListener(object : RecognitionListener {
             private fun restoreState() {
@@ -287,6 +277,7 @@ class SKKService : InputMethodService(), CoroutineScope {
         mScreenHeight = resources.displayMetrics.heightPixels
 
         readPrefs()
+        instance = this
     }
 
     private fun readPrefs() {
@@ -888,10 +879,56 @@ class SKKService : InputMethodService(), CoroutineScope {
         commitTextSKK(clip)
     }
 
-    fun startSettings() {
-        val settingsIntent = Intent(this, SKKSettingsActivity::class.java)
-        settingsIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-        startActivity(settingsIntent)
+    private fun notify(id: Int, title: CharSequence, text: CharSequence, intent: PendingIntent?): Boolean {
+        val builder = if (title.isEmpty() || text.isEmpty()) null
+        else NotificationCompat.Builder(this, CHANNEL_ID)
+            .setSmallIcon(R.drawable.icon)
+            .setContentTitle(title)
+            .setContentText(text)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .apply { intent?.let { setContentIntent(it) } }
+            .setAutoCancel(true)
+        with(NotificationManagerCompat.from(this)) {
+            return if (ActivityCompat.checkSelfPermission(
+                    applicationContext,
+                    Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED) {
+                builder?.let { notify(id, it.build()) }
+                true
+            } else {
+                // onCreate 内では startActivity できないみたいなので注意！
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    requestPermissions(arrayListOf(Manifest.permission.POST_NOTIFICATIONS))
+                }
+                false
+            }
+        }
+    }
+
+    class PermissionRequestActivity: AppCompatActivity() {
+        override fun onStart() {
+            super.onStart()
+            intent?.getStringArrayListExtra("perm")?.let {
+                ActivityCompat.requestPermissions(this, it.toTypedArray(), 1)
+            }
+        }
+
+        override fun onRequestPermissionsResult(
+            requestCode: Int,
+            permissions: Array<String>,
+            grantResults: IntArray
+        ) {
+            super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+            finish()
+        }
+    }
+
+    private fun requestPermissions(perms: ArrayList<String>) {
+        val intent = Intent(this, PermissionRequestActivity::class.java).apply {
+            putStringArrayListExtra("perm", perms)
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        }
+        startActivity(intent)
     }
 
     fun recognizeSpeech() {
@@ -899,21 +936,13 @@ class SKKService : InputMethodService(), CoroutineScope {
 //            mSpeechRecognizer.stopListening()
             return
         }
-        if (listOf(Manifest.permission.RECORD_AUDIO).any { // 将来複数必要になったときのため List.any
-            checkSelfPermission(it) == PackageManager.PERMISSION_DENIED
-        }) {
-            mHandler.post {
-                Toast.makeText(
-                    applicationContext, getText(R.string.error_permission_record_audio), Toast.LENGTH_LONG
-                ).show()
+        arrayListOf(Manifest.permission.RECORD_AUDIO).let { perms ->
+            if (perms.any {
+                    checkSelfPermission(it) == PackageManager.PERMISSION_DENIED
+                }) {
+                requestPermissions(perms)
+                return
             }
-            // requestPermissions は activity が必要なので雑に設定画面を出すだけにする
-            startActivity(
-                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-                    .setData(Uri.fromParts("package", packageName, null))
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            )
-            return
         }
         mStreamVolume = mAudioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
         mAudioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 0, 0)
@@ -1073,5 +1102,7 @@ class SKKService : InputMethodService(), CoroutineScope {
         internal const val DICT_ASCII_ZIP_FILE = "skk_asciidict.zip"
         private const val CHANNEL_ID = "skk_notification"
         private const val CHANNEL_NAME = "SKK"
+        private const val NOTIFY_ID_ERROR_DIC = 1
+        private const val NOTIFY_ID_DETAILS = 2
     }
 }

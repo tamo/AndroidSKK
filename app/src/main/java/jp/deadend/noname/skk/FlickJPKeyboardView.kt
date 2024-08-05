@@ -1,6 +1,7 @@
 package jp.deadend.noname.skk
 
 import android.content.Context
+import android.content.Intent
 import android.util.AttributeSet
 import android.util.SparseArray
 import android.view.HapticFeedbackConstants
@@ -815,7 +816,9 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
     private fun release() {
         when (mLastPressedKey) {
             KEYCODE_FLICK_JP_SPACE  -> if (isShifted) {
-                mService.startSettings()
+                val intent = Intent(context, SKKSettingsActivity::class.java)
+                    .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                context.startActivity(intent)
             } else {
                 mService.processKey(' '.code)
             }

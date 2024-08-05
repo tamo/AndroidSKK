@@ -37,7 +37,6 @@
 	<string name="error_text_dic_coding">UTF-8のファイルではないようです</string>
 	<string name="error_dic_exists">この辞書はすでに存在します: %1$s\n削除しますか？</string>
 	<string name="error_extracting_dic_failed">ASCII 辞書の解凍に失敗しました。一旦アンインストールしてみてください</string>
-	<string name="error_permission_record_audio">「マイク」の使用を許可してください</string>
 
 	<string translatable="false" name="prefkey_kutouten_type">PrefKeyKutoutenType</string>
 	<string translatable="false" name="prefkey_prefix_mark">PrefKeyPrefixMark</string>
@@ -80,5 +79,5 @@
 	<string translatable="false" name="dic_name_user">skk_userdict</string>
 	<string translatable="false" name="dic_name_ascii">skk_asciidict</string>
 	<string translatable="false" name="dic_name_user_recreate">*skk_userdict</string>
-	<string translatable="false" name="dic_name_ascii_recreate">*skk_asciidict</string>
+	<string translatable="false" name="dic_name_ascii_recreate">+skk_asciidict</string>
 </resources>

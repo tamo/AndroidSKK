@@ -55,7 +55,6 @@ class SKKDicManager : AppCompatActivity(), CoroutineScope {
             .getString(getString(R.string.prefkey_optional_dics), "") ?: ""
     }
     private val mDics = mutableListOf<Tuple<String, String>>()
-    private var isModified = false
 
     private val addDicFileLauncher = registerForActivityResult(
                                         ActivityResultContracts.OpenDocument()) { uri ->
@@ -119,7 +118,6 @@ class SKKDicManager : AppCompatActivity(), CoroutineScope {
                                 mAdapter.insert(Tuple(dicName, "/$dicPath"), position)
                             }
                             mAdapter.notifyDataSetChanged()
-                            isModified = true
                         }
 
                         override fun onNegativeClick() {}
@@ -135,7 +133,7 @@ class SKKDicManager : AppCompatActivity(), CoroutineScope {
             .filter { !it.value.startsWith('/') }
             .forEach { dics.append(it.key, "/", it.value, "/") }
 
-        if (isModified && (mPrefOptDics != dics.toString())) {
+        if (mPrefOptDics != dics.toString()) {
             PreferenceManager.getDefaultSharedPreferences(this)
                 .edit()
                 .putString(getString(R.string.prefkey_optional_dics), dics.toString())
@@ -189,7 +187,6 @@ class SKKDicManager : AppCompatActivity(), CoroutineScope {
                                 sort { a, b -> comparator.compare(a.key, b.key) }
                                 notifyDataSetChanged()
                             }
-                            isModified = true
                         }
                         override fun onNegativeClick() {}
                     })
@@ -259,7 +256,6 @@ class SKKDicManager : AppCompatActivity(), CoroutineScope {
         if (position != -1) { // 既存のものを loadDic した後の処理
             mAdapter.getItem(position)!!.value = dicFileBaseName
             mAdapter.notifyDataSetChanged()
-            isModified = true
             return
         }
 
@@ -284,7 +280,6 @@ class SKKDicManager : AppCompatActivity(), CoroutineScope {
                     }
                     val item = Tuple(name, "/$dicFileBaseName")
                     mAdapter.add(item)
-                    isModified = true
 
                     loader(mAdapter.getPosition(item))
                 }
