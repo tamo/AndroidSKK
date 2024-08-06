@@ -371,7 +371,7 @@ class SKKDicManager : AppCompatActivity(), CoroutineScope {
                 contentResolver.openInputStream(uri)?.use { inputStream ->
                     val processedInputStream =
                         if (isGzip) GZIPInputStream(inputStream) else inputStream
-                    loadFromTextDic(processedInputStream, charset, recMan, btree, false) {
+                    loadFromTextDic(processedInputStream, charset, false, recMan, btree, false) {
                         if (floor(sqrt(it.toFloat())) % 70 == 0f) {
                             if (item != null) launch(Dispatchers.Main) {
                                 item.key = "$itemName ($it 行目)"

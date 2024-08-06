@@ -32,7 +32,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import java.util.zip.GZIPInputStream
 import kotlin.coroutines.CoroutineContext
@@ -61,19 +60,23 @@ class SKKUserDicTool : AppCompatActivity(), CoroutineScope {
         openUserDict()
         launch(Dispatchers.IO) {
             try {
-                val name = getFileNameFromUri(this@SKKUserDicTool, uri)
-                val isGzip = name!!.endsWith(".gz")
+                val name = getFileNameFromUri(this@SKKUserDicTool, uri)!!
+                val isGzip = name.endsWith(".gz")
+                val isWordList = name.endsWith("combined.gz")
 
                 withContext(Dispatchers.Main) { mSearchView.queryHint = "文字セット識別中" }
-                val charset = if (contentResolver.openInputStream(uri)!!.use { inputStream ->
-                    val processedInputStream = if (isGzip) GZIPInputStream(inputStream) else inputStream
-                    isTextDicInEucJp(processedInputStream)
-                }) "EUC-JP" else "UTF-8"
+                val charset = if (!isWordList &&
+                    contentResolver.openInputStream(uri)!!.use { inputStream ->
+                        val processedInputStream =
+                            if (isGzip) GZIPInputStream(inputStream) else inputStream
+                        isTextDicInEucJp(processedInputStream)
+                    }) "EUC-JP"
+                else "UTF-8"
 
                 withContext(Dispatchers.Main) { mSearchView.queryHint = "インポート中" }
                 contentResolver.openInputStream(uri)?.use { inputStream ->
                     val processedInputStream = if (isGzip) GZIPInputStream(inputStream) else inputStream
-                    loadFromTextDic(processedInputStream, charset, mRecMan, mBtree, false) {
+                    loadFromTextDic(processedInputStream, charset, isWordList, mRecMan, mBtree, false) {
                         if (floor(sqrt(it.toFloat())) % 50 == 0f) MainScope().launch { // 味わい進捗
                             mSearchView.queryHint = "インポート中 ${it}行目"
                         }

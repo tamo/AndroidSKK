@@ -13,6 +13,7 @@ import java.io.InputStream
 import java.io.InputStreamReader
 import java.nio.charset.Charset
 import java.nio.charset.CodingErrorAction
+import kotlin.math.max
 
 @Throws(IOException::class)
 private fun appendToEntry(key: String, value: String, btree: BTree<String, String>) {
@@ -57,6 +58,7 @@ internal fun isTextDicInEucJp(inputStream: InputStream): Boolean {
 internal fun loadFromTextDic(
     inputStream: InputStream,
     charset: String,
+    isWordList: Boolean,
     recMan: RecordManager,
     btree: BTree<String, String>,
     overwrite: Boolean,
@@ -66,22 +68,45 @@ internal fun loadFromTextDic(
     decoder.onMalformedInput(CodingErrorAction.REPORT)
     decoder.onUnmappableCharacter(CodingErrorAction.REPLACE)
 
+    val loadSKKLine = fun (line: String) {
+        val idx = line.indexOf(' ')
+        if (idx != -1 && !line.startsWith(";;")) {
+            val key = line.substring(0, idx)
+            val value = line.substring(idx + 1, line.length)
+            if (overwrite) {
+                btree.insert(key, value, true)
+            } else {
+                appendToEntry(key, value, btree)
+            }
+        }
+    }
+
+    val loadWordListLine = fun (line: String) {
+        val csv = line.split(',', '=')
+        if (csv.size < 4) return
+        if (csv[0] == " word") {
+            val key = csv[1]
+            if (csv[2] == "f") {
+                val value = try { csv[3].toInt() } catch (e: NumberFormatException) { 0 }
+                if (value == 0) return
+                if (overwrite) {
+                    btree.insert(key, "/$value/", true)
+                } else {
+                    val oldVal = btree.find(key)?.trim('/')?.toInt() ?: 0
+                    val larger = max(value, oldVal)
+                    btree.insert(key, "/$larger/", true)
+                }
+            }
+        }
+    }
+
+    val loadLine = if (isWordList) loadWordListLine else loadSKKLine
     BufferedReader(InputStreamReader(inputStream, decoder)).use { bufferedReader ->
         var count = 0
         bufferedReader.forEachLine { line ->
-            val idx = line.indexOf(' ')
-            if (idx != -1 && !line.startsWith(";;")) {
-                val key = line.substring(0, idx)
-                val value = line.substring(idx + 1, line.length)
-                if (overwrite) {
-                    btree.insert(key, value, true)
-                } else {
-                    appendToEntry(key, value, btree)
-                }
-
-                if (++count % 1000 == 0) { recMan.commit() }
-                callback(count)
-            }
+            loadLine(line)
+            callback(count)
+            if (++count % 1000 == 0) { recMan.commit() }
         }
         recMan.commit()
     }
