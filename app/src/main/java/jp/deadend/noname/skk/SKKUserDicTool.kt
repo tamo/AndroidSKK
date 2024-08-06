@@ -305,29 +305,35 @@ class SKKUserDicTool : AppCompatActivity(), CoroutineScope {
     private fun recreateUserDic(extract: Boolean) {
         closeUserDict()
 
-        runBlocking(Dispatchers.IO) {
+        launch(Dispatchers.IO) {
             deleteFile("$mDicName.db")
             deleteFile("$mDicName.lg")
 
-            if (extract) try {
-                unzipFile(resources.assets.open(DICT_ASCII_ZIP_FILE), filesDir)
-            } catch (e: IOException) {
-                Log.e("SKK", "I/O error in extracting dictionary files: $e")
+            if (extract) {
+                try {
+                    unzipFile(resources.assets.open(DICT_ASCII_ZIP_FILE), filesDir)
+                    dlog("ASCII dictionary extracted")
+                } catch (e: IOException) {
+                    Log.e("SKK", "I/O error in extracting ASCII dictionary: $e")
+                }
+                withContext(Dispatchers.Main) {
+                    openUserDict()
+                    updateListItems()
+                }
+            } else {
+                try {
+                    mRecMan = RecordManagerFactory.createRecordManager(filesDir.absolutePath + "/" + mDicName)
+                    mBtree = BTree(mRecMan, StringComparator())
+                    mRecMan.setNamedObject(getString(R.string.btree_name), mBtree.recordId)
+                    mRecMan.commit()
+                } catch (e: IOException) {
+                    throw RuntimeException(e)
+                }
+                dlog("New user dictionary created")
+                isOpened = true
+                withContext(Dispatchers.Main) { mAdapter.clear() }
             }
         }
-
-        try {
-            mRecMan = RecordManagerFactory.createRecordManager(filesDir.absolutePath + "/" + mDicName)
-            mBtree = BTree(mRecMan, StringComparator())
-            mRecMan.setNamedObject(getString(R.string.btree_name), mBtree.recordId)
-            mRecMan.commit()
-        } catch (e: IOException) {
-            throw RuntimeException(e)
-        }
-
-        dlog("New user dictionary created")
-        isOpened = true
-        mAdapter.clear()
     }
 
     private fun onFailToOpenUserDict() {
