@@ -81,22 +81,43 @@ internal fun loadFromTextDic(
         }
     }
 
+    var prevKey = ""
+    var prevFreq = 0
+    var isShortCut = false
     val loadWordListLine = fun (line: String) {
         val csv = line.split(',', '=')
         if (csv.size < 4) return
-        if (csv[0] == " word") {
-            val key = csv[1]
-            if (csv[2] == "f") {
-                val value = try { csv[3].toInt() } catch (e: NumberFormatException) { 0 }
-                if (value == 0) return
-                if (overwrite) {
-                    btree.insert(key, "/$value/", true)
-                } else {
-                    val oldVal = btree.find(key)?.trim('/')?.toInt() ?: 0
-                    val larger = max(value, oldVal)
-                    btree.insert(key, "/$larger/", true)
-                }
+        val key = csv[1]
+        val freq = if (csv[0] == " word" && csv[2] == "f") {
+            val f = try { csv[3].toInt() } catch (e: NumberFormatException) { 0 }
+            prevKey = key
+            prevFreq = f
+            isShortCut = false
+            if ("not_a_word" in csv) {
+                if (overwrite) btree.remove(key)
+                return
             }
+            f
+        } else if (csv[0] == "  shortcut" && csv[2] == "f") {
+            isShortCut = true
+            try { csv[3].toInt() } catch (e: NumberFormatException) { prevFreq }
+        } else return
+        if (freq == 0) return
+        if (!isShortCut && overwrite) {
+            btree.insert(key, "/$freq/$key/", true)
+        } else {
+            val pairs = (btree.find(prevKey) ?: "")
+                .split('/').asSequence().filter { it.isNotEmpty() }
+                .zipWithNext().filterIndexed { index, _ -> index % 2 == 0 }
+                .map { (f, s) ->
+                    s to try { f.toInt() } catch (e:NumberFormatException) { 0 }
+                }
+                .toMap().toMutableMap()
+            val oldFreq = pairs[key] ?: 0
+            pairs[key] = max(freq, oldFreq)
+            pairs.flatMap { (k, v) -> listOf(v.toString(), k) }
+                .reduce { acc, s -> "$acc/$s" }
+                .let { btree.insert(prevKey, "/$it/", true) }
         }
     }
 
@@ -118,9 +139,9 @@ interface SKKDictionaryInterface: CoroutineScope {
     val mBTree: BTree<String, String>
     val mIsASCII: Boolean
 
-    fun findKeys(rawKey: String): List<String> {
+    fun findKeys(rawKey: String): List<Pair<String, String>> {
         val key = katakana2hiragana(rawKey) ?: return listOf()
-        val list = mutableListOf<Tuple<String, Int>>()
+        val list = mutableListOf<Triple<String, String, Int>>()
         val tuple = Tuple<String, String>()
         val browser: TupleBrowser<String, String>
         var str: String
@@ -135,34 +156,38 @@ interface SKKDictionaryInterface: CoroutineScope {
                 str = tuple.key
                 if (!str.startsWith(key)) break
                 if (mIsASCII) {
-                    val freq = tuple.value.let {
-                        it.substring(1, it.length - 1) // 前後のスラッシュを除く
-                            .substringBefore('/') // 複数になっている場合は最初だけ選ぶ
-                            .toInt()
-                    }
-                    if (topFreq.size < 5 || freq >= topFreq.last()) {
-                        topFreq.add(freq)
-                        topFreq.sortDescending()
-                        if (topFreq.size > 5) topFreq.removeAt(5)
-                    }
-                    if (freq < topFreq.last()) continue // 頻度が5位に入らなければだめ
-                    list.add(Tuple<String, Int>(str, freq))
+                    tuple.value
+                        .split('/')
+                        .filter { it.isNotEmpty() }
+                        .zipWithNext()
+                        .filterIndexed { index, _ -> index % 2 == 0 }
+                        .forEach {
+                            val freq = it.first.toInt()
+                            if (topFreq.size < 5 || freq >= topFreq.last()) {
+                                topFreq.add(freq)
+                                topFreq.sortDescending()
+                                if (topFreq.size > 5) topFreq.removeAt(5)
+                            }
+                            if (freq >= topFreq.last()) { // 頻度が5位に入らなければだめ
+                                list.add(Triple(str, it.second, freq))
+                            }
+                        }
                     continue
                 }
                 if (isAlphabet(str[str.length - 1].code) && !isAlphabet(str[0].code)) continue
                 // 送りありエントリは飛ばす
 
-                list.add(Tuple(tuple.key, 0))
+                list.add(Triple(str, str, 0))
             }
         } catch (e: IOException) {
             Log.e("SKK", "Error in findKeys(): $e")
             throw RuntimeException(e)
         }
         if (mIsASCII) {
-            list.sortByDescending { it.value }
+            list.sortByDescending { it.third }
         }
 
-        return list.map { it.key }
+        return list.map { it.first to it.second }
     }
 
     fun close() {

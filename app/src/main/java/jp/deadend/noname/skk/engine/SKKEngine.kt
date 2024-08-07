@@ -30,6 +30,7 @@ class SKKEngine(
 
     // 候補のリスト．KanjiStateとAbbrevStateでは補完リスト，ChooseStateでは変換候補リストになる
     private var mCandidatesList: List<String>? = null
+    private var mCompletionList: List<String>? = null
     private var mCurrentCandidateIndex = 0
     private var mUpdateSuggestionsJob: Job = Job()
 
@@ -528,7 +529,7 @@ class SKKEngine(
         mUpdateSuggestionsJob.cancel()
         mUpdateSuggestionsJob.invokeOnCompletion {
             mUpdateSuggestionsJob = launch(Dispatchers.Default) {
-                val set = mutableSetOf<String>()
+                val set = mutableSetOf<Pair<String, String>>()
 
                 if (str.isNotEmpty()) {
                     addFound(set, str, (if (state === SKKASCIIState) mASCIIDict else mUserDict))
@@ -540,7 +541,8 @@ class SKKEngine(
                     for (dic in mDicts) { addFound(set, replacedStr, dic) }
                 }?.value ?: "#"
 
-                mCandidatesList = set.toList()
+                mCompletionList = set.map { it.first }
+                mCandidatesList = set.map { it.second }
                 mCurrentCandidateIndex = 0
                 withContext(coroutineContext) { mService.setCandidates(mCandidatesList, number) }
             }
@@ -549,14 +551,15 @@ class SKKEngine(
     }
 
     private fun addFound(
-        target: MutableSet<String>,
+        target: MutableSet<Pair<String, String>>,
         key: String,
         dic: SKKDictionaryInterface
     ) {
         if (mService.isHiragana) {
             target.addAll(dic.findKeys(key))
-        } else for (hiraSuggestion in dic.findKeys(key)) {
-            target.add(hirakana2katakana(hiraSuggestion, reversed = true)!!)
+        } else for (suggestion in dic.findKeys(key)) {
+            val hiraSuggestion = suggestion.first
+            target.add(hiraSuggestion to hirakana2katakana(hiraSuggestion, reversed = true)!!)
         }
     }
 
@@ -574,12 +577,21 @@ class SKKEngine(
         return tbc.split(Regex("[^a-zA-Z0-9]")).last()
     }
 
+    private fun deletePrefixASCII(expected: String): Boolean {
+        val ic = mService.currentInputConnection ?: return false
+        val tbc = ic.getTextBeforeCursor(expected.length, 0) ?: return false
+        val wbc = tbc.split(Regex("[^a-zA-Z0-9]")).last()
+        return if (expected.startsWith(wbc)) {
+            ic.deleteSurroundingText(wbc.length, 0)
+            true
+        } else false
+    }
+
     private fun deleteSuffixASCII() {
         val ic = mService.currentInputConnection ?: return
         val tac = ic.getTextAfterCursor(ASCII_WORD_MAX_LENGTH, 0) ?: return
-        val wac = tac.split(Regex("\\W")).first()
+        val wac = tac.split(Regex("[^a-zA-Z0-9]")).first()
         ic.deleteSurroundingText(0, wac.length)
-        return
     }
 
     private fun registerStart(str: String) {
@@ -785,6 +797,8 @@ class SKKEngine(
         val number = Regex("\\d+").find(mKanjiKey)?.value ?: "#"
         val candList = mCandidatesList ?: return
         val s = candList[index].replaceFirst("#", number)
+        val compList = mCompletionList ?: return
+        val c = compList[index]
 
         when (state) {
             SKKAbbrevState -> {
@@ -814,20 +828,26 @@ class SKKEngine(
 
             SKKASCIIState -> {
                 if (isPersonalizedLearning) {
-                    val maxFreq = findCandidates(s)!!
-                        .plus("160")
-                        .maxOf {
-                            try {
-                                it.toInt()
-                            } catch (_: Exception) {
-                                0
+                    mASCIIDict.getEntry(c)?.let { entry ->
+                        entry.candidates.asSequence()
+                            .zipWithNext().filterIndexed { i, _ -> i % 2 == 0 }
+                            .map {
+                                if (it.second == s) {
+                                    it.first.toInt().coerceAtLeast(160).toString() to s
+                                } else it
                             }
-                        }
-                    mASCIIDict.addEntry(s, maxFreq.toString(), mOkurigana)
-                    mASCIIDict.commitChanges()
+                            .flatMap { (freq, str) -> listOf(freq, str) }
+                            .reduce { acc, str -> "$acc/$str" }
+                            .let {
+                                mASCIIDict.addEntry(s, "/$it/", null)
+                                mASCIIDict.commitChanges()
+                            }
+                    }
                 }
-                commitTextSKK(s.subSequence(getPrefixASCII().length, s.length))
-                deleteSuffixASCII()
+                if (deletePrefixASCII(c)) {
+                    commitTextSKK(s)
+                    deleteSuffixASCII()
+                }
                 reset()
             }
         }
