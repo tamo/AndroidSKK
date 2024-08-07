@@ -83,7 +83,7 @@ internal fun loadFromTextDic(
 
     var prevKey = ""
     var prevFreq = 0
-    var isShortCut = false
+    var isShortCut: Boolean
     val loadWordListLine = fun (line: String) {
         val csv = line.split(',', '=')
         if (csv.size < 4) return
