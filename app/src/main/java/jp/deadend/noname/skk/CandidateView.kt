@@ -27,6 +27,9 @@ import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
 import android.view.View
 import androidx.core.content.res.ResourcesCompat
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlin.math.min
 
 /**
@@ -49,6 +52,7 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
     private val mWordWidth = IntArray(MAX_SUGGESTIONS)
     private val mWordX = IntArray(MAX_SUGGESTIONS)
 
+    private var mDrawing = false
     private var mScrolled = false
 
     private val mColorNormal: Int
@@ -158,30 +162,8 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
         setMeasuredDimension(measuredWidth, resolveSize(desiredHeight, heightMeasureSpec))
     }
 
-    private fun calculateWidths() {
-        mTotalWidth = 0
-
-        var count = mSuggestions.size
-        if (count > MAX_SUGGESTIONS) {
-            count = MAX_SUGGESTIONS
-        }
-
-        var x = 0
-        for (i in 0 until count) {
-            val suggestion = mSuggestions[i]
-            val textWidth = mPaint.measureText(suggestion)
-            val wordWidth = textWidth.toInt() + X_GAP * 2
-
-            mWordX[i] = x
-            mWordWidth[i] = wordWidth
-
-            x += wordWidth
-        }
-
-        mTotalWidth = x
-    }
-
     override fun onDraw(canvas: Canvas) {
+        mDrawing = true
         super.onDraw(canvas)
 
         val height = height
@@ -191,16 +173,11 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
         val scrolled = mScrolled
         val y = ((height - paint.textSize) / 2 - paint.ascent()).toInt()
 
-        var count = mSuggestions.size
-        if (count > MAX_SUGGESTIONS) {
-            count = MAX_SUGGESTIONS
-        }
-
-        for (i in 0 until count) {
+        mSuggestions.forEachIndexed { i, suggestion ->
             paint.color = mColorNormal
             if (touchX + scrollX >= mWordX[i]
-                    && touchX + scrollX < mWordX[i] + mWordWidth[i]
-                    && !scrolled
+                && touchX + scrollX < mWordX[i] + mWordWidth[i]
+                && !scrolled
             ) {
                 canvas.translate(mWordX[i].toFloat(), 0f)
                 mSelectionHighlight?.setBounds(0, 0, mWordWidth[i], height)
@@ -217,24 +194,25 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
             }
             if (skkPrefs.originalColor) { // 高コントラストテキストの設定を無視
                 paint.getTextPath(
-                    mSuggestions[i], 0, mSuggestions[i].length,
+                    suggestion, 0, suggestion.length,
                     (mWordX[i] + X_GAP).toFloat(), y.toFloat(),
                     mTextPath
                 )
                 canvas.drawPath(mTextPath, paint)
             } else {
-                canvas.drawText(mSuggestions[i], (mWordX[i] + X_GAP).toFloat(), y.toFloat(), paint)
+                canvas.drawText(suggestion, (mWordX[i] + X_GAP).toFloat(), y.toFloat(), paint)
             }
             paint.color = mColorOther
             canvas.drawLine(
-                    mWordX[i].toFloat() + mWordWidth[i].toFloat() + 0.5f, 0f,
-                    mWordX[i].toFloat() + mWordWidth[i].toFloat() + 0.5f, (height + 1).toFloat(),
-                    paint
+                mWordX[i].toFloat() + mWordWidth[i].toFloat() + 0.5f, 0f,
+                mWordX[i].toFloat() + mWordWidth[i].toFloat() + 0.5f, (height + 1).toFloat(),
+                paint
             )
             paint.isFakeBoldText = false
         }
 
         if (scrolled && mTargetScrollX != getScrollX()) scrollToTarget()
+        mDrawing = false
     }
 
     private fun scrollToTarget() {
@@ -263,32 +241,40 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
     }
 
     fun setContents(list: List<String>?, number: String) {
-        mSuggestions.clear()
-        if (list != null) {
-            for (rawstr in list) {
-                val str = processNumber(rawstr, number)
+        MainScope().launch {
+            while (mDrawing) delay(50)
+            mSuggestions.clear()
+            list?.take(MAX_SUGGESTIONS)?.forEach { str ->
                 val semicolon = str.indexOf(";")
-                val newstr =
+                val newStr =
                     if (semicolon == -1) {
-                        processConcatAndEscape(str)
+                        processConcatAndEscape(processNumber(str, number))
                     } else {
-                        (processConcatAndEscape(str.substring(0, semicolon)) + ";"
-                            + processConcatAndEscape(str.substring(semicolon + 1, str.length)))
+                        processConcatAndEscape(processNumber(str.substring(0, semicolon), number)) +
+                                ";" +
+                                processConcatAndEscape(str.substring(semicolon + 1, str.length))
                     }
-                mSuggestions.add(newstr)
+                mSuggestions.add(newStr)
             }
-        }
-        scrollTo(0, 0)
-        mScrollX = 0
-        mTargetScrollX = 0
-        mTouchX = OUT_OF_BOUNDS
-        mSelectedIndex = -1
-        mChoosedIndex = 0
+            scrollTo(0, 0)
+            mScrollX = 0
+            mTargetScrollX = 0
+            mTouchX = OUT_OF_BOUNDS
+            mSelectedIndex = -1
+            mChoosedIndex = 0
 
-        // Compute the total width
-        calculateWidths()
-        setScrollButtonsEnabled(0)
-        invalidate()
+            // Compute the total width
+            mTotalWidth = mSuggestions.map { suggestion ->
+                mPaint.measureText(suggestion).toInt() + X_GAP * 2
+            }.foldIndexed(0) { i, acc, wordWidth ->
+                mWordX[i] = acc
+                mWordWidth[i] = wordWidth
+                acc + wordWidth
+            }
+
+            setScrollButtonsEnabled(0)
+            invalidate()
+        }
     }
 
 //    fun getContent(index: Int) = mSuggestions.getOrElse(index) { "" }
