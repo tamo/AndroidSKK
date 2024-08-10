@@ -43,7 +43,7 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
     private val mSuggestions = mutableListOf<String>()
     private var mSelectedIndex = 0
 
-    private var mChoosedIndex = 0
+    private var mChosenIndex = 0
 
     private var mTouchX = OUT_OF_BOUNDS
     private val mSelectionHighlight: Drawable?
@@ -105,14 +105,7 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
             ): Boolean {
                 val width = width
                 mScrolled = true
-                mScrollX = scrollX
-                mScrollX += distanceX.toInt()
-                if (mScrollX < 0) {
-                    mScrollX = 0
-                }
-                if (distanceX > 0 && mScrollX + width > mTotalWidth) {
-                    mScrollX -= distanceX.toInt()
-                }
+                mScrollX = (scrollX + distanceX.toInt()).coerceIn(0, mTotalWidth - width)
                 mTargetScrollX = mScrollX
                 invalidate()
                 return true
@@ -186,7 +179,7 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
                 mSelectedIndex = i
             }
 
-            if (i == mChoosedIndex) {
+            if (i == mChosenIndex) {
                 paint.isFakeBoldText = true
                 paint.color = mColorRecommended
             } else {
@@ -261,7 +254,7 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
             mTargetScrollX = 0
             mTouchX = OUT_OF_BOUNDS
             mSelectedIndex = -1
-            mChoosedIndex = 0
+            mChosenIndex = 0
 
             // Compute the total width
             mTotalWidth = mSuggestions.map { suggestion ->
@@ -281,36 +274,21 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
 
     fun scrollPrev() {
         mScrollX = scrollX
-        var i = 0
-        val count = mSuggestions.size
-        var firstItem = 0 // Actually just before the first item, if at the boundary
-        while (i < count) {
-            if (mWordX[i] < mScrollX && mWordX[i] + mWordWidth[i] >= mScrollX - 1) {
-                firstItem = i
-                break
-            }
-            i++
-        }
-        var leftEdge = mWordX[firstItem] + mWordWidth[firstItem] - width
-        if (leftEdge < 0) {
-            leftEdge = 0
-        }
+        val firstItem = // Actually just before the first item, if at the boundary
+            mSuggestions.indices.firstOrNull { i ->
+                mWordX[i] < mScrollX && mWordX[i] + mWordWidth[i] >= mScrollX - 1
+            } ?: mSuggestions.lastIndex
+        val leftEdge = (mWordX[firstItem] + mWordWidth[firstItem] - width).coerceAtLeast(0)
         updateScrollPosition(leftEdge)
     }
 
     fun scrollNext() {
-        var i = 0
         mScrollX = scrollX
-        var targetX = mScrollX
-        val count = mSuggestions.size
         val rightEdge = mScrollX + width
-        while (i < count) {
-            if (mWordX[i] <= rightEdge && mWordX[i] + mWordWidth[i] >= rightEdge) {
-                targetX = min(mWordX[i], mTotalWidth - width)
-                break
-            }
-            i++
-        }
+        val targetX =
+            mSuggestions.indices.firstOrNull { i ->
+                mWordX[i] <= rightEdge && mWordX[i] + mWordWidth[i] >= rightEdge
+            }?.let { min(mWordX[it], mTotalWidth - width) } ?: mScrollX
         updateScrollPosition(targetX)
     }
 
@@ -369,13 +347,13 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
         return true
     }
 
-    fun choose(choosedIndex: Int) {
-        if (mWordX[choosedIndex] != scrollX) {
-            scrollTo(mWordX[choosedIndex], scrollY)
-            setScrollButtonsEnabled(mWordX[choosedIndex])
+    fun choose(chosenIndex: Int) {
+        if (mWordX[chosenIndex] != scrollX) {
+            scrollTo(mWordX[chosenIndex], scrollY)
+            setScrollButtonsEnabled(mWordX[chosenIndex])
             invalidate()
             mScrolled = false
-            mChoosedIndex = choosedIndex
+            mChosenIndex = chosenIndex
         }
     }
 
