@@ -172,7 +172,8 @@ interface SKKDictionaryInterface {
                         .zipWithNext()
                         .filterIndexed { index, _ -> index % 2 == 0 }
                         .forEach {
-                            val freq = it.first.toInt()
+                            val freq = it.first.toInt() +
+                                    if (str == key) 50 else 0 // 完全一致を優先
                             if (topFreq.size < 5 || freq >= topFreq.last()) {
                                 topFreq.add(freq)
                                 topFreq.sortDescending()
