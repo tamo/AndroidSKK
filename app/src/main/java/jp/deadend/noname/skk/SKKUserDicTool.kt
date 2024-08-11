@@ -26,22 +26,18 @@ import jp.deadend.noname.dialog.ConfirmationDialogFragment
 import jp.deadend.noname.dialog.SimpleMessageDialogFragment
 import jp.deadend.noname.skk.SKKService.Companion.DICT_ASCII_ZIP_FILE
 import jp.deadend.noname.skk.databinding.ActivityUserDicToolBinding
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import java.util.zip.GZIPInputStream
-import kotlin.coroutines.CoroutineContext
 import kotlin.math.floor
 import kotlin.math.sqrt
 
-class SKKUserDicTool : AppCompatActivity(), CoroutineScope {
-    override val coroutineContext: CoroutineContext
-        get() = Dispatchers.Main
-
+class SKKUserDicTool : AppCompatActivity() {
     private lateinit var mDicName: String
     private lateinit var mRecMan: RecordManager
     private lateinit var mBtree: BTree<String, String>
@@ -54,11 +50,12 @@ class SKKUserDicTool : AppCompatActivity(), CoroutineScope {
     private var mSearchJob: Job = Job()
 
     private val importFileLauncher = registerForActivityResult(
-                                        ActivityResultContracts.OpenDocument()) { uri ->
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
         if (uri == null) return@registerForActivityResult
         mAdapter.clear()
         openUserDict()
-        launch(Dispatchers.IO) {
+        MainScope().launch(Dispatchers.IO) {
             try {
                 val name = getFileNameFromUri(this@SKKUserDicTool, uri)!!
                 val isGzip = name.endsWith(".gz")
@@ -99,16 +96,17 @@ class SKKUserDicTool : AppCompatActivity(), CoroutineScope {
                 }
             }
             withContext(Dispatchers.Main) {
-                updateListItems()
+                updateListItems() // closeUserDict() が含まれている
             }
         }
     }
 
     private val exportFileLauncher = registerForActivityResult(
-        ActivityResultContracts.CreateDocument("text/plain")) { uri ->
+        ActivityResultContracts.CreateDocument("text/plain")
+    ) { uri ->
         if (uri == null) return@registerForActivityResult
-        openUserDict()
-        launch(Dispatchers.IO) {
+        MainScope().launch(Dispatchers.IO) {
+            openUserDict()
             try {
                 contentResolver.openOutputStream(uri, "wt")?.bufferedWriter()?.use {
                     val browser = mBtree.browse()
@@ -128,6 +126,7 @@ class SKKUserDicTool : AppCompatActivity(), CoroutineScope {
                     ).show(supportFragmentManager, "dialog")
                 }
             }
+            closeUserDict()
 
             withContext(Dispatchers.Main) {
                 SimpleMessageDialogFragment.newInstance(
@@ -161,7 +160,9 @@ class SKKUserDicTool : AppCompatActivity(), CoroutineScope {
                         val item = adapter.getItem(position)!!
                         dlog("remove $item from $mDicName")
                         try {
+                            openUserDict()
                             mBtree.remove(item.key)
+                            closeUserDict()
                         } catch (e: IOException) {
                             throw RuntimeException(e)
                         }
@@ -201,7 +202,7 @@ class SKKUserDicTool : AppCompatActivity(), CoroutineScope {
                 }
                 mFoundList.clear()
                 mSearchJob.invokeOnCompletion {
-                    mSearchJob = launch(Dispatchers.Default) {
+                    mSearchJob = MainScope().launch(Dispatchers.Default) {
                         mFoundList.addAll(mEntryList.filter {
                             ensureActive() // ここでキャンセルされる
                             if (regex != null) {
@@ -220,12 +221,6 @@ class SKKUserDicTool : AppCompatActivity(), CoroutineScope {
             }
         })
 
-        if (SKKService.isRunning()) {
-            val intent = Intent(this@SKKUserDicTool, SKKService::class.java)
-            intent.putExtra(SKKService.KEY_COMMAND, SKKService.COMMAND_COMMIT_USERDIC)
-            startService(intent)
-        }
-
         mAdapter = EntryAdapter(this, mEntryList)
         binding.userDictoolList.adapter = mAdapter
         mSearchAdapter = EntryAdapter(this, mFoundList)
@@ -239,17 +234,14 @@ class SKKUserDicTool : AppCompatActivity(), CoroutineScope {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.menu_user_dic_tool_import -> {
-                closeUserDict()
                 importFileLauncher.launch(arrayOf("*/*"))
                 return true
             }
             R.id.menu_user_dic_tool_export -> {
-                closeUserDict()
                 exportFileLauncher.launch("$mDicName.txt")
                 return true
             }
             R.id.menu_user_dic_tool_clear -> {
-                closeUserDict()
                 val cfDialog = ConfirmationDialogFragment.newInstance(
                         getString(R.string.message_confirm_clear)
                 )
@@ -270,7 +262,7 @@ class SKKUserDicTool : AppCompatActivity(), CoroutineScope {
     override fun onResume() {
         super.onResume()
 
-        if (!isOpened) {
+        if (mAdapter.count == 0) {
             when (val commandChar = mDicName.first()) {
                 '*', '+' -> {
                     mDicName = mDicName.drop(1)
@@ -284,31 +276,29 @@ class SKKUserDicTool : AppCompatActivity(), CoroutineScope {
                             }
 
                             override fun onNegativeClick() {
-                                openUserDict()
-                                if (isOpened) updateListItems()
+                                updateListItems()
                             }
                         })
                     cfDialog.show(supportFragmentManager, "dialog")
                 }
 
-                else -> {
-                    openUserDict()
-                    if (isOpened) updateListItems()
-                }
+                else -> updateListItems()
             }
         }
     }
 
     public override fun onPause() {
         closeUserDict()
+        mAdapter.clear()
 
         super.onPause()
     }
 
     private fun recreateUserDic(extract: Boolean) {
         closeUserDict()
+        mAdapter.clear()
 
-        launch(Dispatchers.IO) {
+        MainScope().launch(Dispatchers.IO) {
             deleteFile("$mDicName.db")
             deleteFile("$mDicName.lg")
 
@@ -320,7 +310,6 @@ class SKKUserDicTool : AppCompatActivity(), CoroutineScope {
                     Log.e("SKK", "I/O error in extracting ASCII dictionary: $e")
                 }
                 withContext(Dispatchers.Main) {
-                    openUserDict()
                     updateListItems()
                 }
             } else {
@@ -340,17 +329,21 @@ class SKKUserDicTool : AppCompatActivity(), CoroutineScope {
     }
 
     private fun onFailToOpenUserDict() {
-        val dialog = ConfirmationDialogFragment.newInstance(getString(R.string.error_open_user_dic))
-        dialog.setListener(
-            object : ConfirmationDialogFragment.Listener {
-                override fun onPositiveClick() { recreateUserDic(extract = false) }
-                override fun onNegativeClick() { finish() }
-            })
-        dialog.show(supportFragmentManager, "dialog")
+        startServiceCommand(SKKService.COMMAND_UNLOCK_USERDIC)
 
+        ConfirmationDialogFragment.newInstance(getString(R.string.error_open_user_dic)).let {
+            it.setListener(
+                object : ConfirmationDialogFragment.Listener {
+                    override fun onPositiveClick() { recreateUserDic(extract = false) }
+                    override fun onNegativeClick() { finish() }
+                })
+            it.show(supportFragmentManager, "dialog")
+        }
     }
 
     private fun openUserDict() {
+        startServiceCommand(SKKService.COMMAND_LOCK_USERDIC)
+
         val recID: Long?
         try {
             mRecMan = RecordManagerFactory.createRecordManager(
@@ -379,17 +372,19 @@ class SKKUserDicTool : AppCompatActivity(), CoroutineScope {
 
     private fun closeUserDict() {
         if (!isOpened) return
+        isOpened = false
         try {
-            isOpened = false
             mRecMan.commit()
             mRecMan.close()
         } catch (e: IOException) {
+            startServiceCommand(SKKService.COMMAND_UNLOCK_USERDIC)
             throw RuntimeException(e)
         }
-        mAdapter.clear()
+        startServiceCommand(SKKService.COMMAND_UNLOCK_USERDIC)
     }
 
     private fun updateListItems() {
+        openUserDict()
         if (!isOpened) {
             mAdapter.clear()
             return
@@ -399,7 +394,7 @@ class SKKUserDicTool : AppCompatActivity(), CoroutineScope {
 
         mSearchView.isEnabled = false
         mAdapter.clear()
-        launch(Dispatchers.IO) {
+        MainScope().launch(Dispatchers.IO) {
             try {
                 val browser = mBtree.browse()
                 if (browser == null) {
@@ -426,7 +421,16 @@ class SKKUserDicTool : AppCompatActivity(), CoroutineScope {
             } catch (e: IOException) {
                 withContext(Dispatchers.Main) { onFailToOpenUserDict() }
             }
-        }.start()
+            closeUserDict()
+        }
+    }
+
+    private fun startServiceCommand(command: String) {
+        if (SKKService.isRunning()) {
+            val intent = Intent(this@SKKUserDicTool, SKKService::class.java)
+            intent.putExtra(SKKService.KEY_COMMAND, command)
+            startService(intent)
+        }
     }
 
     private class EntryAdapter(

@@ -27,12 +27,11 @@ import jp.deadend.noname.dialog.ConfirmationDialogFragment
 import jp.deadend.noname.dialog.SimpleMessageDialogFragment
 import jp.deadend.noname.dialog.TextInputDialogFragment
 import jp.deadend.noname.skk.databinding.ActivityDicManagerBinding
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -40,13 +39,10 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.net.URL
 import java.util.zip.GZIPInputStream
-import kotlin.coroutines.CoroutineContext
 import kotlin.math.floor
 import kotlin.math.sqrt
 
-class SKKDicManager : AppCompatActivity(), CoroutineScope {
-    override val coroutineContext: CoroutineContext
-        get() = Dispatchers.Main
+class SKKDicManager : AppCompatActivity() {
     private lateinit var binding: ActivityDicManagerBinding
     private val mAdapter: TupleAdapter
         get() = binding.dicManagerList.adapter as TupleAdapter
@@ -206,7 +202,7 @@ class SKKDicManager : AppCompatActivity(), CoroutineScope {
                 val path = File("${filesDir.absolutePath}/SKK-JISYO.${type}.gz")
 
                 override fun onPositiveClick() {
-                    launch(Dispatchers.IO) {
+                    MainScope().launch(Dispatchers.IO) {
                         if (path.exists()) {
                             deleteFile(path.name)
                         }
@@ -347,7 +343,7 @@ class SKKDicManager : AppCompatActivity(), CoroutineScope {
             return
         }
 
-        launch(Dispatchers.IO) {
+        MainScope().launch(Dispatchers.IO) {
             val item = mAdapter.getItem(position)
             val itemName = item?.key
             var recMan: RecordManager? = null
@@ -373,7 +369,7 @@ class SKKDicManager : AppCompatActivity(), CoroutineScope {
                         if (isGzip) GZIPInputStream(inputStream) else inputStream
                     loadFromTextDic(processedInputStream, charset, false, recMan, btree, false) {
                         if (floor(sqrt(it.toFloat())) % 70 == 0f) {
-                            if (item != null) launch(Dispatchers.Main) {
+                            if (item != null) MainScope().launch {
                                 item.key = "$itemName ($it 行目)"
                                 mAdapter.notifyDataSetChanged()
                             }

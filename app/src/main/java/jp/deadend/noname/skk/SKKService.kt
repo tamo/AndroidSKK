@@ -36,17 +36,10 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.preference.PreferenceManager
 import jp.deadend.noname.skk.engine.*
-import kotlin.coroutines.CoroutineContext
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.cancelChildren
 import java.io.*
 
 
-class SKKService : InputMethodService(), CoroutineScope {
-    override val coroutineContext: CoroutineContext
-        get() = Dispatchers.Main
-
+class SKKService : InputMethodService() {
     private var mCandidateViewContainer: CandidateViewContainer? = null
     private var mCandidateView: CandidateView? = null
     private var mFlickJPInputView: FlickJPKeyboardView? = null
@@ -102,9 +95,13 @@ class SKKService : InputMethodService(), CoroutineScope {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.getStringExtra(KEY_COMMAND)) {
-            COMMAND_COMMIT_USERDIC -> {
+            COMMAND_LOCK_USERDIC -> {
                 dlog("commit user dictionary!")
                 mEngine.commitUserDictChanges()
+                mEngine.lockUserDict()
+            }
+            COMMAND_UNLOCK_USERDIC -> {
+                mEngine.unlockUserDict()
             }
             COMMAND_READ_PREFS -> {
                 onConfigurationChanged(Configuration(resources.configuration))
@@ -164,7 +161,7 @@ class SKKService : InputMethodService(), CoroutineScope {
             val vals = prefVal.split("/").dropLastWhile { it.isEmpty() }
             for (i in 1 until vals.size step 2) {
                 SKKDictionary.newInstance(
-                    this, dd + "/" + vals[i], getString(R.string.btree_name)
+                    dd + "/" + vals[i], getString(R.string.btree_name)
                 )?.let { result.add(it) }
             }
         }
@@ -590,7 +587,6 @@ class SKKService : InputMethodService(), CoroutineScope {
         instance = null
 
         super.onDestroy()
-        coroutineContext.cancelChildren()
     }
 
     // never use fullscreen mode
@@ -1095,7 +1091,8 @@ class SKKService : InputMethodService(), CoroutineScope {
         }
 
         internal const val KEY_COMMAND = "jp.deadend.noname.skk.KEY_COMMAND"
-        internal const val COMMAND_COMMIT_USERDIC = "jp.deadend.noname.skk.COMMAND_COMMIT_USERDIC"
+        internal const val COMMAND_LOCK_USERDIC = "jp.deadend.noname.skk.COMMAND_LOCK_USERDIC"
+        internal const val COMMAND_UNLOCK_USERDIC = "jp.deadend.noname.skk.COMMAND_UNLOCK_USERDIC"
         internal const val COMMAND_READ_PREFS = "jp.deadend.noname.skk.COMMAND_READ_PREFS"
         internal const val COMMAND_RELOAD_DICS = "jp.deadend.noname.skk.COMMAND_RELOAD_DICS"
         internal const val COMMAND_MUSHROOM = "jp.deadend.noname.skk.COMMAND_MUSHROOM"

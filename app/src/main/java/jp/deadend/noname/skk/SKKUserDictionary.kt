@@ -1,23 +1,21 @@
 package jp.deadend.noname.skk
 
 import android.util.Log
-import java.io.IOException
-import jdbm.btree.BTree
-import jdbm.helper.StringComparator
 import jdbm.RecordManager
 import jdbm.RecordManagerFactory
+import jdbm.btree.BTree
+import jdbm.helper.StringComparator
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import java.io.File
-import kotlin.coroutines.CoroutineContext
 
 class SKKUserDictionary private constructor (
-    private val mService: SKKService,
     override val mRecMan: RecordManager,
     override val mRecID: Long,
     override val mBTree: BTree<String, String>,
     override val mIsASCII: Boolean
 ): SKKDictionaryInterface {
-    override val coroutineContext: CoroutineContext
-        get() = mService.coroutineContext
+    override var mIsLocked = false
 
     private var mOldKey: String = ""
     private var mOldValue: String = ""
@@ -29,13 +27,7 @@ class SKKUserDictionary private constructor (
         val cd = mutableListOf<String>()
         val okr = mutableListOf<Pair<String, String>>()
 
-        val value: String?
-        try {
-            value = mBTree.find(key)
-        } catch (e: IOException) {
-            throw RuntimeException(e)
-        }
-
+        val value: String? = safeRun { mBTree.find(key) }
         if (value == null) { return null }
 
         val valList = value.substring(1, value.length - 1).split("/")  // 先頭と最後のスラッシュをとってから分割
@@ -94,33 +86,27 @@ class SKKUserDictionary private constructor (
             for (pair in okrs) { newVal.append("/[", pair.first, "/", pair.second, "/]") }
             newVal.append("/")
 
-            try {
+            safeRun {
                 mOldValue = mBTree.find(key)
-            } catch (e: IOException) {
-                throw RuntimeException(e)
             }
         }
 
-        try {
+        safeRun {
             mBTree.insert(key, newVal.toString(), true)
             mRecMan.commit()
-        } catch (e: IOException) {
-            throw RuntimeException(e)
         }
     }
 
     fun rollBack() {
         if (mOldKey.isEmpty()) return
 
-        try {
+        safeRun {
             if (mOldValue.isEmpty()) {
                 mBTree.remove(mOldKey)
             } else {
                 mBTree.insert(mOldKey, mOldValue, true)
             }
             mRecMan.commit()
-        } catch (e: IOException) {
-            throw RuntimeException(e)
         }
 
         mOldValue = ""
@@ -128,9 +114,20 @@ class SKKUserDictionary private constructor (
     }
 
     fun commitChanges() {
-        try {
+        safeRun {
             mRecMan.commit()
+        }
+    }
+
+    private fun <T>safeRun(block: () -> T): T {
+        return try {
+            runBlocking { while (mIsLocked) delay(50) }
+            mIsLocked = true
+            val result = block()
+            mIsLocked = false
+            result
         } catch (e: Exception) {
+            mIsLocked = false
             throw RuntimeException(e)
         }
     }
@@ -148,9 +145,9 @@ class SKKUserDictionary private constructor (
                     recman.setNamedObject(btreeName, btree.recordId)
                     recman.commit()
                     dlog("New user dictionary created")
-                    return SKKUserDictionary(context, recman, recid, btree, isASCII)
+                    return SKKUserDictionary(recman, recid, btree, isASCII)
                 } else {
-                    return SKKUserDictionary(context, recman, recid, BTree<String, String>().load(recman, recid), isASCII)
+                    return SKKUserDictionary(recman, recid, BTree<String, String>().load(recman, recid), isASCII)
                 }
             } catch (e: Exception) {
                 Log.e("SKK", "Error in opening the dictionary: $e")

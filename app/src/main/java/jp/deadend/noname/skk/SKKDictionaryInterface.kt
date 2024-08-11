@@ -5,8 +5,11 @@ import jdbm.RecordManager
 import jdbm.btree.BTree
 import jdbm.helper.Tuple
 import jdbm.helper.TupleBrowser
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.runBlocking
 import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStream
@@ -133,14 +136,18 @@ internal fun loadFromTextDic(
     }
 }
 
-interface SKKDictionaryInterface: CoroutineScope {
+interface SKKDictionaryInterface {
     val mRecMan: RecordManager
     val mRecID: Long
     val mBTree: BTree<String, String>
     val mIsASCII: Boolean
+    var mIsLocked: Boolean
 
-    fun findKeys(rawKey: String): List<Pair<String, String>> {
-        val key = katakana2hiragana(rawKey) ?: return listOf()
+    fun findKeys(scope: CoroutineScope, rawKey: String): List<Pair<String, String>> {
+        runBlocking { while (mIsLocked) delay(50) }
+        mIsLocked = true
+
+        val key = katakana2hiragana(rawKey) ?: return listOf<Pair<String, String>>().also { mIsLocked = false }
         val list = mutableListOf<Triple<String, String, Int>>()
         val tuple = Tuple<String, String>()
         val browser: TupleBrowser<String, String>
@@ -148,10 +155,13 @@ interface SKKDictionaryInterface: CoroutineScope {
         val topFreq = ArrayList<Int>()
 
         try {
-            browser = mBTree.browse(key) ?: return listOf()
+            browser = mBTree.browse(key) ?: return listOf<Pair<String, String>>().also { mIsLocked = false }
 
             while (list.size < if (mIsASCII) 100 else 5) {
-                ensureActive() // ここでキャンセルされる
+                if (!scope.isActive) {
+                    mIsLocked = false
+                    throw CancellationException()
+                }
                 if (!browser.getNext(tuple)) break
                 str = tuple.key
                 if (!str.startsWith(key)) break
@@ -187,7 +197,7 @@ interface SKKDictionaryInterface: CoroutineScope {
             list.sortByDescending { it.third }
         }
 
-        return list.map { it.first to it.second }
+        return list.map { it.first to it.second }.also { mIsLocked = false }
     }
 
     fun close() {
