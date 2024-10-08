@@ -50,73 +50,82 @@ class CandidateViewContainer(screen: Context, attrs: AttributeSet) : LinearLayou
 
     fun initViews() {
         val onTouchListener = OnTouchListener { view, event ->
-            when (event.action and MotionEvent.ACTION_MASK) {
-                MotionEvent.ACTION_DOWN -> when {
-                    view == binding.candidateLeft && mLeftEnabled -> {
-                        binding.candidates.scrollPrev()
-                    }
-                    view == binding.candidateRight && mRightEnabled -> {
-                        binding.candidates.scrollNext()
-                    }
-                    else -> {
-                        mActivePointerIds = mutableListOf(event.getPointerId(0))
-                        mDragStartLeft = mService.leftOffset
-                        mDragStartX = event.getRawX(event.findPointerIndex(mActivePointerIds[0]))
-                        mDragging = true
-                    }
-                }
-
-                MotionEvent.ACTION_POINTER_DOWN -> { // 2本目以降の指追加
-                    mActivePointerIds.add(event.getPointerId(event.actionIndex))
-                    assert(mActivePointerIds.count() > 1)
-                    mDragStartLeft = mService.leftOffset
-                    mPinchStartWidth = width
-                    mPinchStartDistance = abs(
-                        event.getRawX(event.findPointerIndex(mActivePointerIds[1])) -
+            try {
+                when (event.action and MotionEvent.ACTION_MASK) {
+                    MotionEvent.ACTION_DOWN -> when {
+                        view == binding.candidateLeft && mLeftEnabled -> {
+                            binding.candidates.scrollPrev()
+                        }
+                        view == binding.candidateRight && mRightEnabled -> {
+                            binding.candidates.scrollNext()
+                        }
+                        else -> {
+                            mActivePointerIds = mutableListOf(event.getPointerId(0))
+                            mDragStartLeft = mService.leftOffset
+                            mDragStartX =
                                 event.getRawX(event.findPointerIndex(mActivePointerIds[0]))
-                    )
-                }
+                            mDragging = true
+                        }
+                    }
 
-                MotionEvent.ACTION_MOVE -> {
-                    if (mActivePointerIds.count() > 1) { // 幅の調整
-                        val currentDistance = abs(
+                    MotionEvent.ACTION_POINTER_DOWN -> { // 2本目以降の指追加
+                        mActivePointerIds.add(event.getPointerId(event.actionIndex))
+                        assert(mActivePointerIds.count() > 1)
+                        mDragStartLeft = mService.leftOffset
+                        mPinchStartWidth = width
+                        mPinchStartDistance = abs(
                             event.getRawX(event.findPointerIndex(mActivePointerIds[1])) -
                                     event.getRawX(event.findPointerIndex(mActivePointerIds[0]))
                         )
-                        val newWidth = (mPinchStartWidth - mPinchStartDistance + currentDistance)
-                            .toInt().coerceIn(101, mService.mScreenWidth)
-                        val newLeftOffset =
-                            mDragStartLeft + (mPinchStartDistance - currentDistance).toInt() / 2
-                        mService.leftOffset = newLeftOffset.coerceIn(0, mService.mScreenWidth - newWidth)
-                        mService.setInputViewWidth(newWidth)
-                    } else if (mDragging) { // 位置の調整
-                        val newLeftOffset = mDragStartLeft + (
-                                event.getRawX(event.findPointerIndex(mActivePointerIds[0])) -
-                                        mDragStartX
-                                ).toInt()
-                        mService.leftOffset = newLeftOffset.coerceIn(0, mService.mScreenWidth - width)
-                        mService.setInputView(null)
                     }
-                }
 
-                MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_UP -> {
-                    mActivePointerIds.remove(event.getPointerId(event.actionIndex))
-                    if (mActivePointerIds.count() == 1) {
-                        saveWidth()
-                        // もう一度ドラッグに戻る
-                        mDragStartLeft = mService.leftOffset
-                        mDragStartX = event.getRawX(event.findPointerIndex(mActivePointerIds[0]))
-                    } else if (mActivePointerIds.isEmpty()) {
-                        if (mDragging) {
-                            saveLeft(mService.leftOffset)
-                            mDragging = false
-                        } else {
-                            view.performClick() // ???
+                    MotionEvent.ACTION_MOVE -> {
+                        if (mActivePointerIds.count() > 1) { // 幅の調整
+                            val currentDistance = abs(
+                                event.getRawX(event.findPointerIndex(mActivePointerIds[1])) -
+                                        event.getRawX(event.findPointerIndex(mActivePointerIds[0]))
+                            )
+                            val newWidth =
+                                (mPinchStartWidth - mPinchStartDistance + currentDistance)
+                                    .toInt().coerceIn(101, mService.mScreenWidth)
+                            val newLeftOffset =
+                                mDragStartLeft + (mPinchStartDistance - currentDistance).toInt() / 2
+                            mService.leftOffset =
+                                newLeftOffset.coerceIn(0, mService.mScreenWidth - newWidth)
+                            mService.setInputViewWidth(newWidth)
+                        } else if (mDragging) { // 位置の調整
+                            val newLeftOffset = mDragStartLeft + (
+                                    event.getRawX(event.findPointerIndex(mActivePointerIds[0])) -
+                                            mDragStartX
+                                    ).toInt()
+                            mService.leftOffset =
+                                newLeftOffset.coerceIn(0, mService.mScreenWidth - width)
+                            mService.setInputView(null)
+                        }
+                    }
+
+                    MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_UP -> {
+                        mActivePointerIds.remove(event.getPointerId(event.actionIndex))
+                        if (mActivePointerIds.count() == 1) {
+                            saveWidth()
+                            // もう一度ドラッグに戻る
+                            mDragStartLeft = mService.leftOffset
+                            mDragStartX =
+                                event.getRawX(event.findPointerIndex(mActivePointerIds[0]))
+                        } else if (mActivePointerIds.isEmpty()) {
+                            if (mDragging) {
+                                saveLeft(mService.leftOffset)
+                                mDragging = false
+                            } else {
+                                view.performClick() // ???
+                            }
                         }
                     }
                 }
+                true
+            } catch (_: IllegalArgumentException) {
+                false
             }
-            true
         }
         binding.candidateLeft.setOnTouchListener(onTouchListener)
         binding.candidateRight.setOnTouchListener(onTouchListener)
