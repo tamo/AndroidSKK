@@ -114,6 +114,10 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
     }
 
     override fun onKey(primaryCode: Int) {
+        // シフトで up と none が交換される
+        val flickNone = if (isShifted) FLICK_UP else FLICK_NONE
+        val flickUp = if (isShifted) FLICK_NONE else FLICK_UP
+
         when (primaryCode) {
             Keyboard.KEYCODE_DELETE -> {
                 if (!isCapsLocked) isShifted = false
@@ -133,19 +137,19 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
             }
             KEYCODE_QWERTY_TOJP -> {
                 when (isFlicked) {
-                    if (skkPrefs.preferFlick) FLICK_NONE else FLICK_DOWN -> mService.changeToFlick()
-                    if (skkPrefs.preferFlick) FLICK_DOWN else FLICK_NONE -> mService.handleKanaKey()
-                    FLICK_UP -> mService.pasteClip()
+                    if (skkPrefs.preferFlick) flickNone else FLICK_DOWN -> mService.changeToFlick()
+                    if (skkPrefs.preferFlick) FLICK_DOWN else flickNone -> mService.handleKanaKey()
+                    flickUp -> mService.pasteClip()
                 }
             }
             KEYCODE_QWERTY_TOSYM -> {
                 when (isFlicked) {
-                    FLICK_NONE -> {
+                    flickNone -> {
                         keyboard = mSymbolsKeyboard
                         isShifted = keyboard.isShifted
                         isCapsLocked = keyboard.isCapsLocked
                     }
-                    FLICK_UP -> mService.googleTransliterate()
+                    flickUp -> mService.googleTransliterate()
                     FLICK_DOWN -> mService.handleCancel()
                 }
             }
@@ -164,10 +168,10 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
 
                 val shiftedCode = keyboard.shiftedCodes[primaryCode] ?: 0
                 val downCode = keyboard.downCodes[primaryCode] ?: 0
-                val code = when {
-                    isFlicked == FLICK_DOWN ->
+                val code = when (isFlicked) {
+                    FLICK_DOWN ->
                         if (downCode > 0) downCode else primaryCode
-                    isShifted xor (isFlicked == FLICK_UP) ->
+                    flickUp ->
                         if (shiftedCode > 0) shiftedCode else primaryCode
                     else -> primaryCode
                 }
