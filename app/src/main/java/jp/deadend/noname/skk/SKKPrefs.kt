@@ -141,35 +141,27 @@ class SKKPrefs(context: Context) {
         set(value) = prefs.edit().putString(res.getString(R.string.prefkey_type_text), value).apply()
 
     // CandidateViewContainer
-    var keyLeftPort: Float
-        get() = prefs.getFloat(res.getString(R.string.prefkey_key_left_port), 1f).coerceIn(0f, 1f)
-        set(value) = prefs.edit().putFloat(res.getString(R.string.prefkey_key_left_port), value.coerceIn(0f, 1f)).apply()
+    var keyCenterPort: Float
+        get() = prefs.getFloat(res.getString(R.string.prefkey_key_center_port), 0.5f).coerceIn(0f, 1f)
+        set(value) = prefs.edit().putFloat(res.getString(R.string.prefkey_key_center_port), value.coerceIn(0f, 1f)).apply()
 
-    var keyLeftLand: Float
-        get() = prefs.getFloat(res.getString(R.string.prefkey_key_left_land), 1f).coerceIn(0f, 1f)
-        set(value) = prefs.edit().putFloat(res.getString(R.string.prefkey_key_left_land), value.coerceIn(0f, 1f)).apply()
+    var keyCenterLand: Float
+        get() = prefs.getFloat(res.getString(R.string.prefkey_key_center_land), 0.5f).coerceIn(0f, 1f)
+        set(value) = prefs.edit().putFloat(res.getString(R.string.prefkey_key_center_land), value.coerceIn(0f, 1f)).apply()
 
     var keyWidthPort: Int
-        get() { // 古い設定値（画面への割合）への対策
-            val screenWidth = min(res.displayMetrics.widthPixels,res.displayMetrics.heightPixels)
-            val maybePercent = prefs.getInt(res.getString(R.string.prefkey_key_width_port), screenWidth)
-            return if (maybePercent <= 100) {
-                val newValue = (screenWidth * maybePercent / 100).coerceIn(101, screenWidth)
-                prefs.edit().putInt(res.getString(R.string.prefkey_key_width_port), newValue).apply()
-                newValue
-            } else maybePercent
+        get() {
+            val screenWidth = res.displayMetrics.run { min(widthPixels, heightPixels) }
+            return prefs.getInt(res.getString(R.string.prefkey_key_width_port), screenWidth)
+                .coerceAtLeast(res.getDimensionPixelSize(R.dimen.keyboard_minimum_width))
         }
         set(value) = prefs.edit().putInt(res.getString(R.string.prefkey_key_width_port), value).apply()
 
     var keyWidthLand: Int
-        get() { // 古い設定値（画面への割合）への対策
-            val screenWidth = max(res.displayMetrics.widthPixels,res.displayMetrics.heightPixels)
-            val maybePercent = prefs.getInt(res.getString(R.string.prefkey_key_width_land), screenWidth * 3 / 10)
-            return if (maybePercent <= 100) {
-                val newValue = (screenWidth * maybePercent / 100).coerceIn(101, screenWidth)
-                prefs.edit().putInt(res.getString(R.string.prefkey_key_width_land), newValue).apply()
-                newValue
-            } else maybePercent
+        get() {
+            val screenWidth = res.displayMetrics.run { max(widthPixels, heightPixels) }
+            return prefs.getInt(res.getString(R.string.prefkey_key_width_land), screenWidth * 3 / 10)
+                .coerceAtLeast(res.getDimensionPixelSize(R.dimen.keyboard_minimum_width))
         }
         set(value) = prefs.edit().putInt(res.getString(R.string.prefkey_key_width_land), value).apply()
 

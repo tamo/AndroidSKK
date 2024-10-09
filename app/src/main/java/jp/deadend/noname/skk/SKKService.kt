@@ -1023,11 +1023,13 @@ class SKKService : InputMethodService() {
     override fun setInputView(view: View?) {
         // view が null のときはここをスキップして再描画だけする (ドラッグで位置調整のとき使う)
         (view as? KeyboardView)?.let { inputView ->
-            inputView.parent?.let { (it as FrameLayout).removeView(view) }
-            inputView.keyboard.resize(inputView.keyboard.width, keyboardHeight())
-            inputView.requestLayout()
-            super.setInputView(inputView)
             mInputView = inputView
+            mInputView!!.apply {
+                parent?.let { (it as FrameLayout).removeView(view) }
+                keyboard.resize(keyboardWidth(), keyboardHeight())
+                requestLayout()
+            }
+            super.setInputView(mInputView)
             computeLeftOffset()
         }
 
@@ -1056,10 +1058,12 @@ class SKKService : InputMethodService() {
         } / 100
 
     private fun computeLeftOffset() {
-        leftOffset = ((mScreenWidth - keyboardWidth()) * when (mOrientation) {
-            Configuration.ORIENTATION_LANDSCAPE -> skkPrefs.keyLeftLand
-            else -> skkPrefs.keyLeftPort
-        }).toInt()
+        leftOffset = (mScreenWidth * when (mOrientation) {
+            Configuration.ORIENTATION_LANDSCAPE -> skkPrefs.keyCenterLand
+            else -> skkPrefs.keyCenterPort
+        } - keyboardWidth() / 2)
+            .toInt()
+            .coerceIn(0, mScreenWidth - keyboardWidth())
     }
 
     private fun isFloating(): Boolean = keyboardWidth() < mScreenWidth - mScreenHeight

@@ -87,7 +87,10 @@ class CandidateViewContainer(screen: Context, attrs: AttributeSet) : LinearLayou
                             )
                             val newWidth =
                                 (mPinchStartWidth - mPinchStartDistance + currentDistance)
-                                    .toInt().coerceIn(101, mService.mScreenWidth)
+                                    .toInt().coerceIn(
+                                        resources.getDimensionPixelSize(R.dimen.keyboard_minimum_width),
+                                        mService.mScreenWidth
+                                    )
                             val newLeftOffset =
                                 mDragStartLeft + (mPinchStartDistance - currentDistance).toInt() / 2
                             mService.leftOffset =
@@ -114,7 +117,9 @@ class CandidateViewContainer(screen: Context, attrs: AttributeSet) : LinearLayou
                                 event.getRawX(event.findPointerIndex(mActivePointerIds[0]))
                         } else if (mActivePointerIds.isEmpty()) {
                             if (mDragging) {
-                                saveLeft(mService.leftOffset)
+                                if (mDragStartLeft != mService.leftOffset) {
+                                    saveLeft(mService.leftOffset)
+                                }
                                 mDragging = false
                             } else {
                                 view.performClick() // ???
@@ -132,12 +137,12 @@ class CandidateViewContainer(screen: Context, attrs: AttributeSet) : LinearLayou
     }
 
     private fun saveLeft(leftOffset: Int) {
-        val leftRate =
-            if (mService.mScreenWidth <= width) 0f
-            else leftOffset / (mService.mScreenWidth - width).toFloat()
+        val centerRate =
+            if (mService.mScreenWidth <= width) 0.5f
+            else (leftOffset * 2 + width) / 2.0f / mService.mScreenWidth
         when (resources.configuration.orientation) {
-            Configuration.ORIENTATION_LANDSCAPE -> skkPrefs.keyLeftLand = leftRate
-            else -> skkPrefs.keyLeftPort = leftRate
+            Configuration.ORIENTATION_LANDSCAPE -> skkPrefs.keyCenterLand = centerRate
+            else -> skkPrefs.keyCenterPort = centerRate
         }
     }
 
