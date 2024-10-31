@@ -30,6 +30,7 @@ class SKKEngine(
     private var mCompletionList: List<String>? = null
     private var mCurrentCandidateIndex = 0
     private var mUpdateSuggestionsJob: Job = Job()
+    private var mSuggestionsSuspended: Boolean = false
 
     // ひらがなや英単語などの入力途中
     internal val mComposing = StringBuilder()
@@ -533,6 +534,7 @@ class SKKEngine(
     }
 
     internal fun updateSuggestions(str: String) {
+        if (mSuggestionsSuspended) return
         mUpdateSuggestionsJob.cancel()
         mUpdateSuggestionsJob.invokeOnCompletion {
             mUpdateSuggestionsJob = MainScope().launch(Dispatchers.Default) {
@@ -555,6 +557,14 @@ class SKKEngine(
             }
             mUpdateSuggestionsJob.start()
         }
+    }
+
+    internal fun suspendSuggestions() {
+        mUpdateSuggestionsJob.cancel()
+        mSuggestionsSuspended = true
+    }
+    internal fun resumeSuggestions() {
+        mSuggestionsSuspended = false
     }
 
     private fun addFound(

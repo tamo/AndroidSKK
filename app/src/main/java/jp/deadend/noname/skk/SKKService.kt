@@ -958,6 +958,13 @@ class SKKService : InputMethodService() {
         mEngine.updateSuggestionsASCII()
     }
 
+    fun suspendSuggestions() {
+        mEngine.suspendSuggestions()
+    }
+    fun resumeSuggestions() {
+        mEngine.resumeSuggestions()
+    }
+
     fun setCandidates(list: List<String>?, number: String) {
         if (list.isNullOrEmpty()) {
             clearCandidatesView()
