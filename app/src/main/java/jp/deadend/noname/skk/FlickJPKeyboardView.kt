@@ -703,19 +703,19 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
             else -> return
         }
 
-        if (isLeftCurve(flick)) {
-            if (consonant == 't'.code && vowel == 'u'.code
-                || consonant == 'y'.code && (vowel == 'a'.code || vowel == 'u'.code || vowel == 'o'.code)) {
-                mService.processKey('x'.code)
-            }
-        }
-
         if (isShifted) {
             mService.processKey(Character.toUpperCase(consonant))
         } else {
             mService.processKey(consonant)
         }
         mService.processKey(vowel)
+
+        if (isLeftCurve(flick)) {
+            if (consonant == 't'.code && vowel == 'u'.code
+                    || consonant == 'y'.code && (vowel == 'a'.code || vowel == 'u'.code || vowel == 'o'.code)) {
+                mService.changeLastChar(SKKEngine.LAST_CONVERSION_SMALL)
+            }
+        }
     }
 
     override fun onLongPress(key: Keyboard.Key): Boolean {
