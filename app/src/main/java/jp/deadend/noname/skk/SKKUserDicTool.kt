@@ -144,6 +144,7 @@ class SKKUserDicTool : AppCompatActivity() {
         mDicName = intent.dataString!!
         val binding = ActivityUserDicToolBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        setSupportActionBar(binding.userDictoolToolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         binding.userDictoolList.emptyView = binding.EmptyListItem

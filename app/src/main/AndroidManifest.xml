@@ -27,11 +27,11 @@
 			<meta-data android:name="android.view.im" android:resource="@xml/method" />
 		</service>
 		<activity android:name=".SKKService$PermissionRequestActivity"
-			android:theme="@style/Theme.AppCompat.DayNight.DarkActionBar" />
+			android:theme="@style/Theme.AppCompat.DayNight.NoActionBar" />
 
 		<activity android:name=".SKKSettingsActivity"
 			android:launchMode="singleInstance"
-			android:theme="@style/Theme.AppCompat.DayNight.DarkActionBar"
+			android:theme="@style/Theme.AppCompat.DayNight.NoActionBar"
 			android:label="@string/label_pref_activity"
 			android:exported="true">
 			<intent-filter>
@@ -41,12 +41,12 @@
 		</activity>
 		<activity android:name=".SKKUserDicTool"
 			android:launchMode="singleInstance"
-			android:theme="@style/Theme.AppCompat.DayNight.DarkActionBar"
+			android:theme="@style/Theme.AppCompat.DayNight.NoActionBar"
 			android:label="@string/label_dictool_activity">
 		</activity>
 		<activity android:name=".SKKDicManager"
 			android:launchMode="singleInstance"
-			android:theme="@style/Theme.AppCompat.DayNight.DarkActionBar"
+			android:theme="@style/Theme.AppCompat.DayNight.NoActionBar"
 			android:label="@string/label_dicmanager_activity">
 		</activity>
 		<activity android:name=".SKKMushroom"

@@ -12,10 +12,12 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
+import jp.deadend.noname.skk.databinding.ActivitySettingsBinding
 
 
 class SKKSettingsActivity : AppCompatActivity(),
     PreferenceFragmentCompat.OnPreferenceStartFragmentCallback {
+    private lateinit var binding: ActivitySettingsBinding
     class SettingsMainFragment : PreferenceFragmentCompat() {
         override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
             setPreferencesFromResource(R.xml.prefs_main, rootKey)
@@ -23,12 +25,12 @@ class SKKSettingsActivity : AppCompatActivity(),
     }
     class SettingsSoftKeyFragment : PreferenceFragmentCompat() {
         override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
-            setPreferencesFromResource(R.xml.prefs_softkey, null)
+            setPreferencesFromResource(R.xml.prefs_softkey, rootKey)
         }
     }
     class SettingsHardKeyFragment : PreferenceFragmentCompat() {
         override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
-            setPreferencesFromResource(R.xml.prefs_hardkey, null)
+            setPreferencesFromResource(R.xml.prefs_hardkey, rootKey)
         }
 
         override fun onDisplayPreferenceDialog(preference: Preference) {
@@ -45,11 +47,13 @@ class SKKSettingsActivity : AppCompatActivity(),
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        binding = ActivitySettingsBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
-//        title = getString(R.string.title_activity_settings)
 
         supportFragmentManager.beginTransaction()
-            .replace(android.R.id.content, SettingsMainFragment())
+            .replace(binding.content.id, SettingsMainFragment())
             .commit()
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
@@ -77,10 +81,9 @@ class SKKSettingsActivity : AppCompatActivity(),
         fragment.arguments = args
         fragment.setTargetFragment(caller, 0)
         supportFragmentManager.beginTransaction()
-            .replace(android.R.id.content, fragment)
+            .replace(binding.content.id, fragment)
             .addToBackStack(null)
             .commit()
-        title = pref.title
 
         return true
     }
@@ -89,9 +92,6 @@ class SKKSettingsActivity : AppCompatActivity(),
         when (item.itemId) {
             android.R.id.home -> {
                 onBackPressedDispatcher.onBackPressed()
-                if (supportFragmentManager.backStackEntryCount == 0) {
-                    setTitle(R.string.label_pref_activity)
-                }
             }
             else -> return super.onOptionsItemSelected(item)
         }

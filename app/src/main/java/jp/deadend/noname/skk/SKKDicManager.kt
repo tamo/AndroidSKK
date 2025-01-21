@@ -65,6 +65,7 @@ class SKKDicManager : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityDicManagerBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        setSupportActionBar(binding.dicManagerToolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         // 一般的な辞書リストをまず列挙
