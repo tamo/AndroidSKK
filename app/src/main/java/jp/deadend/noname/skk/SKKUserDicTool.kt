@@ -15,6 +15,9 @@ import android.widget.ArrayAdapter
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.widget.SearchView
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
 import java.io.IOException
 import java.nio.charset.CharacterCodingException
 import jdbm.RecordManager
@@ -144,6 +147,18 @@ class SKKUserDicTool : AppCompatActivity() {
         mDicName = intent.dataString!!
         val binding = ActivityUserDicToolBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, windowInsets ->
+            val bars = windowInsets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout(),
+            )
+            view.updatePadding(
+                left = bars.left,
+                top = bars.top,
+                right = bars.right,
+                bottom = bars.bottom,
+            )
+            WindowInsetsCompat.CONSUMED
+        }
         setSupportActionBar(binding.userDictoolToolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
