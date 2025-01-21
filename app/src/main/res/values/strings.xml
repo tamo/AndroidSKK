@@ -62,6 +62,7 @@
 	<string translatable="false" name="prefkey_key_height_land">PrefKeyKeyHeightLand</string>
 	<string translatable="false" name="prefkey_key_width_port">PrefKeyKeyWidthPort</string>
 	<string translatable="false" name="prefkey_key_width_land">PrefKeyKeyWidthLand</string>
+	<string translatable="false" name="prefkey_key_padding_bottom">PrefKeyKeyPaddingBottom</string>
 	<string translatable="false" name="prefkey_key_width_qwerty_zoom">PrefKeyKeyWidthQwertyZoom</string>
 	<string translatable="false" name="prefkey_key_center_port">PrefKeyKeyCenterPort</string>
 	<string translatable="false" name="prefkey_key_center_land">PrefKeyKeyCenterLand</string>

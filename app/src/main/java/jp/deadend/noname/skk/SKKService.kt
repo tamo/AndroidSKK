@@ -317,19 +317,20 @@ class SKKService : InputMethodService() {
             else    -> applicationContext
         }
         val keyHeight = keyboardHeight()
+        val keyBottom = skkPrefs.keyPaddingBottom
         val flickWidth = when (mOrientation) {
             Configuration.ORIENTATION_PORTRAIT -> skkPrefs.keyWidthPort
             Configuration.ORIENTATION_LANDSCAPE -> skkPrefs.keyWidthLand
             else -> mScreenWidth
         }
         val alpha = skkPrefs.backgroundAlpha
-        flick.prepareNewKeyboard(context, flickWidth, keyHeight)
+        flick.prepareNewKeyboard(context, flickWidth, keyHeight, keyBottom)
         flick.backgroundAlpha = 255 * alpha / 100
 
         val qwertyWidth = (flickWidth * skkPrefs.keyWidthQwertyZoom / 100).coerceAtMost(mScreenWidth)
-        qwerty.keyboard.resize(qwertyWidth, keyHeight)
-        qwerty.mSymbolsKeyboard.resize(qwertyWidth, keyHeight)
-        abbrev.keyboard.resize(qwertyWidth, keyHeight)
+        qwerty.keyboard.resize(qwertyWidth, keyHeight, keyBottom)
+        qwerty.mSymbolsKeyboard.resize(qwertyWidth, keyHeight, keyBottom)
+        abbrev.keyboard.resize(qwertyWidth, keyHeight, keyBottom)
 
         val density = context.resources.displayMetrics.density
         val sensitivity = when (skkPrefs.flickSensitivity) {
@@ -1032,7 +1033,7 @@ class SKKService : InputMethodService() {
 
     internal fun setInputViewWidth(width: Int) {
         mInputView?.let { inputView ->
-            inputView.keyboard.resize(width, keyboardHeight())
+            inputView.keyboard.resize(width, keyboardHeight(), skkPrefs.keyPaddingBottom)
             inputView.requestLayout()
             setInputView(null)
         }
@@ -1044,7 +1045,7 @@ class SKKService : InputMethodService() {
             mInputView = inputView
             mInputView!!.apply {
                 parent?.let { (it as FrameLayout).removeView(view) }
-                keyboard.resize(keyboardWidth(), keyboardHeight())
+                keyboard.resize(keyboardWidth(), keyboardHeight(), skkPrefs.keyPaddingBottom)
                 requestLayout()
             }
             super.setInputView(mInputView)

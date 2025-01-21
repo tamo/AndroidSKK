@@ -116,6 +116,10 @@ class SKKPrefs(context: Context) {
         get() = prefs.getInt(res.getString(R.string.prefkey_key_height_land), 50)
         set(value) = prefs.edit().putInt(res.getString(R.string.prefkey_key_height_land), value).apply()
 
+    var keyPaddingBottom: Int
+        get() = prefs.getInt(res.getString(R.string.prefkey_key_padding_bottom), 0)
+        set(value) = prefs.edit().putInt(res.getString(R.string.prefkey_key_padding_bottom), value).apply()
+
     var keyWidthQwertyZoom: Int
         get() = prefs.getInt(res.getString(R.string.prefkey_key_width_qwerty_zoom), 200)
         set(value) = prefs.edit().putInt(res.getString(R.string.prefkey_key_width_qwerty_zoom), value).apply()

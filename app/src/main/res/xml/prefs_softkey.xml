@@ -159,6 +159,16 @@
             app:iconSpaceReserved="false"
             />
         <androidx.preference.SeekBarPreference
+            app:key="@string/prefkey_key_padding_bottom"
+            app:title="キーボードの高さに対する底上げ部分の割合（％）"
+            app:summary="最下段から下にスワイプしやすくするなど"
+            app:defaultValue="0"
+            app:min="0"
+            android:max="50"
+            app:showSeekBarValue="true"
+            app:iconSpaceReserved="false"
+            />
+        <androidx.preference.SeekBarPreference
             app:key="@string/prefkey_key_width_qwerty_zoom"
             app:title="英字キーボード幅の倍率"
             app:summary="日本語キーボードに対する割合（％）"

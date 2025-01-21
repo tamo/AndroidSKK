@@ -219,10 +219,10 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
         invalidateAllKeys()
     }
 
-    internal fun prepareNewKeyboard(context: Context, widthPixel: Int, heightPixel: Int) {
-        mJPKeyboard.resize(widthPixel, heightPixel)
-        mNumKeyboard.resize(widthPixel, heightPixel)
-        mVoiceKeyboard.resize(widthPixel, heightPixel)
+    internal fun prepareNewKeyboard(context: Context, widthPixel: Int, heightPixel: Int, bottomPercent: Int) {
+        mJPKeyboard.resize(widthPixel, heightPixel, bottomPercent)
+        mNumKeyboard.resize(widthPixel, heightPixel, bottomPercent)
+        mVoiceKeyboard.resize(widthPixel, heightPixel, bottomPercent)
         keyboard = mJPKeyboard
         invalidateAllKeys()
 

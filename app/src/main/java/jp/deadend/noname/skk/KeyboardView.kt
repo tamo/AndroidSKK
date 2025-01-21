@@ -336,7 +336,7 @@ open class KeyboardView @JvmOverloads constructor(
 
     public override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
-        mKeyboard.resize(w, h)
+        mKeyboard.resize(w, h, skkPrefs.keyPaddingBottom)
         mBuffer = null
     }
 

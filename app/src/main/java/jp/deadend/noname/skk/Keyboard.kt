@@ -30,6 +30,7 @@ open class Keyboard {
         private set
     var width = 0
         private set
+    private var bottom = 0
 
     val keys: MutableList<Key>  = mutableListOf()
     val shiftedCodes = mutableMapOf<Int, Int>() // code から shiftedCode への逆引き
@@ -290,8 +291,8 @@ open class Keyboard {
         rows.add(row)
     }
 
-    fun resize(newWidth: Int, newHeight: Int) {
-        if ((newWidth == width) && newHeight == height) { return }
+    fun resize(newWidth: Int, newHeight: Int, newBottom: Int) {
+        if ((newWidth == width) && (newHeight == height) && newBottom == bottom) { return }
         if ((newWidth < 1) || newHeight < 1) { return }
 
         var totalHeight = 0
@@ -305,7 +306,7 @@ open class Keyboard {
         }
 
         val hScaleFactor = newWidth.toFloat() / maxWidth
-        val vScaleFactor = newHeight.toFloat() / totalHeight
+        val vScaleFactor = newHeight.toFloat() * (100 - newBottom) / 100 / totalHeight
         var x: Int
         var y = 0
         for (row in rows) {
@@ -325,6 +326,7 @@ open class Keyboard {
 
         width = newWidth
         height = newHeight
+        bottom = newBottom
 
         computeNearestNeighbors()
     }
@@ -370,7 +372,7 @@ open class Keyboard {
 
     fun getNearestKeys(x: Int, y: Int): IntArray {
         if (mGridNeighbors[0] == null) { computeNearestNeighbors() }
-        if (x in 0 until width && y in 0 until height) {
+        if (x in 0 until width && y in 0 until height * (100 - bottom) / 100) {
             val index = (y / mCellHeight) * GRID_WIDTH + x / mCellWidth
             if (index < GRID_SIZE) {
                 mGridNeighbors[index]?.let { return it }
