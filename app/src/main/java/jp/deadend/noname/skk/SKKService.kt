@@ -26,6 +26,8 @@ import android.util.Log
 import android.util.TypedValue
 import android.view.KeyEvent
 import android.view.View
+import android.view.WindowInsets
+import android.view.WindowManager
 import android.view.inputmethod.EditorInfo
 import android.widget.FrameLayout
 import android.widget.Toast
@@ -270,7 +272,16 @@ class SKKService : InputMethodService() {
         mAudioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
         mOrientation = resources.configuration.orientation
-        mScreenWidth = resources.displayMetrics.widthPixels
+        mScreenWidth = if (Build.VERSION.SDK_INT >= 35) {
+            val manager = getSystemService(WindowManager::class.java)
+            val metrics = manager.currentWindowMetrics
+            val insets = metrics.windowInsets.getInsetsIgnoringVisibility(
+                WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout()
+            )
+            metrics.bounds.width() - insets.left - insets.right
+        } else {
+            resources.displayMetrics.widthPixels
+        }
         mScreenHeight = resources.displayMetrics.heightPixels
 
         readPrefs()
