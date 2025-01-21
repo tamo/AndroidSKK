@@ -14,7 +14,7 @@ import android.os.Build
 
 internal class MyUncaughtExceptionHandler(val context: Context) : UncaughtExceptionHandler {
     private val mDefaultUEH: UncaughtExceptionHandler? = Thread.getDefaultUncaughtExceptionHandler()
-    private val mVersionName: String
+    private val mVersionName: String?
 
     init {
         val packInfo: PackageInfo
