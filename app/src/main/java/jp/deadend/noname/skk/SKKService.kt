@@ -382,7 +382,16 @@ class SKKService : InputMethodService() {
     override fun onConfigurationChanged(newConfig: Configuration) {
         assert(newConfig.orientation == resources.configuration.orientation)
         mOrientation = resources.configuration.orientation
-        mScreenWidth = resources.displayMetrics.widthPixels
+        mScreenWidth = if (Build.VERSION.SDK_INT >= 35) {
+            val manager = getSystemService(WindowManager::class.java)
+            val metrics = manager.currentWindowMetrics
+            val insets = metrics.windowInsets.getInsetsIgnoringVisibility(
+                WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout()
+            )
+            metrics.bounds.width() - insets.left - insets.right
+        } else {
+            resources.displayMetrics.widthPixels
+        }
         mScreenHeight = resources.displayMetrics.heightPixels
         super.onConfigurationChanged(newConfig) // これが onInitializeInterface を呼ぶ
     }
