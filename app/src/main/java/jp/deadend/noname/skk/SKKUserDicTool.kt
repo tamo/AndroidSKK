@@ -34,7 +34,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import java.util.zip.GZIPInputStream
 import kotlin.math.floor
@@ -42,23 +41,26 @@ import kotlin.math.sqrt
 
 class SKKUserDicTool : AppCompatActivity() {
     private lateinit var mDicName: String
-    private lateinit var mRecMan: RecordManager
-    private lateinit var mBtree: BTree<String, String>
-    private var isOpened = false
+    private var mRecMan: RecordManager? = null
+    private var mBtree: BTree<String, String>? = null
     private var mEntryList = mutableListOf<Tuple<String, String>>()
     private var mFoundList = mutableListOf<Tuple<String, String>>()
     private lateinit var mAdapter: EntryAdapter
     private lateinit var mSearchView: SearchView
     private lateinit var mSearchAdapter: EntryAdapter
     private var mSearchJob: Job = Job()
+    private var mInFileLauncher = false
 
     private val importFileLauncher = registerForActivityResult(
         ActivityResultContracts.OpenDocument()
     ) { uri ->
-        if (uri == null) return@registerForActivityResult
+        if (uri == null) {
+            mInFileLauncher = false
+            return@registerForActivityResult
+        }
+        dlog("importing $uri")
         mAdapter.clear()
-        openUserDict()
-        MainScope().launch(Dispatchers.IO) {
+        if (openUserDict()) MainScope().launch(Dispatchers.IO) {
             try {
                 val name = getFileNameFromUri(this@SKKUserDicTool, uri)!!
                 val isGzip = name.endsWith(".gz")
@@ -76,7 +78,7 @@ class SKKUserDicTool : AppCompatActivity() {
                 withContext(Dispatchers.Main) { mSearchView.queryHint = "インポート中" }
                 contentResolver.openInputStream(uri)?.use { inputStream ->
                     val processedInputStream = if (isGzip) GZIPInputStream(inputStream) else inputStream
-                    loadFromTextDic(processedInputStream, charset, isWordList, mRecMan, mBtree, false) {
+                    loadFromTextDic(processedInputStream, charset, isWordList, mRecMan!!, mBtree!!, false) {
                         if (floor(sqrt(it.toFloat())) % 50 == 0f) MainScope().launch { // 味わい進捗
                             mSearchView.queryHint = "インポート中 ${it}行目"
                         }
@@ -98,23 +100,30 @@ class SKKUserDicTool : AppCompatActivity() {
                     }
                 }
             }
+            closeUserDict()
+
             withContext(Dispatchers.Main) {
-                updateListItems() // closeUserDict() が含まれている
+                updateListItems()
             }
+            mInFileLauncher = false
         }
     }
 
     private val exportFileLauncher = registerForActivityResult(
         ActivityResultContracts.CreateDocument("text/plain")
     ) { uri ->
-        if (uri == null) return@registerForActivityResult
-        MainScope().launch(Dispatchers.IO) {
-            openUserDict()
+        if (uri == null) {
+            mInFileLauncher = false
+            return@registerForActivityResult
+        }
+        dlog("exporting $uri")
+        if (openUserDict()) MainScope().launch(Dispatchers.IO) {
+            var errorMessage = ""
             try {
                 contentResolver.openOutputStream(uri, "wt")?.bufferedWriter()?.use {
-                    val browser = mBtree.browse()
+                    val browser = mBtree!!.browse()
                     if (browser == null) withContext(Dispatchers.Main) {
-                        onFailToOpenUserDict()
+                        throw(IOException("database browser is null"))
                     } else {
                         val tuple = Tuple<String, String>()
                         while (browser.getNext(tuple)) {
@@ -123,23 +132,28 @@ class SKKUserDicTool : AppCompatActivity() {
                     }
                 }
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    SimpleMessageDialogFragment.newInstance(
-                        getString(R.string.error_write_to_external_storage)
-                    ).show(supportFragmentManager, "dialog")
-                }
+                errorMessage = e.message ?: "(null)"
             }
             closeUserDict()
 
             withContext(Dispatchers.Main) {
+                updateListItems()
                 SimpleMessageDialogFragment.newInstance(
-                    getString(
-                        R.string.message_written_to_external_storage,
-                        getFileNameFromUri(this@SKKUserDicTool, uri)
-                    )
+                    if (errorMessage.isEmpty()) {
+                        getString(
+                            R.string.message_written_to_external_storage,
+                            getFileNameFromUri(this@SKKUserDicTool, uri)
+                        )
+                    } else {
+                        getString(
+                            R.string.error_write_to_external_storage,
+                            errorMessage
+                        )
+                    }
                 ).show(supportFragmentManager, "dialog")
             }
         }
+        mInFileLauncher = false
     }
 
     public override fun onCreate(savedInstanceState: Bundle?) {
@@ -176,8 +190,9 @@ class SKKUserDicTool : AppCompatActivity() {
                         val item = adapter.getItem(position)!!
                         dlog("remove $item from $mDicName")
                         try {
-                            openUserDict()
-                            mBtree.remove(item.key)
+                            if (openUserDict()) {
+                                mBtree?.remove(item.key)
+                            }
                             closeUserDict()
                         } catch (e: IOException) {
                             throw RuntimeException(e)
@@ -250,10 +265,12 @@ class SKKUserDicTool : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.menu_user_dic_tool_import -> {
+                mInFileLauncher = true
                 importFileLauncher.launch(arrayOf("*/*"))
                 return true
             }
             R.id.menu_user_dic_tool_export -> {
+                mInFileLauncher = true
                 exportFileLauncher.launch("$mDicName.txt")
                 return true
             }
@@ -278,7 +295,8 @@ class SKKUserDicTool : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
 
-        if (mAdapter.count == 0) {
+        // FileLauncher 系統の ActivityResult の後にもここを通る
+        if (!mInFileLauncher && mAdapter.count == 0) {
             when (val commandChar = mDicName.first()) {
                 '*', '+' -> {
                     mDicName = mDicName.drop(1)
@@ -311,7 +329,6 @@ class SKKUserDicTool : AppCompatActivity() {
     }
 
     private fun recreateUserDic(extract: Boolean) {
-        closeUserDict()
         mAdapter.clear()
 
         MainScope().launch(Dispatchers.IO) {
@@ -332,20 +349,26 @@ class SKKUserDicTool : AppCompatActivity() {
                 try {
                     mRecMan = RecordManagerFactory.createRecordManager(filesDir.absolutePath + "/" + mDicName)
                     mBtree = BTree(mRecMan, StringComparator())
-                    mRecMan.setNamedObject(getString(R.string.btree_name), mBtree.recordId)
-                    mRecMan.commit()
+                    mRecMan!!.setNamedObject(getString(R.string.btree_name), mBtree!!.recordId)
+                    mRecMan!!.commit()
+                    mRecMan!!.close()
+                    mRecMan = null
+                    mBtree = null
                 } catch (e: IOException) {
                     throw RuntimeException(e)
                 }
                 dlog("New user dictionary created")
-                isOpened = true
-                withContext(Dispatchers.Main) { mAdapter.clear() }
+                withContext(Dispatchers.Main) {
+                    mAdapter.clear() // どうせ空なので updateListItems() 不要
+                }
             }
         }
     }
 
     private fun onFailToOpenUserDict() {
         startServiceCommand(SKKService.COMMAND_UNLOCK_USERDIC)
+        mBtree = null
+        mRecMan = null
 
         ConfirmationDialogFragment.newInstance(getString(R.string.error_open_user_dic)).let {
             it.setListener(
@@ -357,7 +380,12 @@ class SKKUserDicTool : AppCompatActivity() {
         }
     }
 
-    private fun openUserDict() {
+    private fun openUserDict(): Boolean {
+        if (mBtree != null) {
+            Log.e("SKK", "openUserDict error: already opened")
+            return true
+        }
+
         startServiceCommand(SKKService.COMMAND_LOCK_USERDIC)
 
         val recID: Long?
@@ -365,43 +393,48 @@ class SKKUserDicTool : AppCompatActivity() {
             mRecMan = RecordManagerFactory.createRecordManager(
                     filesDir.absolutePath + "/" + mDicName
             )
-            recID = mRecMan.getNamedObject(getString(R.string.btree_name))
+            recID = mRecMan!!.getNamedObject(getString(R.string.btree_name))
         } catch (e: IOException) {
+            Log.e("SKK", "openUserDict error creating mRecMan: ${e.message}")
             onFailToOpenUserDict()
-            return
+            return false
         }
 
         if (recID == 0L) {
+            Log.e("SKK", "openUserDict error: recID==0")
             onFailToOpenUserDict()
-            return
+            return false
         } else {
             try {
                 mBtree = BTree<String, String>().load(mRecMan, recID)
             } catch (e: IOException) {
+                Log.e("SKK", "openUserDict error loading mBtree: ${e.message}")
                 onFailToOpenUserDict()
-                return
+                return false
             }
-
-            isOpened = true
         }
+        dlog("UserDicTool: opened")
+        return true
     }
 
     private fun closeUserDict() {
-        if (!isOpened) return
-        isOpened = false
+        mBtree = null
         try {
-            mRecMan.commit()
-            mRecMan.close()
+            mRecMan?.commit()
+            mRecMan?.close()
+            mRecMan = null
         } catch (e: IOException) {
+            Log.e("SKK", "closeUserDict error closing mRecMan: ${e.message}")
             startServiceCommand(SKKService.COMMAND_UNLOCK_USERDIC)
             throw RuntimeException(e)
         }
         startServiceCommand(SKKService.COMMAND_UNLOCK_USERDIC)
+        dlog("UserDicTool: closed")
     }
 
     private fun updateListItems() {
-        openUserDict()
-        if (!isOpened) {
+        dlog("updateListItems")
+        if (!openUserDict()) {
             mAdapter.clear()
             return
         }
@@ -412,29 +445,31 @@ class SKKUserDicTool : AppCompatActivity() {
         mAdapter.clear()
         MainScope().launch(Dispatchers.IO) {
             try {
-                val browser = mBtree.browse()
+                val browser = mBtree!!.browse()
                 if (browser == null) {
+                    Log.e("SKK", "UserDicTool updateListItems: browser=null")
                     withContext(Dispatchers.Main) { onFailToOpenUserDict() }
                     return@launch
                 }
 
                 val buffer = mutableListOf<Tuple<String, String>>()
                 val bufferSize = 1000
-                while (isOpened && browser.getNext(tuple)) {
+                while (browser.getNext(tuple)) {
                     buffer.add(Tuple(tuple.key, tuple.value))
                     if (buffer.size < bufferSize) continue
                     withContext(Dispatchers.Main) {
                         mAdapter.addAll(buffer)
-                        mSearchView.queryHint = "読み込み中 ${100 * mAdapter.count / mBtree.size()}%"
+                        mSearchView.queryHint = "読み込み中 ${100 * mAdapter.count / mBtree!!.size()}%"
                     }
                     buffer.clear()
                 }
                 withContext(Dispatchers.Main) {
-                    if (isOpened) mAdapter.addAll(buffer)
+                    mAdapter.addAll(buffer)
                     mSearchView.isEnabled = true
                     mSearchView.queryHint = ""
                 }
             } catch (e: IOException) {
+                Log.e("SKK", "UserDicTOol updateListItems: ${e.message}")
                 withContext(Dispatchers.Main) { onFailToOpenUserDict() }
             }
             closeUserDict()
