@@ -105,7 +105,6 @@ class SKKUserDicTool : AppCompatActivity() {
             withContext(Dispatchers.Main) {
                 updateListItems()
             }
-            mInFileLauncher = false
         }
     }
 
@@ -133,6 +132,8 @@ class SKKUserDicTool : AppCompatActivity() {
                 }
             } catch (e: Exception) {
                 errorMessage = e.message ?: "(null)"
+                mBtree = null
+                mRecMan = null
             }
             closeUserDict()
 
@@ -153,7 +154,6 @@ class SKKUserDicTool : AppCompatActivity() {
                 ).show(supportFragmentManager, "dialog")
             }
         }
-        mInFileLauncher = false
     }
 
     public override fun onCreate(savedInstanceState: Bundle?) {
@@ -352,8 +352,8 @@ class SKKUserDicTool : AppCompatActivity() {
                     mRecMan!!.setNamedObject(getString(R.string.btree_name), mBtree!!.recordId)
                     mRecMan!!.commit()
                     mRecMan!!.close()
-                    mRecMan = null
                     mBtree = null
+                    mRecMan = null
                 } catch (e: IOException) {
                     throw RuntimeException(e)
                 }
@@ -436,6 +436,7 @@ class SKKUserDicTool : AppCompatActivity() {
         dlog("updateListItems")
         if (!openUserDict()) {
             mAdapter.clear()
+            mInFileLauncher = false
             return
         }
 
@@ -449,6 +450,7 @@ class SKKUserDicTool : AppCompatActivity() {
                 if (browser == null) {
                     Log.e("SKK", "UserDicTool updateListItems: browser=null")
                     withContext(Dispatchers.Main) { onFailToOpenUserDict() }
+                    mInFileLauncher = false
                     return@launch
                 }
 
@@ -473,6 +475,7 @@ class SKKUserDicTool : AppCompatActivity() {
                 withContext(Dispatchers.Main) { onFailToOpenUserDict() }
             }
             closeUserDict()
+            mInFileLauncher = false
         }
     }
 
