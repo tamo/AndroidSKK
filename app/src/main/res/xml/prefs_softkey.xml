@@ -31,6 +31,20 @@
                     app:summary="オフだと日本語もqwertyキーで入力します"
                     app:title="フリック入力の優先" />
                 <androidx.preference.CheckBoxPreference
+                    app:defaultValue="false"
+                    app:disableDependentsState="false"
+                    app:iconSpaceReserved="false"
+                    app:key="@string/prefkey_use_godan"
+                    app:summary="すべてGodanで入力します"
+                    app:title="Godan入力の強制" />
+                <androidx.preference.CheckBoxPreference
+                    app:defaultValue="true"
+                    app:dependency="@string/prefkey_use_godan"
+                    app:iconSpaceReserved="false"
+                    app:key="@string/prefkey_godan_simple"
+                    app:summary="かな入力のとき見やすくします"
+                    app:title="Godan表示の簡素化" />
+                <androidx.preference.CheckBoxPreference
                     app:defaultValue="true"
                     app:disableDependentsState="false"
                     app:iconSpaceReserved="false"
@@ -62,8 +76,8 @@
                     app:defaultValue="true"
                     app:iconSpaceReserved="false"
                     app:key="@string/prefkey_exchange_shift_kana"
-                    app:summary="かなキーが下でシフトキーが上になります"
-                    app:title="かなとシフトキーの位置交換" />
+                    app:summary="かなキー (Godanではキャンセルキー) が上でシフトキーが下になります"
+                    app:title="下シフトキーの使用" />
             </androidx.preference.PreferenceCategory>
             <androidx.preference.PreferenceCategory
                 app:iconSpaceReserved="false"

@@ -45,11 +45,13 @@ class SKKService : InputMethodService() {
     private var mCandidateViewContainer: CandidateViewContainer? = null
     private var mCandidateView: CandidateView? = null
     private var mFlickJPInputView: FlickJPKeyboardView? = null
+    private var mGodanInputView: GodanKeyboardView? = null
     private var mQwertyInputView: QwertyKeyboardView? = null
     private var mAbbrevKeyboardView: AbbrevKeyboardView? = null
     // 現在表示中の KeyboardView
     private var mInputView: KeyboardView? = mFlickJPInputView
-    internal val isFlickJP: Boolean
+    // 幅の確認
+    internal val isFlickWidth: Boolean
         get() = (mInputView != mQwertyInputView && mInputView != mAbbrevKeyboardView)
     internal val isTemporaryView: Boolean
         get() = (mInputView == mAbbrevKeyboardView || mEngine.state === SKKZenkakuState)
@@ -76,9 +78,11 @@ class SKKService : InputMethodService() {
             if (willBeHiragana) {
                 if (!wasHiragana) mFlickJPInputView?.setHiraganaMode()
                 mQwertyInputView?.setKeyState(SKKHiraganaState)
+                mGodanInputView?.setKeyState(SKKHiraganaState)
             } else {
                 if (wasHiragana) mFlickJPInputView?.setKatakanaMode()
                 mQwertyInputView?.setKeyState(SKKKatakanaState)
+                mGodanInputView?.setKeyState(SKKKatakanaState)
             }
         }
 
@@ -307,9 +311,10 @@ class SKKService : InputMethodService() {
 
     private fun readPrefsForInputView() {
         val flick = mFlickJPInputView
+        val godan = mGodanInputView?.setKeyState(engineState)
         val qwerty = mQwertyInputView?.setKeyState(engineState)
         val abbrev = mAbbrevKeyboardView?.setKeyState()
-        if (flick == null || qwerty == null || abbrev == null) return
+        if (flick == null || godan == null || qwerty == null || abbrev == null) return
 
         val context = when (skkPrefs.theme) {
             "light" -> createNightModeContext(applicationContext, false)
@@ -326,6 +331,8 @@ class SKKService : InputMethodService() {
         val alpha = skkPrefs.backgroundAlpha
         flick.prepareNewKeyboard(context, flickWidth, keyHeight, keyBottom)
         flick.backgroundAlpha = 255 * alpha / 100
+        godan.prepareNewKeyboard(context, flickWidth, keyHeight, keyBottom)
+        godan.backgroundAlpha = 255 * alpha / 100
 
         val qwertyWidth = (flickWidth * skkPrefs.keyWidthQwertyZoom / 100).coerceAtMost(mScreenWidth)
         qwerty.keyboard.resize(qwertyWidth, keyHeight, keyBottom)
@@ -412,6 +419,8 @@ class SKKService : InputMethodService() {
 
         mFlickJPInputView = FlickJPKeyboardView(context, null)
         mFlickJPInputView?.setService(this)
+        mGodanInputView = GodanKeyboardView(context, null)
+        mGodanInputView?.setService(this)
         mQwertyInputView = QwertyKeyboardView(context, null)
         mQwertyInputView?.setService(this)
         mAbbrevKeyboardView = AbbrevKeyboardView(context, null)
@@ -420,6 +429,7 @@ class SKKService : InputMethodService() {
         if (skkPrefs.useInset) {
             ResourcesCompat.getDrawable(context.resources, R.drawable.key_bg_inset, null)?.let {
                 mFlickJPInputView?.setKeyBackground(it)
+                mGodanInputView?.setKeyBackground(it)
                 mQwertyInputView?.setKeyBackground(it)
                 mAbbrevKeyboardView?.setKeyBackground(it)
             }
@@ -431,12 +441,15 @@ class SKKService : InputMethodService() {
     override fun onCreateInputView(): View? {
         setCandidatesView(onCreateCandidatesView())
 
+        val wasGodan =
+            if (mInputView == null) skkPrefs.preferGodan
+            else (mInputView == mGodanInputView)
         val wasFlick =
             if (mInputView == null) skkPrefs.preferFlick
             else (mInputView == mFlickJPInputView)
         createInputView()
 
-        return when (mEngine.state) {
+        return if (wasGodan) mGodanInputView?.setKeyState(mEngine.state) else when (mEngine.state) {
             SKKASCIIState, SKKZenkakuState -> mQwertyInputView?.setKeyState(mEngine.state)
             SKKAbbrevState -> mAbbrevKeyboardView
             else -> {
@@ -872,10 +885,12 @@ class SKKService : InputMethodService() {
 
     fun onStartRegister() {
         mFlickJPInputView?.setRegisterMode(true)
+        mGodanInputView?.setRegisterMode(true)
     }
 
     fun onFinishRegister() {
         mFlickJPInputView?.setRegisterMode(false)
+        mGodanInputView?.setRegisterMode(false)
     }
 
     fun sendToMushroom() {
@@ -1017,13 +1032,15 @@ class SKKService : InputMethodService() {
 
     fun changeSoftKeyboard(state: SKKState) {
         // 長押しリピートの message が残っている可能性があるので止める
-        for (kv in arrayOf(mAbbrevKeyboardView, mFlickJPInputView, mQwertyInputView)) {
+        for (kv in arrayOf(mAbbrevKeyboardView, mFlickJPInputView, mGodanInputView, mQwertyInputView)) {
             kv?.stopRepeatKey()
         }
 
         mQwertyInputView?.setKeyState(mEngine.state) // 整合性のため必ず通っておく
+        mGodanInputView?.setKeyState(mEngine.state)
 
-        setInputView(when (state) {
+        setInputView(if (skkPrefs.preferGodan) mGodanInputView ?: return
+        else when (state) {
             SKKASCIIState    -> mQwertyInputView ?: return
             SKKKanjiState    -> mFlickJPInputView ?: return
             SKKHiraganaState -> mFlickJPInputView?.setHiraganaMode() ?: return
@@ -1075,7 +1092,7 @@ class SKKService : InputMethodService() {
             Configuration.ORIENTATION_PORTRAIT -> skkPrefs.keyWidthPort
             Configuration.ORIENTATION_LANDSCAPE -> skkPrefs.keyWidthLand
             else -> mScreenWidth
-        } * (if (isFlickJP) 100 else skkPrefs.keyWidthQwertyZoom) / 100)
+        } * (if (isFlickWidth) 100 else skkPrefs.keyWidthQwertyZoom) / 100)
             .coerceAtMost(mScreenWidth)
 
     private fun keyboardHeight() = if (!checkUseSoftKeyboard()) 0 else

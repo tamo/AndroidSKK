@@ -148,7 +148,7 @@ class CandidateViewContainer(screen: Context, attrs: AttributeSet) : LinearLayou
 
     private fun saveWidth() {
         val widthToSave = width * 100 /
-                if (mService.isFlickJP) 100 else skkPrefs.keyWidthQwertyZoom
+                if (mService.isFlickWidth) 100 else skkPrefs.keyWidthQwertyZoom
         when (resources.configuration.orientation) {
             Configuration.ORIENTATION_LANDSCAPE ->
                 skkPrefs.keyWidthLand = widthToSave.coerceIn(101, mService.mScreenWidth)

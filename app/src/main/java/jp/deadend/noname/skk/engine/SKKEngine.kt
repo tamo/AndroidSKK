@@ -964,7 +964,7 @@ class SKKEngine(
     private fun changeSoftKeyboard(state: SKKState) {
         // 仮名からASCII以外の一時的なキーボードになるときや明示的変更のとき記録して後で戻れるようにしておく
         when (state) {
-            in listOf(SKKAbbrevState, SKKZenkakuState) -> cameFromFlick = mService.isFlickJP
+            in listOf(SKKAbbrevState, SKKZenkakuState) -> cameFromFlick = mService.isFlickWidth
             SKKASCIIState                              -> cameFromFlick = false
             SKKHiraganaState, SKKKatakanaState         -> cameFromFlick = true
         }

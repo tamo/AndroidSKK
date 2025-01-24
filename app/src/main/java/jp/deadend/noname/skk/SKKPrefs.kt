@@ -64,6 +64,14 @@ class SKKPrefs(context: Context) {
         get() = prefs.getBoolean(res.getString(R.string.prefkey_use_flick), true)
         set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_use_flick), value).apply()
 
+    var preferGodan: Boolean
+        get() = prefs.getBoolean(res.getString(R.string.prefkey_use_godan), false)
+        set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_use_godan), value).apply()
+
+    var simpleGodan: Boolean
+        get() = prefs.getBoolean(res.getString(R.string.prefkey_godan_simple), true)
+        set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_godan_simple), value).apply()
+
     var usePopup: Boolean
         get() = prefs.getBoolean(res.getString(R.string.prefkey_use_popup), true)
         set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_use_popup), value).apply()

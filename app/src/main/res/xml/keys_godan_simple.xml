@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Keyboard xmlns:app="http://schemas.android.com/apk/res-auto"
+	app:keyWidth="20%p"
+	app:horizontalGap="0dip"
+	app:verticalGap="0dip"
+	app:keyHeight="8%p">
+	<Row>
+		<Key app:codes="-1,-7" app:keyIcon="@drawable/ic_keyboard_shift" app:isModifier="true" />
+		<Key app:codes="-201" app:keyLabel="\nA\n" />
+		<Key app:codes="-202" app:keyLabel="\n　K G\n" />
+		<Key app:codes="-203" app:keyLabel="F\nP H B\n" />
+		<Key app:codes="-5" app:keyIcon="@drawable/ic_keyboard_backspace" app:isRepeatable="true" />
+	</Row>
+	<Row>
+		<Key app:codes="-1001" app:keyIcon="@drawable/ic_keyboard_arrow_left" app:isRepeatable="true" />
+		<Key app:codes="-204" app:keyLabel="\nI\n" />
+		<Key app:codes="-205" app:keyLabel="J\n　S Z\n" />
+		<Key app:codes="-206" app:keyLabel="L\n　M ー\n" />
+		<Key app:codes="-1002" app:keyIcon="@drawable/ic_keyboard_arrow_right" app:isRepeatable="true" />
+	</Row>
+	<Row>
+		<Key app:codes="-1009,-1000" app:keyLabel="cxl" />
+		<Key app:codes="-207" app:keyLabel="\nU\n" />
+		<Key app:codes="-208" app:keyLabel="C\n　T D\n" />
+		<Key app:codes="-209" app:keyLabel="X\nY\n" />
+		<Key app:codes="-1004" app:keyIcon="@drawable/ic_keyboard_spacebar" app:isRepeatable="true" />
+	</Row>
+	<Row>
+		<Key app:codes="-1005" app:keyLabel="Q" />
+		<Key app:codes="-210" app:keyLabel="\nE\n" />
+		<Key app:codes="-211" app:keyLabel="\nN\n" />
+		<Key app:codes="-212" app:keyLabel="？\n．R ！\n，" />
+		<Key app:codes="-1007" app:keyIcon="@drawable/ic_keyboard_return" />
+	</Row>
+	<Row app:rowEdgeFlags="bottom">
+		<Key app:codes="-1003" app:keyLabel="L" />
+		<Key app:codes="-213" app:keyLabel="\nO\n" />
+		<Key app:codes="-1006" app:keyLabel="cxl\n　゛小　゜\n▽" />
+		<Key app:codes="-214" app:keyLabel="V\nW\n" />
+		<Key app:codes="-1007" app:keyIcon="@drawable/ic_keyboard_return" />
+	</Row>
+</Keyboard>
