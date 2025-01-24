@@ -99,6 +99,12 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
         keyboard = mJPKeyboard
     }
 
+    override fun onDetachedFromWindow() {
+        if (mPopup?.isShowing == true) mPopup!!.dismiss()
+        super.onDetachedFromWindow()
+        //isShifted = false
+    }
+
     private fun setShiftPosition() {
         val defaultShiftKeys = arrayOf(mShiftKeyJP, mShiftKeyNum, mShiftKeyVoice)
         val defaultKanaKeys = arrayOf(mKanaKeyJP, mKanaKeyNum, mKanaKeyVoice)

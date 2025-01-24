@@ -75,7 +75,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
     }
 
     override fun onDetachedFromWindow() {
-        if (mPopup?.isShowing == true) mPopup!!.dismiss() // これFlickJPにもバックポートすべきか?
+        if (mPopup?.isShowing == true) mPopup!!.dismiss()
         super.onDetachedFromWindow()
         isShifted = false
         isCapsLocked = false
