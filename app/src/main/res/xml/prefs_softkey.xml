@@ -23,6 +23,7 @@
                 app:title="ステータスアイコンを表示" />
             <androidx.preference.PreferenceCategory
                 app:iconSpaceReserved="false"
+                app:summary="変更後「かな」や「Flick」「Ｌ」等で反映されます"
                 app:title="日本語キーボード">
                 <androidx.preference.CheckBoxPreference
                     app:defaultValue="true"
