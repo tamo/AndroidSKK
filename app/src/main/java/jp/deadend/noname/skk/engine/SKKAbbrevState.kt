@@ -20,8 +20,9 @@ object SKKAbbrevState : SKKState {
                 ' '.code -> if (mKanjiKey.isNotEmpty()) conversionStart(mKanjiKey)
                 -1010 -> {
                     // 全角変換
-                    val buf = mKanjiKey.map { hankaku2zenkaku(it.code).toChar() }.joinToString("")
-                    commitTextSKK(buf)
+                    hankaku2zenkaku(mKanjiKey.toString())?.let { zen ->
+                        commitTextSKK(zen)
+                    }
                     handleKanaKey(context)
                 }
 

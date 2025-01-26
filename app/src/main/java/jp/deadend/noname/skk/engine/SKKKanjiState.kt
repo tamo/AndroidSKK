@@ -5,6 +5,7 @@ import jp.deadend.noname.skk.hirakana2katakana
 import jp.deadend.noname.skk.isVowel
 import jp.deadend.noname.skk.katakana2hiragana
 import jp.deadend.noname.skk.skkPrefs
+import jp.deadend.noname.skk.zenkaku2hankaku
 
 // 漢字変換のためのひらがな入力中(▽モード)
 object SKKKanjiState : SKKState {
@@ -43,9 +44,11 @@ object SKKKanjiState : SKKState {
 
                 '/'.code -> { // abbrevはtransientなのでchangeInputModeで自動確定されない
                     // 暗黙の確定
+                    val kk = mKanjiKey.toString()
                     commitTextSKK(when (kanaState) {
-                        SKKKatakanaState -> hirakana2katakana(mKanjiKey.toString()) ?: ""
-                        else -> mKanjiKey.toString()
+                        SKKKatakanaState -> hirakana2katakana(kk) ?: ""
+                        SKKHanKanaState -> zenkaku2hankaku(hirakana2katakana(kk)) ?: ""
+                        else -> kk
                     })
                     mComposing.setLength(0)
                     mKanjiKey.setLength(0)
@@ -64,6 +67,14 @@ object SKKKanjiState : SKKState {
                         mKanjiKey.setLength(0)
                     }
                     changeState(kanaState)
+                }
+
+                17 /* Ctrl-Q */ -> {
+                    if (mKanjiKey.isNotEmpty()) {
+                        val str = zenkaku2hankaku(hirakana2katakana(mKanjiKey.toString()))
+                        if (str != null) commitTextSKK(str)
+                        mKanjiKey.setLength(0)
+                    }
                 }
 
                 ' '.code, '>'.code -> {

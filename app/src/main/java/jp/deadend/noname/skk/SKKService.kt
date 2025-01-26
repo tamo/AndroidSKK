@@ -71,18 +71,18 @@ class SKKService : InputMethodService() {
     private lateinit var mEngine: SKKEngine
     internal val engineState: SKKState
         get() = mEngine.state
-    internal var isHiragana: Boolean = true
-        set(willBeHiragana) {
-            val wasHiragana = isHiragana
-            field = willBeHiragana
-            if (willBeHiragana) {
-                if (!wasHiragana) mFlickJPInputView?.setHiraganaMode()
-                mQwertyInputView?.setKeyState(SKKHiraganaState)
-                mGodanInputView?.setKeyState(SKKHiraganaState)
-            } else {
-                if (wasHiragana) mFlickJPInputView?.setKatakanaMode()
-                mQwertyInputView?.setKeyState(SKKKatakanaState)
-                mGodanInputView?.setKeyState(SKKKatakanaState)
+
+    internal val isHiragana: Boolean
+        get() = kanaState === SKKHiraganaState
+    internal var kanaState: SKKState
+        get() = mEngine.kanaState
+        set(state) {
+            val oldState = kanaState
+            mEngine.kanaState = state
+            if (oldState != state) {
+                mFlickJPInputView?.setKeyState(state)
+                mQwertyInputView?.setKeyState(state)
+                mGodanInputView?.setKeyState(state)
             }
         }
 
@@ -452,10 +452,8 @@ class SKKService : InputMethodService() {
         return if (wasGodan) mGodanInputView?.setKeyState(mEngine.state) else when (mEngine.state) {
             SKKASCIIState, SKKZenkakuState -> mQwertyInputView?.setKeyState(mEngine.state)
             SKKAbbrevState -> mAbbrevKeyboardView
-            else -> {
-                if (!isHiragana) mFlickJPInputView?.setKatakanaMode()
-                if (wasFlick) mFlickJPInputView else mQwertyInputView?.setKeyState(mEngine.state)
-            }
+            else -> if (wasFlick) mFlickJPInputView?.setKeyState(mEngine.state)
+            else mQwertyInputView?.setKeyState(mEngine.state)
         }
     }
 
@@ -712,10 +710,14 @@ class SKKService : InputMethodService() {
             if (handleCancel()) { return true }
         }
 
+        if (encodedKey == 724) {
+            processKey(17)
+            return true
+        } /*
         if (engineState === SKKAbbrevState && encodedKey == 724) { // 724はCtrl+q
             processKey(-1010)
             return true
-        }
+        } */
 
         if (keyCode == KeyEvent.KEYCODE_TAB) {
             if (engineState === SKKKanjiState || engineState === SKKAbbrevState) {
@@ -1043,8 +1045,8 @@ class SKKService : InputMethodService() {
         else when (state) {
             SKKASCIIState    -> mQwertyInputView ?: return
             SKKKanjiState    -> mFlickJPInputView ?: return
-            SKKHiraganaState -> mFlickJPInputView?.setHiraganaMode() ?: return
-            SKKKatakanaState -> mFlickJPInputView?.setKatakanaMode() ?: return
+            SKKHiraganaState, SKKKatakanaState, SKKHanKanaState
+                  -> mFlickJPInputView?.setKeyState(state) ?: return
             SKKAbbrevState   -> mAbbrevKeyboardView ?: return
             SKKZenkakuState  -> mQwertyInputView ?: return
             else -> return

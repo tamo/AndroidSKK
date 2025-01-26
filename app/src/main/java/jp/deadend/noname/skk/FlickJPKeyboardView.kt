@@ -15,6 +15,10 @@ import androidx.core.content.res.ResourcesCompat
 import jp.deadend.noname.skk.databinding.PopupFlickguideBinding
 import jp.deadend.noname.skk.engine.SKKASCIIState
 import jp.deadend.noname.skk.engine.SKKEngine
+import jp.deadend.noname.skk.engine.SKKHanKanaState
+import jp.deadend.noname.skk.engine.SKKHiraganaState
+import jp.deadend.noname.skk.engine.SKKKatakanaState
+import jp.deadend.noname.skk.engine.SKKState
 import jp.deadend.noname.skk.engine.SKKZenkakuState
 import java.util.EnumSet
 
@@ -139,42 +143,40 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
         }
     }
 
-    internal fun setHiraganaMode(): FlickJPKeyboardView {
-        mService.isHiragana = true
-        for (key in keyboard.keys) {
-            when (key.codes[0]) {
-                KEYCODE_FLICK_JP_CHAR_A  -> key.label = "あ"
-                KEYCODE_FLICK_JP_CHAR_KA -> key.label = "か"
-                KEYCODE_FLICK_JP_CHAR_SA -> key.label = "さ"
-                KEYCODE_FLICK_JP_CHAR_TA -> key.label = "た"
-                KEYCODE_FLICK_JP_CHAR_NA -> key.label = "な"
-                KEYCODE_FLICK_JP_CHAR_HA -> key.label = "は"
-                KEYCODE_FLICK_JP_CHAR_MA -> key.label = "ま"
-                KEYCODE_FLICK_JP_CHAR_YA -> key.label = "や"
-                KEYCODE_FLICK_JP_CHAR_RA -> key.label = "ら"
-                KEYCODE_FLICK_JP_CHAR_WA -> key.label = "わ"
-                KEYCODE_FLICK_JP_MOJI    -> key.label = "10\n：カナ＞\n声"
-            }
+    internal fun setKeyState(state: SKKState): FlickJPKeyboardView {
+        when (state) {
+            SKKHiraganaState, SKKKatakanaState, SKKHanKanaState -> mService.kanaState = state
+            else -> return this
         }
-        invalidateAllKeys()
-        return this
-    }
-
-    internal fun setKatakanaMode(): FlickJPKeyboardView {
-        mService.isHiragana = false
         for (key in keyboard.keys) {
-            when (key.codes[0]) {
-                KEYCODE_FLICK_JP_CHAR_A  -> key.label = "ア"
-                KEYCODE_FLICK_JP_CHAR_KA -> key.label = "カ"
-                KEYCODE_FLICK_JP_CHAR_SA -> key.label = "サ"
-                KEYCODE_FLICK_JP_CHAR_TA -> key.label = "タ"
-                KEYCODE_FLICK_JP_CHAR_NA -> key.label = "ナ"
-                KEYCODE_FLICK_JP_CHAR_HA -> key.label = "ハ"
-                KEYCODE_FLICK_JP_CHAR_MA -> key.label = "マ"
-                KEYCODE_FLICK_JP_CHAR_YA -> key.label = "ヤ"
-                KEYCODE_FLICK_JP_CHAR_RA -> key.label = "ラ"
-                KEYCODE_FLICK_JP_CHAR_WA -> key.label = "ワ"
-                KEYCODE_FLICK_JP_MOJI    -> key.label = "10\n：かな＞\n声"
+            if (state === SKKHiraganaState) {
+                when (key.codes[0]) {
+                    KEYCODE_FLICK_JP_CHAR_A  -> key.label = "あ"
+                    KEYCODE_FLICK_JP_CHAR_KA -> key.label = "か"
+                    KEYCODE_FLICK_JP_CHAR_SA -> key.label = "さ"
+                    KEYCODE_FLICK_JP_CHAR_TA -> key.label = "た"
+                    KEYCODE_FLICK_JP_CHAR_NA -> key.label = "な"
+                    KEYCODE_FLICK_JP_CHAR_HA -> key.label = "は"
+                    KEYCODE_FLICK_JP_CHAR_MA -> key.label = "ま"
+                    KEYCODE_FLICK_JP_CHAR_YA -> key.label = "や"
+                    KEYCODE_FLICK_JP_CHAR_RA -> key.label = "ら"
+                    KEYCODE_FLICK_JP_CHAR_WA -> key.label = "わ"
+                    KEYCODE_FLICK_JP_MOJI    -> key.label = "10\n：カナ＞\n声"
+                }
+            } else {
+                when (key.codes[0]) {
+                    KEYCODE_FLICK_JP_CHAR_A  -> key.label = "ア"
+                    KEYCODE_FLICK_JP_CHAR_KA -> key.label = "カ"
+                    KEYCODE_FLICK_JP_CHAR_SA -> key.label = "サ"
+                    KEYCODE_FLICK_JP_CHAR_TA -> key.label = "タ"
+                    KEYCODE_FLICK_JP_CHAR_NA -> key.label = "ナ"
+                    KEYCODE_FLICK_JP_CHAR_HA -> key.label = "ハ"
+                    KEYCODE_FLICK_JP_CHAR_MA -> key.label = "マ"
+                    KEYCODE_FLICK_JP_CHAR_YA -> key.label = "ヤ"
+                    KEYCODE_FLICK_JP_CHAR_RA -> key.label = "ラ"
+                    KEYCODE_FLICK_JP_CHAR_WA -> key.label = "ワ"
+                    KEYCODE_FLICK_JP_MOJI    -> key.label = "10\n：かな＞\n声"
+                }
             }
         }
         invalidateAllKeys()
@@ -853,7 +855,6 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
                         mService.changeLastChar(SKKEngine.LAST_CONVERSION_HANDAKUTEN)
                     EnumSet.of(FlickState.DOWN)  -> {
                         mService.changeLastChar(SKKEngine.LAST_CONVERSION_SHIFT)
-                        setHiraganaMode()
                     }
                 }
             }

@@ -12,8 +12,63 @@ import kotlin.math.max
 private val PAT_ESCAPE_NUM = """\\(\d+)""".toRegex()
 
 // 半角から全角 (UNICODE)
-fun hankaku2zenkaku(pcode: Int) = if (pcode == 0x20) 0x3000 else pcode - 0x20 + 0xFF00
-// スペースだけ、特別
+fun hankaku2zenkaku(str: String?): String? {
+    if (str == null) { return null }
+
+    var skipNext = false
+    return str.mapIndexedNotNull { index, it ->
+        when {
+            skipNext -> {
+                skipNext = false
+                null
+            }
+
+            it.code < 0x10000 -> {
+                val c = H2Z[it.code]
+                when {
+                    c == null -> it
+
+                    str.length > index + 1 -> when (str[index + 1]) {
+                        'ﾞ' -> H2Z[0x10000 + it.code]?.let { d ->
+                            skipNext = true
+                            Char(d)
+                        } ?: Char(c)
+
+                        'ﾟ' -> H2Z[0x20000 + it.code]?.let { h ->
+                            skipNext = true
+                            Char(h)
+                        } ?: Char(c)
+
+                        else -> Char(c)
+                    }
+
+                    else -> Char(c)
+                }
+            }
+
+            else -> it
+        }
+    }.joinToString("")
+}
+
+fun zenkaku2hankaku(str: String?): String? {
+    if (str == null) { return null }
+
+    return str.map {
+        val fc = Z2H[it.code]
+        if (fc == null) {
+            it.toString()
+        } else {
+            val f = (0x30000 and fc) shr 16
+            val c = 0x0FFFF and fc
+            Char(c).toString() + when (f) {
+                1 -> "ﾞ"
+                2 -> "ﾟ"
+                else -> ""
+            }
+        }
+    }.joinToString("")
+}
 
 // ひらがなを全角カタカナにする
 fun hirakana2katakana(str: String?, reversed: Boolean = false): String? {
@@ -186,3 +241,109 @@ internal fun unzipFile(input: InputStream, outDir: File) {
     zis.close()
 }
 
+private val Z2H_PAIRS =
+    stepConv( // ←↑→↓
+        0x2190, 1, 4, 0x0FFE9
+    ) + listOf(
+        0x2502 to 0x0FFE8, // ｜
+        0x25A0 to 0x0FFED, // ■
+        0x25CB to 0x0FFEE, // ○
+
+        0x3000 to 0x00020, // スペース
+        0x3001 to 0x0FF64, // 、
+        0x3002 to 0x0FF61, // 。
+        0x300C to 0x0FF62, // 「
+        0x300D to 0x0FF63, // 」
+
+        0x3099 to 0x10000, // ゛
+        0x309A to 0x20000, // ゜
+    ) + stepConv( // ァィゥェォ
+        0x30A1, 2, 5, 0x0FF67
+    ) + stepConv( // アイウエオ
+        0x30A2, 2, 5, 0x0FF71
+    ) + dakutenConv( // カガキギ..タダチヂ
+        0x30AB, 12, 0x0FF76
+    ) + listOf(
+        0x30C3 to 0x0FF6F // ッ
+    ) + dakutenConv( // ツヅテデトド
+        0x30C4, 3, 0x0FF82
+    ) + stepConv( // ナニヌネノ
+        0x30CA, 1, 5, 0x0FF85
+    ) + handakutenConv( // ハバパヒビピ..ホボポ
+        0x30CF, 5, 0xFF8A
+    ) + stepConv( // マミムメモ
+        0x30DE, 1, 5, 0x0FF8F
+    ) + stepConv( // ャュョ
+        0x30E3, 2, 3, 0x0FF6C
+    ) + stepConv( // ヤユヨ
+        0x30E4, 2, 3, 0x0FF94
+    ) + stepConv( // ラリルレロ
+        0x30E9, 1, 5, 0x0FF97
+    ) + listOf(
+        // 0x30EE to 0x0FF9C, // ヮ
+        0x30EF to 0x0FF9C, // ワ
+        // 0x30F0 to 0x0FF72, // ヰ
+        // 0x30F1 to 0x0FF74, // ヱ
+        0x30F2 to 0x0FF65, // ヲ
+        0x30F3 to 0x0FF9C, // ン
+        0x30F4 to 0x1FF73, // ヴ
+        0x30F5 to 0x0FF76, // 小書きカ
+        0x30F6 to 0x0FF79, // 小書きケ
+        0x30F7 to 0x1FF9C, // ワに濁点
+        // 0x30F8 to 0x1FF72, // ヰに濁点
+        // 0x30F9 to 0x1FF74, // ヱに濁点
+        0x30FA to 0x1FF65, // ヲに濁点
+        0x30FB to 0x0FF65, // 中黒
+        0x30FC to 0x0FF70, // ー
+        // 0x30FD..0x30FF ゝゞヿ
+    ) + stepConv( // !..~ ASCII
+        0xFF01, 1, 0x5E, 0x21
+    ) + listOf(
+        0xFF5F to 0x2985, // 二重括弧
+        0xFF60 to 0x2986,
+        // 0xFF61..0xFF9F 半角
+        // 0xFFA0..0xFFDC ハングル
+        0xFFE0 to 0x00A2, // ¢
+        0xFFE1 to 0x00A3, // £
+        0xFFE2 to 0x00AC, // not
+        0xFFE3 to 0x00AF, // マクロン
+        0xFFE4 to 0x00A6, // 破線｜
+        0xFFE5 to 0x00A5, // ￥
+        0xFFE6 to 0x20A9, // ウォン
+    )
+private val Z2H_OPTIONAL = listOf(
+    0x30EE to 0x0FF9C, // ヮ
+    0x30F0 to 0x0FF72, // ヰ
+    0x30F1 to 0x0FF74, // ヱ
+    0x30F8 to 0x1FF72, // ヰに濁点
+    0x30F9 to 0x1FF74, // ヱに濁点
+)
+
+val Z2H = (Z2H_PAIRS + Z2H_OPTIONAL).toMap()
+val H2Z = Z2H_PAIRS.associate { (z, h) -> h to z }
+
+private fun stepConv(start: Int, step: Int, number: Int, target: Int): List<Pair<Int, Int>> {
+    val other = start + step * (number - 1)
+    val list = mutableListOf<Pair<Int, Int>>()
+    for (i in start.rangeTo(other).step(step)) {
+        list.add(i to (i - start) / step + target)
+    }
+    return list
+}
+
+private fun dakutenConv(start: Int, number: Int, target: Int) =
+    stepConv(
+        start, 2, number, target
+    ) + stepConv(
+        start + 1, 2, number, 0x10000 + target
+    )
+
+@Suppress("SameParameterValue")
+private fun handakutenConv(start: Int, number: Int, target: Int) =
+    stepConv(
+        start, 3, number, target
+    ) + stepConv(
+        start + 1, 3, number, 0x10000 + target
+    ) + stepConv(
+        start + 2, 3, number, 0x20000 + target
+    )

@@ -51,7 +51,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
         a.append(KEYCODE_GODAN_CHAR_U, arrayOf("U", "^", "＊", "＄", "7", "", ""))
         a.append(KEYCODE_GODAN_CHAR_T, arrayOf("T", "＼", "C", "D", "8", "", ""))
         a.append(KEYCODE_GODAN_CHAR_Y, arrayOf("Y", "＝", "X", "＋", "9", "", ""))
-        a.append(KEYCODE_GODAN_CHAR_Q, arrayOf("Q", "", "^J", "", ""/*"ｶﾅ"*/, "", ""))
+        a.append(KEYCODE_GODAN_CHAR_Q, arrayOf("Q", "", "^J", "", "ｶﾅ", "", ""))
         a.append(KEYCODE_GODAN_CHAR_E, arrayOf("E", "％", "＠", "＆", "＃", "", ""))
         a.append(KEYCODE_GODAN_CHAR_N, arrayOf("N", "（", "￥", "）", "0", "", ""))
         a.append(KEYCODE_GODAN_CHAR_R, arrayOf("R", "．", "？", "！", "，", "", ""))
@@ -606,7 +606,6 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                         mService.changeLastChar(SKKEngine.LAST_CONVERSION_HANDAKUTEN)
                     EnumSet.of(FlickState.DOWN)  -> {
                         mService.changeLastChar(SKKEngine.LAST_CONVERSION_SHIFT)
-                        mService.isHiragana = true
                     }
                 }
             }
@@ -681,7 +680,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                     }
                 } else when (popupText) {
                     "^J" -> mService.handleKanaKey()
-                    //"ｶﾅ" -> { /* not implemented yet */ }
+                    "ｶﾅ" -> mService.processKey(17)
                 }
             }
         }

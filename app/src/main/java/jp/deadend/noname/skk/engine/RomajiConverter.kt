@@ -1,5 +1,6 @@
 package jp.deadend.noname.skk.engine
 
+import jp.deadend.noname.skk.hankaku2zenkaku
 import jp.deadend.noname.skk.isVowel
 
 object RomajiConverter {
@@ -117,21 +118,33 @@ object RomajiConverter {
             else -> ""
         }
     }
-    fun convertLastChar(kana: String, type: String) = when (type) {
-        SKKEngine.LAST_CONVERSION_SMALL      -> (mSmallKanaMap + mReversedSmallKanaMap)[kana]
-        SKKEngine.LAST_CONVERSION_DAKUTEN    -> (mDakutenMap + mReversedDakutenMap)[kana]
-            ?: mDakutenMap[mReversedHandakutenMap[kana]]            // 半濁点を濁点に
-        SKKEngine.LAST_CONVERSION_HANDAKUTEN -> (mHandakutenMap + mReversedHandakutenMap)[kana]
-            ?: mHandakutenMap[mReversedDakutenMap[kana]]            // 濁点を半濁点に
-        SKKEngine.LAST_CONVERSION_TRANS      -> mSmallKanaMap[kana] // 普通を小に
-            ?: mDakutenMap[mReversedSmallKanaMap[kana]]             // 小を濁点に
-            ?: mDakutenMap[kana]                                    // 普通を濁点に
-            ?: mHandakutenMap[mReversedDakutenMap[kana]]            // 濁点を半濁点に
-            ?: mReversedHandakutenMap[kana]                         // 半濁点を普通に
-            ?: mReversedDakutenMap[kana]                            // 濁点を普通に
-            ?: mReversedSmallKanaMap[kana]                          // 小文字を普通に
-        SKKEngine.LAST_CONVERSION_SHIFT      -> kana
-        else -> null
+    fun convertLastChar(str: String, type: String): String? {
+        if (str.isEmpty()) return ""
+        var first = if (str.length == 2) str.first().toString() else ""
+        val zen = hankaku2zenkaku(str)!!
+        val kana = if (first.isNotEmpty() && zen.length == 1) {
+            //ｶﾞとかﾊﾟ(2文字)からガやパ(1文字)になった
+            first = ""
+            zen
+        } else {
+            hankaku2zenkaku(str.last().toString())!!
+        }
+        return first + when (type) {
+            SKKEngine.LAST_CONVERSION_SMALL      -> (mSmallKanaMap + mReversedSmallKanaMap)[kana]
+            SKKEngine.LAST_CONVERSION_DAKUTEN    -> (mDakutenMap + mReversedDakutenMap)[kana]
+                ?: mDakutenMap[mReversedHandakutenMap[kana]]            // 半濁点を濁点に
+            SKKEngine.LAST_CONVERSION_HANDAKUTEN -> (mHandakutenMap + mReversedHandakutenMap)[kana]
+                ?: mHandakutenMap[mReversedDakutenMap[kana]]            // 濁点を半濁点に
+            SKKEngine.LAST_CONVERSION_TRANS      -> mSmallKanaMap[kana] // 普通を小に
+                ?: mDakutenMap[mReversedSmallKanaMap[kana]]             // 小を濁点に
+                ?: mDakutenMap[kana]                                    // 普通を濁点に
+                ?: mHandakutenMap[mReversedDakutenMap[kana]]            // 濁点を半濁点に
+                ?: mReversedHandakutenMap[kana]                         // 半濁点を普通に
+                ?: mReversedDakutenMap[kana]                            // 濁点を普通に
+                ?: mReversedSmallKanaMap[kana]                          // 小文字を普通に
+            SKKEngine.LAST_CONVERSION_SHIFT      -> kana
+            else -> return null
+        }
     }
     // 1文字目と2文字目を合わせて"ん"・"っ"になるか判定
     // ならなかったらnull
