@@ -656,11 +656,14 @@ class SKKEngine(
             // if (isPersonalizedLearning) のチェックはこの場合しないでおく
             mUserDict.addEntry(regInfo.key, regEntryStr, regInfo.okurigana)
             mUserDict.commitChanges()
-            val text = regInfo.entry.append(regInfo.okurigana).toString()
-            commitTextSKK(if (kanaState === SKKHiraganaState) text else {
-                val zen = hirakana2katakana(text)
-                if (state === SKKHanKanaState) zenkaku2hankaku(zen) else zen
-            } ?: "") // entry は生で登録するが okurigana はひらがな
+            // entry は生で登録するが okurigana はひらがな
+            val okuri = regInfo.okurigana ?: ""
+            commitTextSKK(regInfo.entry.toString() + when (kanaState) {
+                SKKHiraganaState -> okuri
+                SKKKatakanaState -> hirakana2katakana(okuri)
+                SKKHanKanaState -> zenkaku2hankaku(hirakana2katakana(okuri))
+                else -> throw RuntimeException("kanaState: $kanaState")
+            })
         }
         reset()
         if (!mRegistrationStack.isEmpty()) setComposingTextSKK("")
@@ -788,8 +791,7 @@ class SKKEngine(
                 number
             )
         )
-        setComposingTextSKK(katakana2hiragana(candidate + (mOkurigana ?: ""))!!)
-        // setComposingTextSKK はひらがなを期待している
+        setComposingTextSKK(candidate + (mOkurigana ?: ""))
     }
 
     internal fun pickCurrentCandidate(backspace: Boolean = false) {
@@ -823,10 +825,12 @@ class SKKEngine(
             else candidate.deleteCharAt(candidate.lastIndex)
         }
         val concat = candidate.toString() + okuri.toString()
-        val text = if (kanaState === SKKHiraganaState) concat else {
-            val zen = hirakana2katakana(concat)!!
-            if (kanaState === SKKHanKanaState) zenkaku2hankaku(zen)!! else zen
-        }
+        val text = when (kanaState) {
+            SKKHiraganaState -> concat
+            SKKKatakanaState -> hirakana2katakana(concat, reversed = true) ?: ""
+            SKKHanKanaState -> zenkaku2hankaku(hirakana2katakana(concat)) ?: ""
+            else -> throw RuntimeException("kanaState: $kanaState")
+        } // カナかなは互換性あるけど半角カナと全角かなは互換性ない感覚があるので reverse しない
         commitTextSKK(text)
         if (mRegistrationStack.isEmpty()) {
             mLastConversion = ConversionInfo(

@@ -71,7 +71,12 @@ object SKKKanjiState : SKKState {
 
                 17 /* Ctrl-Q */ -> {
                     if (mKanjiKey.isNotEmpty()) {
-                        val str = zenkaku2hankaku(hirakana2katakana(mKanjiKey.toString()))
+                        val zenkata = hirakana2katakana(mKanjiKey.toString())
+                        val str = if (kanaState === SKKHanKanaState) {
+                            zenkata // 半角カナで半角を出すのはエンターだから Ctrl-Q は全角カナが自然だと思う
+                        } else {
+                            zenkaku2hankaku(zenkata)
+                        }
                         if (str != null) commitTextSKK(str)
                         mKanjiKey.setLength(0)
                     }
