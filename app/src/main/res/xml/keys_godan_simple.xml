@@ -12,11 +12,11 @@
 		<Key app:codes="-5" app:keyIcon="@drawable/ic_keyboard_backspace" app:isRepeatable="true" />
 	</Row>
 	<Row>
-		<Key app:codes="-1001" app:keyIcon="@drawable/ic_keyboard_arrow_left" app:isRepeatable="true" />
+		<Key app:codes="-1001" app:keyIcon="@drawable/ic_keyboard_arrow_left" />
 		<Key app:codes="-204" app:keyLabel="\nI\n" />
 		<Key app:codes="-205" app:keyLabel="J\n／S Z\n" />
 		<Key app:codes="-206" app:keyLabel="L\n　M ー\n" />
-		<Key app:codes="-1002" app:keyIcon="@drawable/ic_keyboard_arrow_right" app:isRepeatable="true" />
+		<Key app:codes="-1002" app:keyIcon="@drawable/ic_keyboard_arrow_right" />
 	</Row>
 	<Row>
 		<Key app:codes="-1009,-1000" app:keyLabel="cxl" />

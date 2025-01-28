@@ -20,6 +20,9 @@ import java.util.EnumSet
 
 class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(context, attrs), KeyboardView.OnKeyboardActionListener {
     private var mFlickSensitivitySquared = 100
+    private val mArrowPressed: Boolean
+        get() = (mLastPressedKey == KEYCODE_GODAN_LEFT || mLastPressedKey == KEYCODE_GODAN_RIGHT)
+    private var mArrowFlicked = false
     private var mLastPressedKey = KEYCODE_GODAN_NONE
     private var mFlickState = EnumSet.of(FlickState.NONE)
     private var mFlickStartX = -1f
@@ -370,13 +373,40 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
             MotionEvent.ACTION_MOVE -> {
                 val dx = me.x - mFlickStartX
                 val dy = me.y - mFlickStartY
+                val dx2 = dx * dx
+                val dy2 = dy * dy
 
                 when {
-                    dx * dx + dy * dy < mFlickSensitivitySquared -> {
+                    dx2 + dy2 < mFlickSensitivitySquared -> {
                         if (mFlickState != EnumSet.of(FlickState.NONE)) {
                             mFlickState = EnumSet.of(FlickState.NONE)
                             performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
                         }
+                    }
+                    mArrowPressed -> {
+                        when {
+                            dx2 > dy2 && dx2 > mFlickSensitivitySquared -> {
+                                if (dx < 0) {
+                                    mService.keyDownUp(KeyEvent.KEYCODE_DPAD_LEFT)
+                                } else {
+                                    mService.keyDownUp(KeyEvent.KEYCODE_DPAD_RIGHT)
+                                }
+                                mArrowFlicked = true
+                                mFlickStartX = me.x
+                                mFlickStartY = me.y
+                            }
+                            dx2 < dy2 && dy2 > mFlickSensitivitySquared -> {
+                                if (dy < 0) {
+                                    mService.keyDownUp(KeyEvent.KEYCODE_DPAD_UP)
+                                } else {
+                                    mService.keyDownUp(KeyEvent.KEYCODE_DPAD_DOWN)
+                                }
+                                mArrowFlicked = true
+                                mFlickStartY = me.y
+                                mFlickStartX = me.x
+                            }
+                        }
+                        return true
                     }
                     mFlickState.contains(FlickState.NONE) -> processFirstFlick(dx, dy)
                     else -> processCurveFlick(dx, dy)
@@ -491,6 +521,8 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
             mLastPressedKey = primaryCode
         }
 
+        mArrowFlicked = false
+
         val labels = mFlickGuideLabelList.get(primaryCode)
         if (labels == null) {
             mCurrentPopupLabels = POPUP_LABELS_NULL
@@ -557,10 +589,10 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                 if (!isCapsLocked) isShifted = false
                 mService.keyDownUp(KeyEvent.KEYCODE_DEL)
             }
-            KEYCODE_GODAN_LEFT -> if (!mService.handleDpad(KeyEvent.KEYCODE_DPAD_LEFT)) {
+            KEYCODE_GODAN_LEFT -> if (!mArrowFlicked && !mService.handleDpad(KeyEvent.KEYCODE_DPAD_LEFT)) {
                 mService.keyDownUp(KeyEvent.KEYCODE_DPAD_LEFT)
             }
-            KEYCODE_GODAN_RIGHT -> if (!mService.handleDpad(KeyEvent.KEYCODE_DPAD_RIGHT)) {
+            KEYCODE_GODAN_RIGHT -> if (!mArrowFlicked && !mService.handleDpad(KeyEvent.KEYCODE_DPAD_RIGHT)) {
                 mService.keyDownUp(KeyEvent.KEYCODE_DPAD_RIGHT)
             }
             33, 40, 41, 44, 46, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 63, 91, 93 -> {
@@ -706,7 +738,9 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
         if (popup.isShowing) popup.dismiss()
     }
 
-    override fun onRelease(primaryCode: Int) {}
+    override fun onRelease(primaryCode: Int) {
+        mArrowFlicked = false
+    }
 
     override fun onText(text: CharSequence) {}
 
