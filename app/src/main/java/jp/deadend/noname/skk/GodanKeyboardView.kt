@@ -42,6 +42,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
 
     init {
         val a = mFlickGuideLabelList
+        a.append(KEYCODE_GODAN_CANCEL, arrayOf("CXL", "", "貼", "", "G検", "", ""))
         a.append(KEYCODE_GODAN_CHAR_A, arrayOf("A", "＇", "｀", "＂", "1", "", ""))
         a.append(KEYCODE_GODAN_CHAR_K, arrayOf("K", "；", "Q", "G", "2", "", ""))
         a.append(KEYCODE_GODAN_CHAR_H, arrayOf("H", "P", "F", "B", "3", "", ""))
@@ -586,7 +587,13 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
     private fun release() {
         when (mLastPressedKey) {
             KEYCODE_GODAN_ENTER  -> if (!mService.handleEnter()) mService.pressEnter()
-            KEYCODE_GODAN_CANCEL -> mService.handleCancel()
+            KEYCODE_GODAN_CANCEL -> {
+                when (mFlickState) {
+                    EnumSet.of(FlickState.NONE) -> mService.handleCancel()
+                    EnumSet.of(FlickState.UP) -> mService.pasteClip()
+                    EnumSet.of(FlickState.DOWN) -> mService.googleTransliterate()
+                }
+            }
             KEYCODE_GODAN_KOMOJI -> {
                 val smallState = if (skkPrefs.useSoftCancelKey) FlickState.UP else FlickState.NONE
                 val cancelState = if (skkPrefs.useSoftCancelKey) FlickState.NONE else FlickState.UP
