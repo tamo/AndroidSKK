@@ -72,6 +72,10 @@ class SKKPrefs(context: Context) {
         get() = prefs.getBoolean(res.getString(R.string.prefkey_godan_simple), true)
         set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_godan_simple), value).apply()
 
+    var swapQCxl: Boolean
+        get() = prefs.getBoolean(res.getString(R.string.prefkey_godan_swap_qc), true)
+        set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_godan_swap_qc), value).apply()
+
     var usePopup: Boolean
         get() = prefs.getBoolean(res.getString(R.string.prefkey_use_popup), true)
         set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_use_popup), value).apply()

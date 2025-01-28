@@ -111,6 +111,23 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
         keyboard.reloadShiftKeys()
     }
 
+    private fun setCancelPosition() {
+        val oldCancelKey = checkNotNull(findKeyByCode(keyboard, KEYCODE_GODAN_CANCEL)) { "BUG: no cancel key" }
+        val oldQKey = checkNotNull(findKeyByCode(keyboard, KEYCODE_GODAN_CHAR_Q)) { "BUG: no Q key"}
+
+        val (cancelKey, qKey) = if (skkPrefs.swapQCxl) {
+            oldQKey to oldCancelKey
+        } else {
+            oldCancelKey to oldQKey
+        }
+
+        cancelKey.codes[0] = KEYCODE_GODAN_CANCEL
+        cancelKey.label = "cxl"
+
+        qKey.codes[0] = KEYCODE_GODAN_CHAR_Q
+        qKey.label = "Q"
+    }
+
     fun setKeyState(state: SKKState): GodanKeyboardView {
         val wasASCII = mIsASCII
         mIsASCII = (state in listOf(SKKAbbrevState, SKKASCIIState, SKKZenkakuState))
@@ -192,6 +209,8 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
 
         // シフトかな交換
         setShiftPosition()
+        // その後でキャンセル Q 交換
+        setCancelPosition()
 
         when {
             skkPrefs.useSoftCancelKey -> {

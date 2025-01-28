@@ -56,6 +56,7 @@
 	<string translatable="false" name="prefkey_use_flick">PrefKeyPreferFlick</string>
 	<string translatable="false" name="prefkey_use_godan">PrefKeyPreferGodan</string>
 	<string translatable="false" name="prefkey_godan_simple">PrefKeyGodanSimple</string>
+	<string translatable="false" name="prefkey_godan_swap_qc">PrefKeyGodanSwapQC</string>
 	<string translatable="false" name="prefkey_use_popup">PrefKeyUsePopup</string>
 	<string translatable="false" name="prefkey_fixed_popup">PrefKeyFixedPopup</string>
 	<string translatable="false" name="prefkey_mini_keyboard">PrefKeyUseMiniKey</string>

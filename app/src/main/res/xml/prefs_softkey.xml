@@ -46,6 +46,13 @@
                     app:summary="かな入力のとき見やすくします"
                     app:title="Godan表示の簡素化" />
                 <androidx.preference.CheckBoxPreference
+                    app:defaultValue="false"
+                    app:dependency="@string/prefkey_use_godan"
+                    app:iconSpaceReserved="false"
+                    app:key="@string/prefkey_godan_swap_qc"
+                    app:summary="「下シフト」の後に交換されます"
+                    app:title="GodanでQとキャンセルの交換" />
+                <androidx.preference.CheckBoxPreference
                     app:defaultValue="true"
                     app:disableDependentsState="false"
                     app:iconSpaceReserved="false"
