@@ -909,7 +909,9 @@ class SKKEngine(
         mOkurigana = null
         mCandidatesList = null
         mService.clearCandidatesView()
-        mService.currentInputConnection.setComposingText("", 1)
+        if (mService.currentInputConnection.getSelectedText(0) == null) {
+            mService.currentInputConnection.setComposingText("", 1)
+        }
         mComposingText.setLength(0)
     }
 

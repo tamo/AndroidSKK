@@ -540,8 +540,10 @@ class SKKService : InputMethodService() {
             }
             else ->
                 if (restarting) {
-                    currentInputConnection
-                        .setComposingText(mEngine.mComposingText, 1)
+                    if (mEngine.mComposingText.isNotEmpty()) {
+                        currentInputConnection
+                            .setComposingText(mEngine.mComposingText, 1)
+                    }
                 } else {
                     mEngine.resetOnStartInput()
                 }
