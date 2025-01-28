@@ -1,5 +1,6 @@
 package jp.deadend.noname.skk.engine
 
+import jp.deadend.noname.skk.dlog
 import jp.deadend.noname.skk.hankaku2zenkaku
 import jp.deadend.noname.skk.isVowel
 
@@ -60,8 +61,10 @@ object RomajiConverter {
 
     private val mSmallKanaMap = mapOf(
         "あ" to "ぁ", "い" to "ぃ", "う" to "ぅ", "え" to "ぇ", "お" to "ぉ",
+        "か" to "ゕ", "け" to "ゖ",
         "や" to "ゃ", "ゆ" to "ゅ", "よ" to "ょ", "つ" to "っ", "わ" to "ゎ",
         "ア" to "ァ", "イ" to "ィ", "ウ" to "ゥ", "エ" to "ェ", "オ" to "ォ",
+        "カ" to "ヵ", "ケ" to "ヶ",
         "ヤ" to "ャ", "ユ" to "ュ", "ヨ" to "ョ", "ツ" to "ッ", "ワ" to "ヮ",
     )
 
@@ -73,21 +76,25 @@ object RomajiConverter {
         "さ" to "ざ", "し" to "じ", "す" to "ず", "せ" to "ぜ", "そ" to "ぞ",
         "た" to "だ", "ち" to "ぢ", "つ" to "づ", "て" to "で", "と" to "ど",
         "は" to "ば", "ひ" to "び", "ふ" to "ぶ", "へ" to "べ", "ほ" to "ぼ",
+        "ゝ" to "ゞ",
         "ウ" to "ヴ",
         "カ" to "ガ", "キ" to "ギ", "ク" to "グ", "ケ" to "ゲ", "コ" to "ゴ",
         "サ" to "ザ", "シ" to "ジ", "ス" to "ズ", "セ" to "セ", "ソ" to "ゾ",
         "タ" to "ダ", "チ" to "ヂ", "ツ" to "ヅ", "テ" to "デ", "ト" to "ド",
         "ハ" to "バ", "ヒ" to "ビ", "フ" to "ブ", "ヘ" to "ベ", "ホ" to "ボ",
+        "ワ" to "ヷ", "ヰ" to "ヸ", "ヱ" to "ヹ", "ヲ" to "ヺ", "ヽ" to "ヾ",
     )
 
-    private val mReversedDakutenMap = mDakutenMap.entries.associate { (n, d) -> d to n }
+    private val mReversedDakutenMap = mDakutenMap.entries.associate { (n, d) -> d to n } +
+            mapOf("゛" to "", "゙" to "") // 濁点は2種類あるらしい 3099, 309B
 
     private val mHandakutenMap = mapOf(
         "は" to "ぱ", "ひ" to "ぴ", "ふ" to "ぷ", "へ" to "ぺ", "ほ" to "ぽ",
         "ハ" to "パ", "ヒ" to "ピ", "フ" to "プ", "ヘ" to "ペ", "ホ" to "ポ",
     )
 
-    private val mReversedHandakutenMap = mHandakutenMap.entries.associate { (h, p) -> p to h }
+    private val mReversedHandakutenMap = mHandakutenMap.entries.associate { (h, p) -> p to h } +
+            mapOf("゜" to "", "゚" to "") // 半濁点も2種類 309A, 309C
 
     fun convert(romaji: String) = mRomajiMap[romaji]
     fun getConsonantForVoiced(kana: String): String {
@@ -119,17 +126,35 @@ object RomajiConverter {
         }
     }
     fun convertLastChar(str: String, type: String): String? {
+        dlog("convertLastChar(str=$str, type=$type)")
+
         if (str.isEmpty()) return ""
-        var first = if (str.length == 2) str.first().toString() else ""
-        val zen = hankaku2zenkaku(str)!!
+        var first = if (str.lastIndex > 0) str[str.lastIndex - 1].toString() else ""
+        val last = str.last()
+
+        val zen = hankaku2zenkaku(first + last)!! // 2文字
         val kana = if (first.isNotEmpty() && zen.length == 1) {
-            //ｶﾞとかﾊﾟ(2文字)からガやパ(1文字)になった
-            first = ""
+            first = "" // ｶﾞとかﾊﾟ(2文字)からガやパ(1文字)になったので消さないとｶガやﾊパになる
             zen
         } else {
-            hankaku2zenkaku(str.last().toString())!!
+            hankaku2zenkaku(last.toString())!!
         }
-        return first + when (type) {
+        assert(kana.length == 1)
+
+        val kanaLast = kana.last().code
+        if (
+            type != SKKEngine.LAST_CONVERSION_SHIFT // SHIFTは英数でも可
+            && kanaLast !in 0x3041..0x3096 // ひらがな
+            && kanaLast !in 0x3099..0x309E // 濁点や記号
+            && kanaLast !in 0x30A1..0x30FA // カタカナ
+            && kanaLast !in 0x30FD..0x30FE // 「同じ」の記号
+        ) {
+            dlog("last is not convertible: $last")
+            return str
+        }
+        dlog("first=$first (last=$last), kana=$kana")
+
+        return first + (when (type) {
             SKKEngine.LAST_CONVERSION_SMALL      -> (mSmallKanaMap + mReversedSmallKanaMap)[kana]
             SKKEngine.LAST_CONVERSION_DAKUTEN    -> (mDakutenMap + mReversedDakutenMap)[kana]
                 ?: mDakutenMap[mReversedHandakutenMap[kana]]            // 半濁点を濁点に
@@ -144,8 +169,9 @@ object RomajiConverter {
                 ?: mReversedSmallKanaMap[kana]                          // 小文字を普通に
             SKKEngine.LAST_CONVERSION_SHIFT      -> kana
             else -> return null
-        }
+        } ?: kana)
     }
+
     // 1文字目と2文字目を合わせて"ん"・"っ"になるか判定
     // ならなかったらnull
     fun checkSpecialConsonants(first: Char, second: Int) = when {
@@ -157,5 +183,6 @@ object RomajiConverter {
         (first.code == second) -> "っ"
         else -> null
     }
+
     fun isIntermediateRomaji(composing: String): Boolean = (composing in mIntermediateRomajiSet)
 }

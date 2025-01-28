@@ -382,6 +382,7 @@ class SKKEngine(
                 // 2 文字なので注意!
                 val newLast2Chars = RomajiConverter.convertLastChar(cs.toString(), type) ?: return
                 val newLastChar = newLast2Chars.last().toString()
+                dlog("changeLastChar: 2chars=$newLast2Chars last=$newLastChar")
 
                 val firstEntry = mRegistrationStack.peekFirst()?.entry
                 if (firstEntry != null) {
