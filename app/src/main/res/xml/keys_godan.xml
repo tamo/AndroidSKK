@@ -37,6 +37,6 @@
 		<Key app:codes="-213" app:keyLabel="↑\n← O →\n↓" />
 		<Key app:codes="-1006" app:keyLabel="cxl\n　゛小　゜\n▽" />
 		<Key app:codes="-214" app:keyLabel="V\n・ W ｜\n…" />
-		<Key app:codes="-1011" app:keyLabel="貼付" />
+		<Key app:codes="-1007" app:keyIcon="@drawable/ic_keyboard_return" />
 	</Row>
 </Keyboard>
