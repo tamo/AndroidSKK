@@ -909,7 +909,7 @@ class SKKEngine(
         mOkurigana = null
         mCandidatesList = null
         mService.clearCandidatesView()
-        if (mService.currentInputConnection.getSelectedText(0) == null) {
+        if (mService.currentInputConnection.getSelectedText(0).isNullOrEmpty()) {
             mService.currentInputConnection.setComposingText("", 1)
         }
         mComposingText.setLength(0)
@@ -982,7 +982,7 @@ class SKKEngine(
                 force || willBeTemporaryView -> changeSoftKeyboard(state)
                 wasTemporaryView -> mService.changeSoftKeyboard(prevInputView) // cameFromFlick に記録しない
             }
-            if (!mRegistrationStack.isEmpty()) setComposingTextSKK("")
+            if (mRegistrationStack.isNotEmpty()) setComposingTextSKK("")
             // reset()で一旦消してるので， 登録中はここまで来てからComposingText復活
         }
 

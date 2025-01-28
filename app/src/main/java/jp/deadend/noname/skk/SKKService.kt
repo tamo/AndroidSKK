@@ -541,6 +541,7 @@ class SKKService : InputMethodService() {
             else ->
                 if (restarting) {
                     if (mEngine.mComposingText.isNotEmpty()) {
+                        dlog("restarting: setComposingText(${mEngine.mComposingText})")
                         currentInputConnection
                             .setComposingText(mEngine.mComposingText, 1)
                     }
