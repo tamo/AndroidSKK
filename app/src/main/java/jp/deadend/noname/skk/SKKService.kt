@@ -310,7 +310,7 @@ class SKKService : InputMethodService() {
     }
 
     private fun readPrefsForInputView() {
-        val flick = mFlickJPInputView
+        val flick = mFlickJPInputView?.setKeyState(engineState)
         val godan = mGodanInputView?.setKeyState(engineState)
         val qwerty = mQwertyInputView?.setKeyState(engineState)
         val abbrev = mAbbrevKeyboardView?.setKeyState()
@@ -449,11 +449,11 @@ class SKKService : InputMethodService() {
             else (mInputView == mFlickJPInputView)
         createInputView()
 
-        return if (wasGodan) mGodanInputView?.setKeyState(mEngine.state) else when (mEngine.state) {
-            SKKASCIIState, SKKZenkakuState -> mQwertyInputView?.setKeyState(mEngine.state)
-            SKKAbbrevState -> mAbbrevKeyboardView
-            else -> if (wasFlick) mFlickJPInputView?.setKeyState(mEngine.state)
-            else mQwertyInputView?.setKeyState(mEngine.state)
+        return if (wasGodan) mGodanInputView?.setKeyState(engineState) else when (engineState) {
+            SKKASCIIState, SKKZenkakuState -> mQwertyInputView?.setKeyState(engineState)
+            SKKAbbrevState -> mAbbrevKeyboardView?.setKeyState()
+            else -> if (wasFlick) mFlickJPInputView?.setKeyState(engineState)
+            else mQwertyInputView?.setKeyState(engineState)
         }
     }
 
@@ -590,7 +590,25 @@ class SKKService : InputMethodService() {
     }
 
     override fun onStartInputView(editorInfo: EditorInfo?, restarting: Boolean) {
+        // 設定を変更した場合に反映する
+        when {
+            skkPrefs.preferGodan && mInputView != mGodanInputView ->
+                setInputView(mGodanInputView)
+            !skkPrefs.preferGodan && mInputView == mGodanInputView ->
+                setInputView(
+                    if (skkPrefs.preferFlick && engineState !in listOf(
+                        SKKAbbrevState, SKKASCIIState, SKKZenkakuState
+                    )) mFlickJPInputView else mQwertyInputView
+                )
+        }
         super.onStartInputView(editorInfo, restarting)
+
+        // シフト等の状態を同期
+        mFlickJPInputView?.setKeyState(engineState)
+        mGodanInputView?.setKeyState(engineState)
+        mQwertyInputView?.setKeyState(engineState)
+        mAbbrevKeyboardView?.setKeyState()
+
         showStatusIcon(engineState.icon)
     }
 
@@ -1035,30 +1053,35 @@ class SKKService : InputMethodService() {
         return false
     }
 
+    // SKKState で指定された種類のキーボードに setInputView する
+    // engineState とは違うものが指定されることもある
+    // (FlickJP から、ひらがなモードのまま Qwerty に変更する場合など)
     fun changeSoftKeyboard(state: SKKState) {
         // 長押しリピートの message が残っている可能性があるので止める
         for (kv in arrayOf(mAbbrevKeyboardView, mFlickJPInputView, mGodanInputView, mQwertyInputView)) {
             kv?.stopRepeatKey()
         }
 
-        mQwertyInputView?.setKeyState(mEngine.state) // 整合性のため必ず通っておく
-        mGodanInputView?.setKeyState(mEngine.state)
-
-        setInputView(if (skkPrefs.preferGodan) mGodanInputView ?: return
-        else when (state) {
-            SKKASCIIState    -> mQwertyInputView ?: return
-            SKKKanjiState    -> mFlickJPInputView ?: return
-            SKKHiraganaState, SKKKatakanaState, SKKHanKanaState
-                  -> mFlickJPInputView?.setKeyState(state) ?: return
-            SKKAbbrevState   -> mAbbrevKeyboardView ?: return
-            SKKZenkakuState  -> mQwertyInputView ?: return
-            else -> return
-        })
+        setInputView(
+            if (skkPrefs.preferGodan) {
+                mGodanInputView?.setKeyState(state)
+            } else when (state) {
+                // state==ASCII は Qwerty にしたがっているだけの場合があるので引数を使わない
+                // 他の場合は基本的に state==engineState のはずなので、どちらでも構わない
+                SKKASCIIState   -> mQwertyInputView?.setKeyState(engineState)
+                SKKKanjiState   -> mFlickJPInputView?.setKeyState(state)
+                SKKHiraganaState, SKKKatakanaState, SKKHanKanaState
+                                -> mFlickJPInputView?.setKeyState(state)
+                SKKAbbrevState  -> mAbbrevKeyboardView?.setKeyState()
+                SKKZenkakuState -> mQwertyInputView?.setKeyState(state)
+                else -> throw Exception("invalid state: $state")
+            } ?: return
+        )
     }
 
     fun changeToFlick() {
         if (!engineState.changeToFlick(mEngine)) {
-            setInputView(mFlickJPInputView)
+            setInputView(mFlickJPInputView?.setKeyState(engineState))
         }
     }
 
