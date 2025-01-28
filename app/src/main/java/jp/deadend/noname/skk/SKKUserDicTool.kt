@@ -534,6 +534,11 @@ class SKKUserDicTool : AppCompatActivity() {
             val intent = Intent(this@SKKUserDicTool, SKKService::class.java)
             intent.putExtra(SKKService.KEY_COMMAND, command)
             startService(intent)
+            try {
+                Thread.sleep(100) // 本当は結果を待つのが正しい
+            } catch (e: InterruptedException) {
+                dlog("sleep was interrupted: ${e.message}")
+            }
         }
     }
 
