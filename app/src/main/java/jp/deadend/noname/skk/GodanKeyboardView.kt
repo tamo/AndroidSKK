@@ -738,7 +738,10 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                     }
                 } else when (popupText) {
                     "^J" -> mService.handleKanaKey()
-                    "ｶﾅ" -> mService.processKey(17)
+                    "ｶﾅ" -> {
+                        if (mIsASCII) mService.handleKanaKey() // ひらがなを経由
+                        mService.processKey(17)
+                    }
                 }
             }
         }
