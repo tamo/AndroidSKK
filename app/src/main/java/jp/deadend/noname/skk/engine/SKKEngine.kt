@@ -1,5 +1,6 @@
 package jp.deadend.noname.skk.engine
 
+import android.text.SpannableString
 import com.android.volley.toolbox.JsonArrayRequest
 import com.android.volley.toolbox.Volley
 import jp.deadend.noname.skk.*
@@ -911,7 +912,10 @@ class SKKEngine(
         mCandidatesList = null
         mService.clearCandidatesView()
         if (mService.currentInputConnection.getSelectedText(0).isNullOrEmpty()) {
-            mService.currentInputConnection.setComposingText("", 1)
+            mService.currentInputConnection.setComposingText(SpannableString(""), 1)
+            // SpannableStringしないと BaseInputConnection の replaceTextInternal() で
+            // SpannableStringBuilder SPAN_EXCLUSIVE_EXCLUSIVE spans cannot have a zero length
+            // というエラーを出してしまう
         }
         mComposingText.setLength(0)
     }
