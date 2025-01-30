@@ -38,6 +38,8 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.preference.PreferenceManager
 import jp.deadend.noname.skk.engine.*
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.launch
 import java.io.*
 
 
@@ -634,7 +636,22 @@ class SKKService : InputMethodService() {
         mAbbrevKeyboardView?.handleBack()
     }
 
+    override fun onUnbind(intent: Intent?): Boolean {
+        super.onUnbind(intent)
+
+        // このあと onDestroy() が呼ばれないことがあるので強制終了しておく
+        // onDestroy() なしだと、次回起動がエラーで起動し直しになる
+        MainScope().launch { stopSelf() }
+
+        return false // rebind 不可能であることを示す
+    }
+
     override fun onDestroy() {
+        if (instance == null) {
+            dlog("skip onDestroy(): instance is null")
+            return
+        }
+
         mEngine.commitUserDictChanges()
         mSpeechRecognizer.destroy()
         instance = null
