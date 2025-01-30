@@ -613,16 +613,19 @@ open class KeyboardView @JvmOverloads constructor(
                 }
                 popupPreviewY += popupHeight
             }
+
             if (mPreviewPopup.isShowing) {
-                mPreviewPopup.update(popupPreviewX, popupPreviewY, popupWidth, popupHeight)
-            } else {
-                mPreviewPopup.width = popupWidth
-                mPreviewPopup.height = popupHeight
-                mPreviewPopup.showAtLocation(
-                    mPopupParent, Gravity.NO_GRAVITY,
-                    popupPreviewX, popupPreviewY
-                )
+                mPreviewText?.visibility = INVISIBLE
+                mPreviewPopup.dismiss()
             }
+
+            mPreviewPopup.width = popupWidth
+            mPreviewPopup.height = popupHeight
+            mPreviewPopup.showAtLocation(
+                mPopupParent, Gravity.NO_GRAVITY,
+                popupPreviewX, popupPreviewY
+            )
+
             previewText.visibility = VISIBLE
         }
     }
