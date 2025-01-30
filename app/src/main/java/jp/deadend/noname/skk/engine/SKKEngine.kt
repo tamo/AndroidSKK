@@ -380,9 +380,10 @@ class SKKEngine(
                 val ic = mService.currentInputConnection ?: return
                 val cs = ic.getTextBeforeCursor(2, 0) ?: return
                 // 2 文字なので注意!
-                val newLast2Chars = RomajiConverter.convertLastChar(cs.toString(), type) ?: return
+                val newLast2Chars = RomajiConverter.convertLastChar(cs.toString(), type)
+                dlog("changeLastChar: 2chars=$newLast2Chars")
+                if (newLast2Chars.isNullOrEmpty()) return
                 val newLastChar = newLast2Chars.last().toString()
-                dlog("changeLastChar: 2chars=$newLast2Chars last=$newLastChar")
 
                 val firstEntry = mRegistrationStack.peekFirst()?.entry
                 if (firstEntry != null) {
