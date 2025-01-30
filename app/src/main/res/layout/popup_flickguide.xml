@@ -17,10 +17,11 @@
 		android:includeFontPadding="false"
 		android:textColor="@color/key_char_color"
 		android:textSize="22sp"
-		app:autoSizeMaxTextSize="22sp"
-		app:autoSizeMinTextSize="8sp"
-		app:autoSizeStepGranularity="1sp"
-		app:autoSizeTextType="uniform" />
+		android:maxLines="1"
+		android:autoSizeMaxTextSize="22sp"
+		android:autoSizeMinTextSize="8sp"
+		android:autoSizeStepGranularity="1sp"
+		android:autoSizeTextType="uniform" />
 
 	<TextView
 		android:id="@+id/labelI"
@@ -34,10 +35,11 @@
 		android:includeFontPadding="false"
 		android:textColor="@color/key_char_color"
 		android:textSize="22sp"
-		app:autoSizeMaxTextSize="22sp"
-		app:autoSizeMinTextSize="8sp"
-		app:autoSizeStepGranularity="1sp"
-		app:autoSizeTextType="uniform" />
+		android:maxLines="1"
+		android:autoSizeMaxTextSize="22sp"
+		android:autoSizeMinTextSize="8sp"
+		android:autoSizeStepGranularity="1sp"
+		android:autoSizeTextType="uniform" />
 
 	<TextView
 		android:id="@+id/labelU"
@@ -51,10 +53,11 @@
 		android:includeFontPadding="false"
 		android:textColor="@color/key_char_color"
 		android:textSize="22sp"
-		app:autoSizeMaxTextSize="22sp"
-		app:autoSizeMinTextSize="8sp"
-		app:autoSizeStepGranularity="1sp"
-		app:autoSizeTextType="uniform" />
+		android:maxLines="1"
+		android:autoSizeMaxTextSize="22sp"
+		android:autoSizeMinTextSize="8sp"
+		android:autoSizeStepGranularity="1sp"
+		android:autoSizeTextType="uniform" />
 
 	<TextView
 		android:id="@+id/labelE"
@@ -68,10 +71,11 @@
 		android:includeFontPadding="false"
 		android:textColor="@color/key_char_color"
 		android:textSize="22sp"
-		app:autoSizeMaxTextSize="22sp"
-		app:autoSizeMinTextSize="8sp"
-		app:autoSizeStepGranularity="1sp"
-		app:autoSizeTextType="uniform" />
+		android:maxLines="1"
+		android:autoSizeMaxTextSize="22sp"
+		android:autoSizeMinTextSize="8sp"
+		android:autoSizeStepGranularity="1sp"
+		android:autoSizeTextType="uniform" />
 
 	<TextView
 		android:id="@+id/labelO"
@@ -85,10 +89,11 @@
 		android:includeFontPadding="false"
 		android:textColor="@color/key_char_color"
 		android:textSize="22sp"
-		app:autoSizeMaxTextSize="22sp"
-		app:autoSizeMinTextSize="8sp"
-		app:autoSizeStepGranularity="1sp"
-		app:autoSizeTextType="uniform" />
+		android:maxLines="1"
+		android:autoSizeMaxTextSize="22sp"
+		android:autoSizeMinTextSize="8sp"
+		android:autoSizeStepGranularity="1sp"
+		android:autoSizeTextType="uniform" />
 
 	<TextView
 		android:id="@+id/labelLeftA"

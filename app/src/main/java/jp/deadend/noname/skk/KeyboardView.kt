@@ -207,7 +207,7 @@ open class KeyboardView @JvmOverloads constructor(
                 R.styleable.KeyboardView_keyTextColor ->
                     mKeyTextColor = a.getColor(attr, -0x1000000)
                 R.styleable.KeyboardView_labelTextSize ->
-                    mLabelTextSize = a.getDimensionPixelSize(attr, 14)
+                    mLabelTextSize = a.getDimensionPixelSize(attr, 16)
                 R.styleable.KeyboardView_popupLayout ->
                     mPopupLayout = a.getResourceId(attr, 0)
             }
@@ -398,53 +398,90 @@ open class KeyboardView @JvmOverloads constructor(
                 keyBackground?.draw(canvas)
                 if (label != null) {
                     // For characters, use large font. For labels like "Done", use small font.
-                    if (label.length > 1 && key.codes.size < 2) {
+                    if (label.length > 1 && !label.contains('\n') && key.codes.size < 2) {
                         mPaint.textSize = mLabelTextSize.toFloat()
-                        mPaint.typeface = Typeface.DEFAULT_BOLD
                         mPaint.textScaleX = 1.0f
                     } else {
                         mPaint.textSize = mKeyTextSize.toFloat()
-                        mPaint.typeface = Typeface.DEFAULT
                         mPaint.textScaleX = if (isZenkaku) 1.4f else 1.0f
                     }
                     val lines = label.split("\n")
                     val numLines = lines.size
+                    val isGodanKey = numLines == 3 &&
+                            lines[0].length == 1 &&
+                            lines[1].length == 3 &&
+                            lines[2].length == 1
+                    val sizeFactors = if (numLines == 3) {
+                        listOf(.4f, .8f, .4f) // Godan以外でも中央の行を大きくする (「わ」「abc」等)
+                    } else {
+                        listOf(1f, 1f, 1f)
+                    }
+                    val sizeDefault = mPaint.textSize
                     val lineScale = 1.5f
                     lines.forEachIndexed { i, line ->
-                        // Draw the text
-                        canvas.drawText(
-                            line,
-                            (key.width - mPadding.left - mPadding.right) / 2f + mPadding.left,
-                            (key.height - mPadding.top - mPadding.bottom) / 2f + mPadding.top
-                                    - mPaint.descent() + lineScale * (
-                                    (mPaint.textSize * numLines - mPaint.descent()) / 2f
-                                            - mPaint.textSize * (numLines - 1 - i)),
-                            mPaint
-                        )
+                        fun drawText(t: String, descent: Float) {
+                            canvas.drawText(
+                                t,
+                                (key.width + mPadding.left - mPadding.right) / 2f,
+                                (key.height + mPadding.top - mPadding.bottom) / 2f
+                                        + lineScale * (((0..<numLines).fold(0f) { s, j ->
+                                            s + sizeDefault * sizeFactors[j]
+                                        }) - descent) / 2f
+                                        - lineScale * ((0..<numLines - 1 - i).fold(0f) { s, j ->
+                                            s + sizeDefault * sizeFactors[j]
+                                        }) - descent,
+                                mPaint
+                            )
+                        }
+
+                        mPaint.textSize = sizeDefault * sizeFactors[i]
+                        mPaint.typeface = if (i.toFloat() == (numLines - 1) / 2f) {
+                            Typeface.DEFAULT_BOLD // 中央の行 (1行だけならその行)
+                        } else {
+                            Typeface.DEFAULT
+                        }
+
+                        if (isGodanKey && i == 1) {
+                            val descent = mPaint.descent()
+                            drawText(line[1].toString(), descent)
+
+                            // 左右フリックのキー
+                            mPaint.typeface = Typeface.DEFAULT
+                            mPaint.textSize *= .8f
+                            drawText("${line[0]}　　${line[2]}", descent)
+                        } else {
+                            drawText(line, mPaint.descent())
+                        }
                     }
+
+                    // 英数キーボードの上下フリックやシフトを上下に小さく表示
+                    val savedAlign = mPaint.textAlign
                     if (!shiftedLabel.isNullOrEmpty()
                         && shiftedLabel != label.uppercase()
                         && shiftedLabel != label.lowercase()
                     ) {
-                        mPaint.textSize = mKeyTextSize / 2f
+                        mPaint.textAlign = Align.LEFT
+                        mPaint.textSize = mKeyTextSize * .6f
                         mPaint.typeface = Typeface.DEFAULT
                         canvas.drawText(
                             shiftedLabel,
-                            key.width - mPadding.right - mPaint.textSize,
-                            mPadding.top + mPaint.textSize,
+                            mPadding.left + mPaint.textSize,
+                            mPadding.top + mPaint.textSize * 1.5f,
                             mPaint
                         )
                     }
                     if (key.downLabel.isNotEmpty()) {
-                        mPaint.textSize = mKeyTextSize / 2f
+                        mPaint.textAlign = Align.RIGHT
+                        mPaint.textSize = mKeyTextSize * .6f
                         mPaint.typeface = Typeface.DEFAULT
                         canvas.drawText(
                             key.downLabel.toString(),
                             key.width - mPadding.right - mPaint.textSize,
-                            key.height - mPadding.bottom - mPaint.textSize,
+                            key.height - mPadding.bottom - mPaint.textSize * .5f,
                             mPaint
                         )
                     }
+                    mPaint.textAlign = savedAlign
                 } else if (icon != null) {
                     val drawableX =
                         (key.width - mPadding.left - mPadding.right - icon.intrinsicWidth) / 2 + mPadding.left

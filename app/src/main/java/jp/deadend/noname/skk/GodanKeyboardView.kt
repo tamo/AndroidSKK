@@ -105,7 +105,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
 
         cancelKey.codes[0] = KEYCODE_GODAN_CANCEL
         cancelKey.codes[1] = KEYCODE_GODAN_NONE
-        cancelKey.label = "cxl"
+        cancelKey.label = /* if (!mIsASCII && skkPrefs.simpleGodan) "cxl" else */ "貼付\ncxl\ngoogle"
         cancelKey.icon = null
 
         keyboard.reloadShiftKeys()
@@ -122,10 +122,10 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
         }
 
         cancelKey.codes[0] = KEYCODE_GODAN_CANCEL
-        cancelKey.label = "cxl"
+        cancelKey.label = /* if (!mIsASCII && skkPrefs.simpleGodan) "cxl" else */ "貼付\ncxl\ngoogle"
 
         qKey.codes[0] = KEYCODE_GODAN_CHAR_Q
-        qKey.label = "Q"
+        qKey.label = /* if (!mIsASCII && skkPrefs.simpleGodan) "Q" else */ "かな\nQ\n半ｶﾅ"
     }
 
     fun setKeyState(state: SKKState): GodanKeyboardView {
@@ -165,7 +165,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
             key = findKeyByCode(keyboard, KEYCODE_GODAN_RIGHT)
             if (key != null) {
                 key.codes[0] = KEYCODE_GODAN_GOOGLE
-                key.label = "Google\n変換"
+                key.label = "Google"
             }
         } else {
             var key = findKeyByCode(keyboard, KEYCODE_GODAN_PASTE)
@@ -214,21 +214,21 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
 
         when {
             skkPrefs.useSoftCancelKey -> {
-                findKeyByCode(keyboard, KEYCODE_GODAN_KOMOJI)?.label = "小\n └゛cxl └゜\n▽"
+                findKeyByCode(keyboard, KEYCODE_GODAN_KOMOJI)?.label = "小\n◻゙cxl◻゚\n▽"
                 mFlickGuideLabelList.put(
-                    KEYCODE_GODAN_KOMOJI, arrayOf("CXL", "゛", "小", "゜", "▽", "", "")
+                    KEYCODE_GODAN_KOMOJI, arrayOf("CXL", "◻゙", "小", "◻゚", "▽", "", "")
                 )
             }
             skkPrefs.useSoftTransKey -> {
-                findKeyByCode(keyboard, KEYCODE_GODAN_KOMOJI)?.label = "cxl\n└゛└゜\n▽"
+                findKeyByCode(keyboard, KEYCODE_GODAN_KOMOJI)?.label = "cxl\n◻゙□゚\n▽"
                 mFlickGuideLabelList.put(
-                    KEYCODE_GODAN_KOMOJI, arrayOf("└゛└゜", "゛", "CXL", "゜", "▽", "", "")
+                    KEYCODE_GODAN_KOMOJI, arrayOf("◻゙□゚", "◻゙", "CXL", "◻゚", "▽", "", "")
                 )
             }
             else -> {
-                findKeyByCode(keyboard, KEYCODE_GODAN_KOMOJI)?.label = "cxl\n └゛小 └゜\n▽"
+                findKeyByCode(keyboard, KEYCODE_GODAN_KOMOJI)?.label = "cxl\n◻゙小◻゚\n▽"
                 mFlickGuideLabelList.put(
-                    KEYCODE_GODAN_KOMOJI, arrayOf("小", "゛", "CXL", "゜", "▽", "", "")
+                    KEYCODE_GODAN_KOMOJI, arrayOf("小", "◻゙", "CXL", "◻゚", "▽", "", "")
                 )
             }
         }

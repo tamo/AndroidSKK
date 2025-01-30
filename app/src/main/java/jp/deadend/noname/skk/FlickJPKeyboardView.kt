@@ -91,7 +91,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
         a.append(KEYCODE_FLICK_JP_CHAR_TEN_NUM, arrayOf("，", "．", "－", "：", "／", "", ""))
         a.append(KEYCODE_FLICK_JP_CHAR_TEN_NUM_LEFT, arrayOf("＃", "￥", "＋", "＄", "＊", "", ""))
         a.append(KEYCODE_FLICK_JP_MOJI, arrayOf("カナ", "：", "10", "＞", "声", "", ""))
-        a.append(KEYCODE_FLICK_JP_TOQWERTY, arrayOf("abc", "", "全角", "", "qwe", "", ""))
+        a.append(KEYCODE_FLICK_JP_TOQWERTY, arrayOf("abc", "", "全角ａ", "", "qwerty", "", ""))
     }
 
     override fun setService(service: SKKService) {
@@ -160,7 +160,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
                     KEYCODE_FLICK_JP_CHAR_MA -> key.label = "ま"
                     KEYCODE_FLICK_JP_CHAR_YA -> key.label = "や"
                     KEYCODE_FLICK_JP_CHAR_RA -> key.label = "ら"
-                    KEYCODE_FLICK_JP_CHAR_WA -> key.label = "わ"
+                    KEYCODE_FLICK_JP_CHAR_WA -> key.label = "ん\nをわー\n〜"
                     KEYCODE_FLICK_JP_MOJI    -> key.label = "10\n：カナ＞\n声"
                 }
             } else {
@@ -174,7 +174,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
                     KEYCODE_FLICK_JP_CHAR_MA -> key.label = "マ"
                     KEYCODE_FLICK_JP_CHAR_YA -> key.label = "ヤ"
                     KEYCODE_FLICK_JP_CHAR_RA -> key.label = "ラ"
-                    KEYCODE_FLICK_JP_CHAR_WA -> key.label = "ワ"
+                    KEYCODE_FLICK_JP_CHAR_WA -> key.label = "ン\nヲワー\n〜"
                     KEYCODE_FLICK_JP_MOJI    -> key.label = "10\n：かな＞\n声"
                 }
             }
@@ -189,14 +189,14 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
     private fun onSetShifted(isShifted: Boolean) {
         if (isShifted) {
             mKutoutenKey.codes[0] = KEYCODE_FLICK_JP_CHAR_TEN_SHIFTED
-            mKutoutenKey.label = "「\n（　□　）\n」"
+            mKutoutenKey.label = "「\n（□）\n」"
             mSpaceKey.label = "設定"
             mQwertyKey.label = "abbr"
         } else {
             mKutoutenKey.codes[0] = KEYCODE_FLICK_JP_CHAR_TEN
             mKutoutenKey.label = mKutoutenLabel
             mSpaceKey.label = ""
-            mQwertyKey.label = "ＡＢＣ\nabc\nqwerty"
+            mQwertyKey.label = "全角ａ\nabc\nqwerty"
         }
     }
 
@@ -210,7 +210,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
             key = findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_RIGHT)
             if (key != null) {
                 key.codes[0] = KEYCODE_FLICK_JP_GOOGLE
-                key.label = "Google\n変換"
+                key.label = "Google"
             }
         } else {
             var key = findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_PASTE)
@@ -251,19 +251,19 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
         // 句読点
         when (skkPrefs.kutoutenType) {
             "en" -> {
-                mKutoutenLabel = "？\n． ，！\n…"
+                mKutoutenLabel = "？\n．，！\n…"
                 mFlickGuideLabelList.put(
                         KEYCODE_FLICK_JP_CHAR_TEN, arrayOf("，", "．", "？", "！", "…", "", "")
                 )
             }
             "jp_en" -> {
-                mKutoutenLabel = "？\n。 ，！\n…"
+                mKutoutenLabel = "？\n。，！\n…"
                 mFlickGuideLabelList.put(
                         KEYCODE_FLICK_JP_CHAR_TEN, arrayOf("，", "。", "？", "！", "…", "", "")
                 )
             }
             else -> {
-                mKutoutenLabel = "？\n。 、！\n…"
+                mKutoutenLabel = "？\n。、！\n…"
                 mFlickGuideLabelList.put(
                         KEYCODE_FLICK_JP_CHAR_TEN, arrayOf("、", "。", "？", "！", "…", "", "")
                 )
@@ -272,21 +272,21 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
         mKutoutenKey.label = mKutoutenLabel
         when {
             skkPrefs.useSoftCancelKey -> {
-                findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_KOMOJI)?.label = "小\n └゛CXL └゜\n▽"
+                findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_KOMOJI)?.label = "小\n◻゙CXL◻゚\n▽"
                 mFlickGuideLabelList.put(
-                    KEYCODE_FLICK_JP_KOMOJI, arrayOf("CXL", "゛", "小", "゜", "▽", "", "")
+                    KEYCODE_FLICK_JP_KOMOJI, arrayOf("CXL", "◻゙", "小", "◻゚", "▽", "", "")
                 )
             }
             skkPrefs.useSoftTransKey -> {
-                findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_KOMOJI)?.label = "CXL\n└゛└゜\n▽"
+                findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_KOMOJI)?.label = "CXL\n◻゙□゚\n▽"
                 mFlickGuideLabelList.put(
-                    KEYCODE_FLICK_JP_KOMOJI, arrayOf("└゛└゜", "゛", "CXL", "゜", "▽", "", "")
+                    KEYCODE_FLICK_JP_KOMOJI, arrayOf("◻゙□゚", "◻゙", "CXL", "◻゚", "▽", "", "")
                 )
             }
             else -> {
-                findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_KOMOJI)?.label = "CXL\n └゛小 └゜\n▽"
+                findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_KOMOJI)?.label = "CXL\n◻゙小◻゚\n▽"
                 mFlickGuideLabelList.put(
-                    KEYCODE_FLICK_JP_KOMOJI, arrayOf("小", "゛", "CXL", "゜", "▽", "", "")
+                    KEYCODE_FLICK_JP_KOMOJI, arrayOf("小", "◻゙", "CXL", "◻゚", "▽", "", "")
                 )
             }
         }

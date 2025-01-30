@@ -21,9 +21,9 @@
 		<item>off</item>
 	</string-array>
 	<string-array name="sensitivity_entries">
-		<item>高</item>
+		<item>高 (小さいキーに最適)</item>
 		<item>中</item>
-		<item>低</item>
+		<item>低 (大きいキーに最適)</item>
 	</string-array>
 	<string-array name="sensitivity_values">
 		<item>high</item>
