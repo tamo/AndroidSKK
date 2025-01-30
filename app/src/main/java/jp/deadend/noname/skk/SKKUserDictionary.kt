@@ -43,11 +43,15 @@ class SKKUserDictionary private constructor (
             // 送りがなブロック
             val regex = """/\[.*?/\]""".toRegex()
             regex.findAll(value).forEach { result: MatchResult ->
-                okr.add(
-                    result.value.substring(2, result.value.length - 2) // "/[" と "/]" をとる
-                        .split('/')
-                        .let { Pair(it[0], it[1]) }
-                )
+                result.value.substring(2, result.value.length - 2) // "/[" と "/]" をとる
+                    .split('/')
+                    .let { pair ->
+                        if (pair.size == 2) {
+                            okr.add(pair[0] to pair[1])
+                        } else {
+                            Log.e("SKK", "Invalid value found: Key=$key value=$value (${result.value})")
+                        }
+                    }
             }
         }
 
