@@ -332,7 +332,7 @@ class SKKEngine(
                 val s = mKanjiKey.toString() // ▽あい
                 val idx = s.length - 1
                 if (idx < 1 && type == LAST_CONVERSION_SHIFT) { return } // ▽あ
-                val newLastChar = RomajiConverter.convertLastChar(s.substring(idx), type) ?: return
+                val newLastChar = RomajiConverter.convertLastChar(s.substring(idx), type).second
                 // この convertLastChar に 2 文字が渡ることはない
 
                 mKanjiKey.deleteCharAt(idx)
@@ -350,7 +350,7 @@ class SKKEngine(
                 val hint = SKKNarrowingState.mHint // ▼藹 hint: わ
                 val idx = hint.length - 1
                 if (type == LAST_CONVERSION_SHIFT) { return }
-                val newLastChar = RomajiConverter.convertLastChar(hint.substring(idx), type) ?: return
+                val newLastChar = RomajiConverter.convertLastChar(hint.substring(idx), type).second
                 // この convertLastChar にも 2 文字が渡ることはない
 
                 hint.deleteCharAt(idx)
@@ -359,7 +359,7 @@ class SKKEngine(
             }
             state === SKKChooseState -> {
                 val okuri = mOkurigana ?: return // ▼合い (okuri = い)
-                val newOkuri = RomajiConverter.convertLastChar(okuri, type) ?: return
+                val newOkuri = RomajiConverter.convertLastChar(okuri, type).second
 
                 if (type == LAST_CONVERSION_SHIFT) {
                     handleCancel() // ▽あ (mOkurigana = null)
@@ -380,21 +380,20 @@ class SKKEngine(
             mComposing.isEmpty() && mKanjiKey.isEmpty() -> {
                 val ic = mService.currentInputConnection ?: return
                 val cs = ic.getTextBeforeCursor(2, 0) ?: return
-                // 2 文字なので注意!
+                // 0〜2 文字を 0〜3 文字にするので注意!
                 val newLast2Chars = RomajiConverter.convertLastChar(cs.toString(), type)
                 dlog("changeLastChar: 2chars=$newLast2Chars")
-                if (newLast2Chars.isNullOrEmpty()) return
-                val newLastChar = newLast2Chars.last().toString()
+                if (newLast2Chars.first.isEmpty() && newLast2Chars.second.isEmpty()) return
+
+                val deleteTwo = (cs.length == 2 && newLast2Chars.first.isEmpty())
+                val newLastChar = newLast2Chars.second
 
                 val firstEntry = mRegistrationStack.peekFirst()?.entry
                 if (firstEntry != null) {
                     if (firstEntry.isEmpty()) { return }
                     firstEntry.deleteCharAt(firstEntry.length - 1)
-                    if (cs.length == 2) {
+                    if (deleteTwo) {
                         firstEntry.deleteCharAt(firstEntry.length - 2)
-                        if (newLast2Chars.length == 2) {
-                            firstEntry.append(newLast2Chars.first())
-                        }
                     }
                     if (type == LAST_CONVERSION_SHIFT) {
                         mKanjiKey.append(katakana2hiragana(newLastChar))
@@ -406,9 +405,14 @@ class SKKEngine(
                         setComposingTextSKK("")
                     }
                 } else {
-                    ic.deleteSurroundingText(2, 0)
-                    if (newLast2Chars.length == 2) {
-                        ic.commitText(newLast2Chars.first().toString(), 1)
+                    // 同じ部分を消してまた書くのは避ける
+                    when {
+                        cs.isEmpty() -> if (type != LAST_CONVERSION_SHIFT) return
+                        !deleteTwo -> {
+                            if (cs.last() == newLastChar.last() && type != LAST_CONVERSION_SHIFT) return
+                            else ic.deleteSurroundingText(1, 0)
+                        }
+                        else -> ic.deleteSurroundingText(2, 0)
                     }
                     if (type == LAST_CONVERSION_SHIFT) {
                         mKanjiKey.append(katakana2hiragana(newLastChar))

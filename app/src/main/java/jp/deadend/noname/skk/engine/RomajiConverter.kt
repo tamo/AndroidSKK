@@ -125,11 +125,11 @@ object RomajiConverter {
             else -> ""
         }
     }
-    fun convertLastChar(str: String, type: String): String? {
+    fun convertLastChar(str: String, type: String): Pair<String, String> {
         dlog("convertLastChar(str=$str, type=$type)")
 
-        if (str.isEmpty()) return ""
-        var first = if (str.lastIndex > 0) str[str.lastIndex - 1].toString() else ""
+        if (str.isEmpty()) return "" to "" // str が 0 文字の場合
+        var first = if (str.lastIndex > 0) str[str.lastIndex - 1].toString() else "" // 1 文字の場合
         val last = str.last()
 
         val zen = hankaku2zenkaku(first + last)!! // 2文字
@@ -150,11 +150,11 @@ object RomajiConverter {
             && kanaLast !in 0x30FD..0x30FE // 「同じ」の記号
         ) {
             dlog("last is not convertible: $last")
-            return str
+            return first to last.toString()
         }
         dlog("first=$first (last=$last), kana=$kana")
 
-        return first + (when (type) {
+        return first to (when (type) {
             SKKEngine.LAST_CONVERSION_SMALL      -> (mSmallKanaMap + mReversedSmallKanaMap)[kana]
             SKKEngine.LAST_CONVERSION_DAKUTEN    -> (mDakutenMap + mReversedDakutenMap)[kana]
                 ?: mDakutenMap[mReversedHandakutenMap[kana]]            // 半濁点を濁点に
@@ -168,7 +168,7 @@ object RomajiConverter {
                 ?: mReversedDakutenMap[kana]                            // 濁点を普通に
                 ?: mReversedSmallKanaMap[kana]                          // 小文字を普通に
             SKKEngine.LAST_CONVERSION_SHIFT      -> kana
-            else -> return null
+            else -> throw IllegalArgumentException("convertLastChar: unknown type $type")
         } ?: kana)
     }
 
