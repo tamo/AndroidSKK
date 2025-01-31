@@ -712,11 +712,6 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                         '□'.code -> ' '.code
                         'ー'.code -> '-'.code
                         '〜'.code -> '~'.code
-                        /*
-                        '〜'.code -> {
-                            mService.processKey('z'.code)
-                            '-'.code
-                        }
                         '『'.code -> {
                             mService.processKey('z'.code)
                             '['.code
@@ -727,7 +722,24 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                         }
                         '、'.code -> ','.code
                         '。'.code -> '.'.code
-                         */
+                        '←'.code, '↑'.code, '→'.code, '↓'.code -> {
+                            mService.processKey('z'.code)
+                            when (Char(guidedCode)) {
+                                '←' -> 'h'.code
+                                '↑' -> 'k'.code
+                                '→' -> 'l'.code
+                                '↓' -> 'j'.code
+                                else -> throw IllegalArgumentException("Char($guidedCode) is not an arrow: ${Char(guidedCode)}")
+                            }
+                        }
+                        '￥'.code -> {
+                            if (mService.engineState.isTransient) {
+                                '\\'.code // 無効だけど
+                            } else {
+                                mService.commitTextSKK("￥") // 全角
+                                0
+                            }
+                        }
                         else -> {
                             mService.commitTextSKK(Char(guidedCode).toString())
                             0
