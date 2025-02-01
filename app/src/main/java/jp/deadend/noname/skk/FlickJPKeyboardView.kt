@@ -28,6 +28,11 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
     private var mFlickState = EnumSet.of(FlickState.NONE)
     private var mFlickStartX = -1f
     private var mFlickStartY = -1f
+    private val mArrowPressed: Boolean
+        get() = (mLastPressedKey == KEYCODE_FLICK_JP_LEFT || mLastPressedKey == KEYCODE_FLICK_JP_RIGHT)
+    private var mArrowFlicked = false
+    private var mArrowStartX = -1f
+    private var mArrowStartY = -1f
     private var mCurrentPopupLabels = POPUP_LABELS_NULL
 
     private var mUsePopup = true
@@ -92,6 +97,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
         a.append(KEYCODE_FLICK_JP_CHAR_TEN_NUM_LEFT, arrayOf("＃", "￥", "＋", "＄", "＊", "", ""))
         a.append(KEYCODE_FLICK_JP_MOJI, arrayOf("カナ", "：", "10", "＞", "声", "", ""))
         a.append(KEYCODE_FLICK_JP_TOQWERTY, arrayOf("abc", "", "全角ａ", "", "qwerty", "", ""))
+        a.append(KEYCODE_FLICK_JP_SPACE, arrayOf("SPACE", "", "Mush", "", "", "", ""))
     }
 
     override fun setService(service: SKKService) {
@@ -452,6 +458,8 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
             MotionEvent.ACTION_DOWN -> {
                 mFlickStartX = me.x
                 mFlickStartY = me.y
+                mArrowStartX = me.x
+                mArrowStartY = me.y
             }
             MotionEvent.ACTION_MOVE -> {
                 val dx = me.x - mFlickStartX
@@ -462,6 +470,38 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
                         if (mFlickState != EnumSet.of(FlickState.NONE)) {
                             mFlickState = EnumSet.of(FlickState.NONE)
                             performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+                        }
+                    }
+                    mArrowPressed -> {
+                        val adx = me.x - mArrowStartX
+                        val ady = me.y - mArrowStartY
+                        val adx2 = adx * adx
+                        val ady2 = ady * ady
+                        when {
+                            adx2 > ady2 && adx2 > mFlickSensitivitySquared -> {
+                                if (adx < 0) {
+                                    mService.keyDownUp(KeyEvent.KEYCODE_DPAD_LEFT)
+                                } else {
+                                    mService.keyDownUp(KeyEvent.KEYCODE_DPAD_RIGHT)
+                                }
+                                mArrowFlicked = true
+                                mArrowStartX = me.x
+                                mArrowStartY = me.y
+                                stopRepeatKey()
+                                return true
+                            }
+                            adx2 < ady2 && ady2 > mFlickSensitivitySquared -> {
+                                if (ady < 0) {
+                                    mService.keyDownUp(KeyEvent.KEYCODE_DPAD_UP)
+                                } else {
+                                    mService.keyDownUp(KeyEvent.KEYCODE_DPAD_DOWN)
+                                }
+                                mArrowFlicked = true
+                                mArrowStartY = me.y
+                                mArrowStartX = me.x
+                                stopRepeatKey()
+                                return true
+                            }
                         }
                     }
                     mFlickState.contains(FlickState.NONE) -> processFirstFlick(dx, dy)
@@ -512,6 +552,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
         if (mFlickState != newState) {
             mFlickState = newState
             performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+            stopRepeatKey()
         }
     }
 
@@ -736,9 +777,6 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
         if (code == KEYCODE_FLICK_JP_ENTER) {
             mService.keyDownUp(KeyEvent.KEYCODE_SEARCH)
             return true
-        } else if (code == KEYCODE_FLICK_JP_SPACE) {
-            mService.sendToMushroom()
-            return true
         }
 
         return super.onLongPress(key)
@@ -748,6 +786,8 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
         if (mFlickState == EnumSet.of(FlickState.NONE)) {
             mLastPressedKey = primaryCode
         }
+
+        mArrowFlicked = false
 
         if (mUsePopup) {
             val labels = mFlickGuideLabelList.get(primaryCode)
@@ -801,39 +841,39 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
 
     override fun onKey(primaryCode: Int) {
         when (primaryCode) {
-            Keyboard.KEYCODE_SHIFT -> {
-                isShifted = !isShifted
-                onSetShifted(isShifted)
-            }
+            // repeatable
             Keyboard.KEYCODE_DELETE -> if (!mService.handleBackspace()) {
                 mService.keyDownUp(KeyEvent.KEYCODE_DEL)
             }
-            KEYCODE_FLICK_JP_LEFT -> if (!mService.handleDpad(KeyEvent.KEYCODE_DPAD_LEFT)) {
+            KEYCODE_FLICK_JP_LEFT -> if (!mArrowFlicked && !mService.handleDpad(KeyEvent.KEYCODE_DPAD_LEFT)) {
                 mService.keyDownUp(KeyEvent.KEYCODE_DPAD_LEFT)
             }
-            KEYCODE_FLICK_JP_RIGHT -> if (!mService.handleDpad(KeyEvent.KEYCODE_DPAD_RIGHT)) {
+            KEYCODE_FLICK_JP_RIGHT -> if (!mArrowFlicked && !mService.handleDpad(KeyEvent.KEYCODE_DPAD_RIGHT)) {
                 mService.keyDownUp(KeyEvent.KEYCODE_DPAD_RIGHT)
             }
+            KEYCODE_FLICK_JP_SPACE  -> if (isShifted) {
+                val intent = Intent(context, SKKSettingsActivity::class.java)
+                    .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                context.startActivity(intent)
+            } else if (mFlickState == EnumSet.of(FlickState.NONE)) {
+                mService.processKey(' '.code)
+            }
+            // 不明: release で処理してもいいのか?
             33, 40, 41, 44, 46, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 63, 91, 93 ->
                 // ! ( ) , . 0〜9 ? [ ]
                 mService.processKey(primaryCode)
-            KEYCODE_FLICK_JP_PASTE -> {
-                mService.pasteClip()
-            }
-            KEYCODE_FLICK_JP_GOOGLE -> {
-                mService.googleTransliterate()
-            }
         }
     }
 
     private fun release() {
         when (mLastPressedKey) {
-            KEYCODE_FLICK_JP_SPACE  -> if (isShifted) {
-                val intent = Intent(context, SKKSettingsActivity::class.java)
-                    .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                context.startActivity(intent)
-            } else {
-                mService.processKey(' '.code)
+            // repeatable のフリック
+            KEYCODE_FLICK_JP_SPACE  -> if (mFlickState == EnumSet.of(FlickState.UP))
+                mService.sendToMushroom()
+            // repeatable 以外
+            Keyboard.KEYCODE_SHIFT -> {
+                isShifted = !isShifted
+                onSetShifted(isShifted)
             }
             KEYCODE_FLICK_JP_ENTER  -> if (!mService.handleEnter()) mService.pressEnter()
             KEYCODE_FLICK_JP_KOMOJI -> {
@@ -878,6 +918,8 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
                 }
             }
             KEYCODE_FLICK_JP_SPEECH -> mService.recognizeSpeech()
+            KEYCODE_FLICK_JP_PASTE  -> mService.pasteClip()
+            KEYCODE_FLICK_JP_GOOGLE -> mService.googleTransliterate()
             KEYCODE_FLICK_JP_CHAR_A, KEYCODE_FLICK_JP_CHAR_KA, KEYCODE_FLICK_JP_CHAR_SA,
                     KEYCODE_FLICK_JP_CHAR_TA, KEYCODE_FLICK_JP_CHAR_NA, KEYCODE_FLICK_JP_CHAR_HA,
                     KEYCODE_FLICK_JP_CHAR_MA, KEYCODE_FLICK_JP_CHAR_YA, KEYCODE_FLICK_JP_CHAR_RA,
@@ -902,7 +944,9 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
         }
     }
 
-    override fun onRelease(primaryCode: Int) {}
+    override fun onRelease(primaryCode: Int) {
+        mArrowFlicked = false
+    }
 
     override fun onText(text: CharSequence) {}
 

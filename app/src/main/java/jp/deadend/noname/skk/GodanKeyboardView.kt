@@ -20,13 +20,15 @@ import java.util.EnumSet
 
 class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(context, attrs), KeyboardView.OnKeyboardActionListener {
     private var mFlickSensitivitySquared = 100
-    private val mArrowPressed: Boolean
-        get() = (mLastPressedKey == KEYCODE_GODAN_LEFT || mLastPressedKey == KEYCODE_GODAN_RIGHT)
-    private var mArrowFlicked = false
     private var mLastPressedKey = KEYCODE_GODAN_NONE
     private var mFlickState = EnumSet.of(FlickState.NONE)
     private var mFlickStartX = -1f
     private var mFlickStartY = -1f
+    private val mArrowPressed: Boolean
+        get() = (mLastPressedKey == KEYCODE_GODAN_LEFT || mLastPressedKey == KEYCODE_GODAN_RIGHT)
+    private var mArrowFlicked = false
+    private var mArrowStartX = -1f
+    private var mArrowStartY = -1f
     private var mCurrentPopupLabels = POPUP_LABELS_NULL
 
     private var mUsePopup = true
@@ -61,6 +63,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
         a.append(KEYCODE_GODAN_CHAR_R, arrayOf("R", "．", "？", "！", "，", "", ""))
         a.append(KEYCODE_GODAN_CHAR_O, arrayOf("O", "←", "↑", "→", "↓", "", ""))
         a.append(KEYCODE_GODAN_CHAR_W, arrayOf("W", "・", "V", "|", "…", "", ""))
+        a.append(KEYCODE_GODAN_SPACE, arrayOf("SPACE", "", "Mush", "", "", "", ""))
     }
 
     override fun setService(service: SKKService) {
@@ -388,6 +391,8 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
             MotionEvent.ACTION_DOWN -> {
                 mFlickStartX = me.x
                 mFlickStartY = me.y
+                mArrowStartX = me.x
+                mArrowStartY = me.y
             }
             MotionEvent.ACTION_MOVE -> {
                 val dx = me.x - mFlickStartX
@@ -401,31 +406,39 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                             mFlickState = EnumSet.of(FlickState.NONE)
                             performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
                         }
+                        mArrowFlicked = false
                     }
                     mArrowPressed -> {
+                        val adx = me.x - mArrowStartX
+                        val ady = me.y - mArrowStartY
+                        val adx2 = adx * adx
+                        val ady2 = ady * ady
                         when {
-                            dx2 > dy2 && dx2 > mFlickSensitivitySquared -> {
-                                if (dx < 0) {
+                            adx2 > ady2 && adx2 > mFlickSensitivitySquared -> {
+                                if (adx < 0) {
                                     mService.keyDownUp(KeyEvent.KEYCODE_DPAD_LEFT)
                                 } else {
                                     mService.keyDownUp(KeyEvent.KEYCODE_DPAD_RIGHT)
                                 }
                                 mArrowFlicked = true
-                                mFlickStartX = me.x
-                                mFlickStartY = me.y
+                                mArrowStartX = me.x
+                                mArrowStartY = me.y
+                                stopRepeatKey()
+                                return true
                             }
-                            dx2 < dy2 && dy2 > mFlickSensitivitySquared -> {
-                                if (dy < 0) {
+                            adx2 < ady2 && ady2 > mFlickSensitivitySquared -> {
+                                if (ady < 0) {
                                     mService.keyDownUp(KeyEvent.KEYCODE_DPAD_UP)
                                 } else {
                                     mService.keyDownUp(KeyEvent.KEYCODE_DPAD_DOWN)
                                 }
                                 mArrowFlicked = true
-                                mFlickStartY = me.y
-                                mFlickStartX = me.x
+                                mArrowStartY = me.y
+                                mArrowStartX = me.x
+                                stopRepeatKey()
+                                return true
                             }
                         }
-                        return true
                     }
                     mFlickState.contains(FlickState.NONE) -> processFirstFlick(dx, dy)
                     else -> processCurveFlick(dx, dy)
@@ -474,6 +487,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
         if (mFlickState != newState) {
             mFlickState = newState
             performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+            stopRepeatKey()
         }
     }
 
@@ -527,10 +541,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
         if (code == KEYCODE_GODAN_ENTER) {
             mService.keyDownUp(KeyEvent.KEYCODE_SEARCH)
             return true
-        } /* else if (code == KEYCODE_GODAN_SPACE) {
-            mService.sendToMushroom()
-            return true
-        } */
+        }
 
         return super.onLongPress(key)
     }
@@ -594,16 +605,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
 
     override fun onKey(primaryCode: Int) {
         when (primaryCode) {
-            Keyboard.KEYCODE_SHIFT -> {
-                isShifted = !isShifted
-                isCapsLocked = false
-                onSetShifted(isShifted)
-            }
-            Keyboard.KEYCODE_CAPSLOCK -> {
-                isShifted = true
-                isCapsLocked = true
-                onSetShifted(isShifted)
-            }
+            // repeatable
             Keyboard.KEYCODE_DELETE -> if (!mService.handleBackspace()) {
                 if (!isCapsLocked) isShifted = false
                 mService.keyDownUp(KeyEvent.KEYCODE_DEL)
@@ -614,29 +616,38 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
             KEYCODE_GODAN_RIGHT -> if (!mArrowFlicked && !mService.handleDpad(KeyEvent.KEYCODE_DPAD_RIGHT)) {
                 mService.keyDownUp(KeyEvent.KEYCODE_DPAD_RIGHT)
             }
-            33, 40, 41, 44, 46, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 63, 91, 93 -> {
-                // ! ( ) , . 0〜9 ? [ ]
-                mService.processKey(primaryCode)
-                if (!isCapsLocked) isShifted = false
-            }
-            KEYCODE_GODAN_PASTE -> {
-                mService.pasteClip()
-            }
-            KEYCODE_GODAN_GOOGLE -> {
-                mService.googleTransliterate()
-            }
             KEYCODE_GODAN_SPACE  -> if (isShifted) {
                 val intent = Intent(context, SKKSettingsActivity::class.java)
                     .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 context.startActivity(intent)
-            } else {
+            } else if (mFlickState == EnumSet.of(FlickState.NONE)) {
                 mService.processKey(' '.code)
+            }
+            // 不明: release で処理してもいいのか?
+            33, 40, 41, 44, 46, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 63, 91, 93 -> {
+                // ! ( ) , . 0〜9 ? [ ]
+                mService.processKey(primaryCode)
+                if (!isCapsLocked) isShifted = false
             }
         }
     }
 
     private fun release() {
         when (mLastPressedKey) {
+            // repeatable のフリック
+            KEYCODE_GODAN_SPACE  -> if (mFlickState == EnumSet.of(FlickState.UP))
+                mService.sendToMushroom()
+            // repeatable 以外
+            Keyboard.KEYCODE_SHIFT -> {
+                isShifted = !isShifted
+                isCapsLocked = false
+                onSetShifted(isShifted)
+            }
+            Keyboard.KEYCODE_CAPSLOCK -> {
+                isShifted = true
+                isCapsLocked = true
+                onSetShifted(isShifted)
+            }
             KEYCODE_GODAN_ENTER  -> if (!mService.handleEnter()) mService.pressEnter()
             KEYCODE_GODAN_CANCEL -> {
                 when (mFlickState) {
@@ -667,6 +678,8 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                     }
                 }
             }
+            KEYCODE_GODAN_PASTE  -> mService.pasteClip()
+            KEYCODE_GODAN_GOOGLE -> mService.googleTransliterate()
             KEYCODE_GODAN_CHAR_L -> {
                 when (mService.engineState) {
                     SKKAbbrevState, SKKASCIIState, SKKZenkakuState -> mService.handleKanaKey()

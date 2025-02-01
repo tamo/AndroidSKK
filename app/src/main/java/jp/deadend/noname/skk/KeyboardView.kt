@@ -58,7 +58,7 @@ open class KeyboardView @JvmOverloads constructor(
     private var mPreviewHeight = 0
     private val mCoordinates = IntArray(2)  // working variable
     private val mPopupKeyboard = PopupWindow(context)
-    private var mMiniKeyboardOnScreen = false
+    var mMiniKeyboardOnScreen = false
     private var mPopupParent: View
     private var mMiniKeyboardOffsetX = 0
     private var mMiniKeyboardOffsetY = 0
@@ -80,14 +80,11 @@ open class KeyboardView @JvmOverloads constructor(
     private val mPadding = Rect(0, 0, 0, 0)
     private var mDownTime: Long = 0
     private var mLastMoveTime: Long = 0
-    private var mLastKey = 0
-    private var mLastCodeX = 0
-    private var mLastCodeY = 0
     private var mCurrentKey = NOT_A_KEY
     private var mDownKey = NOT_A_KEY
-    private var mLastKeyTime: Long = 0
     private var mCurrentKeyTime: Long = 0
     private var mRepeatKeyIndex = NOT_A_KEY
+    private var mHasRepeated = false
     private var mPopupLayout = 0
     private var mAbortKey = false
     private var mInvalidatedKey: Keyboard.Key? = null
@@ -124,9 +121,14 @@ open class KeyboardView @JvmOverloads constructor(
                     mPreviewText?.visibility = INVISIBLE
                     mPreviewPopup.dismiss()
                 }
-                MSG_REPEAT -> if (mCurrentKey != NOT_A_KEY) {
-                    detectAndSendKey(mCurrentKey, mLastTapTime)
-                    sendMessageDelayed(Message.obtain(this, MSG_REPEAT), REPEAT_INTERVAL.toLong())
+                MSG_REPEAT -> if (mRepeatKeyIndex != NOT_A_KEY && !mAbortKey) {
+                    detectAndSendKey(mRepeatKeyIndex, mLastTapTime)
+                    mHasRepeated = true
+                    if (mAbortKey) {
+                        mRepeatKeyIndex = NOT_A_KEY
+                    } else {
+                        sendMessageDelayed(Message.obtain(this, MSG_REPEAT), REPEAT_INTERVAL.toLong())
+                    }
                 }
                 MSG_LONGPRESS -> openPopupIfRequired()
             }
@@ -828,7 +830,12 @@ open class KeyboardView @JvmOverloads constructor(
             MotionEvent.ACTION_UP -> { // 最後の指
                 result = if (mActivePointerId == event.getPointerId(0)) {
                     mActivePointerId = -1
-                    onModifiedTouchEvent(event, false)
+                    stopRepeatKey().let { unrepeatedKey ->
+                        if (unrepeatedKey != NOT_A_KEY) { // repeatable なのに repeat しなかったキー
+                            detectAndSendKey(unrepeatedKey, now)
+                        }
+                        onModifiedTouchEvent(event, false)
+                    }
                 } else {
                     true // すでに前借りで消費されているので true でいいのでは？
                 }
@@ -875,9 +882,7 @@ open class KeyboardView @JvmOverloads constructor(
         }
 
         if (mGestureDetector.onTouchEvent(me)) {
-            releaseKey(mCurrentKey)
-            mHandler.removeMessages(MSG_REPEAT)
-            mHandler.removeMessages(MSG_LONGPRESS)
+            stopRepeatKey()
             return true
         }
 
@@ -890,28 +895,20 @@ open class KeyboardView @JvmOverloads constructor(
                 mAbortKey = false
                 mStartX = touchX
                 mStartY = touchY
-                mLastCodeX = touchX
-                mLastCodeY = touchY
-                mLastKeyTime = 0
                 mCurrentKeyTime = 0
-                mLastKey = NOT_A_KEY
                 mCurrentKey = keyIndex
-                mDownKey = keyIndex
+                mDownKey = mCurrentKey
                 mDownTime = me.eventTime
                 mLastMoveTime = mDownTime
-                checkMultiTap(eventTime, keyIndex)
+                checkMultiTap(eventTime, mCurrentKey)
                 onKeyboardActionListener?.onPress(
-                    if (keyIndex != NOT_A_KEY) mKeyboard.keys[keyIndex].codes[0] else 0
+                    if (mCurrentKey != NOT_A_KEY) mKeyboard.keys[mCurrentKey].codes[0] else 0
                 )
                 if (mCurrentKey >= 0 && mKeyboard.keys[mCurrentKey].repeatable) {
                     mRepeatKeyIndex = mCurrentKey
                     mHandler.sendMessageDelayed(
                         mHandler.obtainMessage(MSG_REPEAT), REPEAT_START_DELAY.toLong()
                     )
-                    detectAndSendKey(mCurrentKey, mLastTapTime)
-                    if (mAbortKey) { // Delivering the key could have caused an abort
-                        mRepeatKeyIndex = NOT_A_KEY
-                    }
                 }
                 if (!mAbortKey) {
                     if (mCurrentKey != NOT_A_KEY) {
@@ -919,68 +916,38 @@ open class KeyboardView @JvmOverloads constructor(
                             mHandler.obtainMessage(MSG_LONGPRESS, me), LONGPRESS_TIMEOUT.toLong()
                         )
                     }
-                    pressKey(keyIndex)
+                    pressKey(mCurrentKey)
                 }
             }
             MotionEvent.ACTION_MOVE -> {
                 var continueLongPress = false
-                if (keyIndex != NOT_A_KEY) {
-                    if (mCurrentKey == NOT_A_KEY) {
+                if (keyIndex != NOT_A_KEY) when (mCurrentKey) {
+                    NOT_A_KEY -> {
                         mCurrentKey = keyIndex
                         mCurrentKeyTime = eventTime - mDownTime
                         pressKey(keyIndex)
-                    } else {
-                        if (keyIndex == mCurrentKey) {
-                            mCurrentKeyTime += eventTime - mLastMoveTime
-                            continueLongPress = true
-                        } else if (mRepeatKeyIndex == NOT_A_KEY) {
-                            releaseKey(mCurrentKey)
-                            pressKey(keyIndex)
-                            resetMultiTap()
-                            mLastKey = mCurrentKey
-                            mLastCodeX = mLastX
-                            mLastCodeY = mLastY
-                            mLastKeyTime = mCurrentKeyTime + eventTime - mLastMoveTime
-                            mCurrentKey = keyIndex
-                            mCurrentKeyTime = 0
-                            flickStartX = me.x
-                            flickStartY = me.y
-                        }
+                    }
+                    keyIndex -> {
+                        mCurrentKeyTime += eventTime - mLastMoveTime
+                        continueLongPress = true
                     }
                 }
-                if (!continueLongPress) {
-                    // Cancel old longpress
+                if (!continueLongPress && keyIndex != mCurrentKey) {
                     mHandler.removeMessages(MSG_LONGPRESS)
-                    // Start new longpress if key has changed
-                    if (keyIndex != NOT_A_KEY) {
-                        mHandler.sendMessageDelayed(
-                            mHandler.obtainMessage(MSG_LONGPRESS, me), LONGPRESS_TIMEOUT.toLong()
-                        )
-                    }
                 }
                 mLastMoveTime = eventTime
             }
             MotionEvent.ACTION_UP -> {
                 removeMessages()
-                if (keyIndex == mCurrentKey) {
+                if (keyIndex == mCurrentKey) { // keyIndex == NOT_A_KEY のこともある
                     mCurrentKeyTime += eventTime - mLastMoveTime
-                } else {
-                    resetMultiTap()
-                    mLastKey = mCurrentKey
-                    mLastKeyTime = mCurrentKeyTime + eventTime - mLastMoveTime
-                    mCurrentKey = keyIndex
-                    mCurrentKeyTime = 0
-                }
-                if (mCurrentKeyTime < mLastKeyTime && mCurrentKeyTime < DEBOUNCE_TIME && mLastKey != NOT_A_KEY) {
-                    mCurrentKey = mLastKey
-                    touchX = mLastCodeX
-                    touchY = mLastCodeY
                 }
                 releaseKey(mCurrentKey)
-                releaseKey(keyIndex)
-                // If we're not on a repeating key (which sends on a DOWN event)
-                if (mRepeatKeyIndex == NOT_A_KEY && !mMiniKeyboardOnScreen && !mAbortKey) {
-                    detectAndSendKey(mCurrentKey, eventTime)
+                mPreviewPopup.dismiss()
+
+                // If we're not on a repeatable key (which sends on a DOWN event)
+                if (!mKeyboard.keys[mCurrentKey].repeatable && !mMiniKeyboardOnScreen && !mAbortKey) {
+                    detectAndSendKey(mCurrentKey, eventTime) // マルチタップのために必要
                 }
                 mRepeatKeyIndex = NOT_A_KEY
             }
@@ -989,7 +956,6 @@ open class KeyboardView @JvmOverloads constructor(
                 dismissPopupKeyboard()
                 mAbortKey = true
                 releaseKey(mCurrentKey)
-                releaseKey(keyIndex)
             }
         }
         mLastX = touchX
@@ -1012,12 +978,20 @@ open class KeyboardView @JvmOverloads constructor(
     }
 
     // なぜか mHandler.removeMessages(MSG_REPEAT) で止まらないので
-    fun stopRepeatKey() {
+    fun stopRepeatKey(): Int {
+        val unrepeatedKey = if (!mHasRepeated) mRepeatKeyIndex else NOT_A_KEY
+        mHasRepeated = false
+
         releaseKey(mCurrentKey)
-        mCurrentKey = NOT_A_KEY
+        mRepeatKeyIndex = NOT_A_KEY
+        mHandler.removeMessages(MSG_REPEAT)
+        mHandler.removeMessages(MSG_LONGPRESS)
+
+        return unrepeatedKey
     }
 
     private fun removeMessages() {
+        mRepeatKeyIndex = NOT_A_KEY
         mHandler.removeMessages(MSG_REPEAT)
         mHandler.removeMessages(MSG_LONGPRESS)
         mHandler.removeMessages(MSG_SHOW_PREVIEW)
@@ -1165,7 +1139,6 @@ open class KeyboardView @JvmOverloads constructor(
         private const val MSG_LONGPRESS = 4
         private const val DELAY_BEFORE_PREVIEW = 0
         private const val DELAY_AFTER_PREVIEW = 70
-        private const val DEBOUNCE_TIME = 70
         private const val REPEAT_INTERVAL = 50 // ~20 keys per second
         private const val REPEAT_START_DELAY = 400
         private val LONGPRESS_TIMEOUT = ViewConfiguration.getLongPressTimeout()

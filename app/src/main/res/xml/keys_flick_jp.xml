@@ -5,7 +5,7 @@
 	app:verticalGap="0dip"
 	app:keyHeight="8%p">
 	<Row>
-		<Key app:codes="-1" app:keyIcon="@drawable/ic_keyboard_shift" app:isSticky="true" />
+		<Key app:codes="-1,-7" app:keyIcon="@drawable/ic_keyboard_shift" app:isSticky="true" />
 		<Key app:codes="-201" app:keyLabel="あ" />
 		<Key app:codes="-202" app:keyLabel="か" />
 		<Key app:codes="-203" app:keyLabel="さ" />
@@ -23,7 +23,7 @@
 		<Key app:codes="-207" app:keyLabel="ま" />
 		<Key app:codes="-208" app:keyLabel="や" />
 		<Key app:codes="-209" app:keyLabel="ら" />
-		<Key app:codes="-1004" app:keyIcon="@drawable/ic_keyboard_spacebar" />
+		<Key app:codes="-1004" app:keyIcon="@drawable/ic_keyboard_spacebar" app:isRepeatable="true" />
 	</Row>
 	<Row app:rowEdgeFlags="bottom">
 		<Key app:codes="-1003" app:keyLabel="ＡＢＣ\nabc\nqwerty" />

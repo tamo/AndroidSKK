@@ -75,17 +75,27 @@ class AbbrevKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
 
     override fun onKey(primaryCode: Int) {
         when (primaryCode) {
+            // repeatable
             Keyboard.KEYCODE_DELETE -> {
                 if (!isCapsLocked) isShifted = false
                 if (!mService.handleBackspace()) mService.keyDownUp(KeyEvent.KEYCODE_DEL)
             }
-            Keyboard.KEYCODE_SHIFT -> {
-                isShifted = !isShifted
-                isCapsLocked = false
-            }
+            // codes[0] 以外
             Keyboard.KEYCODE_CAPSLOCK -> {
                 isShifted = true
                 isCapsLocked = true
+            }
+        }
+    }
+
+    override fun onRelease(primaryCode: Int) {
+        when (primaryCode) {
+            // onKey で消費済み
+            Keyboard.KEYCODE_DELETE -> {}
+            // repeatable 以外
+            Keyboard.KEYCODE_SHIFT -> {
+                isShifted = !isShifted
+                isCapsLocked = false
             }
             KEYCODE_ABBREV_ENTER -> if (!mService.handleEnter()) mService.pressEnter()
             KEYCODE_ABBREV_TOJP -> {
@@ -111,10 +121,10 @@ class AbbrevKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                     else -> primaryCode
                 }
                 mService.processKey(code)
-                if (!isCapsLocked) {
-                    isShifted = false
-                }
             }
+        }
+        if (primaryCode != Keyboard.KEYCODE_SHIFT) {
+            if (!isCapsLocked) isShifted = false
         }
     }
 
@@ -128,8 +138,6 @@ class AbbrevKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
     }
 
     override fun onPress(primaryCode: Int) {}
-
-    override fun onRelease(primaryCode: Int) {}
 
     override fun onText(text: CharSequence) {}
 

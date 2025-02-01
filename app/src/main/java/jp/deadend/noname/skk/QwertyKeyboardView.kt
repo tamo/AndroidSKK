@@ -114,22 +114,34 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
     }
 
     override fun onKey(primaryCode: Int) {
-        // シフトで up と none が交換される
-        val flickNone = if (isShifted) FLICK_UP else FLICK_NONE
-        val flickUp = if (isShifted) FLICK_NONE else FLICK_UP
-
         when (primaryCode) {
+            // repeatable
             Keyboard.KEYCODE_DELETE -> {
                 if (!isCapsLocked) isShifted = false
                 if (!mService.handleBackspace()) mService.keyDownUp(KeyEvent.KEYCODE_DEL)
             }
-            Keyboard.KEYCODE_SHIFT -> {
-                isShifted = !isShifted
-                isCapsLocked = false
-            }
+            // codes[0] 以外
             Keyboard.KEYCODE_CAPSLOCK -> {
                 isShifted = true
                 isCapsLocked = true
+            }
+        }
+    }
+
+    override fun onRelease(primaryCode: Int) {
+        mSpacePressed = false
+
+        // シフトで up と none が交換される
+        val flickNone = if (isShifted) FLICK_UP else FLICK_NONE
+        val flickUp = if (isShifted) FLICK_NONE else FLICK_UP
+
+        if (!mMiniKeyboardOnScreen) when (primaryCode) {
+            // onKey で消費済み
+            Keyboard.KEYCODE_DELETE -> {}
+            // repeatable 以外
+            Keyboard.KEYCODE_SHIFT -> {
+                isShifted = !isShifted
+                isCapsLocked = false
             }
             KEYCODE_QWERTY_ENTER -> {
                 if (!isCapsLocked) isShifted = false
@@ -143,24 +155,31 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                 }
             }
             KEYCODE_QWERTY_TOSYM -> {
+                if (!isCapsLocked) isShifted = false
                 when (isFlicked) {
                     flickNone -> {
                         keyboard = mSymbolsKeyboard
                         isShifted = keyboard.isShifted
                         isCapsLocked = keyboard.isCapsLocked
+                        // 記号は capslock にならない気がするが一応
                     }
                     flickUp -> mService.googleTransliterate()
                     FLICK_DOWN -> mService.handleCancel()
                 }
             }
             KEYCODE_QWERTY_TOLATIN -> {
+                // 単純 shift を capslock として扱うので状態を残す
                 when (isFlicked) {
-                    FLICK_NONE -> {
+                    FLICK_NONE, FLICK_UP -> {
                         keyboard = mLatinKeyboard
                         isShifted = keyboard.isShifted
                         isCapsLocked = keyboard.isCapsLocked
+                        // latin に capslock が残っている場合がある
                     }
-                    FLICK_DOWN -> mService.handleCancel()
+                    FLICK_DOWN -> {
+                        mService.handleCancel()
+                        if (!isCapsLocked) isShifted = false
+                    }
                 }
             }
             else -> {
@@ -176,10 +195,12 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                     else -> primaryCode
                 }
                 mService.processKey(code)
-                if (keyboard === mLatinKeyboard && !isCapsLocked) {
-                    isShifted = false
-                }
             }
+        }
+        when (primaryCode) {
+            Keyboard.KEYCODE_SHIFT, KEYCODE_QWERTY_TOSYM, KEYCODE_QWERTY_TOLATIN -> {}
+            else -> if (keyboard === mLatinKeyboard && !isCapsLocked) isShifted = false
+            // 記号モードでは普通の shift も capslock として扱う (対応する { と } 等に便利だろうから)
         }
         setKeyState(mService.engineState)
     }
@@ -210,10 +231,6 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
     override fun onPress(primaryCode: Int) {
         mSpacePressed = (primaryCode == ' '.code)
         mSpaceFlicked = false
-    }
-
-    override fun onRelease(primaryCode: Int) {
-        mSpacePressed = false
     }
 
     override fun onText(text: CharSequence) {}
