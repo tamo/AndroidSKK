@@ -607,12 +607,18 @@ open class KeyboardView @JvmOverloads constructor(
         mPreviewText?.let { previewText ->
             if (keyIndex < 0 || keyIndex >= mKeyboard.keys.size) { return }
             val key = mKeyboard.keys[keyIndex]
-            if (key.icon != null) { return }
-
-            mPreviewNormalText = key.label
-            mPreviewShiftedText = key.shiftedLabel
-            mPreviewDownText = key.downLabel
-            previewText.text = getPreviewText(key)
+            if (key.icon != null) {
+                if (key.codes[0] != Keyboard.KEYCODE_SHIFT) { return }
+                mPreviewNormalText = "SHIFT"
+                mPreviewShiftedText = "CAPSLOCK"
+                mPreviewDownText = ""
+                previewText.text = "SHIFT"
+            } else {
+                mPreviewNormalText = key.label
+                mPreviewShiftedText = key.shiftedLabel
+                mPreviewDownText = key.downLabel
+                previewText.text = getPreviewText(key)
+            }
             previewText.typeface = Typeface.DEFAULT
             previewText.measure(
                 MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED),

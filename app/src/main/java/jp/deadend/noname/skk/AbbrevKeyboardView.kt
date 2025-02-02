@@ -94,8 +94,16 @@ class AbbrevKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
             Keyboard.KEYCODE_DELETE -> {}
             // repeatable 以外
             Keyboard.KEYCODE_SHIFT -> {
-                isShifted = !isShifted
-                isCapsLocked = false
+                when (isFlicked) {
+                    FLICK_NONE, FLICK_DOWN -> {
+                        isShifted = !isShifted
+                        isCapsLocked = false
+                    }
+                    FLICK_UP -> {
+                        isShifted = true
+                        isCapsLocked = true
+                    }
+                }
             }
             KEYCODE_ABBREV_ENTER -> if (!mService.handleEnter()) mService.pressEnter()
             KEYCODE_ABBREV_TOJP -> {
