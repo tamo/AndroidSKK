@@ -35,7 +35,7 @@
 	<Row app:rowEdgeFlags="bottom">
 		<Key app:codes="-1003" app:keyLabel="L" />
 		<Key app:codes="-213" app:keyLabel=" \n O \n'" />
-		<Key app:codes="-1006" app:keyLabel="(cxl\n◻゙□゚\n▽)※変更されます" />
+		<Key app:codes="-1006" app:keyLabel="(cxl\n ◻゙□゚ \n▽)※変更されます" />
 		<Key app:codes="-214" app:keyLabel="V\n「W」\n＂" />
 		<Key app:codes="-1007" app:keyIcon="@drawable/ic_keyboard_return" />
 	</Row>

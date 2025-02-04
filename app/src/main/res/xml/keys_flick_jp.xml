@@ -26,10 +26,10 @@
 		<Key app:codes="-1004" app:keyIcon="@drawable/ic_keyboard_spacebar" app:isRepeatable="true" />
 	</Row>
 	<Row app:rowEdgeFlags="bottom">
-		<Key app:codes="-1003" app:keyLabel="ＡＢＣ\nabc\nqwerty" />
-		<Key app:codes="-1006" app:keyLabel="CXL\n　゛小　゜\n▽" />
+		<Key app:codes="-1003" app:keyLabel="(全角ａ\n☻abc記\nqwerty)※変更されます" />
+		<Key app:codes="-1006" app:keyLabel="(CXL\n　゛小　゜\n▽)※変更されます" />
 		<Key app:codes="-210" app:keyLabel="ん\nをわー\n〜" />
-		<Key app:codes="-211" app:keyLabel="？\n。、！\n…" />
+		<Key app:codes="-211" app:keyLabel="(？\n。、！\n…)※変更されます" />
 		<Key app:codes="-1007" app:keyIcon="@drawable/ic_keyboard_return" />
 	</Row>
 </Keyboard>

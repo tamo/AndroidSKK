@@ -19,14 +19,14 @@
 		<Key app:codes="-1002" app:keyIcon="@drawable/ic_keyboard_arrow_right" app:isRepeatable="true" />
 	</Row>
 	<Row>
-		<Key app:codes="-1010" app:keyLabel="かな" />
+		<Key app:codes="-1010" app:keyLabel="(\n かな \n)※変更されます" />
 		<Key app:codes="91" app:keyLabel="「" />
 		<Key app:codes="93" app:keyLabel="」" />
 		<Key app:codes="63" app:keyLabel="？"/>
 		<Key app:codes="-1004" app:keyIcon="@drawable/ic_keyboard_spacebar" />
 	</Row>
 	<Row app:rowEdgeFlags="bottom">
-		<Key app:codes="-1003" app:keyLabel="ＡＢＣ\nabc\nqwerty" />
+		<Key app:codes="-1003" app:keyLabel="全角ａ\n☻abc記\nqwerty" /><!-- kt と一致させること -->
 		<Key app:codes="40" app:keyLabel="（"/>
 		<Key app:codes="41" app:keyLabel="）" />
 		<Key app:codes="33" app:keyLabel="！"/>

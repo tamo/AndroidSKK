@@ -221,19 +221,19 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
 
         when {
             skkPrefs.useSoftCancelKey -> {
-                findKeyByCode(keyboard, KEYCODE_GODAN_KOMOJI)?.label = "小\n◻゙cxl◻゚\n▽"
+                findKeyByCode(keyboard, KEYCODE_GODAN_KOMOJI)?.label = "小\n ◻゙cxl◻゚ \n▽"
                 mFlickGuideLabelList.put(
                     KEYCODE_GODAN_KOMOJI, arrayOf("CXL", "◻゙", "小", "◻゚", "▽") + POPUP_LABELS_NULL
                 )
             }
             skkPrefs.useSoftTransKey -> {
-                findKeyByCode(keyboard, KEYCODE_GODAN_KOMOJI)?.label = "cxl\n◻゙□゚\n▽"
+                findKeyByCode(keyboard, KEYCODE_GODAN_KOMOJI)?.label = "cxl\n ◻゙□゚ \n▽"
                 mFlickGuideLabelList.put(
                     KEYCODE_GODAN_KOMOJI, arrayOf("◻゙□゚", "◻゙", "CXL", "◻゚", "▽") + POPUP_LABELS_NULL
                 )
             }
             else -> {
-                findKeyByCode(keyboard, KEYCODE_GODAN_KOMOJI)?.label = "cxl\n◻゙小◻゚\n▽"
+                findKeyByCode(keyboard, KEYCODE_GODAN_KOMOJI)?.label = "cxl\n ◻゙小◻゚ \n▽"
                 mFlickGuideLabelList.put(
                     KEYCODE_GODAN_KOMOJI, arrayOf("小", "◻゙", "CXL", "◻゚", "▽") + POPUP_LABELS_NULL
                 )

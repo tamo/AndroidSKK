@@ -19,17 +19,17 @@
 		<Key app:codes="-1002" app:keyIcon="@drawable/ic_keyboard_arrow_right" app:isRepeatable="true" />
 	</Row>
 	<Row>
-		<Key app:codes="-1010" app:keyLabel="かな" />
+		<Key app:codes="-1010" app:keyLabel="(\n かな \n)※変更されます" />
 		<Key app:codes="55" app:keyLabel="7" />
 		<Key app:codes="56" app:keyLabel="8" />
 		<Key app:codes="57" app:keyLabel="9" />
 		<Key app:codes="-1004" app:keyIcon="@drawable/ic_keyboard_spacebar" />
 	</Row>
 	<Row app:rowEdgeFlags="bottom">
-		<Key app:codes="-1003" app:keyLabel="ＡＢＣ\nabc\nqwerty" />
-		<Key app:codes="-214" app:keyLabel="＋\n￥ ＃ ＄\n＊"/>
+		<Key app:codes="-1003" app:keyLabel="全角ａ\n abc \nqwerty" />
+		<Key app:codes="-214" app:keyLabel="＋\n￥＃＄\n＊"/>
 		<Key app:codes="48" app:keyLabel="0" />
-		<Key app:codes="-213" app:keyLabel="－\n． ， ：\n／" />
+		<Key app:codes="-213" app:keyLabel="－\n．，：\n／" />
 		<Key app:codes="-1007" app:keyIcon="@drawable/ic_keyboard_return" />
 	</Row>
 </Keyboard>

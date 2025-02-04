@@ -413,9 +413,7 @@ open class KeyboardView @JvmOverloads constructor(
                     val lines = label.split("\n")
                     val numLines = lines.size
                     val isGodanKey = numLines == 3 &&
-                            lines[0].length == 1 &&
-                            lines[1].length == 3 &&
-                            lines[2].length == 1
+                            lines[1].length > 2
                     val sizeFactors = if (numLines == 3) {
                         listOf(.4f, .8f, .4f) // Godan以外でも中央の行を大きくする (「わ」「abc」等)
                     } else {
@@ -448,12 +446,15 @@ open class KeyboardView @JvmOverloads constructor(
 
                         if (isGodanKey && i == 1) {
                             val descent = mPaint.descent()
-                            drawText(line[1].toString(), descent)
+                            val centerText = line.drop(1).dropLast(1)
+                            drawText(centerText, descent)
 
                             // 左右フリックのキー
                             mPaint.typeface = Typeface.DEFAULT
                             mPaint.textSize *= .8f
-                            drawText("${line[0]}　　${line[2]}", descent)
+                            drawText("${line.first()}${"　".repeat(
+                                (centerText.length + 1).coerceAtMost(3)
+                            )}${line.last()}", descent)
                         } else {
                             drawText(line, mPaint.descent())
                         }

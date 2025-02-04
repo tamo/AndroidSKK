@@ -96,7 +96,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
         a.append(KEYCODE_FLICK_JP_CHAR_TEN_NUM, arrayOf("，", "．", "－", "：", "／", "", ""))
         a.append(KEYCODE_FLICK_JP_CHAR_TEN_NUM_LEFT, arrayOf("＃", "￥", "＋", "＄", "＊", "", ""))
         a.append(KEYCODE_FLICK_JP_MOJI, arrayOf("カナ", "：", "10", "＞", "声", "", ""))
-        a.append(KEYCODE_FLICK_JP_TOQWERTY, arrayOf("abc", "", "全角ａ", "", "qwerty", "", ""))
+        a.append(KEYCODE_FLICK_JP_TOQWERTY, arrayOf("abc", "絵☻", "全角ａ", "記号", "qwerty", "", ""))
         a.append(KEYCODE_FLICK_JP_SPACE, arrayOf("SPACE", "", "Mush", "", "", "", ""))
     }
 
@@ -138,7 +138,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
 
         for (kanaKey in kanaKeys) {
             kanaKey.codes[0] = KEYCODE_FLICK_JP_TOKANA
-            kanaKey.label = "かな"
+            kanaKey.label = "\n かな \n"
             kanaKey.icon = null
         }
         kanaKeys[0].codes[0] = KEYCODE_FLICK_JP_MOJI
@@ -192,7 +192,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
     private fun findKeyByCode(keyboard: Keyboard, code: Int) =
             keyboard.keys.find { it.codes[0] == code }
 
-    private fun onSetShifted(isShifted: Boolean) {
+    private fun onSetShifted() {
         if (isShifted) {
             mKutoutenKey.codes[0] = KEYCODE_FLICK_JP_CHAR_TEN_SHIFTED
             mKutoutenKey.label = "「\n（□）\n」"
@@ -202,7 +202,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
             mKutoutenKey.codes[0] = KEYCODE_FLICK_JP_CHAR_TEN
             mKutoutenKey.label = mKutoutenLabel
             mSpaceKey.label = ""
-            mQwertyKey.label = "全角ａ\nabc\nqwerty"
+            mQwertyKey.label = "全角ａ\n☻abc記\nqwerty" // 変更したら voice.xml も更新すること
         }
     }
 
@@ -254,6 +254,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
         mFlickSensitivitySquared = sensitivity * sensitivity
         // シフトかな交換
         setShiftPosition()
+        onSetShifted()
         // 句読点
         when (skkPrefs.kutoutenType) {
             "en" -> {
@@ -278,19 +279,19 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
         mKutoutenKey.label = mKutoutenLabel
         when {
             skkPrefs.useSoftCancelKey -> {
-                findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_KOMOJI)?.label = "小\n◻゙CXL◻゚\n▽"
+                findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_KOMOJI)?.label = "小\n ◻゙CXL◻゚ \n▽"
                 mFlickGuideLabelList.put(
                     KEYCODE_FLICK_JP_KOMOJI, arrayOf("CXL", "◻゙", "小", "◻゚", "▽", "", "")
                 )
             }
             skkPrefs.useSoftTransKey -> {
-                findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_KOMOJI)?.label = "CXL\n◻゙□゚\n▽"
+                findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_KOMOJI)?.label = "CXL\n ◻゙□゚ \n▽"
                 mFlickGuideLabelList.put(
                     KEYCODE_FLICK_JP_KOMOJI, arrayOf("◻゙□゚", "◻゙", "CXL", "◻゚", "▽", "", "")
                 )
             }
             else -> {
-                findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_KOMOJI)?.label = "CXL\n◻゙小◻゚\n▽"
+                findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_KOMOJI)?.label = "CXL\n ◻゙小◻゚ \n▽"
                 mFlickGuideLabelList.put(
                     KEYCODE_FLICK_JP_KOMOJI, arrayOf("小", "◻゙", "CXL", "◻゚", "▽", "", "")
                 )
@@ -613,7 +614,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
         }
     }
 
-    private fun processFlickForLetter(keyCode: Int, flick: EnumSet<FlickState>, isShifted: Boolean) {
+    private fun processFlickForLetter(keyCode: Int, flick: EnumSet<FlickState>) {
         var vowel: Int = 'a'.code
         when {
             flick.contains(FlickState.LEFT) -> vowel = 'i'.code
@@ -873,7 +874,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
             // repeatable 以外
             Keyboard.KEYCODE_SHIFT -> {
                 isShifted = !isShifted
-                onSetShifted(isShifted)
+                onSetShifted()
             }
             KEYCODE_FLICK_JP_ENTER  -> if (!mService.handleEnter()) mService.pressEnter()
             KEYCODE_FLICK_JP_KOMOJI -> {
@@ -910,11 +911,11 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
                 mService.processKey('/'.code)
             } else {
                 when (mFlickState) {
-                    EnumSet.of(FlickState.NONE) -> mService.processKey('l'.code)
-                    EnumSet.of(FlickState.UP)   -> {
-                        mService.processKey('L'.code)
-                    }
-                    EnumSet.of(FlickState.DOWN) -> mService.changeSoftKeyboard(SKKASCIIState)
+                    EnumSet.of(FlickState.NONE)  -> mService.processKey('l'.code)
+                    EnumSet.of(FlickState.LEFT)  -> mService.emojiCandidates()
+                    EnumSet.of(FlickState.UP)    -> mService.processKey('L'.code)
+                    EnumSet.of(FlickState.RIGHT) -> mService.symbolCandidates()
+                    EnumSet.of(FlickState.DOWN)  -> mService.changeSoftKeyboard(SKKASCIIState)
                 }
             }
             KEYCODE_FLICK_JP_SPEECH -> mService.recognizeSpeech()
@@ -926,12 +927,12 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
                     KEYCODE_FLICK_JP_CHAR_WA, KEYCODE_FLICK_JP_CHAR_TEN,
                     KEYCODE_FLICK_JP_CHAR_TEN_SHIFTED,
                     KEYCODE_FLICK_JP_CHAR_TEN_NUM, KEYCODE_FLICK_JP_CHAR_TEN_NUM_LEFT
-                    -> processFlickForLetter(mLastPressedKey, mFlickState, isShifted)
+                    -> processFlickForLetter(mLastPressedKey, mFlickState)
         }
 
         if (mLastPressedKey != Keyboard.KEYCODE_SHIFT) {
             isShifted = false
-            onSetShifted(false)
+            onSetShifted()
         }
 
         mLastPressedKey = KEYCODE_FLICK_JP_NONE
