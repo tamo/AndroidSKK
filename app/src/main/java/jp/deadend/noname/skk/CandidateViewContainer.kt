@@ -21,14 +21,19 @@ import android.content.res.Configuration
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.widget.LinearLayout
+import jp.deadend.noname.skk.CandidateView.Companion.LINESCALE
 import jp.deadend.noname.skk.databinding.ViewCandidatesBinding
 import kotlin.math.abs
 
 class CandidateViewContainer(screen: Context, attrs: AttributeSet) : LinearLayout(screen, attrs) {
     internal lateinit var binding: ViewCandidatesBinding
+    internal var lines = 1
+        set(value) {
+            field = value
+            setSize(-1)
+        }
     private lateinit var mService: SKKService
     private var mFontSize = -1
-    private var mButtonWidth = screen.resources.getDimensionPixelSize(R.dimen.candidates_scrollbutton_width)
 
     private var mLeftEnabled = false
     private var mRightEnabled = false
@@ -175,16 +180,16 @@ class CandidateViewContainer(screen: Context, attrs: AttributeSet) : LinearLayou
         binding.candidateRight.background.alpha = alphaRight
     }
 
+    // 負数のときはフォントを変更せず行数だけ更新する
     fun setSize(px: Int) {
-        if (px == mFontSize) return
-
-        binding.candidates.setTextSize(px)
-        binding.candidates.layoutParams = LayoutParams(0, px + px / 3, 1f)
-        binding.candidateLeft.layoutParams = LayoutParams(mButtonWidth, px + px / 3)
-        binding.candidateRight.layoutParams = LayoutParams(mButtonWidth, px + px / 3)
+        if (px > 0) {
+            if (px == mFontSize) return
+            binding.candidates.setTextSize(px)
+            mFontSize = px
+        }
+        val height = (px * lines * LINESCALE).toInt()
+        binding.candidates.layoutParams = LayoutParams(0, height, 1f)
         requestLayout()
-
-        mFontSize = px
     }
 
     companion object {

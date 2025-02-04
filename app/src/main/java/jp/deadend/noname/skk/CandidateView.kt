@@ -30,7 +30,8 @@ import androidx.core.content.res.ResourcesCompat
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlin.math.min
+import kotlin.math.ceil
+import kotlin.math.floor
 
 /**
  * Construct a CandidateView for showing suggested words for completion.
@@ -46,11 +47,13 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
     private var mChosenIndex = 0
 
     private var mTouchX = OUT_OF_BOUNDS
+    private var mTouchY = OUT_OF_BOUNDS
     private val mSelectionHighlight: Drawable?
     private var mScrollPixels = 0
 
     private val mWordWidth = IntArray(MAX_SUGGESTIONS)
     private val mWordX = IntArray(MAX_SUGGESTIONS)
+    private val mWordL = IntArray(MAX_SUGGESTIONS)
 
     private var mDrawing = false
     private var mScrolled = false
@@ -60,6 +63,8 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
     private val mColorOther: Int
     private val mTextPath: Path
     private val mPaint = Paint()
+    private val mLineHeight
+        get() = (mPaint.textSize * LINESCALE).toInt()
 
     private var mTargetScrollX = 0
 
@@ -148,34 +153,33 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
         val desiredHeight = mPaint.getTextSize().toInt() + mVerticalPadding
                 + padding.top + padding.bottom
 */
-        val size = mPaint.textSize.toInt()
-        val desiredHeight = size + size / 3
 
         // Maximum possible width and desired height
-        setMeasuredDimension(measuredWidth, resolveSize(desiredHeight, heightMeasureSpec))
+        setMeasuredDimension(measuredWidth, resolveSize(mLineHeight * mContainer.lines, heightMeasureSpec))
     }
 
     override fun onDraw(canvas: Canvas) {
         mDrawing = true
         super.onDraw(canvas)
 
-        val height = height
         val paint = mPaint
         val touchX = mTouchX
+        val touchY = mTouchY
         val scrollX = scrollX
         val scrolled = mScrolled
-        val y = ((height - paint.textSize) / 2 - paint.ascent()).toInt()
+        val y = (paint.textSize * (LINESCALE - 1) / 2 - paint.ascent()).toInt()
 
         mSuggestions.forEachIndexed { i, suggestion ->
             paint.color = mColorNormal
             if (touchX + scrollX >= mWordX[i]
                 && touchX + scrollX < mWordX[i] + mWordWidth[i]
+                && touchY in (mWordL[i] * mLineHeight)..<((mWordL[i] + 1) * mLineHeight)
                 && !scrolled
             ) {
-                canvas.translate(mWordX[i].toFloat(), 0f)
-                mSelectionHighlight?.setBounds(0, 0, mWordWidth[i], height)
+                canvas.translate(mWordX[i].toFloat(), (mWordL[i] * mLineHeight).toFloat())
+                mSelectionHighlight?.setBounds(0, 0, mWordWidth[i], mLineHeight)
                 mSelectionHighlight?.draw(canvas)
-                canvas.translate((-mWordX[i]).toFloat(), 0f)
+                canvas.translate((-mWordX[i]).toFloat(), (-mWordL[i] * mLineHeight).toFloat())
                 mSelectedIndex = i
             }
 
@@ -188,17 +192,21 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
             if (skkPrefs.originalColor) { // 高コントラストテキストの設定を無視
                 paint.getTextPath(
                     suggestion, 0, suggestion.length,
-                    (mWordX[i] + X_GAP).toFloat(), y.toFloat(),
+                    (mWordX[i] + X_GAP).toFloat(), (y + mWordL[i] * mLineHeight).toFloat(),
                     mTextPath
                 )
                 canvas.drawPath(mTextPath, paint)
             } else {
-                canvas.drawText(suggestion, (mWordX[i] + X_GAP).toFloat(), y.toFloat(), paint)
+                canvas.drawText(
+                    suggestion,
+                    (mWordX[i] + X_GAP).toFloat(), (y + mWordL[i] * mLineHeight).toFloat(),
+                    paint
+                )
             }
             paint.color = mColorOther
             canvas.drawLine(
-                mWordX[i].toFloat() + mWordWidth[i].toFloat() + 0.5f, 0f,
-                mWordX[i].toFloat() + mWordWidth[i].toFloat() + 0.5f, (height + 1).toFloat(),
+                mWordX[i] + mWordWidth[i] + 0.5f, (mWordL[i] + 0f) * mLineHeight + 1f,
+                mWordX[i] + mWordWidth[i] + 0.5f, (mWordL[i] + 1f) * mLineHeight - 1f,
                 paint
             )
             paint.isFakeBoldText = false
@@ -257,12 +265,32 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
             mChosenIndex = 0
 
             // Compute the total width
+            var lineN = 0
+            var lineX = 0
+            var lineW = 0
+            var totalLineW = 0
             mTotalWidth = mSuggestions.map { suggestion ->
-                mPaint.measureText(suggestion).toInt() + X_GAP * 2
-            }.foldIndexed(0) { i, acc, wordWidth ->
-                mWordX[i] = acc
+                mPaint.measureText(suggestion).toInt().coerceAtLeast(mLineHeight / 2) + X_GAP * 2
+            }.foldIndexed(0) { i, _, wordWidth ->
+                // 改行
+                if (lineW != 0 && lineW + wordWidth > width) {
+                    lineN = (lineN + 1) % mContainer.lines
+                    if (lineN == 0) {
+                        // width より長いエントリがあるときはハミ出た部分だけ次画面として
+                        // width 単位でのスクロールからズレのないようにする
+                        lineX += ceil(totalLineW / width.toDouble()).toInt() * width
+                        totalLineW = 0
+                    }
+                    lineW = 0
+                }
+
+                // 登録
                 mWordWidth[i] = wordWidth
-                acc + wordWidth
+                mWordX[i] = lineX + lineW
+                mWordL[i] = lineN
+                lineW += wordWidth
+                totalLineW = lineW.coerceAtLeast(totalLineW)
+                lineX + totalLineW
             }
 
             setScrollButtonsEnabled(0)
@@ -274,22 +302,16 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
 
     fun scrollPrev() {
         mScrollX = scrollX
-        val firstItem = // Actually just before the first item, if at the boundary
-            mSuggestions.indices.firstOrNull { i ->
-                mWordX[i] < mScrollX && mWordX[i] + mWordWidth[i] >= mScrollX - 1
-            } ?: mSuggestions.lastIndex
-        val leftEdge = (mWordX[firstItem] + mWordWidth[firstItem] - width).coerceAtLeast(0)
-        updateScrollPosition(leftEdge)
+        val leftEdge = (mScrollX - width).coerceAtLeast(0)
+        val targetX = leftEdge - (leftEdge % width)
+        updateScrollPosition(targetX)
     }
 
     fun scrollNext() {
         mScrollX = scrollX
         val rightEdge = mScrollX + width
-        val targetX =
-            mSuggestions.indices.firstOrNull { i ->
-                mWordX[i] <= rightEdge && mWordX[i] + mWordWidth[i] >= rightEdge
-            }?.let { min(mWordX[it], mTotalWidth - width) } ?: mScrollX
-        updateScrollPosition(targetX)
+        val targetX = rightEdge - (rightEdge % width)
+        updateScrollPosition(if (targetX < mTotalWidth) targetX else mTotalWidth - width)
     }
 
     private fun updateScrollPosition(targetX: Int) {
@@ -314,6 +336,7 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
         val x = me.x.toInt()
         val y = me.y.toInt()
         mTouchX = x
+        mTouchY = y
 
         when (action) {
             MotionEvent.ACTION_DOWN -> {
@@ -348,18 +371,19 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
     }
 
     fun choose(chosenIndex: Int) {
-        if (mWordX[chosenIndex] != scrollX) {
-            scrollTo(mWordX[chosenIndex], scrollY)
-            setScrollButtonsEnabled(mWordX[chosenIndex])
-            invalidate()
-            mScrolled = false
-            mChosenIndex = chosenIndex
-        }
+        val targetX = mWordX[chosenIndex]
+        val leftEdge = targetX - (targetX % width)
+        scrollTo(leftEdge, scrollY)
+        setScrollButtonsEnabled(leftEdge)
+        invalidate()
+        mScrolled = false
+        mChosenIndex = chosenIndex
     }
 
     companion object {
         private const val OUT_OF_BOUNDS = -1
-        private const val MAX_SUGGESTIONS = 150
+        private const val MAX_SUGGESTIONS = 2000 // 絵文字は1500程度ある
         private const val X_GAP = 5
+        internal const val LINESCALE = 1.3
     }
 }

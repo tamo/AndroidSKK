@@ -4,6 +4,8 @@ import android.content.Context
 import android.view.KeyEvent
 import android.util.AttributeSet
 import android.view.MotionEvent
+import jp.deadend.noname.skk.engine.SKKAbbrevState
+import jp.deadend.noname.skk.engine.SKKState
 
 class AbbrevKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
     private var mFlickSensitivitySquared = 100
@@ -15,7 +17,7 @@ class AbbrevKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
         super.setService(service)
         keyboard = Keyboard(context, R.xml.abbrev, mService.mScreenWidth, mService.mScreenHeight)
         onKeyboardActionListener = this
-        setKeyState()
+        setKeyState(SKKAbbrevState)
     }
 
     override fun onDetachedFromWindow() {
@@ -136,7 +138,7 @@ class AbbrevKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
         }
     }
 
-    fun setKeyState(): AbbrevKeyboardView {
+    override fun setKeyState(state: SKKState): AbbrevKeyboardView {
         val kanaKey = keyboard.keys.find { it.codes[0] == KEYCODE_ABBREV_TOJP }
         kanaKey?.label = if (skkPrefs.preferFlick) "Flick" else "かな"
         kanaKey?.downLabel = if (skkPrefs.preferFlick) "かな" else "Flick"

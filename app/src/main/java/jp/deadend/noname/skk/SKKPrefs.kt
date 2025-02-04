@@ -26,6 +26,14 @@ class SKKPrefs(context: Context) {
         get() = prefs.getInt(res.getString(R.string.prefkey_candidates_size), 30)
         set(value) = prefs.edit().putInt(res.getString(R.string.prefkey_candidates_size), value).apply()
 
+    var candidatesNormalLines: Int
+        get() = prefs.getInt(res.getString(R.string.prefkey_candidates_normal_lines), 1)
+        set(value) = prefs.edit().putInt(res.getString(R.string.prefkey_candidates_normal_lines), value).apply()
+
+    var candidatesEmojiLines: Int
+        get() = prefs.getInt(res.getString(R.string.prefkey_candidates_emoji_lines), 4)
+        set(value) = prefs.edit().putInt(res.getString(R.string.prefkey_candidates_emoji_lines), value).apply()
+
     // prefs_hardkey
     var kanaKey: Int
         get() = prefs.getInt(res.getString(R.string.prefkey_kana_key), 612) // 612はCtrl+j

@@ -157,7 +157,8 @@ interface SKKDictionaryInterface {
         try {
             browser = mBTree.browse(key) ?: return listOf<Pair<String, String>>().also { mIsLocked = false }
 
-            while (list.size < if (mIsASCII) 100 else 5) {
+            // 絵文字は1500ほどあるし CandidateView の行数が可変になったので多めが良さそう
+            while (list.size < if (mIsASCII) 1500 else 15) {
                 if (!scope.isActive) {
                     mIsLocked = false
                     throw CancellationException()

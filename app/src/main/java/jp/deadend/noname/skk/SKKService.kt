@@ -72,7 +72,10 @@ class SKKService : InputMethodService() {
 
     private lateinit var mEngine: SKKEngine
     internal val engineState: SKKState
-        get() = mEngine.state
+        get() {
+            val rawState = mEngine.state
+            return if (rawState === SKKEmojiState) mEngine.oldState else rawState
+        }
 
     internal val isHiragana: Boolean
         get() = kanaState === SKKHiraganaState
@@ -87,6 +90,8 @@ class SKKService : InputMethodService() {
                 mGodanInputView?.setKeyState(state)
             }
         }
+    internal val isComposingN
+        get() = mEngine.mComposing.toString() == "n"
 
     // onKeyDown()でEnterキーのイベントを消費したかどうかのフラグ．onKeyUp()で判定するのに使う
     private var isEnterUsed = false
@@ -127,7 +132,7 @@ class SKKService : InputMethodService() {
         return super.onStartCommand(intent, flags, startId)
     }
 
-    internal fun extractDictionary(): Boolean {
+    internal fun extractDictionary(dicName: String): Boolean {
         try {
             dlog("dic extract start")
             mHandler.post {
@@ -136,7 +141,7 @@ class SKKService : InputMethodService() {
                 ).show()
             }
 
-            unzipFile(resources.assets.open(DICT_ASCII_ZIP_FILE), filesDir)
+            unzipFile(resources.assets.open("$dicName.zip"), filesDir)
 
             mHandler.post {
                 Toast.makeText(
@@ -239,7 +244,23 @@ class SKKService : InputMethodService() {
             return super.onDestroy()
         }
 
-        mEngine = SKKEngine(this@SKKService, dics, userDic, asciiDic)
+        val emojiDic = SKKUserDictionary.newInstance(
+            this@SKKService,
+            filesDir.absolutePath + "/" + getString(R.string.dic_name_emoji),
+            getString(R.string.btree_name),
+            isASCII = true
+        )
+        if (emojiDic == null) {
+            val intent = Intent(applicationContext, SKKSettingsActivity::class.java)
+                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            val pendingIntent = PendingIntent.getActivity(
+                applicationContext, 0, intent, PendingIntent.FLAG_IMMUTABLE
+            )
+            notify(NOTIFY_ID_ERROR_DIC, "絵文字辞書エラー", getString(R.string.error_user_dic), pendingIntent)
+            return super.onDestroy()
+        }
+
+        mEngine = SKKEngine(this@SKKService, dics, userDic, asciiDic, emojiDic)
 
         mSpeechRecognizer.setRecognitionListener(object : RecognitionListener {
             private fun restoreState() {
@@ -315,7 +336,7 @@ class SKKService : InputMethodService() {
         val flick = mFlickJPInputView?.setKeyState(engineState)
         val godan = mGodanInputView?.setKeyState(engineState)
         val qwerty = mQwertyInputView?.setKeyState(engineState)
-        val abbrev = mAbbrevKeyboardView?.setKeyState()
+        val abbrev = mAbbrevKeyboardView?.setKeyState(engineState)
         if (flick == null || godan == null || qwerty == null || abbrev == null) return
 
         val context = when (skkPrefs.theme) {
@@ -453,7 +474,7 @@ class SKKService : InputMethodService() {
 
         return if (wasGodan) mGodanInputView?.setKeyState(engineState) else when (engineState) {
             SKKASCIIState, SKKZenkakuState -> mQwertyInputView?.setKeyState(engineState)
-            SKKAbbrevState -> mAbbrevKeyboardView?.setKeyState()
+            SKKAbbrevState -> mAbbrevKeyboardView?.setKeyState(engineState)
             else -> if (wasFlick) mFlickJPInputView?.setKeyState(engineState)
             else mQwertyInputView?.setKeyState(engineState)
         }
@@ -609,7 +630,7 @@ class SKKService : InputMethodService() {
         mFlickJPInputView?.setKeyState(engineState)
         mGodanInputView?.setKeyState(engineState)
         mQwertyInputView?.setKeyState(engineState)
-        mAbbrevKeyboardView?.setKeyState()
+        mAbbrevKeyboardView?.setKeyState(engineState)
 
         showStatusIcon(engineState.icon)
     }
@@ -857,6 +878,12 @@ class SKKService : InputMethodService() {
     fun googleTransliterate() {
         mEngine.googleTransliterate()
     }
+    fun symbolCandidates() {
+        mEngine.symbolCandidates()
+    }
+    fun emojiCandidates() {
+        mEngine.emojiCandidates()
+    }
     fun pickCandidateViewManually(index: Int) {
         mEngine.pickCandidateViewManually(index)
     }
@@ -889,6 +916,13 @@ class SKKService : InputMethodService() {
                 when (keyCode) {
                     KeyEvent.KEYCODE_DPAD_LEFT -> mEngine.chooseAdjacentCandidate(false)
                     KeyEvent.KEYCODE_DPAD_RIGHT -> mEngine.chooseAdjacentCandidate(true)
+                }
+                return true
+            }
+            mEngine.state === SKKEmojiState -> {
+                when (keyCode) {
+                    KeyEvent.KEYCODE_DPAD_LEFT -> mEngine.chooseAdjacentSuggestion(false)
+                    KeyEvent.KEYCODE_DPAD_RIGHT -> mEngine.chooseAdjacentSuggestion(true)
                 }
                 return true
             }
@@ -1041,11 +1075,14 @@ class SKKService : InputMethodService() {
         mEngine.resumeSuggestions()
     }
 
-    fun setCandidates(list: List<String>?, number: String) {
+    fun setCandidates(list: List<String>?, number: String, lines: Int) {
         if (list.isNullOrEmpty()) {
-            clearCandidatesView()
+            mCandidateViewContainer?.setAlpha(96)
+            mCandidateViewContainer?.lines = 1
+            mCandidateView?.setContents(listOf(), "#")
         } else {
             mCandidateViewContainer?.setAlpha(255)
+            mCandidateViewContainer?.lines = lines
             mCandidateView?.setContents(list, number)
         }
     }
@@ -1055,8 +1092,7 @@ class SKKService : InputMethodService() {
     }
 
     fun clearCandidatesView() {
-        mCandidateView?.setContents(listOf(), "#")
-        mCandidateViewContainer?.setAlpha(96)
+        setCandidates(null, "", 0)
     }
 
     // カーソル直前に引数と同じ文字列があるなら，それを消してtrue なければfalse
@@ -1089,7 +1125,7 @@ class SKKService : InputMethodService() {
                 SKKKanjiState   -> mFlickJPInputView?.setKeyState(state)
                 SKKHiraganaState, SKKKatakanaState, SKKHanKanaState
                                 -> mFlickJPInputView?.setKeyState(state)
-                SKKAbbrevState  -> mAbbrevKeyboardView?.setKeyState()
+                SKKAbbrevState  -> mAbbrevKeyboardView?.setKeyState(state)
                 SKKZenkakuState -> mQwertyInputView?.setKeyState(state)
                 else -> throw Exception("invalid state: $state")
             } ?: return
@@ -1190,7 +1226,6 @@ class SKKService : InputMethodService() {
         internal const val COMMAND_READ_PREFS = "jp.deadend.noname.skk.COMMAND_READ_PREFS"
         internal const val COMMAND_RELOAD_DICS = "jp.deadend.noname.skk.COMMAND_RELOAD_DICS"
         internal const val COMMAND_MUSHROOM = "jp.deadend.noname.skk.COMMAND_MUSHROOM"
-        internal const val DICT_ASCII_ZIP_FILE = "skk_asciidict.zip"
         private const val CHANNEL_ID = "skk_notification"
         private const val CHANNEL_NAME = "SKK"
         private const val NOTIFY_ID_ERROR_DIC = 1

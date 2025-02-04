@@ -182,11 +182,17 @@ class SKKDicManager : AppCompatActivity() {
                         override fun onPositiveClick() {
                             fileList().forEach { file ->
                                 if (!file.startsWith(getString(R.string.dic_name_user)) &&
-                                    !file.startsWith(getString(R.string.dic_name_ascii))
+                                    !file.startsWith(getString(R.string.dic_name_ascii)) &&
+                                    !file.startsWith(getString(R.string.dic_name_emoji))
                                 ) { deleteFile(file) }
                             }
                             try {
-                                unzipFile(resources.assets.open(SKKService.DICT_ASCII_ZIP_FILE), filesDir)
+                                unzipFile(resources.assets.open(
+                                    getString(R.string.dic_name_ascii) + ".zip"
+                                ), filesDir)
+                                unzipFile(resources.assets.open(
+                                    getString(R.string.dic_name_emoji) + ".zip"
+                                ), filesDir)
                             } catch (e: IOException) {
                                 SimpleMessageDialogFragment.newInstance(
                                     getString(R.string.error_extracting_dic_failed)

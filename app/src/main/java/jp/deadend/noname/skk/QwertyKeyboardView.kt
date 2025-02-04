@@ -216,7 +216,7 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
     private fun findKeyByCode(code: Int) =
         keyboard.keys.find { it.codes[0] == code }
 
-    fun setKeyState(state: SKKState): QwertyKeyboardView {
+    override fun setKeyState(state: SKKState): QwertyKeyboardView {
         val kanaKey = findKeyByCode(KEYCODE_QWERTY_TOJP)
         val kanaLabel = if (state.isTransient) "確定" else "かな"
         kanaKey?.label = if (skkPrefs.preferFlick) "Flick" else kanaLabel

@@ -7,8 +7,10 @@
 	<string name="label_pref_hardkeyboard">ハードウェアキーボードの設定</string>
 	<string name="label_dictool_activity">SKK ユーザー辞書ツール</string>
 	<string name="label_asciitool_activity">SKK ASCII 辞書ツール</string>
+	<string name="label_emojitool_activity">SKK 絵文字辞書ツール</string>
 	<string name="label_dictool_recreate">ユーザー辞書の初期化</string>
 	<string name="label_asciitool_recreate">ASCII 辞書の初期化</string>
+	<string name="label_emojitool_recreate">絵文字辞書の初期化</string>
 	<string name="label_import">インポート</string>
 	<string name="label_export">エクスポート</string>
 	<string name="label_clear_userdic">ユーザー辞書初期化</string>
@@ -26,8 +28,8 @@
 	<string name="message_written_to_external_storage">ユーザー辞書をテキスト形式で保存しました: %1$s</string>
 	<string name="message_confirm_remove_dic">この辞書を削除しますか？</string>
 	<string name="message_confirm_download_dic">SKK %s 辞書をダウンロードしますか？</string>
-	<string name="message_extracting_dic">ASCII 辞書を解凍しています…</string>
-	<string name="message_dic_extracted">ASCII 辞書を解凍しました</string>
+	<string name="message_extracting_dic">辞書を解凍しています…</string>
+	<string name="message_dic_extracted">辞書を解凍しました</string>
 
 	<string name="error_access_failed">アクセスできません: %1$s</string>
 	<string name="error_open_dicfile">辞書ファイルを開けません</string>
@@ -38,7 +40,7 @@
 	<string name="error_write_to_external_storage">テキスト形式の保存に失敗しました: %1$s</string>
 	<string name="error_text_dic_coding">UTF-8のファイルではないようです</string>
 	<string name="error_dic_exists">この辞書はすでに存在します: %1$s\n削除しますか？</string>
-	<string name="error_extracting_dic_failed">ASCII 辞書の解凍に失敗しました。一旦アンインストールしてみてください</string>
+	<string name="error_extracting_dic_failed">辞書の解凍に失敗しました。一旦アンインストールしてみてください</string>
 
 	<string translatable="false" name="prefkey_kutouten_type">PrefKeyKutoutenType</string>
 	<string translatable="false" name="prefkey_prefix_mark">PrefKeyPrefixMark</string>
@@ -46,6 +48,8 @@
 	<string translatable="false" name="prefkey_toggle_kana_key">PrefKeyToggleKanaKey</string>
 	<string translatable="false" name="prefkey_cancel_key">PrefKeyCancelKey</string>
 	<string translatable="false" name="prefkey_candidates_size">PrefKeyCandidatesSize</string>
+	<string translatable="false" name="prefkey_candidates_normal_lines">PrefKeyCandidatesNormalLines</string>
+	<string translatable="false" name="prefkey_candidates_emoji_lines">PrefKeyCandidatesEmojiLines</string>
 	<string translatable="false" name="prefkey_use_candidates_view">PrefKeyUseCandidatesView</string>
 	<string translatable="false" name="prefkey_flick_sensitivity2">PrefKeyFlickSensitivity2</string>
 	<string translatable="false" name="prefkey_theme">PrefKeyTheme</string>
@@ -84,6 +88,8 @@
 	<string translatable="false" name="btree_name">skk_dict</string>
 	<string translatable="false" name="dic_name_user">skk_userdict</string>
 	<string translatable="false" name="dic_name_ascii">skk_asciidict</string>
+	<string translatable="false" name="dic_name_emoji">skk_emojidict</string>
 	<string translatable="false" name="dic_name_user_recreate">*skk_userdict</string>
 	<string translatable="false" name="dic_name_ascii_recreate">+skk_asciidict</string>
+	<string translatable="false" name="dic_name_emoji_recreate">+skk_emojidict</string>
 </resources>

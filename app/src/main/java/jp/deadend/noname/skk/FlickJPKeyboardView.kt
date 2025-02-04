@@ -149,7 +149,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
         }
     }
 
-    internal fun setKeyState(state: SKKState): FlickJPKeyboardView {
+    override fun setKeyState(state: SKKState): FlickJPKeyboardView {
         when (state) {
             SKKHiraganaState, SKKKatakanaState, SKKHanKanaState -> mService.kanaState = state
             else -> return this

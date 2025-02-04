@@ -14,29 +14,29 @@
 	<Row>
 		<Key app:codes="-1001" app:keyIcon="@drawable/ic_keyboard_arrow_left" app:isRepeatable="true" />
 		<Key app:codes="-204" app:keyLabel=" \n I \n4" />
-		<Key app:codes="-205" app:keyLabel="J\n／SZ\n5" />
-		<Key app:codes="-206" app:keyLabel="L\n　Mー\n6" />
+		<Key app:codes="-205" app:keyLabel="J\n　SZ\n5" />
+		<Key app:codes="-206" app:keyLabel="L\n／Mー\n6" />
 		<Key app:codes="-1002" app:keyIcon="@drawable/ic_keyboard_arrow_right" app:isRepeatable="true" />
 	</Row>
 	<Row>
-		<Key app:codes="-1009,-1000" app:keyLabel="貼付\ncxl\ngoogle" />
+		<Key app:codes="-1009,-1000" app:keyLabel="(貼付\n：cxl＞\ngoogle)※変更されます" />
 		<Key app:codes="-207" app:keyLabel=" \n U \n7" />
 		<Key app:codes="-208" app:keyLabel="C\n　TD\n8" />
-		<Key app:codes="-209" app:keyLabel="X\n Y \n9" />
+		<Key app:codes="-209" app:keyLabel="X\n（Y）\n9" />
 		<Key app:codes="-1004" app:keyIcon="@drawable/ic_keyboard_spacebar" app:isRepeatable="true" />
 	</Row>
 	<Row>
-		<Key app:codes="-1005" app:keyLabel="かな\nQ\n半ｶﾅ" />
+		<Key app:codes="-1005" app:keyLabel="(あ\n☻Q記\n半)※変更されます" />
 		<Key app:codes="-210" app:keyLabel=" \n E \n " />
-		<Key app:codes="-211" app:keyLabel=" \n N \n0" />
-		<Key app:codes="-212" app:keyLabel="？\n．R！\n，" />
+		<Key app:codes="-211" app:keyLabel=" \n：N・\n0" />
+		<Key app:codes="-212" app:keyLabel="？\n。R！\n、" />
 		<Key app:codes="-1007" app:keyIcon="@drawable/ic_keyboard_return" />
 	</Row>
 	<Row app:rowEdgeFlags="bottom">
 		<Key app:codes="-1003" app:keyLabel="L" />
 		<Key app:codes="-213" app:keyLabel=" \n O \n " />
-		<Key app:codes="-1006" app:keyLabel="cxl\n　゛小　゜\n▽" />
-		<Key app:codes="-214" app:keyLabel="V\n W \n " />
+		<Key app:codes="-1006" app:keyLabel="(cxl\n◻゙□゚\n▽)※変更されます" />
+		<Key app:codes="-214" app:keyLabel="V\n「W」\n " />
 		<Key app:codes="-1007" app:keyIcon="@drawable/ic_keyboard_return" />
 	</Row>
 </Keyboard>

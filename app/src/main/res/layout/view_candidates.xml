@@ -31,6 +31,7 @@
 		android:layout_width="@dimen/candidates_scrollbutton_width"
 		android:layout_height="fill_parent"
 		android:clickable="true"
+		android:scaleType="fitCenter"
 		/>
     <jp.deadend.noname.skk.CandidateView
         android:id="@+id/candidates"
@@ -45,5 +46,6 @@
 		android:layout_width="@dimen/candidates_scrollbutton_width"
 		android:layout_height="fill_parent"
 		android:clickable="true"
+		android:scaleType="fitCenter"
 		/>
 </jp.deadend.noname.skk.CandidateViewContainer>

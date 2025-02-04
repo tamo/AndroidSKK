@@ -101,6 +101,22 @@ class SKKUserDictionary private constructor (
         }
     }
 
+    fun removeEntry(key: String) {
+        safeRun {
+            mOldValue = mBTree.find(key)
+            mOldKey = key
+            mBTree.remove(key)
+            mRecMan.commit()
+        }
+    }
+
+    fun replaceEntry(key: String, value: String, okuri: String?) {
+        removeEntry(key)
+        val oldValue = mOldValue
+        addEntry(key, value, okuri)
+        mOldValue = oldValue
+    }
+
     fun rollBack() {
         if (mOldKey.isEmpty()) return
 
@@ -138,8 +154,9 @@ class SKKUserDictionary private constructor (
 
     companion object {
         fun newInstance(context: SKKService, mDicFile: String, btreeName: String, isASCII: Boolean): SKKUserDictionary? {
-            if (isASCII && !File("$mDicFile.db").exists()) {
-                context.extractDictionary()
+            val dbFile = File("$mDicFile.db")
+            if (isASCII && !dbFile.exists()) {
+                context.extractDictionary(dbFile.nameWithoutExtension)
             }
             try {
                 val recman = RecordManagerFactory.createRecordManager(mDicFile)

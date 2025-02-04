@@ -93,7 +93,7 @@ object SKKOkuriganaState : SKKState {
         context.apply {
             if (skkPrefs.preferFlick) mComposing.setLength(0) // Flickでアルファベットが残っても困る
             mOkurigana = null
-            mKanjiKey.deleteCharAt(mKanjiKey.lastIndex) // composing と同じ子音アルファベットのはず
+            if (mKanjiKey.isNotEmpty()) mKanjiKey.deleteCharAt(mKanjiKey.lastIndex) // composing と同じ子音アルファベットのはず
             changeState(SKKKanjiState)
             setComposingTextSKK("${mKanjiKey}${mComposing}")
         }

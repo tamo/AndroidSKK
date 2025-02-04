@@ -27,24 +27,27 @@ object RomajiConverter {
         "xtu" to "っ", "xke" to "ヶ",
         "cha" to "ちゃ", "chi" to "ち", "chu" to "ちゅ", "che" to "ちぇ", "cho" to "ちょ",
         "fa" to "ふぁ", "fi" to "ふぃ", "fu" to "ふ", "fe" to "ふぇ", "fo" to "ふぉ",
+        "fya" to "ふゃ", "fyi" to "ふぃ", "fyu" to "ふゅ", "fye" to "ふぇ", "fyo" to "ふょ",
 
         "xya" to "ゃ",   "xyu" to "ゅ",   "xyo" to "ょ", "xwa" to "ゎ",
-        "kya" to "きゃ", "kyu" to "きゅ", "kyo" to "きょ",
-        "gya" to "ぎゃ", "gyu" to "ぎゅ", "gyo" to "ぎょ",
-        "sya" to "しゃ", "syu" to "しゅ", "syo" to "しょ",
+        "kya" to "きゃ", "kyi" to "きぃ", "kyu" to "きゅ", "kye" to "きぇ", "kyo" to "きょ",
+        "gya" to "ぎゃ", "gyi" to "ぎぃ", "gyu" to "ぎゅ", "gye" to "ぎぇ", "gyo" to "ぎょ",
+        "sya" to "しゃ", "syi" to "しぃ", "syu" to "しゅ", "sye" to "しぇ", "syo" to "しょ",
         "sha" to "しゃ", "shi" to "し",   "shu" to "しゅ", "she" to "しぇ", "sho" to "しょ",
         "ja"  to "じゃ", "ji"  to "じ",   "ju"  to "じゅ", "je"  to "じぇ", "jo"  to "じょ",
+        "jya" to "じゃ", "jyi" to "じぃ", "jyu" to "じゅ", "jye" to "じぇ", "jyo" to "じょ",
+        "zya" to "じゃ", "zyi" to "じぃ", "zyu" to "じゅ", "zye" to "じぇ", "zyo" to "じょ",
         "cha" to "ちゃ", "chi" to "ち",   "chu" to "ちゅ", "che" to "ちぇ", "cho" to "ちょ",
-        "tya" to "ちゃ", "tyu" to "ちゅ", "tye" to "ちぇ", "tyo" to "ちょ",
+        "tya" to "ちゃ", "tyi" to "ちぃ", "tyu" to "ちゅ", "tye" to "ちぇ", "tyo" to "ちょ",
         "tha" to "てゃ", "thi" to "てぃ", "thu" to "てゅ", "the" to "てぇ", "tho" to "てょ",
         "dha" to "でゃ", "dhi" to "でぃ", "dhu" to "でゅ", "dhe" to "でぇ", "dho" to "でょ",
         "dya" to "ぢゃ", "dyi" to "ぢぃ", "dyu" to "ぢゅ", "dye" to "ぢぇ", "dyo" to "ぢょ",
-        "nya" to "にゃ", "nyu" to "にゅ", "nyo" to "にょ",
-        "hya" to "ひゃ", "hyu" to "ひゅ", "hyo" to "ひょ",
-        "pya" to "ぴゃ", "pyu" to "ぴゅ", "pyo" to "ぴょ",
-        "bya" to "びゃ", "byu" to "びゅ", "byo" to "びょ",
-        "mya" to "みゃ", "myu" to "みゅ", "myo" to "みょ",
-        "rya" to "りゃ", "ryu" to "りゅ", "rye" to "りぇ", "ryo" to "りょ",
+        "nya" to "にゃ", "nyi" to "にぃ", "nyu" to "にゅ", "nye" to "にぇ", "nyo" to "にょ",
+        "hya" to "ひゃ", "hyi" to "ひぃ", "hyu" to "ひゅ", "hye" to "ひぇ", "hyo" to "ひょ",
+        "pya" to "ぴゃ", "pyi" to "ぴぃ", "pyu" to "ぴゅ", "pye" to "ぴぇ", "pyo" to "ぴょ",
+        "bya" to "びゃ", "byi" to "びぃ", "byu" to "びゅ", "bye" to "びぇ", "byo" to "びょ",
+        "mya" to "みゃ", "myi" to "みぃ", "myu" to "みゅ", "mye" to "みぇ", "myo" to "みょ",
+        "rya" to "りゃ", "ryi" to "りぃ", "ryu" to "りゅ", "rye" to "りぇ", "ryo" to "りょ",
         "z," to "‥", "z-" to "〜", "z." to "…", "z/" to "・", "z[" to "『",
         "z]" to "』", "zh" to "←", "zj" to "↓", "zk" to "↑", "zl" to "→",
     )
@@ -125,6 +128,10 @@ object RomajiConverter {
             else -> ""
         }
     }
+    fun getVowel(kana: String): Char? =
+        mRomajiMap.entries.associate { (r, k) ->
+            k to r.last()
+        }[kana]
     fun convertLastChar(str: String, type: String): Pair<String, String> {
         dlog("convertLastChar(str=$str, type=$type)")
 

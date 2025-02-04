@@ -23,6 +23,7 @@ import android.view.View
 import android.view.ViewConfiguration
 import android.widget.PopupWindow
 import android.widget.TextView
+import jp.deadend.noname.skk.engine.SKKState
 import kotlin.math.abs
 
 open class KeyboardView @JvmOverloads constructor(
@@ -252,6 +253,8 @@ open class KeyboardView @JvmOverloads constructor(
     open fun setService(service: SKKService) {
         mService = service
     }
+
+    open fun setKeyState(state: SKKState): KeyboardView = this
 
     var keyboard: Keyboard
         get() = mKeyboard

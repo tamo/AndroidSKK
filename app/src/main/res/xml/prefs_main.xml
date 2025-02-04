@@ -28,6 +28,24 @@
         app:showSeekBarValue="true"
         app:iconSpaceReserved="false"
         />
+    <androidx.preference.SeekBarPreference
+        app:key="@string/prefkey_candidates_normal_lines"
+        app:min="1"
+        android:max="10"
+        app:defaultValue="1"
+        app:title="候補表示の行数 (通常)"
+        app:showSeekBarValue="true"
+        app:iconSpaceReserved="false"
+        />
+    <androidx.preference.SeekBarPreference
+        app:key="@string/prefkey_candidates_emoji_lines"
+        app:min="1"
+        android:max="10"
+        app:defaultValue="4"
+        app:title="候補表示の行数 (絵文字)"
+        app:showSeekBarValue="true"
+        app:iconSpaceReserved="false"
+        />
     <androidx.preference.Preference
         app:title="@string/label_dicmanager_activity" >
         <intent android:action="android.intent.action.MAIN"
@@ -45,6 +63,13 @@
         app:title="@string/label_asciitool_activity" >
         <intent android:action="android.intent.action.MAIN"
             android:data="@string/dic_name_ascii"
+            android:targetPackage="jp.deadend.noname.skk"
+            android:targetClass="jp.deadend.noname.skk.SKKUserDicTool" />
+    </androidx.preference.Preference>
+    <androidx.preference.Preference
+        app:title="@string/label_emojitool_activity" >
+        <intent android:action="android.intent.action.MAIN"
+            android:data="@string/dic_name_emoji"
             android:targetPackage="jp.deadend.noname.skk"
             android:targetClass="jp.deadend.noname.skk.SKKUserDicTool" />
     </androidx.preference.Preference>
@@ -68,6 +93,13 @@
             app:title="@string/label_asciitool_recreate" >
             <intent android:action="android.intent.action.MAIN"
                 android:data="@string/dic_name_ascii_recreate"
+                android:targetPackage="jp.deadend.noname.skk"
+                android:targetClass="jp.deadend.noname.skk.SKKUserDicTool" />
+        </androidx.preference.Preference>
+        <androidx.preference.Preference
+            app:title="@string/label_emojitool_recreate" >
+            <intent android:action="android.intent.action.MAIN"
+                android:data="@string/dic_name_emoji_recreate"
                 android:targetPackage="jp.deadend.noname.skk"
                 android:targetClass="jp.deadend.noname.skk.SKKUserDicTool" />
         </androidx.preference.Preference>

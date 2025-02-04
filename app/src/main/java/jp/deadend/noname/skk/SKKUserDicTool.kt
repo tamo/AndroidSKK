@@ -28,7 +28,6 @@ import jdbm.helper.StringComparator
 import jdbm.helper.Tuple
 import jp.deadend.noname.dialog.ConfirmationDialogFragment
 import jp.deadend.noname.dialog.SimpleMessageDialogFragment
-import jp.deadend.noname.skk.SKKService.Companion.DICT_ASCII_ZIP_FILE
 import jp.deadend.noname.skk.databinding.ActivityUserDicToolBinding
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -376,10 +375,10 @@ class SKKUserDicTool : AppCompatActivity() {
 
             if (extract) {
                 try {
-                    unzipFile(resources.assets.open(DICT_ASCII_ZIP_FILE), filesDir)
-                    dlog("ASCII dictionary extracted")
+                    unzipFile(resources.assets.open("$mDicName.zip"), filesDir)
+                    dlog("$mDicName.zip extracted")
                 } catch (e: IOException) {
-                    Log.e("SKK", "I/O error in extracting ASCII dictionary: $e")
+                    Log.e("SKK", "I/O error in extracting $mDicName.zip: $e")
                 }
                 withContext(Dispatchers.Main) {
                     updateListItems()
@@ -518,7 +517,7 @@ class SKKUserDicTool : AppCompatActivity() {
                     dlog("UserDicTool updateListItems: canceled")
                     closeUserDict()
                     throw e
-                } catch (e: IOException) {
+                } catch (e: Exception) {
                     Log.e("SKK", "UserDicTool updateListItems: ${e.message}")
                     withContext(Dispatchers.Main) { onFailToOpenUserDict() }
                 }
