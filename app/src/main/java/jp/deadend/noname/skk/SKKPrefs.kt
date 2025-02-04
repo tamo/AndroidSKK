@@ -128,6 +128,10 @@ class SKKPrefs(context: Context) {
         get() = prefs.getBoolean(res.getString(R.string.prefkey_ignore_high_contrast), false)
         set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_ignore_high_contrast), value).apply()
 
+    var keyLabelZoom: Int
+        get() = prefs.getInt(res.getString(R.string.prefkey_key_label_zoom), 100)
+        set(value) = prefs.edit().putInt(res.getString(R.string.prefkey_key_label_zoom), value).apply()
+
     var keyHeightPort: Int
         get() = prefs.getInt(res.getString(R.string.prefkey_key_height_port), 30)
         set(value) = prefs.edit().putInt(res.getString(R.string.prefkey_key_height_port), value).apply()

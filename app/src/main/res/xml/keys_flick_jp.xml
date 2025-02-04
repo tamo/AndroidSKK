@@ -19,7 +19,7 @@
 		<Key app:codes="-1002" app:keyIcon="@drawable/ic_keyboard_arrow_right" app:isRepeatable="true" />
 	</Row>
 	<Row>
-		<Key app:codes="-1005" app:keyLabel="10\n：カナ＞\n声" />
+		<Key app:codes="-1005" app:keyLabel="(10\n：カナ&gt;\n声)※変更されます" />
 		<Key app:codes="-207" app:keyLabel="ま" />
 		<Key app:codes="-208" app:keyLabel="や" />
 		<Key app:codes="-209" app:keyLabel="ら" />

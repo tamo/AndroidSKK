@@ -142,7 +142,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
             kanaKey.icon = null
         }
         kanaKeys[0].codes[0] = KEYCODE_FLICK_JP_MOJI
-        kanaKeys[0].label = if (mService.isHiragana) "10\n：カナ＞\n声" else "10\n：かな＞\n声"
+        kanaKeys[0].label = if (mService.isHiragana) "10\n：カナ>\n声" else "10\n：かな＞\n声"
 
         for (keyboard in arrayOf(mJPKeyboard, mNumKeyboard, mVoiceKeyboard)) {
             keyboard.reloadShiftKeys()
@@ -167,7 +167,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
                     KEYCODE_FLICK_JP_CHAR_YA -> key.label = "や"
                     KEYCODE_FLICK_JP_CHAR_RA -> key.label = "ら"
                     KEYCODE_FLICK_JP_CHAR_WA -> key.label = "ん\nをわー\n〜"
-                    KEYCODE_FLICK_JP_MOJI    -> key.label = "10\n：カナ＞\n声"
+                    KEYCODE_FLICK_JP_MOJI    -> key.label = "10\n：カナ>\n声"
                 }
             } else {
                 when (key.codes[0]) {
@@ -181,7 +181,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
                     KEYCODE_FLICK_JP_CHAR_YA -> key.label = "ヤ"
                     KEYCODE_FLICK_JP_CHAR_RA -> key.label = "ラ"
                     KEYCODE_FLICK_JP_CHAR_WA -> key.label = "ン\nヲワー\n〜"
-                    KEYCODE_FLICK_JP_MOJI    -> key.label = "10\n：かな＞\n声"
+                    KEYCODE_FLICK_JP_MOJI    -> key.label = "10\n：かな>\n声"
                 }
             }
         }

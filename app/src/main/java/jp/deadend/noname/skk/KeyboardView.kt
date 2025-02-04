@@ -25,6 +25,7 @@ import android.widget.PopupWindow
 import android.widget.TextView
 import jp.deadend.noname.skk.engine.SKKState
 import kotlin.math.abs
+import kotlin.math.ceil
 
 open class KeyboardView @JvmOverloads constructor(
     context: Context,
@@ -385,6 +386,7 @@ open class KeyboardView @JvmOverloads constructor(
                     )
             keyBackground?.alpha = backgroundAlpha
             canvas.drawColor(0x00000000, PorterDuff.Mode.CLEAR)
+            val labelZoom = skkPrefs.keyLabelZoom / 100f
 
             for (key in mKeyboard.keys) {
                 if (drawSingleKey && invalidKey !== key) { continue }
@@ -414,25 +416,26 @@ open class KeyboardView @JvmOverloads constructor(
                     val numLines = lines.size
                     val isGodanKey = numLines == 3 &&
                             lines[1].length > 2
-                    val sizeFactors = if (numLines == 3) {
-                        listOf(.4f, .8f, .4f) // Godan以外でも中央の行を大きくする (「わ」「abc」等)
-                    } else {
-                        listOf(1f, 1f, 1f)
-                    }
+                    val sizeFactors = when (numLines) {
+                        3 -> listOf(.27f, .7f, .27f) // Godan以外でも中央の行を大きくする (「わ」「abc」等)
+                        1 -> listOf(1f)
+                        else -> throw IndexOutOfBoundsException("key label has $numLines lines")
+                    }.map { it * labelZoom }
                     val sizeDefault = mPaint.textSize
-                    val lineScale = 1.5f
+                    val lineScale = 1.05f // 行間
                     lines.forEachIndexed { i, line ->
-                        fun drawText(t: String, descent: Float) {
+                        fun drawText(t: String) {
                             canvas.drawText(
                                 t,
                                 (key.width + mPadding.left - mPadding.right) / 2f,
-                                (key.height + mPadding.top - mPadding.bottom) / 2f
-                                        + lineScale * (((0..<numLines).fold(0f) { s, j ->
+                                (key.height + mPadding.top - mPadding.bottom) / 2f + lineScale * (
+                                        ((0..<numLines).fold(0f) { s, j ->
                                             s + sizeDefault * sizeFactors[j]
-                                        }) - descent) / 2f
-                                        - lineScale * ((0..<numLines - 1 - i).fold(0f) { s, j ->
-                                            s + sizeDefault * sizeFactors[j]
-                                        }) - descent,
+                                        } - mPaint.descent()) / 2f -
+                                                (0..<numLines - 1 - i).fold(0f) { s, j ->
+                                                    s + sizeDefault * sizeFactors[j]
+                                                }
+                                        ),
                                 mPaint
                             )
                         }
@@ -445,18 +448,20 @@ open class KeyboardView @JvmOverloads constructor(
                         }
 
                         if (isGodanKey && i == 1) {
-                            val descent = mPaint.descent()
                             val centerText = line.drop(1).dropLast(1)
-                            drawText(centerText, descent)
+                            drawText(centerText)
 
                             // 左右フリックのキー
                             mPaint.typeface = Typeface.DEFAULT
-                            mPaint.textSize *= .8f
+                            mPaint.textSize *= .6f
                             drawText("${line.first()}${"　".repeat(
-                                (centerText.length + 1).coerceAtMost(3)
-                            )}${line.last()}", descent)
+                                ceil(
+                                        centerText.filter { it.code < 0x7F }.length * 0.5
+                                                + centerText.filter { it.code > 0x7F }.length
+                                ).toInt() + 1
+                            )}${line.last()}")
                         } else {
-                            drawText(line, mPaint.descent())
+                            drawText(line)
                         }
                     }
 
@@ -467,34 +472,36 @@ open class KeyboardView @JvmOverloads constructor(
                         && shiftedLabel != label.lowercase()
                     ) {
                         mPaint.textAlign = Align.LEFT
-                        mPaint.textSize = mKeyTextSize * .6f
+                        mPaint.textSize = mLabelTextSize * .5f * labelZoom
                         mPaint.typeface = Typeface.DEFAULT
                         canvas.drawText(
                             shiftedLabel,
-                            mPadding.left + mPaint.textSize,
+                            mPadding.left + mPaint.textSize * .4f,
                             mPadding.top + mPaint.textSize * 1.5f,
                             mPaint
                         )
                     }
                     if (key.downLabel.isNotEmpty()) {
                         mPaint.textAlign = Align.RIGHT
-                        mPaint.textSize = mKeyTextSize * .6f
+                        mPaint.textSize = mLabelTextSize * .5f * labelZoom
                         mPaint.typeface = Typeface.DEFAULT
                         canvas.drawText(
                             key.downLabel.toString(),
-                            key.width - mPadding.right - mPaint.textSize,
+                            key.width - mPadding.right - mPaint.textSize * .4f,
                             key.height - mPadding.bottom - mPaint.textSize * .5f,
                             mPaint
                         )
                     }
                     mPaint.textAlign = savedAlign
                 } else if (icon != null) {
+                    val w = (icon.intrinsicWidth * labelZoom).toInt()
+                    val h = (icon.intrinsicHeight * labelZoom).toInt()
                     val drawableX =
-                        (key.width - mPadding.left - mPadding.right - icon.intrinsicWidth) / 2 + mPadding.left
+                        (key.width - mPadding.left - mPadding.right - w) / 2 + mPadding.left
                     val drawableY =
-                        (key.height - mPadding.top - mPadding.bottom - icon.intrinsicHeight) / 2 + mPadding.top
+                        (key.height - mPadding.top - mPadding.bottom - h) / 2 + mPadding.top
                     canvas.translate(drawableX.toFloat(), drawableY.toFloat())
-                    icon.setBounds(0, 0, icon.intrinsicWidth, icon.intrinsicHeight)
+                    icon.setBounds(0, 0, w, h)
                     icon.draw(canvas)
                     canvas.translate(-drawableX.toFloat(), -drawableY.toFloat())
                 }

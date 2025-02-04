@@ -141,6 +141,14 @@
             app:iconSpaceReserved="false"
             app:title="サイズ">
             <androidx.preference.SeekBarPreference
+                android:max="200"
+                app:defaultValue="100"
+                app:iconSpaceReserved="false"
+                app:key="@string/prefkey_key_label_zoom"
+                app:min="10"
+                app:showSeekBarValue="true"
+                app:title="キー表面の文字の大きさ（％）" />
+            <androidx.preference.SeekBarPreference
                 android:max="100"
                 app:defaultValue="30"
                 app:iconSpaceReserved="false"
