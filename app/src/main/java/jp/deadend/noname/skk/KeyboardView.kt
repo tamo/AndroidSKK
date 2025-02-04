@@ -905,7 +905,12 @@ open class KeyboardView @JvmOverloads constructor(
 
         // Needs to be called after the gesture detector gets a turn, as it may have
         // displayed the mini keyboard
-        if (mMiniKeyboardOnScreen && action != MotionEvent.ACTION_CANCEL) { return true }
+        if (mMiniKeyboardOnScreen && action != MotionEvent.ACTION_CANCEL) {
+            if (action == MotionEvent.ACTION_DOWN) {
+                dismissPopupKeyboard() // 消費されずここまで来たということは範囲外なので消す
+            }
+            return true
+        }
 
         when (action) {
             MotionEvent.ACTION_DOWN -> {
