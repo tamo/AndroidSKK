@@ -33,7 +33,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
     private var mArrowFlicked = false
     private var mArrowStartX = -1f
     private var mArrowStartY = -1f
-    private var mCurrentPopupLabels = POPUP_LABELS_NULL
+    private var mCurrentPopupLabels = (0..6).map{ "" }.toTypedArray()
 
     private var mUsePopup = true
     private var mFixedPopup = false
@@ -793,7 +793,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
         if (mUsePopup) {
             val labels = mFlickGuideLabelList.get(primaryCode)
             if (labels == null) {
-                mCurrentPopupLabels = POPUP_LABELS_NULL
+                mCurrentPopupLabels = (0..6).map{ "" }.toTypedArray()
                 return
             }
 
@@ -1034,6 +1034,5 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
         private const val KEYCODE_FLICK_JP_SPEECH = -1012
         private const val KEYCODE_FLICK_JP_GOOGLE = -1013
         private enum class FlickState { NONE, LEFT, UP, RIGHT, DOWN, CURVE_LEFT, CURVE_RIGHT }
-        private val POPUP_LABELS_NULL = arrayOf("", "", "", "", "", "", "")
     }
 }

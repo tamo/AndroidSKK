@@ -32,7 +32,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
     private var mArrowFlicked = false
     private var mArrowStartX = -1f
     private var mArrowStartY = -1f
-    private var mCurrentPopupLabels = POPUP_LABELS_NULL
+    private var mCurrentPopupLabels = (0..14).map{ "" }.toTypedArray()
 
     private var mUsePopup = true
     private var mFixedPopup = false
@@ -547,7 +547,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
 
         val labels = mFlickGuideLabelList.get(primaryCode)
         if (labels == null) {
-            mCurrentPopupLabels = POPUP_LABELS_NULL
+            mCurrentPopupLabels = (0..14).map{ "" }.toTypedArray()
             return
         }
 
@@ -867,6 +867,6 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
 //        private const val KEYCODE_GODAN_SPEECH = -1012
         private const val KEYCODE_GODAN_GOOGLE = -1013
         private enum class FlickState { NONE, LEFT, UP, RIGHT, DOWN, CURVE_LEFT, CURVE_RIGHT }
-        private val POPUP_LABELS_NULL = (0..14).map{ "" }.toTypedArray()
+        private val POPUP_LABELS_NULL = (0..14).map{ "" }
     }
 }
