@@ -937,6 +937,10 @@ class SKKService : InputMethodService() {
      */
     fun keyDownUp(keyEventCode: Int) {
         val ic = currentInputConnection ?: return
+        when (keyEventCode) { // 端でカーソル移動しようとすると閉じてしまうので回避
+            KeyEvent.KEYCODE_DPAD_LEFT -> if (ic.getTextBeforeCursor(1, 0).isNullOrEmpty()) return
+            KeyEvent.KEYCODE_DPAD_RIGHT -> if (ic.getTextAfterCursor(1, 0).isNullOrEmpty()) return
+        }
         ic.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, keyEventCode))
         ic.sendKeyEvent(KeyEvent(KeyEvent.ACTION_UP, keyEventCode))
         updateSuggestionsASCII()
