@@ -103,10 +103,11 @@ class SKKUserDictionary private constructor (
 
     fun removeEntry(key: String) {
         safeRun {
-            mOldValue = mBTree.find(key)
+            mOldValue = mBTree.find(key)?.also {
+                mBTree.remove(key)
+                mRecMan.commit()
+            } ?: ""
             mOldKey = key
-            mBTree.remove(key)
-            mRecMan.commit()
         }
     }
 
