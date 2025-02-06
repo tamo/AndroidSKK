@@ -132,7 +132,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
         cancelKey.label = /* if (!mIsASCII && skkPrefs.simpleGodan) "cxl" else */ "貼付\n：cxl＞\ngoogle"
 
         qKey.codes[0] = KEYCODE_GODAN_CHAR_Q
-        qKey.label = /* if (!mIsASCII && skkPrefs.simpleGodan) "Q" else */ "あ\n☻Q記\n半"
+        qKey.label = /* if (!mIsASCII && skkPrefs.simpleGodan) "Q" else */ "^J\n☻Q記\n半"
     }
 
     override fun setKeyState(state: SKKState): GodanKeyboardView {
@@ -144,6 +144,17 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
 
         val qKey = checkNotNull(findKeyByCode(keyboard, KEYCODE_GODAN_CHAR_Q)) { "BUG: no Q key" }
         qKey.on = (state !in listOf(SKKASCIIState, SKKEmojiState, SKKZenkakuState) && !mService.isHiragana)
+            .also { isKatakana ->
+                listOf(
+                    KEYCODE_GODAN_CHAR_A, KEYCODE_GODAN_CHAR_I, KEYCODE_GODAN_CHAR_U,
+                    KEYCODE_GODAN_CHAR_E, KEYCODE_GODAN_CHAR_O, KEYCODE_GODAN_CHAR_N,
+                ).forEach { keyCode ->
+                    val key = checkNotNull(findKeyByCode(keyboard, keyCode)) { "BUG: no $keyCode key" }
+                    key.label = if (isKatakana)
+                        hirakana2katakana(key.label.toString()) ?: ""
+                    else katakana2hiragana(key.label.toString()) ?: ""
+                }
+            }
 
         val lKey = checkNotNull(findKeyByCode(keyboard, KEYCODE_GODAN_CHAR_L)) { "BUG: no L key" }
         lKey.on = mIsASCII
@@ -737,11 +748,12 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                                 0
                             }
                         }
-                        'ゃ'.code, 'ぃ'.code, 'ゅ'.code, 'ぇ'.code, 'ょ'.code -> {
+                        'ゃ'.code, 'ぃ'.code, 'ゅ'.code, 'ぇ'.code, 'ょ'.code,
+                        'ャ'.code, 'ィ'.code, 'ュ'.code, 'ェ'.code, 'ョ'.code -> {
                             mService.processKey('y'.code)
                             getVowel(Char(guidedCode).toString())?.code ?: 0
                         }
-                        'ん'.code -> {
+                        'ん'.code, 'ン'.code -> {
                             if (!mService.isComposingN) mService.processKey('n'.code)
                             'n'.code
                         }
@@ -763,8 +775,10 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                     "絵☻" -> mService.emojiCandidates()
                     else -> if (
                         popupText.length == 2 &&
-                        popupText[0] in listOf('あ', 'い', 'う', 'え', 'お')
-                        )
+                        popupText[0] in listOf(
+                            'あ', 'い', 'う', 'え', 'お',
+                            'ア', 'イ', 'ウ', 'エ', 'オ'
+                        ))
                     {
                         mPopupTextView?.getOrNull(0)?.text?.let { vowelStr ->
                             when (val vowel = vowelStr.first()) {
@@ -778,8 +792,8 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                                     )
                                     // 前の processKey で▼モードになっていたら次で確定してしまうので止まる
                                     if (mService.engineState !== SKKChooseState) when (popupText[1]) {
-                                        'っ' -> "xtu"
-                                        'ん' -> "nn"
+                                        'っ', 'ッ' -> "xtu"
+                                        'ん', 'ン' -> "nn"
                                         else -> throw RuntimeException("mPopupTextView is $mPopupTextView")
                                     }.forEach {
                                         mService.processKey(it.code)

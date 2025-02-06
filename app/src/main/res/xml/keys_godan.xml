@@ -26,7 +26,7 @@
 		<Key app:codes="-1004" app:keyIcon="@drawable/ic_keyboard_spacebar" app:isRepeatable="true" />
 	</Row>
 	<Row>
-		<Key app:codes="-1005" app:keyLabel="(あ\n☻Q記\n半)※変更されます" />
+		<Key app:codes="-1005" app:keyLabel="(^J\n☻Q記\n半)※変更されます" />
 		<Key app:codes="-210" app:keyLabel="ん\nっEぇ\nꚘ" />
 		<Key app:codes="-211" app:keyLabel="ん\n：N・\n0" />
 		<Key app:codes="-212" app:keyLabel="？\n。R！\n、" />
