@@ -68,6 +68,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
         a.append(KEYCODE_GODAN_CHAR_O, arrayOf("O", "おっ", "おん", "ょ", "＇", "′", "`") + t)
         a.append(KEYCODE_GODAN_CHAR_W, arrayOf("W", "「", "V", "」", "＂", "", "", "『", "【", "", "", "』", "】", "”", "“"))
         a.append(KEYCODE_GODAN_SPACE, arrayOf("SPACE", "", "Mush") + t)
+        a.append(Keyboard.KEYCODE_SHIFT, arrayOf("SHIFT", "", "CAPSLOCK") + t)
     }
 
     override fun setService(service: SKKService) {
@@ -621,23 +622,33 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                 mService.processKey(primaryCode)
                 if (!isCapsLocked) isShifted = false
             }
+            // codes[0] 以外
+            Keyboard.KEYCODE_CAPSLOCK -> {
+                isShifted = true
+                isCapsLocked = true
+            }
         }
     }
 
     private fun release() {
         when (mLastPressedKey) {
+            // onKey で消費済み
+            Keyboard.KEYCODE_DELETE, Keyboard.KEYCODE_CAPSLOCK -> {}
             // repeatable のフリック
             KEYCODE_GODAN_SPACE  -> if (mFlickState == EnumSet.of(FlickState.UP))
                 mService.sendToMushroom()
             // repeatable 以外
             Keyboard.KEYCODE_SHIFT -> {
-                isShifted = !isShifted
-                isCapsLocked = false
-                onSetShifted(isShifted)
-            }
-            Keyboard.KEYCODE_CAPSLOCK -> {
-                isShifted = true
-                isCapsLocked = true
+                when (mFlickState) {
+                    EnumSet.of(FlickState.NONE) -> {
+                        isShifted = !isShifted
+                        isCapsLocked = false
+                    }
+                    EnumSet.of(FlickState.UP) -> {
+                        isShifted = true
+                        isCapsLocked = true
+                    }
+                }
                 onSetShifted(isShifted)
             }
             KEYCODE_GODAN_ENTER  -> if (!mService.handleEnter()) mService.pressEnter()

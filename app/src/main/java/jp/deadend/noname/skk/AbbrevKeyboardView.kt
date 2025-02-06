@@ -97,11 +97,11 @@ class AbbrevKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
             // repeatable 以外
             Keyboard.KEYCODE_SHIFT -> {
                 when (isFlicked) {
-                    FLICK_NONE, FLICK_DOWN -> {
+                    FLICK_NONE -> {
                         isShifted = !isShifted
                         isCapsLocked = false
                     }
-                    FLICK_UP -> {
+                    else -> {
                         isShifted = true
                         isCapsLocked = true
                     }

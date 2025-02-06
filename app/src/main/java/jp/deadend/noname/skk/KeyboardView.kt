@@ -107,7 +107,6 @@ open class KeyboardView @JvmOverloads constructor(
     private var mTapCount = 0
     private var mLastTapTime: Long = 0
     private var mInMultiTap = false
-    private val mPreviewLabel = StringBuilder(1)
 
     private var mDrawPending = false
     private val mDirtyRect = Rect()
@@ -293,11 +292,9 @@ open class KeyboardView @JvmOverloads constructor(
                         mHandler.obtainMessage(MSG_LONGPRESS), LONGPRESS_TIMEOUT.toLong()
                     )
                 }
+                field = value
+                showKeyInPreview(mCurrentPreviewKeyIndex)
             }
-            field = value
-            mPreviewText?.text = adjustCase(
-                mPreviewNormalText, mPreviewShiftedText, mPreviewDownText, isFlicked
-            )
         }
     var flickStartX = -1f
     var flickStartY = -1f
@@ -558,12 +555,16 @@ open class KeyboardView @JvmOverloads constructor(
         }
     }
 
-    private fun getPreviewText(key: Keyboard.Key): CharSequence {
-        return if (mInMultiTap) {
-            mPreviewLabel.setLength(0)
-            mPreviewLabel.append(key.codes[mTapCount.coerceAtLeast(0)].toChar())
-            mPreviewLabel // シフト時の toUpper とか必要ならするけど今はアルファベットの multiTap がない
-        } else {
+    private fun getPreviewText(key: Keyboard.Key): CharSequence = when {
+        key.codes[0] == Keyboard.KEYCODE_SHIFT -> when (isFlicked) {
+            0 -> "SHIFT"
+            else -> "CAPSLOCK"
+        }
+//        mInMultiTap -> {
+//            key.codes[mTapCount.coerceAtLeast(0)].toChar().toString()
+//            // シフト時の toUpper とか必要ならするけど今はアルファベットの multiTap がない
+//        }
+        else -> {
             adjustCase(key.label, key.shiftedLabel, key.downLabel, isFlicked)
         }
     }
@@ -619,18 +620,11 @@ open class KeyboardView @JvmOverloads constructor(
         mPreviewText?.let { previewText ->
             if (keyIndex < 0 || keyIndex >= mKeyboard.keys.size) { return }
             val key = mKeyboard.keys[keyIndex]
-            if (key.icon != null) {
-                if (key.codes[0] != Keyboard.KEYCODE_SHIFT) { return }
-                mPreviewNormalText = "SHIFT"
-                mPreviewShiftedText = "CAPSLOCK"
-                mPreviewDownText = ""
-                previewText.text = "SHIFT"
-            } else {
-                mPreviewNormalText = key.label
-                mPreviewShiftedText = key.shiftedLabel
-                mPreviewDownText = key.downLabel
-                previewText.text = getPreviewText(key)
-            }
+            if (key.icon != null && key.codes[0] != Keyboard.KEYCODE_SHIFT) { return }
+            mPreviewNormalText = key.label
+            mPreviewShiftedText = key.shiftedLabel
+            mPreviewDownText = key.downLabel
+            previewText.text = getPreviewText(key)
             previewText.typeface = Typeface.DEFAULT
             previewText.measure(
                 MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED),
