@@ -137,7 +137,7 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
 
         if (!mMiniKeyboardOnScreen) when (primaryCode) {
             // onKey で消費済み
-            Keyboard.KEYCODE_DELETE -> {}
+            Keyboard.KEYCODE_DELETE, Keyboard.KEYCODE_CAPSLOCK -> {}
             // repeatable 以外
             Keyboard.KEYCODE_SHIFT -> {
                 when (isFlicked) {
