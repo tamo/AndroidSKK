@@ -10,10 +10,12 @@ import kotlinx.coroutines.runBlocking
 import java.io.File
 
 class SKKUserDictionary private constructor (
-    override val mRecMan: RecordManager,
-    override val mRecID: Long,
-    override val mBTree: BTree<String, String>,
-    override val mIsASCII: Boolean
+    override var mRecMan: RecordManager,
+    override var mRecID: Long,
+    override var mBTree: BTree<String, String>,
+    override val mIsASCII: Boolean,
+    val mDicFile: String,
+    val mBtreeName: String
 ): SKKDictionaryInterface {
     override var mIsLocked = false
 
@@ -140,6 +142,19 @@ class SKKUserDictionary private constructor (
         }
     }
 
+    fun reopen() {
+        safeRun {
+            close()
+            mOldKey = ""
+            mOldValue = ""
+            openDB(mDicFile, mBtreeName).let {
+                mRecMan = it.first
+                mRecID = it.second
+                mBTree = it.third
+            }
+        }
+    }
+
     private fun <T>safeRun(block: () -> T): T {
         return try {
             runBlocking { while (mIsLocked) delay(50) }
@@ -154,23 +169,26 @@ class SKKUserDictionary private constructor (
     }
 
     companion object {
+        fun openDB(filename: String, btreeName: String): Triple<RecordManager, Long, BTree<String, String>> {
+            val recman = RecordManagerFactory.createRecordManager(filename)
+            val recid = recman.getNamedObject(btreeName)
+            if (recid == 0L) {
+                val btree = BTree<String, String>(recman, StringComparator())
+                recman.setNamedObject(btreeName, btree.recordId)
+                recman.commit()
+                dlog("New user dictionary created")
+                return Triple(recman, recid, btree)
+            }
+            return Triple(recman, recid, BTree<String, String>().load(recman, recid))
+        }
         fun newInstance(context: SKKService, mDicFile: String, btreeName: String, isASCII: Boolean): SKKUserDictionary? {
             val dbFile = File("$mDicFile.db")
-            if (isASCII && !dbFile.exists()) {
+            if (!dbFile.exists()) {
                 context.extractDictionary(dbFile.nameWithoutExtension)
             }
             try {
-                val recman = RecordManagerFactory.createRecordManager(mDicFile)
-                val recid = recman.getNamedObject(btreeName)
-                if (recid == 0L) {
-                    val btree = BTree<String, String>(recman, StringComparator())
-                    recman.setNamedObject(btreeName, btree.recordId)
-                    recman.commit()
-                    dlog("New user dictionary created")
-                    return SKKUserDictionary(recman, recid, btree, isASCII)
-                } else {
-                    return SKKUserDictionary(recman, recid, BTree<String, String>().load(recman, recid), isASCII)
-                }
+                val (recman, recid, btree) = openDB(mDicFile, btreeName)
+                return SKKUserDictionary(recman, recid, btree, isASCII, mDicFile, btreeName)
             } catch (e: Exception) {
                 Log.e("SKK", "Error in opening the dictionary: $e")
                 return null

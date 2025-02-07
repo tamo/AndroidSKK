@@ -362,6 +362,7 @@ class SKKUserDicTool : AppCompatActivity() {
     public override fun onPause() {
         closeUserDict()
         mAdapter.clear()
+        startServiceCommand(SKKService.COMMAND_RELOAD_DICS)
 
         super.onPause()
     }

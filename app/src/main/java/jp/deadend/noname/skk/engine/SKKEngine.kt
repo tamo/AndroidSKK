@@ -75,6 +75,9 @@ class SKKEngine(
     fun reopenDictionaries(dics: List<SKKDictionary>) {
         for (dic in mDicts) { dic.close() }
         mDicts = dics
+        mUserDict.reopen()
+        mASCIIDict.reopen()
+        mEmojiDict.reopen()
     }
 
     fun setZenkakuPunctuationMarks(type: String) {
