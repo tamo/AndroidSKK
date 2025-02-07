@@ -110,13 +110,13 @@ class AbbrevKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
             KEYCODE_ABBREV_ENTER -> if (!mService.handleEnter()) mService.pressEnter()
             KEYCODE_ABBREV_TOJP -> {
                 when (isFlicked) {
-                    if (skkPrefs.preferFlick) FLICK_NONE else FLICK_DOWN -> mService.changeToFlick()
-                    if (skkPrefs.preferFlick) FLICK_DOWN else FLICK_NONE -> mService.handleKanaKey()
+                    if (skkPrefs.preferFlick) FLICK_NONE else FLICK_DOWN -> mService.handleKanaKey()
+                    if (skkPrefs.preferFlick) FLICK_DOWN else FLICK_NONE -> mService.processKey(-1010)
                 }
             }
             KEYCODE_ABBREV_ZENKAKU -> {
                 when (isFlicked) {
-                    FLICK_NONE -> mService.processKey(primaryCode)
+                    FLICK_NONE -> mService.processKey(17)
                     FLICK_DOWN -> mService.handleCancel()
                 }
             }
@@ -140,8 +140,8 @@ class AbbrevKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
 
     override fun setKeyState(state: SKKState): AbbrevKeyboardView {
         val kanaKey = keyboard.keys.find { it.codes[0] == KEYCODE_ABBREV_TOJP }
-        kanaKey?.label = if (skkPrefs.preferFlick) "Flick" else "かな"
-        kanaKey?.downLabel = if (skkPrefs.preferFlick) "かな" else "Flick"
+        kanaKey?.label = if (skkPrefs.preferFlick) "確定" else "かな"
+        kanaKey?.downLabel = if (skkPrefs.preferFlick) "かな" else "確定"
 
         invalidateAllKeys()
         return this

@@ -42,18 +42,10 @@ object SKKKanjiState : SKKState {
             when (pcodeLower) {
                 'l'.code -> changeInputMode(pcode)
 
-                '/'.code -> { // abbrevはtransientなのでchangeInputModeで自動確定されない
-                    // 暗黙の確定
-                    val kk = mKanjiKey.toString()
-                    commitTextSKK(when (kanaState) {
-                        SKKKatakanaState -> hirakana2katakana(kk) ?: ""
-                        SKKHanKanaState -> zenkaku2hankaku(hirakana2katakana(kk)) ?: ""
-                        else -> kk
-                    })
-                    mComposing.setLength(0)
-                    mKanjiKey.setLength(0)
-                    changeInputMode(pcode)
-                }
+                '/'.code -> changeInputMode(pcode)
+                // abbrevはtransientなのでchangeInputModeで自動確定されない
+                // ▽の状態で英数(abbrev)と仮名(kanji)を行き来するには kanaKey(-1010) と / を使うことにする
+                // 一般的なキーコードが分かれば対応するが、emacsではabbrevから普通の▽(kanji)に行けないと思う
 
                 'q'.code -> {
                     // カタカナ変換

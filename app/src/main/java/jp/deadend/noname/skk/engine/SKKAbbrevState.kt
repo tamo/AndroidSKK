@@ -18,12 +18,15 @@ object SKKAbbrevState : SKKState {
             // スペースで変換するかそのままComposingに積む
             when (pcode) {
                 ' '.code -> if (mKanjiKey.isNotEmpty()) conversionStart(mKanjiKey)
-                -1010 -> {
+                17 -> {
                     // 全角変換
                     hankaku2zenkaku(mKanjiKey.toString())?.let { zen ->
                         commitTextSKK(zen)
                     }
                     handleKanaKey(context)
+                }
+                -1010 -> {
+                    changeState(SKKKanjiState)
                 }
 
                 else -> {

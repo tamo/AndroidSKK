@@ -687,7 +687,8 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
             KEYCODE_GODAN_GOOGLE -> mService.googleTransliterate()
             KEYCODE_GODAN_CHAR_L -> {
                 when (mService.engineState) {
-                    SKKAbbrevState, SKKASCIIState, SKKZenkakuState -> mService.handleKanaKey()
+                    SKKAbbrevState -> mService.processKey(-1010) // かな入力(KanjiState)
+                    SKKASCIIState, SKKZenkakuState -> mService.handleKanaKey()
                     else -> mService.processKey(if (isShifted) 'L'.code else 'l'.code)
                 }
             }

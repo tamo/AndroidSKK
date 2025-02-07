@@ -769,14 +769,10 @@ class SKKService : InputMethodService() {
             if (handleCancel()) { return true }
         }
 
-        if (encodedKey == 724) {
-            processKey(17)
+        if (encodedKey == 724) { // Ctrl-Q
+            processKey(17) // 基本的には半角カナだがAbbrevでは全角への変換となる
             return true
-        } /*
-        if (engineState === SKKAbbrevState && encodedKey == 724) { // 724はCtrl+q
-            processKey(-1010)
-            return true
-        } */
+        }
 
         if (keyCode == KeyEvent.KEYCODE_TAB) {
             if (engineState === SKKKanjiState || engineState === SKKAbbrevState) {
@@ -1079,16 +1075,15 @@ class SKKService : InputMethodService() {
         mEngine.resumeSuggestions()
     }
 
-    fun setCandidates(list: List<String>?, number: String, lines: Int) {
+    fun setCandidates(list: List<String>?, kanjiKey: String, lines: Int) {
         if (list.isNullOrEmpty()) {
             mCandidateViewContainer?.setAlpha(96)
             mCandidateViewContainer?.lines = 1
-            mCandidateView?.setContents(listOf(), "#")
         } else {
             mCandidateViewContainer?.setAlpha(255)
             mCandidateViewContainer?.lines = lines
-            mCandidateView?.setContents(list, number)
         }
+        mCandidateView?.setContents(list, kanjiKey)
     }
 
     fun requestChooseCandidate(index: Int) {

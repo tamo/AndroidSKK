@@ -3,12 +3,16 @@ package jp.deadend.noname.skk
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
+import android.text.format.DateFormat
 import java.io.*
+import java.util.Calendar
+import java.util.Locale
+import java.util.TimeZone
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import kotlin.math.max
 
-//private val PAT_QUOTED = "\"(.+?)\"".toRegex()
+private val PAT_QUOTED = "\"(.+?)\"".toRegex()
 private val PAT_ESCAPE_NUM = """\\(\d+)""".toRegex()
 
 // 半角から全角 (UNICODE)
@@ -111,28 +115,31 @@ fun isVowel(code: Int) = (code == 0x61 || code == 0x69 || code == 0x75 || code =
 // a, i, u, e, o
 
 fun removeAnnotation(str: String): String {
-    val i = str.lastIndexOf(';') // セミコロンで解説が始まる
+    val i = str.indexOf(';') // セミコロンで解説が始まる
     return if (i == -1) str else str.substring(0, i)
 }
 
-fun processNumber(str: String, number: String): String {
+private fun processNumber(str: String, number: String): String {
     return str
         .replace("#0", number) // 半角
         .replace("#1", number // 全角
-            .map { char ->
-                if (char.code in '0'.code..'9'.code) (char.code + '０'.code - '0'.code).toChar()
-                else char
-            }
+            .map { char -> when (char.code) {
+                in '0'.code..'9'.code -> (char.code + '０'.code - '0'.code).toChar()
+                '.'.code -> '．' // もしかして「・」の方がいい?
+                else -> char
+            } }
             .joinToString("")
         )
         .replace("#2", number // 単純漢数字
-            .map { char ->
-                if (char.code in '0'.code..'9'.code) "〇一二三四五六七八九"[char.code - '0'.code]
-                else char
-            }
+            .map { char -> when (char.code) {
+                in '0'.code..'9'.code -> "〇一二三四五六七八九"[char.code - '0'.code]
+                '.'.code -> '．' // もしかして「・」の方がいい?
+                else -> char
+            } }
             .joinToString("")
         )
         .replace("#3", number // 位取りのある漢数字 (たぶんバグがある)
+            .takeWhile { it != '.' } // 整数部のみ
             .reversed()
             .mapIndexed { index, char ->
                 val sb = StringBuilder()
@@ -163,25 +170,97 @@ fun processNumber(str: String, number: String): String {
             }
             .reversed()
             .joinToString("")
+            + number.dropWhile { it != '.' } // 小数点以下は位がないので別扱いにする
+            .map { char -> when (char.code) {
+                in '0'.code..'9'.code -> "〇一二三四五六七八九"[char.code - '0'.code]
+                '.'.code -> '．' // もしかして「・」の方がいい?
+                else -> char
+            } }
+            .joinToString("")
         )
         .replace("#", number) // suggestion 用
 }
 
-fun processConcatAndEscape(str: String): String {
-    val len = str.length
-    if (len < 12) { return str }
-    if (str[0] != '('
-            || str.substring(1, 9) != "concat \""
-            || str.substring(len - 2, len) != "\")"
-    ) { return str }
-    // (concat "...") の形に決め打ち
+private fun unquote(str: String): String = PAT_QUOTED.findAll(str)
+    .map { it.groupValues[1] }
+    .joinToString("")
 
-//    val str2 = PAT_QUOTED.findAll(str.substring(8 until len-1)).map { it.value }.joinToString("")
+private fun unescapeOctal(str: String): String = PAT_ESCAPE_NUM.replace(str) {
+    it.value.substring(1).toInt(8).toChar().toString()
+} // emacs-lispのリテラルは8進数
 
-    return PAT_ESCAPE_NUM.replace(str.substring(9 until len-2)) {
-        it.value.substring(1).toInt(8).toChar().toString()
+fun processConcatAndMore(rawStr: String, kanjiKey: String): String {
+    val number = Regex("\\d+").find(kanjiKey)?.value?.toIntOrNull()?.toString() ?: "#"
+
+    if (rawStr.startsWith("(concat ") && rawStr.endsWith(")")) {
+        return unescapeOctal(unquote(processNumber(rawStr, number)))
     }
-    // emacs-lispのリテラルは8進数
+
+    operator fun MatchResult.Destructured.component11(): String =
+        this.toList()[10] // 不足を拡張
+    Regex("^\\(cal-" +
+            "(arg([-+*=]+)([\\d.]*)?([ymd])?-)?" +
+            "(year([-+]\\d+)-)?" +
+            "(month([-+]\\d+)-)?" +
+            "(date([-+]\\d+)-)?" +
+            "format (.+)\\)"
+    ).matchEntire(rawStr)?.destructured
+        ?.let { (hasArg, argOpts, argTimes, argUnit, _, yearDelta, _, monthDelta, _, dateDelta, raw) ->
+            val isDelta = !argOpts.contains('=')
+            val sign = if (argOpts.contains('-')) -1 else 1
+            val times = if (argOpts.contains('*')) argTimes.toFloatOrNull() ?: 1f else 1f
+            val calcDelta = if (!argOpts.contains('*')) {
+                (argTimes.toFloatOrNull() ?: 0f) * sign
+            } else 0f
+            val str = unescapeOctal(unquote(raw))
+
+            val calendar = Calendar.getInstance(TimeZone.getTimeZone("Asia/Tokyo"), Locale.JAPAN)
+
+            if (number != "#") {
+                val num = number.toInt()
+                when (argUnit) {
+                    "y" -> {
+                        if (isDelta) calendar.add(Calendar.YEAR, num * sign * times.toInt())
+                        else calendar.set(Calendar.YEAR, num * times.toInt())
+                    }
+                    "m" -> {
+                        if (isDelta) calendar.add(Calendar.MONTH, num * sign * times.toInt())
+                        else calendar.set(Calendar.MONTH, num * times.toInt())
+                    }
+                    "d" -> {
+                        if (isDelta) calendar.add(Calendar.DATE, num * sign * times.toInt())
+                        else calendar.set(Calendar.DAY_OF_MONTH, num * times.toInt())
+                    }
+                    else -> return processNumber(str, (num * times + calcDelta).toString())
+                    // 単位換算など
+                }
+            } else if (hasArg.isNotEmpty()) {
+                return str.replace(Regex("[ymd]{1,4}"), "#")
+            }
+
+            val oldYear = calendar.get(Calendar.YEAR)
+            if ((yearDelta.toIntOrNull() ?: 0) <= -oldYear) {
+                return str.replace(Regex("y{1,4}"), "#")
+            }
+
+            calendar.add(Calendar.YEAR, yearDelta.toIntOrNull() ?: 0)
+            calendar.add(Calendar.MONTH, monthDelta.toIntOrNull() ?: 0)
+            calendar.add(Calendar.DATE, dateDelta.toIntOrNull() ?: 0)
+
+            val dayWeek = calendar.get(Calendar.DAY_OF_WEEK) // Calendar.*DAY == 日1〜土7
+            val dayWeekStr = "X日月火水木金土"[dayWeek].toString()
+            val hour = calendar.get(Calendar.HOUR_OF_DAY)
+            val yearStr = calendar.get(Calendar.YEAR).toString()
+            val format = str
+                .replace("aaaa", dayWeekStr + "曜日")
+                .replace("aaa", dayWeekStr)
+                .replace("aa", if (hour < 12) "午前" else "午後")
+                .replace(Regex("(?<!y)y(?!y)"), yearStr) // 単独の y で 1 桁を許容するように
+
+            return DateFormat.format(format, calendar).toString()
+        }
+
+    return processNumber(rawStr, number)
 }
 
 fun createTrimmedBuilder(orig: StringBuilder): StringBuilder {

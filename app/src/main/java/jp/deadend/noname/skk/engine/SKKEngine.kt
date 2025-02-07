@@ -10,7 +10,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.json.JSONException
 import java.util.ArrayDeque
@@ -32,6 +31,7 @@ class SKKEngine(
     private var mCandidatesList: List<String>? = null
     private var mCompletionList: List<String>? = null
     private var mCurrentCandidateIndex = 0
+    private var mCandidateKanjiKey = ""
     private var mUpdateSuggestionsJob: Job = Job()
     private var mSuggestionsSuspended: Boolean = false
 
@@ -231,6 +231,7 @@ class SKKEngine(
         mKanjiKey.setLength(0)
         mOkurigana = null
         mCandidatesList = null
+        mCandidateKanjiKey = ""
         when {
             state.isTransient -> {
                 changeState(kanaState)
@@ -502,14 +503,16 @@ class SKKEngine(
      * @param key 辞書のキー 送りありの場合最後はアルファベット
      */
     internal fun conversionStart(key: StringBuilder) {
+        if (key.isEmpty()) {
+            changeState(kanaState) // ASCIIには戻れない…
+            return
+        }
         val str = key.toString()
 
         changeState(SKKChooseState)
 
-        var number = "#"
-        val list = findCandidates(str) ?: Regex("\\d+").find(str)?.let {
-            number = it.value
-            findCandidates(str.replaceRange(it.range, "#"))
+        val list = findCandidates(str) ?: Regex("\\d+(\\.\\d+)?").find(str)?.let { num ->
+            findCandidates(str.replaceRange(num.range, "#"))
         }
         if (list == null) {
             registerStart(str)
@@ -518,7 +521,8 @@ class SKKEngine(
 
         mCandidatesList = list
         mCurrentCandidateIndex = 0
-        mService.setCandidates(list, number, skkPrefs.candidatesNormalLines)
+        mCandidateKanjiKey = str
+        mService.setCandidates(list, str, skkPrefs.candidatesNormalLines)
         setCurrentCandidateToComposing()
     }
 
@@ -530,15 +534,30 @@ class SKKEngine(
         val hintKanjis = findCandidates(hint)
                 ?.joinToString(
                     separator="",
-                    transform={ processConcatAndEscape(removeAnnotation(it)) }
+                    transform={ processConcatAndMore(removeAnnotation(it), "") }
                 ) ?: ""
 
-        val narrowed = candidates.filter { str -> str.any { ch -> hintKanjis.contains(ch) } }
+        // mCandidateKanjiKey("かんじ") -> candidates("漢字", "幹事", "監事", "感じ")
+        // hint("おとこ") -> hintKanjis("男", "漢", "♂")
+        val narrowed = candidates.filter { str -> /* str("漢字; 注釈も含む") */
+            str.any { ch -> hintKanjis.contains(ch) } /* hintKanjisは注釈を除いてある */
+                    || str.contains(hint) /* ひらがなかカタカナでヒントを含むstrもOK */
+                    || hirakana2katakana(hint)?.let { str.contains(it) } ?: false
+        }.let { nList ->
+            if (mCandidateKanjiKey == "emoji")
+                nList.map { removeAnnotation(it) }
+            else nList
+        }
         if (narrowed.isNotEmpty()) {
             mCandidatesList = narrowed
             mCurrentCandidateIndex = 0
-            val number = Regex("\\d+").find(mKanjiKey)?.value ?: "#"
-            mService.setCandidates(narrowed, number, skkPrefs.candidatesNormalLines)
+            mService.setCandidates(
+                narrowed,
+                mCandidateKanjiKey,
+                if (mCandidateKanjiKey == "emoji")
+                    skkPrefs.candidatesEmojiLines
+                else skkPrefs.candidatesNormalLines
+            )
         }
         setCurrentCandidateToComposing()
     }
@@ -559,8 +578,8 @@ class SKKEngine(
             mOkurigana = lastConv.okurigana
             mCandidatesList = lastConv.list
             mCurrentCandidateIndex = lastConv.index
-            val number = Regex("\\d+").find(lastConv.kanjiKey)?.value ?: "#"
-            mService.setCandidates(mCandidatesList, number, skkPrefs.candidatesNormalLines)
+            mCandidateKanjiKey = lastConv.kanjiKey
+            mService.setCandidates(mCandidatesList, mCandidateKanjiKey, skkPrefs.candidatesNormalLines)
             mService.requestChooseCandidate(mCurrentCandidateIndex)
             setCurrentCandidateToComposing()
 
@@ -570,7 +589,7 @@ class SKKEngine(
         return false
     }
 
-    internal fun updateSuggestions(str: String, emoji: Boolean = false) {
+    internal fun updateSuggestions(str: String) {
         if (mSuggestionsSuspended) return
         mUpdateSuggestionsJob.cancel()
         mUpdateSuggestionsJob.invokeOnCompletion {
@@ -579,31 +598,36 @@ class SKKEngine(
 
                 if (str.isNotEmpty()) {
                     addFound(this@launch, set, str, (
-                            if (emoji || state === SKKASCIIState) mASCIIDict else mUserDict)
+                            if (str == "emoji" || state === SKKASCIIState) mASCIIDict else mUserDict)
                     ) // emoji として ASCII に登録されているものを優先
-                    for (suggestion in mEmojiDict.findKeys(this@launch, if (emoji) "" else str)) {
-                        set.add((if (emoji) "emoji" else suggestion.first) to suggestion.second)
+                    if (str == "emoji" || str == "えもじ") {
+                        mEmojiDict.findKeys(this@launch, "").forEach { suggestion ->
+                            set.add(str to suggestion.second)
+                        }
                     }
                     for (dic in mDicts) { addFound(this@launch, set, str, dic) }
                 }
-                val number = Regex("\\d+").find(str)?.also {
+                Regex("\\d+(\\.\\d+)?").find(str)?.let {
                     val replacedStr = str.replaceRange(it.range, "#")
                     addFound(this@launch, set, replacedStr, (
-                            if (emoji || state === SKKASCIIState) mASCIIDict else mUserDict)
+                            if (state === SKKASCIIState) mASCIIDict else mUserDict)
                     )
                     for (dic in mDicts) { addFound(this@launch, set, replacedStr, dic) }
-                }?.value ?: "#"
+                }
 
                 mCompletionList = set.map { it.first }
                 mCandidatesList = set.map { it.second }
+                mCandidateKanjiKey = str
                 mCurrentCandidateIndex = 0
                 withContext(Dispatchers.Main) {
-                    mService.setCandidates(
-                        mCandidatesList,
-                        number,
-                        if (emoji) skkPrefs.candidatesEmojiLines
-                        else skkPrefs.candidatesNormalLines
-                    )
+                    if (str == "emoji")
+                        mService.setCandidates(
+                            mCandidatesList?.map { removeAnnotation(it) },
+                            str,
+                            skkPrefs.candidatesEmojiLines
+                        )
+                    else
+                        mService.setCandidates(mCandidatesList, str, skkPrefs.candidatesNormalLines)
                 }
             }
             mUpdateSuggestionsJob.start()
@@ -772,7 +796,8 @@ class SKKEngine(
                         changeState(SKKChooseState)
                         mCandidatesList = list
                         mCurrentCandidateIndex = 0
-                        mService.setCandidates(list, "#", skkPrefs.candidatesNormalLines)
+                        mCandidateKanjiKey = mKanjiKey.toString()
+                        mService.setCandidates(list, mKanjiKey.toString(), skkPrefs.candidatesNormalLines)
                         setCurrentCandidateToComposing()
                     }
                 },
@@ -783,29 +808,38 @@ class SKKEngine(
 
     internal fun symbolCandidates() {
         changeState(SKKEmojiState)
-        mCandidatesList = "\"#$%&'()=^~¥|@`[{;+*]},<.>\\_←↓↑→“”‘’『』【】！＂＃＄％＆＇（）－＝＾～￥｜＠｀［｛；＋：＊］｝，＜．＞／？＼＿、。"
-            .toCharArray()
-            .map { it.toString() }
-        mCompletionList = mCandidatesList?.map { "きごう" }
+        val set = mutableSetOf<Pair<String, String>>()
+        addFound(MainScope(), set, "/きごう", mASCIIDict)
+        mCandidatesList = set.map { it.second } +
+                "\"#$%&'()=^~¥|@`[{;+*]},<.>\\_←↓↑→“”‘’『』【】！＂＃＄％＆＇（）－＝＾～￥｜＠｀［｛；＋：＊］｝，＜．＞／？＼＿、。"
+                    .toCharArray()
+                    .map { it.toString() }
+        mCompletionList = mCandidatesList!!.map { "/きごう" }
         mCurrentCandidateIndex = 0
-        mService.setCandidates(mCandidatesList, "#", skkPrefs.candidatesNormalLines)
+        mCandidateKanjiKey = "/きごう"
+        mService.setCandidates(mCandidatesList, "/きごう", skkPrefs.candidatesNormalLines)
     }
 
     internal fun emojiCandidates() {
         changeState(SKKEmojiState)
-        updateSuggestions("emoji", emoji = true)
+        updateSuggestions("emoji")
     }
 
     private fun findCandidates(key: String): List<String>? {
         val list1 = mDicts.mapNotNull { it.getCandidates(key) }
-                .fold(listOf()) { acc: Iterable<String>, list: Iterable<String> -> acc.union(list) }
+            .fold(listOf<String>()) { acc, list -> acc + list }
+                .toSet()
                 .toMutableList()
 
-        val entry = (if (state === SKKASCIIState) throw RuntimeException("findCandidates in ASCII") else mUserDict).getEntry(key)
+        val entry = mUserDict.getEntry(key) // ASCIIではここに到達しないはず
         val list2 = entry?.candidates
 
-        if (list1.isEmpty() && list2 == null) {
-            dlog("Dictoinary: Can't find Kanji for $key")
+        val list3 = if (key == "えもじ") {
+            mEmojiDict.findKeys(MainScope(), "").map { it.second }
+        } else listOf()
+
+        if (list1.isEmpty() && list2 == null && list3.isEmpty()) {
+            dlog("Dictionary: Can't find Kanji for $key")
             return null
         }
 
@@ -825,19 +859,19 @@ class SKKEngine(
             }
         }
 
+        list1.addAll(list3)
+
         return list1.ifEmpty { null }
     }
 
+    private fun getCandidate(index: Int): String? = mCandidatesList?.let {
+        processConcatAndMore(removeAnnotation(it[index]), mCandidateKanjiKey)
+    }
+
     fun setCurrentCandidateToComposing() {
-        val candList = mCandidatesList ?: return
-        val number = Regex("\\d+").find(mKanjiKey)?.value ?: "#"
-        val candidate = processConcatAndEscape(
-            processNumber(
-                removeAnnotation(candList[mCurrentCandidateIndex]),
-                number
-            )
-        )
-        setComposingTextSKK(candidate + (mOkurigana ?: ""))
+        getCandidate(mCurrentCandidateIndex)?.let { candidate ->
+            setComposingTextSKK(candidate + (mOkurigana ?: ""))
+        }
     }
 
     internal fun pickCurrentCandidate(backspace: Boolean = false) {
@@ -846,15 +880,17 @@ class SKKEngine(
 
     private fun pickCandidate(index: Int, backspace: Boolean = false) {
         if (state !== SKKChooseState && state !== SKKNarrowingState) return
+        if (mCandidateKanjiKey == "emoji") {
+            mKanjiKey.setLength(0)
+            mKanjiKey.append(mCandidateKanjiKey)
+            mCompletionList = mCandidatesList?.map { "emoji" }
+            pickSuggestion(index)
+        }
         val candList = mCandidatesList ?: return
-        val candidate = StringBuilder(processConcatAndEscape(removeAnnotation(candList[index])))
+        val candidate = StringBuilder(getCandidate(index) ?: return)
 
-        val kanjiKey = Regex("\\d+").find(mKanjiKey)?.let { d ->
-            Regex("#[0-3]").find(candidate)?.let {
-                candidate.setRange(
-                    it.range.first, it.range.last + 1,
-                    processNumber(it.value, d.value))
-            }
+        // 「だい4かい」ではなく「だい#かい」で登録する
+        val kanjiKey = Regex("\\d+(\\.\\d+)?").find(mKanjiKey)?.let { d ->
             mKanjiKey.replaceRange(d.range, "#")
         } ?: mKanjiKey
 
@@ -889,7 +925,7 @@ class SKKEngine(
     }
 
     private fun pickSuggestion(index: Int) {
-        val number = Regex("\\d+").find(mKanjiKey)?.value ?: "#"
+        val number = Regex("\\d+(\\.\\d+)?").find(mKanjiKey)?.value ?: "#"
         val candList = mCandidatesList ?: return
         val s = candList[index].replaceFirst("#", number)
         val compList = mCompletionList ?: return
@@ -921,7 +957,8 @@ class SKKEngine(
                 }
             }
 
-            SKKASCIIState, SKKEmojiState -> {
+            // 絵文字のときだけ Narrowing でここに来る
+            SKKASCIIState, SKKEmojiState, SKKNarrowingState -> {
                 if (isPersonalizedLearning) {
                     var newEntry = "160/$s"
                     (mASCIIDict.getEntry(c)?.let { entry ->
@@ -944,13 +981,13 @@ class SKKEngine(
                 when (state) {
                     SKKASCIIState -> {
                         if (deletePrefixASCII(c)) {
-                            commitTextSKK(s)
+                            commitTextSKK(removeAnnotation(s))
                             deleteSuffixASCII()
                             reset()
                         }
                     }
                     SKKEmojiState -> {
-                        commitTextSKK(s)
+                        commitTextSKK(removeAnnotation(s))
                         reset() // 暗黙の確定がされないように
                         changeState(oldState)
                     }
@@ -964,6 +1001,7 @@ class SKKEngine(
         mKanjiKey.setLength(0)
         mOkurigana = null
         mCandidatesList = null
+        mCandidateKanjiKey = ""
         mService.clearCandidatesView()
         if (mService.currentInputConnection.getSelectedText(0).isNullOrEmpty()) {
             mService.currentInputConnection.setComposingText(SpannableString(""), 1)
@@ -987,7 +1025,11 @@ class SKKEngine(
             }
             'l'.code ->  {
                 if (mComposing.length != 1 || mComposing[0] != 'z') {
-                    changeState(SKKASCIIState, true)
+                    if (state === SKKKanjiState) {
+                        changeState(SKKAbbrevState)
+                    } else {
+                        changeState(SKKASCIIState, true)
+                    }
                     return true
                 }
             } // 「→」を入力するための例外
@@ -1028,14 +1070,22 @@ class SKKEngine(
     internal fun changeState(state: SKKState, force: Boolean = false) {
         val willBeTemporaryView = state in listOf(SKKAbbrevState, SKKZenkakuState)
         val wasTemporaryView = mService.isTemporaryView
-        if (this.state != SKKEmojiState) oldState = this.state
+        val inCompatibleStates = (
+                this.state in listOf(SKKAbbrevState, SKKKanjiState) &&
+                        state in listOf(SKKAbbrevState, SKKKanjiState)
+                )
+
+        if (this.state != SKKEmojiState)
+            oldState = this.state
+        else mKanjiKey.setLength(0) // mKanjiKey=="emoji"は基本的に無意味なので
+
         this.state = state
 
         val prevInputView = if (cameFromFlick) kanaState else SKKASCIIState
         if (!state.isTransient || force || willBeTemporaryView || wasTemporaryView) {
             if (!state.isTransient) {
                 commitComposing() // 暗黙の確定
-            } else {
+            } else if (!inCompatibleStates) {
                 reset()
             }
             when {

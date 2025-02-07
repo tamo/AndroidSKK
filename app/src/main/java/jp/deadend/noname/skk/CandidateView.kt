@@ -31,7 +31,6 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.ceil
-import kotlin.math.floor
 
 /**
  * Construct a CandidateView for showing suggested words for completion.
@@ -241,21 +240,22 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
         mContainer.setScrollButtonsEnabled(left, right)
     }
 
-    fun setContents(list: List<String>?, number: String) {
+    fun setContents(list: List<String>?, kanjiKey: String) {
         MainScope().launch {
             while (mDrawing) delay(50)
             mSuggestions.clear()
             list?.take(MAX_SUGGESTIONS)?.forEach { str ->
-                val semicolon = str.indexOf(";")
-                val newStr =
+                str.indexOf(";").let { semicolon ->
                     if (semicolon == -1) {
-                        processConcatAndEscape(processNumber(str, number))
+                        processConcatAndMore(str, kanjiKey)
                     } else {
-                        processConcatAndEscape(processNumber(str.substring(0, semicolon), number)) +
+                        processConcatAndMore(str.substring(0, semicolon), kanjiKey) +
                                 ";" +
-                                processConcatAndEscape(str.substring(semicolon + 1, str.length))
+                                processConcatAndMore(str.substring(semicolon + 1, str.length), "#")
+                    }.let {
+                        mSuggestions.add(it)
                     }
-                mSuggestions.add(newStr)
+                }
             }
             scrollTo(0, 0)
             mScrollX = 0

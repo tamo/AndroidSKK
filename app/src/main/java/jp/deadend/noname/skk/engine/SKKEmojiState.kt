@@ -12,6 +12,7 @@ object SKKEmojiState : SKKState {
         when (pcode) {
             ' '.code -> context.chooseAdjacentSuggestion(true)
             'x'.code -> context.chooseAdjacentSuggestion(false)
+            ':'.code -> context.changeState(SKKNarrowingState)
             else -> {
                 context.oldState.processKey(context, pcode)
                 if (context.state === SKKEmojiState) {

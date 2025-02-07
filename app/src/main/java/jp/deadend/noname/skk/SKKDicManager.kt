@@ -188,6 +188,9 @@ class SKKDicManager : AppCompatActivity() {
                             }
                             try {
                                 unzipFile(resources.assets.open(
+                                    getString(R.string.dic_name_user) + ".zip"
+                                ), filesDir)
+                                unzipFile(resources.assets.open(
                                     getString(R.string.dic_name_ascii) + ".zip"
                                 ), filesDir)
                                 unzipFile(resources.assets.open(
