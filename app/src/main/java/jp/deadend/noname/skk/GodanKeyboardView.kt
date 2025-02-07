@@ -133,7 +133,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
         cancelKey.label = /* if (!mIsASCII && skkPrefs.simpleGodan) "cxl" else */ "貼付\n：cxl＞\ngoogle"
 
         qKey.codes[0] = KEYCODE_GODAN_CHAR_Q
-        qKey.label = /* if (!mIsASCII && skkPrefs.simpleGodan) "Q" else */ "^J\n☻Q記\n半"
+        qKey.label = /* if (!mIsASCII && skkPrefs.simpleGodan) "Q" else */ "^J\n☻Q記\n半ｶﾅ"
     }
 
     override fun setKeyState(state: SKKState): GodanKeyboardView {
