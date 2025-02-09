@@ -27,9 +27,8 @@ import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
 import android.view.View
 import androidx.core.content.res.ResourcesCompat
-import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlin.math.ceil
 
 /**
@@ -241,7 +240,7 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
     }
 
     fun setContents(list: List<String>?, kanjiKey: String) {
-        MainScope().launch {
+        runBlocking {
             while (mDrawing) delay(50)
             mSuggestions.clear()
             list?.take(MAX_SUGGESTIONS)?.forEach { str ->

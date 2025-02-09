@@ -1064,7 +1064,7 @@ class SKKService : InputMethodService() {
         mIsRecording = true
     }
 
-    private fun updateSuggestionsASCII() {
+    fun updateSuggestionsASCII() {
         mEngine.updateSuggestionsASCII()
     }
 
@@ -1091,7 +1091,7 @@ class SKKService : InputMethodService() {
     }
 
     fun clearCandidatesView() {
-        setCandidates(null, "", 0)
+        setCandidates(null, "", 1)
     }
 
     // カーソル直前に引数と同じ文字列があるなら，それを消してtrue なければfalse
