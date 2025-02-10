@@ -1112,6 +1112,7 @@ class SKKEngine(
             SKKNarrowingState -> {
                 SKKNarrowingState.mHint.setLength(0)
                 SKKNarrowingState.mOriginalCandidates = null
+                SKKNarrowingState.mSpaceUsed = false
                 setCurrentCandidateToComposing()
             }
         }
