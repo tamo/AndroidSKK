@@ -623,8 +623,8 @@ class SKKEngine(
                     for (dic in mDicts) { addFound(this@launch, set, replacedStr, dic) }
                 }
 
-                mCompletionList = set.map { it.first }
-                mCandidatesList = set.map { it.second }
+                mCompletionList = set.map { it.first }.toSet().toList()
+                mCandidatesList = set.map { it.second }.toSet().toList()
                 mCandidateKanjiKey = str
                 mCurrentCandidateIndex = 0
                 withContext(Dispatchers.Main) {
