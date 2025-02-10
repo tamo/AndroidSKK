@@ -14,8 +14,8 @@ class SKKUserDictionary private constructor (
     override var mRecID: Long,
     override var mBTree: BTree<String, String>,
     override val mIsASCII: Boolean,
-    val mDicFile: String,
-    val mBtreeName: String
+    private val mDicFile: String,
+    private val mBtreeName: String
 ): SKKDictionaryInterface {
     override var mIsLocked = false
 
@@ -103,7 +103,7 @@ class SKKUserDictionary private constructor (
         }
     }
 
-    fun removeEntry(key: String) {
+    private fun removeEntry(key: String) {
         safeRun {
             mOldValue = mBTree.find(key)?.also {
                 mBTree.remove(key)

@@ -52,9 +52,6 @@ open class KeyboardView @JvmOverloads constructor(
     private var mKeyTextSize = 0
     private var mKeyTextColor = 0
     private var mPreviewText: TextView? = null
-    private var mPreviewNormalText: CharSequence = ""
-    private var mPreviewShiftedText: CharSequence = ""
-    private var mPreviewDownText: CharSequence = ""
     private val mPreviewPopup = PopupWindow(context)
     private var mPreviewOffset = 0
     private var mPreviewHeight = 0
@@ -74,10 +71,6 @@ open class KeyboardView @JvmOverloads constructor(
     var backgroundAlpha = 255
     var isZenkaku = false
 
-    private var mLastX = 0
-    private var mLastY = 0
-    private var mStartX = 0
-    private var mStartY = 0
     private val mPaint = Paint()
     private val mPadding = Rect(0, 0, 0, 0)
     private var mDownTime: Long = 0
@@ -621,9 +614,6 @@ open class KeyboardView @JvmOverloads constructor(
             if (keyIndex < 0 || keyIndex >= mKeyboard.keys.size) { return }
             val key = mKeyboard.keys[keyIndex]
             if (key.icon != null && key.codes[0] != Keyboard.KEYCODE_SHIFT) { return }
-            mPreviewNormalText = key.label
-            mPreviewShiftedText = key.shiftedLabel
-            mPreviewDownText = key.downLabel
             previewText.text = getPreviewText(key)
             previewText.typeface = Typeface.DEFAULT
             previewText.measure(
@@ -876,7 +866,7 @@ open class KeyboardView @JvmOverloads constructor(
     }
 
     open fun onModifiedTouchEvent(me: MotionEvent, possiblePoly: Boolean): Boolean {
-        var touchX = me.x.toInt() - paddingLeft
+        val touchX = me.x.toInt() - paddingLeft
         var touchY = me.y.toInt() - paddingTop
         if (touchY >= -mVerticalCorrection) { touchY += mVerticalCorrection }
         val action = me.action
@@ -910,8 +900,6 @@ open class KeyboardView @JvmOverloads constructor(
         when (action) {
             MotionEvent.ACTION_DOWN -> {
                 mAbortKey = false
-                mStartX = touchX
-                mStartY = touchY
                 mCurrentKeyTime = 0
                 mCurrentKey = keyIndex
                 mDownKey = mCurrentKey
@@ -975,8 +963,6 @@ open class KeyboardView @JvmOverloads constructor(
                 releaseKey(mCurrentKey)
             }
         }
-        mLastX = touchX
-        mLastY = touchY
         return true
     }
 

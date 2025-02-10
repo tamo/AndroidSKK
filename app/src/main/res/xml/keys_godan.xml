@@ -5,7 +5,7 @@
 	app:verticalGap="0dip"
 	app:keyHeight="8%p">
 	<Row>
-		<Key app:codes="-1,-7" app:keyIcon="@drawable/ic_keyboard_shift" app:isModifier="true" />
+		<Key app:codes="-1,-7" app:keyIcon="@drawable/ic_keyboard_shift" />
 		<Key app:codes="-201" app:keyLabel="ん\nっAゃ\n1" />
 		<Key app:codes="-202" app:keyLabel="Q\n＠KG\n2" />
 		<Key app:codes="-203" app:keyLabel="F\nPHB\n3" />

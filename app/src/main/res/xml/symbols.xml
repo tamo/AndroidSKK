@@ -33,7 +33,7 @@
 
     <Row>
         <Key app:codes="-1" app:keyIcon="@drawable/ic_keyboard_shift"
-                app:keyWidth="15%p" app:isModifier="true"
+                app:keyWidth="15%p"
                 app:isSticky="true" app:keyEdgeFlags="left"/>
         <Key app:keyLabel="-" app:shiftedLabel="_"/>
         <Key app:keyLabel="=" app:shiftedLabel="+"/>

@@ -9,7 +9,6 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
-import kotlinx.coroutines.runBlocking
 import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStream
@@ -143,8 +142,8 @@ interface SKKDictionaryInterface {
     val mIsASCII: Boolean
     var mIsLocked: Boolean
 
-    fun findKeys(scope: CoroutineScope, rawKey: String): List<Pair<String, String>> {
-        runBlocking { while (mIsLocked) delay(50) }
+    suspend fun findKeys(scope: CoroutineScope, rawKey: String): List<Pair<String, String>> {
+        while (mIsLocked) delay(50)
         mIsLocked = true
 
         val key = katakana2hiragana(rawKey) ?: return listOf<Pair<String, String>>().also { mIsLocked = false }

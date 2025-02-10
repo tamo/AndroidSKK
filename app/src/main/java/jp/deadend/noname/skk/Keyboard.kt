@@ -106,8 +106,6 @@ open class Keyboard {
 
         var edgeFlags: Int
 
-        var isModifier = false
-
         private val keyboard: Keyboard = parent.parent
 
         init {
@@ -154,7 +152,6 @@ open class Keyboard {
             popupCharacters = a.getText(R.styleable.Keyboard_Key_popupCharacters)
             popupResId = a.getResourceId(R.styleable.Keyboard_Key_popupKeyboard, 0)
             repeatable = a.getBoolean(R.styleable.Keyboard_Key_isRepeatable, false)
-            isModifier = a.getBoolean(R.styleable.Keyboard_Key_isModifier, false)
             sticky = a.getBoolean(R.styleable.Keyboard_Key_isSticky, false)
             edgeFlags = a.getInt(R.styleable.Keyboard_Key_keyEdgeFlags, 0)
             edgeFlags = edgeFlags or parent.rowEdgeFlags

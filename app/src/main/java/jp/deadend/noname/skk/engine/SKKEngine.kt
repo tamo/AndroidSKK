@@ -10,6 +10,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.json.JSONException
 import java.util.ArrayDeque
@@ -534,23 +535,27 @@ class SKKEngine(
         if (SKKNarrowingState.mOriginalCandidates == null) {
             SKKNarrowingState.mOriginalCandidates = mCandidatesList
         }
-        val hintKanjis = findCandidates(hint)
+
+        val narrowed = if (hint.isEmpty()) candidates else {
+            val hintKanjis = findCandidates(hint)
                 ?.joinToString(
-                    separator="",
-                    transform={ processConcatAndMore(removeAnnotation(it), "") }
+                    separator = "",
+                    transform = { processConcatAndMore(removeAnnotation(it), "") }
                 ) ?: ""
 
-        // mCandidateKanjiKey("かんじ") -> candidates("漢字", "幹事", "監事", "感じ")
-        // hint("おとこ") -> hintKanjis("男", "漢", "♂")
-        val narrowed = candidates.filter { str -> /* str("漢字; 注釈も含む") */
-            str.any { ch -> hintKanjis.contains(ch) } /* hintKanjisは注釈を除いてある */
-                    || str.contains(hint) /* ひらがなかカタカナでヒントを含むstrもOK */
-                    || hirakana2katakana(hint)?.let { str.contains(it) } ?: false
-        }.let { nList ->
-            if (mCandidateKanjiKey == "emoji")
-                nList.map { removeAnnotation(it) }
-            else nList
+            // mCandidateKanjiKey("かんじ") -> candidates("漢字", "幹事", "監事", "感じ")
+            // hint("おとこ") -> hintKanjis("男漢♂")
+            candidates.filter { str -> /* str("漢字; 注釈も含む") */
+                str.any { ch -> hintKanjis.contains(ch) } /* hintKanjisは注釈を除いてある */
+                        || str.contains(hint) /* ひらがなかカタカナでヒントを含むstrもOK */
+                        || hirakana2katakana(hint)?.let { str.contains(it) } ?: false
+            }.let { nList ->
+                if (mCandidateKanjiKey == "emoji")
+                    nList.map { removeAnnotation(it) }
+                else nList
+            }
         }
+
         if (narrowed.isNotEmpty()) {
             mCandidatesList = narrowed
             mCurrentCandidateIndex = 0
@@ -645,7 +650,7 @@ class SKKEngine(
         mSuggestionsSuspended = false
     }
 
-    private fun addFound(
+    private suspend fun addFound(
         scope: CoroutineScope,
         target: MutableSet<Pair<String, String>>,
         key: String,
@@ -812,7 +817,9 @@ class SKKEngine(
     internal fun symbolCandidates() {
         changeState(SKKEmojiState)
         val set = mutableSetOf<Pair<String, String>>()
-        addFound(MainScope(), set, "/きごう", mASCIIDict)
+        runBlocking {
+            addFound(this, set, "/きごう", mASCIIDict)
+        }
         mCandidatesList = set.map { it.second } +
                 "\"#$%&'()=^~¥|@`[{;+*]},<.>\\_←↓↑→“”‘’『』【】！＂＃＄％＆＇（）－＝＾～￥｜＠｀［｛；＋：＊］｝，＜．＞／？＼＿、。"
                     .toCharArray()
@@ -837,8 +844,8 @@ class SKKEngine(
         val entry = mUserDict.getEntry(key) // ASCIIではここに到達しないはず
         val list2 = entry?.candidates
 
-        val list3 = if (key == "えもじ") {
-            mEmojiDict.findKeys(MainScope(), "").map { it.second }
+        val list3 = if (key == "えもじ") runBlocking {
+            mEmojiDict.findKeys(this, "").map { it.second }
         } else listOf()
 
         if (list1.isEmpty() && list2 == null && list3.isEmpty()) {
