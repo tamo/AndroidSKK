@@ -4,39 +4,39 @@
 #inch /(cal-arg*2.54-format "#cm")/
 #mile /(cal-arg*1.6093-format "#km")/
 #yard /(cal-arg*91.44-format "#cm")/(cal-arg*0.9144-format "#m")/
-#かげつご /(cal-arg+m-format "yyyy\057MM\057dd EEE")/(cal-arg+m-format "yyyy年M月d日(aaa)")/(cal-arg+m-format "M月d日(aaa)")/
-#かげつまえ /(cal-arg-m-format "yyyy\057MM\057dd EEE")/(cal-arg-m-format "yyyy年M月d日(aaa)")/(cal-arg-m-format "M月d日(aaa)")/
-#しゅうかんご /(cal-arg+*7d-format "yyyy\057MM\057dd EEE")/(cal-arg+*7d-format "M月d日(aaa)")/
-#しゅうかんまえ /(cal-arg-*7d-format "yyyy\057MM\057dd EEE")/(cal-arg-*7d-format "M月d日(aaa)")/
-#しゅうご /(cal-arg+*7d-format "yyyy\057MM\057dd EEE")/(cal-arg+*7d-format "M月d日(aaa)")/
-#しゅうまえ /(cal-arg-*7d-format "yyyy\057MM\057dd EEE")/(cal-arg-*7d-format "M月d日(aaa)")/
-#にちご /(cal-arg+d-format "yyyy\057MM\057dd")/(cal-arg+d-format "M月d日(aaa)")/(cal-arg+d-format "aaa曜日")/
-#にちまえ /(cal-arg-d-format "yyyy\057MM\057dd EEE")/(cal-arg-d-format "M月d日(aaa)")/(cal-arg-d-format "aaa曜日")/
-#ねんご /(cal-arg+y-format "yyyy\057MM\057dd EEE")/(cal-arg+y-format "yyyy年M月d日(aaa)")/(cal-arg+y-format "yyyy年")/
-#ねんまえ /(cal-arg-y-format "yyyy\057MM\057dd EEE")/(cal-arg-y-format "yyyy年M月d日(aaa)")/(cal-arg-y-format "yyyy年")/
-あさって /(cal-date+2-format "yyyy\057MM\057dd EEE")/(cal-date+2-format "M月d日(aaa)")/(cal-date+2-format "aaa曜日")/
-あした /(cal-date+1-format "yyyy\057MM\057dd EEE")/(cal-date+1-format "M月d日(aaa)")/(cal-date+1-format "aaa曜日")/
-あす /(cal-date+1-format "yyyy\057MM\057dd EEE")/(cal-date+1-format "M月d日(aaa)")/(cal-date+1-format "aaa曜日")/
+#かげつご /(cal-arg+m-format "yyyy\057MM\057dd")/(cal-arg+m-format "yyyy-MM-dd")/(cal-arg+m-format "yyyy年M月d日")/(cal-arg+m-year-2018-format "令和y年M月d日")/
+#かげつまえ /(cal-arg-m-format "yyyy\057MM\057dd")/(cal-arg-m-format "yyyy-MM-dd")/(cal-arg-m-format "yyyy年M月d日")/(cal-arg-m-year-2018-format "令和y年M月d日")/
+#しゅうかんご /(cal-arg+*7d-format "yyyy\057MM\057dd")/(cal-arg+*7d-format "yyyy-MM-dd")/(cal-arg+*7d-format "yyyy年MM月dd日")/(cal-arg+*7d-year-2018-format "令和y年MM月dd日")/
+#しゅうかんまえ /(cal-arg-*7d-format "yyyy\057MM\057dd")/(cal-arg-*7d-format "yyyy-MM-dd")/(cal-arg-*7d-format "yyyy年MM月dd日")/(cal-arg-*7d-year-2018-format "令和y年MM月dd日")/
+#しゅうご /(cal-arg+*7d-format "yyyy\057MM\057dd")/(cal-arg+*7d-format "yyyy-MM-dd")/(cal-arg+*7d-format "yyyy年MM月dd日")/(cal-arg+*7d-year-2018-format "令和y年MM月dd日")/
+#しゅうまえ /(cal-arg-*7d-format "yyyy\057MM\057dd")/(cal-arg-*7d-format "yyyy-MM-dd")/(cal-arg-*7d-format "yyyy年MM月dd日")/(cal-arg-*7d-year-2018-format "令和y年MM月dd日")/
+#にちご /(cal-arg+d-format "yyyy\057MM\057dd")/(cal-arg+d-format "yyyy-MM-dd")/(cal-arg+d-format "yyyy年MM月dd日")/(cal-arg+d-year-2018-format "令和y年MM月dd日")/
+#にちまえ /(cal-arg-d-format "yyyy\057MM\057dd")/(cal-arg-d-format "yyyy-MM-dd")/(cal-arg-d-format "yyyy年MM月dd日")/(cal-arg-d-year-2018-format "令和y年MM月dd日")/
+#ねんご /(cal-arg+y-format "yyyy\057MM\057dd")/(cal-arg+y-format "yyyy-MM-dd")/(cal-arg+y-format "yyyy年M月d日")/(cal-arg+y-year-2018-format "令和y年M月d日")/
+#ねんまえ /(cal-arg-y-format "yyyy\057MM\057dd")/(cal-arg-y-format "yyyy-MM-dd")/(cal-arg-y-format "yyyy年M月d日")/(cal-arg-y-year-2018-format "令和y年M月d日")/
+あさって /(cal-date+2-format "yyyy\057MM\057dd")/(cal-date+2-format "yyyy-MM-dd")/(cal-date+2-format "yyyy年MM月dd日")/(cal-date+2-year-2018-format "令和y年MM月dd日")/
+あした /(cal-date+1-format "yyyy\057MM\057dd")/(cal-date+1-format "yyyy-MM-dd")/(cal-date+1-format "yyyy年MM月dd日")/(cal-date+1-year-2018-format "令和y年MM月dd日")/
+あす /(cal-date+1-format "yyyy\057MM\057dd")/(cal-date+1-format "yyyy-MM-dd")/(cal-date+1-format "yyyy年MM月dd日")/(cal-date+1-year-2018-format "令和y年MM月dd日")/
 いま /(cal-format "HH:mm")/(cal-format "KK:mm a")/(cal-format "H時m分")/(cal-format "aaK時m分")/
-おとつい /(cal-date-2-format "yyyy\057MM\057dd EEE")/(cal-date-2-format "M月d日(aaa)")/(cal-date-2-format "aaa曜日")/
-おととい /(cal-date-2-format "yyyy\057MM\057dd EEE")/(cal-date-2-format "M月d日(aaa)")/(cal-date-2-format "aaa曜日")/
-おととし /(cal-year-2-format "yyyy年")/(cal-year-2020-format "令和y年")/(cal-year-2-format "yyyy年M年d日(aaa)")/(cal-year-2020-format "令和y年M年d日(aaa)")/
-きのう /(cal-date-1-format "yyyy\057MM\057dd EEE")/(cal-date-1-format "M月d日(aaa)")/(cal-date-1-format "aaa曜日")/
-きょう /(cal-format "yyyy\057MM\057dd EEE")/(cal-format "M月d日(aaa)")/(cal-format "aaa曜日")/
-きょねん /(cal-year-1-format "yyyy年")/(cal-year-2019-format "令和y年")/(cal-year-1-format "yyyy年M年d日(aaa)")/(cal-year-2019-format "令和y年M年d日(aaa)")/
+おとつい /(cal-date-2-format "yyyy\057MM\057dd")/(cal-date-2-format "yyyy-MM-dd")/(cal-date-2-format "yyyy年MM月dd日")/(cal-date-2-year-2018-format "令和y年MM月dd日")/
+おととい /(cal-date-2-format "yyyy\057MM\057dd")/(cal-date-2-format "yyyy-MM-dd")/(cal-date-2-format "yyyy年MM月dd日")/(cal-date-2-year-2018-format "令和y年MM月dd日")/
+おととし /(cal-year-2-format "yyyy\057MM\057dd")/(cal-year-2-format "yyyy-MM-dd")/(cal-year-2-format "yyyy年MM月dd日")/(cal-year-2020-format "令和y年MM月dd日")/
+きのう /(cal-date-1-format "yyyy\057MM\057dd")/(cal-date-1-format "yyyy-MM-dd")/(cal-date-1-format "yyyy年MM月dd日")/(cal-date-1-year-2018-format "令和y年MM月dd日")/
+きょう /(cal-format "yyyy\057MM\057dd")/(cal-format "yyyy-MM-dd")/(cal-format "yyyy年M月d日")/(cal-year-2018-format "令和y年M月d日")/(cal-format "M月d日")/(cal-format "aaa曜日")/
+きょねん /(cal-year-1-format "yyyy\057MM\057dd")/(cal-year-1-format "yyyy-MM-dd")/(cal-year-1-format "yyyy年MM月dd日")/(cal-year-2019-format "令和y年MM月dd日")/
 ことし /(cal-format "yyyy年")/(cal-year-2018-format "令和y年")/
-こんげつ /(cal-format "yyyy年M月")/(cal-format "M月")/
-さくねん /(cal-year-1-format "yyyy年")/(cal-year-2019-format "令和y年")/(cal-year-1-format "yyyy年M年d日(aaa)")/(cal-year-2019-format "令和y年M年d日(aaa)")/
-さらいげつ /(cal-month+2-format "yyyy年M月")/(cal-month+2-format "M月")/
-さらいねん /(cal-year+2-format "yyyy年")/(cal-year-2016-format "令和y年")/(cal-year+2-format "yyyy年M年d日(aaa)")/(cal-year-2016-format "令和y年M年d日(aaa)")/
-しあさって /(cal-date+3-format "yyyy\057MM\057dd EEE")/(cal-date+3-format "M月d日(aaa)")/(cal-date+3-format "aaa曜日")/
+こんげつ /(cal-format "yyyy年M月")/(cal-year-2018-format "令和y年M月")/(cal-format "M月")/
+さくねん /(cal-year-1-format "yyyy\057MM\057dd")/(cal-year-1-format "yyyy-MM-dd")/(cal-year-1-format "yyyy年MM月dd日")/(cal-year-2019-format "令和y年MM月dd日")/
+さらいげつ /(cal-month+2-format "yyyy\057MM\057dd")/(cal-month+2-format "yyyy-MM-dd")/(cal-month+2-format "yyyy年MM月dd日")/(cal-month+2-year-2018-format "令和y年MM月dd日")/
+さらいねん /(cal-year+2-format "yyyy\057MM\057dd")/(cal-year+2-format "yyyy-MM-dd")/(cal-year+2-format "yyyy年MM月dd日")/(cal-year-2016-format "令和y年MM月dd日")/
+しあさって /(cal-date+3-format "yyyy\057MM\057dd")/(cal-date+3-format "yyyy-MM-dd")/(cal-date+3-format "yyyy年MM月dd日")/(cal-date+3-year-2018-format "令和y年MM月dd日")/
 しょうわ#ねん /(cal-arg=y-year+1925-format "yyyy年")/
 せいれき#ねん /(cal-arg=y-year-2018-format "令和y年")/(cal-arg=y-year-1988-format "平成y年")/(cal-arg=y-year-1925-format "昭和y年")/(cal-arg=y-year-1911-format "大正y年")/(cal-arg=y-year-1867-format "明治y年")/
-せんげつ /(cal-month-1-format "yyyy年M月")/(cal-month-1-format "M月")/
-せんせんげつ /(cal-month-2-format "yyyy年M月")/(cal-month-2-format "M月")/
+せんげつ /(cal-month-1-format "yyyy\057MM\057dd")/(cal-month-1-format "yyyy-MM-dd")/(cal-month-1-format "yyyy年MM月dd日")/(cal-month-1-year-2018-format "令和y年MM月dd日")/
+せんせんげつ /(cal-month-2-format "yyyy\057MM\057dd")/(cal-month-2-format "yyyy-MM-dd")/(cal-month-2-format "yyyy年MM月dd日")/(cal-month-2-year-2018-format "令和y年MM月dd日")/
 たいしょう#ねん /(cal-arg=y-year+1911-format "yyyy年")/
 へいせい#ねん /(cal-arg=y-year+1988-format "yyyy年")/
 めいじ#ねん /(cal-arg=y-year+1867-format "yyyy年")/
-らいげつ /(cal-month+1-format "yyyy年M月")/(cal-month+1-format "M月")/
-らいねん /(cal-year+1-format "yyyy年")/(cal-year-2017-format "令和y年")/(cal-year+1-format "yyyy年M年d日(aaa)")/(cal-year-2017-format "令和y年M年d日(aaa)")/
-れいわ#ねん /(cal-arg=y-year+2018-format "yyyy年")/令和#0年/
+らいげつ /(cal-month+1-format "yyyy\057MM\057dd")/(cal-month+1-format "yyyy-MM-dd")/(cal-month+1-format "yyyy年MM月dd日")/(cal-month+1-year-2018-format "令和y年MM月dd日")/
+らいねん /(cal-year+1-format "yyyy\057MM\057dd")/(cal-year+1-format "yyyy-MM-dd")/(cal-year+1-format "yyyy年MM月dd日")/(cal-year-2017-format "令和y年MM月dd日")/
+れいわ#ねん /(cal-arg=y-year+2018-format "yyyy年")/
