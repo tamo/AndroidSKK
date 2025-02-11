@@ -183,7 +183,7 @@ class SKKUserDictionary private constructor (
         }
         fun newInstance(context: SKKService, mDicFile: String, btreeName: String, isASCII: Boolean): SKKUserDictionary? {
             val dbFile = File("$mDicFile.db")
-            if (!dbFile.exists()) {
+            if (isASCII && !dbFile.exists()) {
                 context.extractDictionary(dbFile.nameWithoutExtension)
             }
             try {

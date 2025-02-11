@@ -90,7 +90,7 @@
 	<string translatable="false" name="dic_name_user">skk_userdict</string>
 	<string translatable="false" name="dic_name_ascii">skk_asciidict</string>
 	<string translatable="false" name="dic_name_emoji">skk_emojidict</string>
-	<string translatable="false" name="dic_name_user_recreate">+skk_userdict</string>
+	<string translatable="false" name="dic_name_user_recreate">*skk_userdict</string>
 	<string translatable="false" name="dic_name_ascii_recreate">+skk_asciidict</string>
 	<string translatable="false" name="dic_name_emoji_recreate">+skk_emojidict</string>
 </resources>

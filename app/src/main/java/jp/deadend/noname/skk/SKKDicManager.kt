@@ -61,7 +61,7 @@ class SKKDicManager : AppCompatActivity() {
     }
 
     private val commonDics = listOf(
-        "S", "M", "ML", "L", "L.unannotated", "jinmei", "geo", "station", "propernoun"
+        "S", "M", "ML", "L", "L.unannotated", "jinmei", "geo", "station", "propernoun", "lisplike"
     ).map { type -> Tuple("SKK $type 辞書", "/skk_dict_${type}") }
 
     public override fun onCreate(savedInstanceState: Bundle?) {
@@ -187,9 +187,7 @@ class SKKDicManager : AppCompatActivity() {
                                 ) { deleteFile(file) }
                             }
                             try {
-                                unzipFile(resources.assets.open(
-                                    getString(R.string.dic_name_user) + ".zip"
-                                ), filesDir)
+                                //unzipFile(resources.assets.open(getString(R.string.dic_name_user) + ".zip"), filesDir)
                                 unzipFile(resources.assets.open(
                                     getString(R.string.dic_name_ascii) + ".zip"
                                 ), filesDir)
@@ -245,7 +243,11 @@ class SKKDicManager : AppCompatActivity() {
                             }
                         } else null
                         progressJob?.start()
-                        URL("https://skk-dev.github.io/dict/SKK-JISYO.${type}.gz")
+                        URL(
+                            if (type == "lisplike") {
+                                "https://raw.githubusercontent.com/tamo/AndroidSKK/refs/heads/master/SKK-JISYO.${type}.gz"
+                            } else "https://skk-dev.github.io/dict/SKK-JISYO.${type}.gz"
+                        )
                             .openStream()
                             .copyTo(FileOutputStream(path))
                         progressJob?.let {

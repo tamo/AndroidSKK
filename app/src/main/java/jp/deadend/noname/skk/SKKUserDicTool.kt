@@ -412,7 +412,7 @@ class SKKUserDicTool : AppCompatActivity() {
         ConfirmationDialogFragment.newInstance(getString(R.string.error_open_user_dic)).let {
             it.setListener(
                 object : ConfirmationDialogFragment.Listener {
-                    override fun onPositiveClick() { recreateUserDic(extract = true) }
+                    override fun onPositiveClick() { recreateUserDic(extract = false) }
                     override fun onNegativeClick() { finish() }
                 })
             it.show(supportFragmentManager, "dialog")
