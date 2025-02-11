@@ -17,7 +17,7 @@ import java.util.ArrayDeque
 
 class SKKEngine(
         private val mService: SKKService,
-        private var mDicts: List<SKKDictionary>,
+        private var mDicts: List<SKKDictionaryInterface>,
         private val mUserDict: SKKUserDictionary,
         private val mASCIIDict: SKKUserDictionary,
         private val mEmojiDict: SKKUserDictionary
@@ -73,12 +73,14 @@ class SKKEngine(
 
     init { setZenkakuPunctuationMarks("en") }
 
-    fun reopenDictionaries(dics: List<SKKDictionary>) {
-        for (dic in mDicts) { dic.close() }
+    fun reopenDictionaries(dics: List<SKKDictionaryInterface>) {
+        for (dic in mDicts) when {
+            dic === mUserDict -> dic.reopen()
+            dic === mEmojiDict -> dic.reopen()
+            else -> dic.close()
+        }
         mDicts = dics
-        mUserDict.reopen()
         mASCIIDict.reopen()
-        mEmojiDict.reopen()
     }
 
     fun setZenkakuPunctuationMarks(type: String) {
@@ -604,27 +606,15 @@ class SKKEngine(
             mUpdateSuggestionsJob = MainScope().launch(Dispatchers.Default) {
                 val set = mutableSetOf<Pair<String, String>>()
 
-                if (str.isNotEmpty()) {
-                    addFound(this@launch, set, str, (
-                            if (str == "emoji" || state === SKKASCIIState) mASCIIDict else mUserDict)
-                    ) // emoji として ASCII に登録されているものを優先
-                    if (str == "emoji" || str == "えもじ") {
-                        mEmojiDict.findKeys(this@launch, "").forEach { suggestion ->
-                            set.add(str to suggestion.second)
-                        }
-                    }
+                if (str.isNotEmpty())
                     for (dic in mDicts) { addFound(this@launch, set, str, dic) }
-                }
                 Regex("\\d+(\\.\\d+)?").find(str)?.let {
                     val replacedStr = str.replaceRange(it.range, "#")
-                    addFound(this@launch, set, replacedStr, (
-                            if (state === SKKASCIIState) mASCIIDict else mUserDict)
-                    )
                     for (dic in mDicts) { addFound(this@launch, set, replacedStr, dic) }
                 }
 
-                mCompletionList = set.map { it.first }.toSet().toList()
-                mCandidatesList = set.map { it.second }.toSet().toList()
+                mCompletionList = set.map { it.first }.distinct()
+                mCandidatesList = set.map { it.second }.distinct()
                 mCandidateKanjiKey = str
                 mCurrentCandidateIndex = 0
                 withContext(Dispatchers.Main) {
@@ -656,9 +646,23 @@ class SKKEngine(
         key: String,
         dic: SKKDictionaryInterface
     ) {
+        val dictionary = when {
+            dic === mUserDict -> {
+                if (key == "emoji" || state === SKKASCIIState) mASCIIDict else mUserDict
+            }
+            dic === mEmojiDict -> {
+                if (key == "emoji" || key == "えもじ") {
+                    mEmojiDict.findKeys(scope, "").forEach { suggestion ->
+                        target.add(key to suggestion.second)
+                    }
+                }
+                return
+            }
+            else -> dic
+        }
         if (mService.isHiragana) {
-            target.addAll(dic.findKeys(scope, key))
-        } else for (suggestion in dic.findKeys(scope, key)) {
+            target.addAll(dictionary.findKeys(scope, key))
+        } else for (suggestion in dictionary.findKeys(scope, key)) {
             val hiraSuggestion = suggestion.first
             target.add(hiraSuggestion to hirakana2katakana(hiraSuggestion, reversed = true)!!)
         }
@@ -836,42 +840,32 @@ class SKKEngine(
     }
 
     private fun findCandidates(key: String): List<String>? {
-        val list1 = mDicts.mapNotNull { it.getCandidates(key) }
-            .fold(listOf<String>()) { acc, list -> acc + list }
-                .toSet()
-                .toMutableList()
-
-        val entry = mUserDict.getEntry(key) // ASCIIではここに到達しないはず
-        val list2 = entry?.candidates
-
-        val list3 = if (key == "えもじ") runBlocking {
-            mEmojiDict.findKeys(this, "").map { it.second }
-        } else listOf()
-
-        if (list1.isEmpty() && list2 == null && list3.isEmpty()) {
-            dlog("Dictionary: Can't find Kanji for $key")
-            return null
+        val userEntry = mUserDict.getEntry(key)
+        val (userOkList, userRestList) = (userEntry?.candidates ?: listOf()).partition { s ->
+            mOkurigana == null
+                    || userEntry!!.okuriBlocks.any { it.first == mOkurigana && it.second == s }
         }
 
-        if (list2 != null) {
-            var idx = 0
-            for (s in list2) {
-                when {
-                    mOkurigana == null
-                     || entry.okuriBlocks.any { it.first == mOkurigana && it.second == s } -> {
-                        //個人辞書の候補を先頭に追加
-                        list1.remove(s)
-                        list1.add(idx, s)
-                        idx++
-                    }
-                    !list1.contains(s) -> { list1.add(s) } //送りがなブロックにマッチしない場合も、無ければ最後に追加
-                }
+        val list: List<String> = mDicts.asSequence().mapNotNull { dict ->
+            when {
+                dict === mUserDict -> userOkList
+
+                dict === mEmojiDict -> if (key == "えもじ") runBlocking {
+                    mEmojiDict.findKeys(this, "").map { it.second }
+                } else null
+
+                else -> dict.getCandidates(key)
             }
-        }
+        }.fold(listOf<String>()) { acc, list -> acc + list }
+            .plus(userRestList) //送りがなブロックにマッチしない場合も、無ければ最後に追加
+            .distinct()
+            .toMutableList()
 
-        list1.addAll(list3)
-
-        return list1.ifEmpty { null }
+        return list
+            .ifEmpty {
+                dlog("Dictionary: Can't find Kanji for $key")
+                null
+            }
     }
 
     private fun getCandidate(index: Int): String? = mCandidatesList?.let {

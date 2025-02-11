@@ -14,7 +14,7 @@ class SKKDictionary private constructor (
     override val mIsASCII = false
     override var mIsLocked = false
 
-    fun getCandidates(rawKey: String): List<String>? {
+    override fun getCandidates(rawKey: String): List<String>? {
         val key = katakana2hiragana(rawKey) ?: return null
         val value: String?
         try {

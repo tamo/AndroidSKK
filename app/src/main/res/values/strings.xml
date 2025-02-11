@@ -84,7 +84,7 @@
 	<string translatable="false" name="prefkey_background_alpha">PrefKeyBackgroundAlpha</string>
 	<string translatable="false" name="prefkey_sticky_meta">PrefKeyStickyMeta</string>
 	<string translatable="false" name="prefkey_sands">PrefKeySandS</string>
-	<string translatable="false" name="prefkey_optional_dics">PrefKeyOptionalDics</string>
+	<string translatable="false" name="prefkey_dics_order">PrefKeyDicsOrder</string>
 
 	<string translatable="false" name="btree_name">skk_dict</string>
 	<string translatable="false" name="dic_name_user">skk_userdict</string>

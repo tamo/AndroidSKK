@@ -1,6 +1,5 @@
 package jp.deadend.noname.skk
 
-import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -9,11 +8,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
-import android.view.View
 import android.view.ViewGroup
-import android.widget.AdapterView
-import android.widget.ArrayAdapter
-import android.widget.CheckedTextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.net.toUri
@@ -21,6 +16,11 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 import androidx.preference.PreferenceManager
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ItemTouchHelper
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.ListAdapter
+import androidx.recyclerview.widget.RecyclerView
 import jdbm.RecordManager
 import jdbm.RecordManagerFactory
 import jdbm.btree.BTree
@@ -29,6 +29,7 @@ import jdbm.helper.Tuple
 import jp.deadend.noname.dialog.ConfirmationDialogFragment
 import jp.deadend.noname.dialog.SimpleMessageDialogFragment
 import jp.deadend.noname.dialog.TextInputDialogFragment
+import jp.deadend.noname.skk.databinding.ActivityCheckedTextBinding
 import jp.deadend.noname.skk.databinding.ActivityDicManagerBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
@@ -41,6 +42,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.net.URL
+import java.util.Collections
 import java.util.zip.GZIPInputStream
 import kotlin.math.floor
 import kotlin.math.sqrt
@@ -49,20 +51,29 @@ class SKKDicManager : AppCompatActivity() {
     private lateinit var binding: ActivityDicManagerBinding
     private val mAdapter: TupleAdapter
         get() = binding.dicManagerList.adapter as TupleAdapter
-    private val mPrefOptDics: String by lazy {
+    private val mPrefDicsOrder: String by lazy {
         PreferenceManager.getDefaultSharedPreferences(this)
-            .getString(getString(R.string.prefkey_optional_dics), "") ?: ""
+            .getString(
+                getString(R.string.prefkey_dics_order),
+                "ユーザー辞書/${getString(R.string.dic_name_user)}/絵文字辞書/${getString(R.string.dic_name_emoji)}/"
+            ) ?: throw RuntimeException("null preference")
     }
-    private val mDics = mutableListOf<Tuple<String, String>>()
+    private var mDics = listOf<Tuple<String, String>>()
 
     private val addDicFileLauncher = registerForActivityResult(
                                         ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) { loadDic(uri, -1, false) }
     }
 
-    private val commonDics = listOf(
-        "S", "M", "ML", "L", "L.unannotated", "jinmei", "geo", "station", "propernoun", "lisplike"
-    ).map { type -> Tuple("SKK $type 辞書", "/skk_dict_${type}") }
+    private val commonDics: List<Tuple<String, String>> by lazy {
+        listOf(
+            Tuple("ユーザー辞書", getString(R.string.dic_name_user)),
+            Tuple("絵文字辞書", getString(R.string.dic_name_emoji))
+        ) + listOf(
+            "lisplike", "S", "M", "ML", "L", "L.unannotated",
+            "jinmei", "geo", "station", "propernoun",
+        ).map { type -> Tuple("SKK $type 辞書", "/skk_dict_${type}") }
+    }
 
     public override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -83,59 +94,79 @@ class SKKDicManager : AppCompatActivity() {
         setSupportActionBar(binding.dicManagerToolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
-        // 一般的な辞書リストをまず列挙
-        mDics.addAll(commonDics)
+        val dicList = mPrefDicsOrder // インストール済み辞書をまず列挙
+            .split("/")
+            .dropLastWhile { it.isEmpty() }
+            .asSequence()
+            .chunked(2)
+            .map { Tuple(it[0], it[1]) }
+            .plus(commonDics) // 一般的な辞書を追加
+            .distinctBy { it.value.removePrefix("/") } // 重複を消去
+            .toMutableList()
         // インストール済みかどうかチェック
         fileList()
             .filter { it.startsWith("skk_dict_") && it.endsWith(".db") }
             .forEach {
                 val entry = it.dropLast(".db".length)
                 val type = entry.drop("skk_dict_".length)
-                val dupIndex = mDics.indexOfFirst { dict ->
-                    dict.value == "/${entry}"
+                val dupIndex = dicList.indexOfFirst { dict ->
+                    entry == dict.value.removePrefix("/")
                 }
                 if (dupIndex == -1) {
-                    mDics.add(Tuple("SKK $type 辞書", entry))
+                    dicList.add(Tuple("SKK $type 辞書", entry))
                 } else {
-                    mDics[dupIndex].value = entry
+                    dicList[dupIndex].value = entry
                 }
             }
-        // 設定済みの辞書
-        if (mPrefOptDics.isNotEmpty()) {
-            mPrefOptDics.split("/").dropLastWhile { it.isEmpty() }.chunked(2).forEach {
-                mDics.find { dict -> dict.value == it[1] }
-                    ?.let { dup -> mDics.remove(dup) } // 一般的な辞書の名前を prefs の名前に更新
-                mDics.add(Tuple(it[0], it[1]))
-            }
+
+        binding.dicManagerList.apply {
+            layoutManager = LinearLayoutManager(this@SKKDicManager)
+            adapter = TupleAdapter(::itemClickListener) // 以降は mAdapter としてアクセス可能
         }
-        mDics.sortBy { it.key }
+        mAdapter.submitList(dicList)
+        mDics = dicList
 
-        binding.dicManagerList.adapter = TupleAdapter(this, mDics)
-        binding.dicManagerList.onItemClickListener = AdapterView.OnItemClickListener { _, _, position, _ ->
-            if (mDics[position].value.startsWith('/')) {
-                downloadDic(mDics[position].value.drop("/skk_dict_".length), position)
-            } else {
-                val dialog =
-                    ConfirmationDialogFragment.newInstance(getString(R.string.message_confirm_remove_dic))
-                dialog.setListener(
-                    object : ConfirmationDialogFragment.Listener {
-                        override fun onPositiveClick() {
-                            val item = mAdapter.getItem(position)!!
-                            val dicName = item.key
-                            val dicPath = item.value
-                            deleteFile("$dicPath.db")
-                            deleteFile("$dicPath.lg")
-                            mAdapter.remove(item)
-                            if (dicPath.startsWith("skk_dict_")) {
-                                mAdapter.insert(Tuple(dicName, "/$dicPath"), position)
-                            }
-                            mAdapter.notifyDataSetChanged()
-                        }
+        val callback = TupleItemTouchHelperCallback { from, to ->
+            val newList = mDics.toMutableList()
+            Collections.swap(newList, from, to)
+            mAdapter.submitList(newList)
+            mDics = newList
+        }
+        ItemTouchHelper(callback)
+            .attachToRecyclerView(binding.dicManagerList)
+    }
 
-                        override fun onNegativeClick() {}
-                    })
-                dialog.show(supportFragmentManager, "dialog")
+    private fun itemClickListener(position: Int) {
+        val newList = mDics.toMutableList()
+        if (newList[position].value.startsWith("/skk_dict_")) {
+            downloadDic(newList[position].value.drop("/skk_dict_".length), position)
+        } else {
+            when (newList[position].value) {
+                getString(R.string.dic_name_user) -> return
+                getString(R.string.dic_name_emoji) -> return
             }
+            val dialog =
+                ConfirmationDialogFragment.newInstance(getString(R.string.message_confirm_remove_dic))
+            dialog.setListener(
+                object : ConfirmationDialogFragment.Listener {
+                    override fun onPositiveClick() {
+                        val item = newList[position]
+                        val dicName = item.key
+                        val dicPath = item.value
+                        deleteFile("$dicPath.db")
+                        deleteFile("$dicPath.lg")
+                        if (dicPath.startsWith("skk_dict_")) {
+                            newList[position] = Tuple(dicName, "/${dicPath}")
+                        } else {
+                            newList.remove(item)
+                        }
+                        mAdapter.submitList(newList)
+                        mDics = newList
+                    }
+
+                    override fun onNegativeClick() {}
+                })
+            dialog.show(supportFragmentManager, "dialog")
         }
     }
 
@@ -145,10 +176,10 @@ class SKKDicManager : AppCompatActivity() {
             .filter { !it.value.startsWith('/') }
             .forEach { dics.append(it.key, "/", it.value, "/") }
 
-        if (mPrefOptDics != dics.toString()) {
+        if (mPrefDicsOrder != dics.toString()) {
             PreferenceManager.getDefaultSharedPreferences(this)
                 .edit()
-                .putString(getString(R.string.prefkey_optional_dics), dics.toString())
+                .putString(getString(R.string.prefkey_dics_order), dics.toString())
                 .apply()
 
             if (SKKService.isRunning()) { // まだ起動していないなら不要
@@ -199,13 +230,8 @@ class SKKDicManager : AppCompatActivity() {
                                     getString(R.string.error_extracting_dic_failed)
                                 ).show(supportFragmentManager, "dialog")
                             }
-                            mAdapter.apply {
-                                clear()
-                                addAll(commonDics)
-                                val comparator = StringComparator()
-                                sort { a, b -> comparator.compare(a.key, b.key) }
-                                notifyDataSetChanged()
-                            }
+                            mAdapter.submitList(commonDics)
+                            mDics = commonDics
                         }
                         override fun onNegativeClick() {}
                     })
@@ -229,20 +255,21 @@ class SKKDicManager : AppCompatActivity() {
                         if (path.exists()) {
                             deleteFile(path.name)
                         }
-                        val item = mAdapter.getItem(position)!!
-                        val itemName = item.key
-                        val progressJob = if (position != -1) launch { // 先に進捗表示を設置しておく
+                        val item = mDics[position]
+                        val progressJob = launch { // 先に進捗表示を設置しておく
                             while (true) {
                                 delay(100)
                                 ensureActive()
                                 val size = formatShortFileSize(applicationContext, path.length())
                                 withContext(Dispatchers.Main) {
-                                    item.key = "$itemName ($size)"
-                                    mAdapter.notifyDataSetChanged()
+                                    val newList = mDics.toMutableList()
+                                    newList[position] = Tuple("${item.key} ($size)", item.value)
+                                    mAdapter.submitList(newList)
+                                    mDics = newList
                                 }
                             }
-                        } else null
-                        progressJob?.start()
+                        }
+                        progressJob.start()
                         URL(
                             if (type == "lisplike") {
                                 "https://raw.githubusercontent.com/tamo/AndroidSKK/refs/heads/master/SKK-JISYO.${type}.gz"
@@ -250,11 +277,13 @@ class SKKDicManager : AppCompatActivity() {
                         )
                             .openStream()
                             .copyTo(FileOutputStream(path))
-                        progressJob?.let {
+                        progressJob.let {
                             it.cancelAndJoin()
                             withContext(Dispatchers.Main) {
-                                item.key = itemName
-                                mAdapter.notifyDataSetChanged()
+                                val newList = mDics.toMutableList()
+                                newList[position] = item
+                                mAdapter.submitList(newList)
+                                mDics = newList
                             }
                         }
                         withContext(Dispatchers.Main) {
@@ -277,8 +306,10 @@ class SKKDicManager : AppCompatActivity() {
         if (dicFileBaseName == null) return
 
         if (position != -1) { // 既存のものを loadDic した後の処理
-            mAdapter.getItem(position)!!.value = dicFileBaseName
-            mAdapter.notifyDataSetChanged()
+            val newList = mDics.toMutableList()
+            newList[position] = Tuple(newList[position].key, dicFileBaseName)
+            mAdapter.submitList(newList)
+            mDics = newList
             return
         }
 
@@ -302,9 +333,11 @@ class SKKDicManager : AppCompatActivity() {
                         name = "$dicName($suffix)"
                     }
                     val item = Tuple(name, "/$dicFileBaseName")
-                    mAdapter.add(item)
+                    val newList = mDics.plus(item)
+                    mAdapter.submitList(newList)
+                    mDics = newList
 
-                    loader(mAdapter.getPosition(item))
+                    loader(mDics.indexOf(item))
                 }
 
                 override fun onNegativeClick() {
@@ -371,8 +404,7 @@ class SKKDicManager : AppCompatActivity() {
         }
 
         MainScope().launch(Dispatchers.IO) {
-            val item = mAdapter.getItem(position)
-            val itemName = item?.key
+            val item = mDics[position]
             var recMan: RecordManager? = null
             try {
                 recMan = RecordManagerFactory.createRecordManager(
@@ -382,9 +414,11 @@ class SKKDicManager : AppCompatActivity() {
                 recMan.setNamedObject(getString(R.string.btree_name), btree.recordId)
                 recMan.commit()
 
-                if (item != null) withContext(Dispatchers.Main) {
-                    item.key = "$itemName (識別中)"
-                    mAdapter.notifyDataSetChanged()
+                withContext(Dispatchers.Main) {
+                    val newList = mDics.toMutableList()
+                    newList[position] = Tuple("${item.key} (識別中)", item.value)
+                    mAdapter.submitList(newList)
+                    mDics = newList
                 }
                 val charset = if (contentResolver.openInputStream(uri)!!.use { inputStream ->
                         val processedInputStream =
@@ -396,16 +430,20 @@ class SKKDicManager : AppCompatActivity() {
                         if (isGzip) GZIPInputStream(inputStream) else inputStream
                     loadFromTextDic(processedInputStream, charset, false, recMan, btree, false) {
                         if (floor(sqrt(it.toFloat())) % 70 == 0f) {
-                            if (item != null) MainScope().launch {
-                                item.key = "$itemName ($it 行目)"
-                                mAdapter.notifyDataSetChanged()
+                            MainScope().launch {
+                                val newList = mDics.toMutableList()
+                                newList[position] = Tuple("${item.key} ($it 行目)", item.value)
+                                mAdapter.submitList(newList)
+                                mDics = newList
                             }
                         }
                     }
                 }
-                if (item != null) withContext(Dispatchers.Main) {
-                    item.key = itemName
-                    mAdapter.notifyDataSetChanged()
+                withContext(Dispatchers.Main) {
+                    val newList = mDics.toMutableList()
+                    newList[position] = item
+                    mAdapter.submitList(newList)
+                    mDics = newList
                 }
             } catch (e: IOException) {
                 withContext(Dispatchers.Main) {
@@ -418,10 +456,9 @@ class SKKDicManager : AppCompatActivity() {
                             getString(R.string.error_file_load, name)
                         ).show(supportFragmentManager, "dialog")
                     }
-                    if (item != null) {
-                        mAdapter.remove(item)
-                        mAdapter.notifyDataSetChanged()
-                    }
+                    val newList = mDics.minus(item)
+                    mAdapter.submitList(newList)
+                    mDics = newList
                 }
                 Log.e("SKK", "SKKDicManager#loadDic() Error: $e")
                 if (recMan != null) {
@@ -452,22 +489,76 @@ class SKKDicManager : AppCompatActivity() {
 
     private fun containsName(s: String) = mDics.any { s == it.key }
 
-    private class TupleAdapter(
-            context: Context,
-            items: List<Tuple<String, String>>
-    ) : ArrayAdapter<Tuple<String, String>>(context, 0, items) {
-        private val mLayoutInflater = LayoutInflater.from(context)
-
-        override fun getView(position: Int, convertView: View?, parent: ViewGroup): CheckedTextView {
-            val view = (convertView
-                ?: mLayoutInflater.inflate(android.R.layout.simple_list_item_checked, parent, false))
-                    as CheckedTextView
-            getItem(position)?.let {
-                view.text = it.key
-                view.isChecked = !it.value.startsWith('/')
+    class TupleAdapter(private val onItemClickListener: (Int) -> Unit) :
+        ListAdapter<Tuple<String, String>,
+                TupleAdapter.TupleViewHolder>(TupleDiffCallback()) {
+        class TupleViewHolder(
+            binding: ActivityCheckedTextBinding,
+            private val onItemClickListener: (Int) -> Unit
+        ) : RecyclerView.ViewHolder(binding.root) {
+            val view = binding.dicManagerListItem
+            fun bind(item: Tuple<String, String>) {
+                view.text = item.key
+                view.isChecked = !item.value.startsWith('/')
+                view.setOnClickListener {
+                    onItemClickListener(adapterPosition)
+                }
+                android.R.layout.simple_list_item_checked
             }
+        }
 
-            return view
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TupleViewHolder {
+            val binding = ActivityCheckedTextBinding.inflate(
+                LayoutInflater.from(parent.context), parent, false
+            )
+            return TupleViewHolder(binding, onItemClickListener)
+        }
+
+        override fun onBindViewHolder(holder: TupleViewHolder, position: Int) {
+            val item = getItem(position)
+            holder.bind(item)
+        }
+    }
+
+    class TupleDiffCallback : DiffUtil.ItemCallback<Tuple<String, String>>() {
+        override fun areItemsTheSame(oldItem: Tuple<String, String>, newItem: Tuple<String, String>): Boolean {
+            return oldItem.key == newItem.key && oldItem.value == newItem.value
+        }
+        override fun areContentsTheSame(oldItem: Tuple<String, String>, newItem: Tuple<String, String>): Boolean {
+            return areItemsTheSame(oldItem, newItem)
+        }
+    }
+
+    class TupleItemTouchHelperCallback(
+        private val onMoveListener: (Int, Int) -> Unit
+    ) : ItemTouchHelper.Callback() {
+
+        override fun getMovementFlags(
+            recyclerView: RecyclerView,
+            viewHolder: RecyclerView.ViewHolder
+        ): Int {
+            val dragFlags = ItemTouchHelper.UP or ItemTouchHelper.DOWN
+            return makeMovementFlags(dragFlags, 0)
+        }
+
+        override fun onMove(
+            recyclerView: RecyclerView,
+            viewHolder: RecyclerView.ViewHolder,
+            target: RecyclerView.ViewHolder
+        ): Boolean {
+            val from = viewHolder.adapterPosition
+            val to = target.adapterPosition
+            if (from == RecyclerView.NO_POSITION || to == RecyclerView.NO_POSITION) {
+                return false
+            }
+            onMoveListener(from, to)
+            return true
+        }
+
+        override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {}
+
+        override fun isLongPressDragEnabled(): Boolean {
+            return true
         }
     }
 }

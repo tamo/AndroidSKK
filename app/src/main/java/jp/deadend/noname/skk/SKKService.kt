@@ -76,6 +76,9 @@ class SKKService : InputMethodService() {
             val rawState = mEngine.state
             return if (rawState === SKKEmojiState) mEngine.oldState else rawState
         }
+    private lateinit var mUserDic: SKKUserDictionary
+    private lateinit var mAsciiDic: SKKUserDictionary
+    private lateinit var mEmojiDic: SKKUserDictionary
 
     internal val isHiragana: Boolean
         get() = kanaState === SKKHiraganaState
@@ -162,20 +165,28 @@ class SKKService : InputMethodService() {
         }
     }
 
-    private fun openDictionaries(): List<SKKDictionary> {
-        val result = mutableListOf<SKKDictionary>()
+    private fun openDictionaries(): List<SKKDictionaryInterface> {
+        val result = mutableListOf<SKKDictionaryInterface>()
         val dd = filesDir.absolutePath
         dlog("dict dir: $dd")
 
         val prefVal = PreferenceManager.getDefaultSharedPreferences(this)
-                .getString(getString(R.string.prefkey_optional_dics), "")
+                .getString(
+                    getString(R.string.prefkey_dics_order),
+                    "ユーザー辞書/${getString(R.string.dic_name_user)}/絵文字辞書/${getString(R.string.dic_name_emoji)}/"
+                )
         dlog("dict pref: $prefVal")
         if (!prefVal.isNullOrEmpty()) {
             val vals = prefVal.split("/").dropLastWhile { it.isEmpty() }
             for (i in 1 until vals.size step 2) {
-                SKKDictionary.newInstance(
-                    dd + "/" + vals[i], getString(R.string.btree_name)
-                )?.let { result.add(it) }
+                when (vals[i]) {
+                    getString(R.string.dic_name_user) -> result.add(mUserDic)
+                    //getString(R.string.dic_name_ascii) -> result.add(mAsciiDic)
+                    getString(R.string.dic_name_emoji) -> result.add(mEmojiDic)
+                    else -> SKKDictionary.newInstance(
+                        dd + "/" + vals[i], getString(R.string.btree_name)
+                    )?.let { result.add(it) } ?: dlog("failed to open ${vals[i]}")
+                }
             }
         }
 
@@ -202,8 +213,34 @@ class SKKService : InputMethodService() {
         notificationManager.createNotificationChannel(channel)
         // 事前に権限を持っていないと、onCreate 内では権限要求を出せないみたいなので注意！
 
+        fun openUserDictionary(name: String, isASCII: Boolean): SKKUserDictionary {
+            val dic = SKKUserDictionary.newInstance(
+                this@SKKService,
+                filesDir.absolutePath + "/" + name,
+                getString(R.string.btree_name),
+                isASCII
+            )
+            if (dic == null) {
+                val intent = Intent(applicationContext, SKKSettingsActivity::class.java)
+                    .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                val pendingIntent = PendingIntent.getActivity(
+                    applicationContext, 0, intent, PendingIntent.FLAG_IMMUTABLE
+                )
+                notify(
+                    NOTIFY_ID_ERROR_DIC,
+                    "エラー ($name)",
+                    getString(R.string.error_user_dic),
+                    pendingIntent
+                )
+                super.onDestroy()
+            }
+            return dic!!
+        }
+        mUserDic = openUserDictionary(getString(R.string.dic_name_user), isASCII = false)
+        mAsciiDic = openUserDictionary(getString(R.string.dic_name_ascii), isASCII = true)
+        mEmojiDic = openUserDictionary(getString(R.string.dic_name_emoji), isASCII = true)
         val dics = openDictionaries()
-        if (dics.isEmpty()) {
+        if (dics.minus(mUserDic).minus(mEmojiDic).isEmpty()) {
             val intent = Intent(applicationContext, SKKDicManager::class.java)
                 .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             val pendingIntent = PendingIntent.getActivity(
@@ -212,55 +249,7 @@ class SKKService : InputMethodService() {
             notify(NOTIFY_ID_ERROR_DIC, "辞書を設定してください", getString(R.string.error_open_dicfile), pendingIntent)
         }
 
-        val userDic = SKKUserDictionary.newInstance(
-            this@SKKService,
-            filesDir.absolutePath + "/" + getString(R.string.dic_name_user),
-            getString(R.string.btree_name),
-            isASCII = false
-        )
-        if (userDic == null) {
-            val intent = Intent(applicationContext, SKKSettingsActivity::class.java)
-                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            val pendingIntent = PendingIntent.getActivity(
-                applicationContext, 0, intent, PendingIntent.FLAG_IMMUTABLE
-            )
-            notify(NOTIFY_ID_ERROR_DIC, "ユーザー辞書エラー", getString(R.string.error_user_dic), pendingIntent)
-            return super.onDestroy()
-        }
-
-        val asciiDic = SKKUserDictionary.newInstance(
-            this@SKKService,
-            filesDir.absolutePath + "/" + getString(R.string.dic_name_ascii),
-            getString(R.string.btree_name),
-            isASCII = true
-        )
-        if (asciiDic == null) {
-            val intent = Intent(applicationContext, SKKSettingsActivity::class.java)
-                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            val pendingIntent = PendingIntent.getActivity(
-                applicationContext, 0, intent, PendingIntent.FLAG_IMMUTABLE
-            )
-            notify(NOTIFY_ID_ERROR_DIC, "ASCII辞書エラー", getString(R.string.error_user_dic), pendingIntent)
-            return super.onDestroy()
-        }
-
-        val emojiDic = SKKUserDictionary.newInstance(
-            this@SKKService,
-            filesDir.absolutePath + "/" + getString(R.string.dic_name_emoji),
-            getString(R.string.btree_name),
-            isASCII = true
-        )
-        if (emojiDic == null) {
-            val intent = Intent(applicationContext, SKKSettingsActivity::class.java)
-                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            val pendingIntent = PendingIntent.getActivity(
-                applicationContext, 0, intent, PendingIntent.FLAG_IMMUTABLE
-            )
-            notify(NOTIFY_ID_ERROR_DIC, "絵文字辞書エラー", getString(R.string.error_user_dic), pendingIntent)
-            return super.onDestroy()
-        }
-
-        mEngine = SKKEngine(this@SKKService, dics, userDic, asciiDic, emojiDic)
+        mEngine = SKKEngine(this@SKKService, dics, mUserDic, mAsciiDic, mEmojiDic)
 
         mSpeechRecognizer.setRecognitionListener(object : RecognitionListener {
             private fun restoreState() {

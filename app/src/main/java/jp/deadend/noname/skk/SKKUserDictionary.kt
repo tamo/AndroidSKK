@@ -60,6 +60,9 @@ class SKKUserDictionary private constructor (
         return Entry(cd, okr)
     }
 
+    override fun getCandidates(rawKey: String): List<String>? =
+        getEntry(rawKey)?.candidates?.distinct()
+
     fun addEntry(key: String, value: String, okuri: String?) {
         mOldKey = key
         val newVal = StringBuilder()
