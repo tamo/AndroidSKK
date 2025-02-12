@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.util.AttributeSet
 import android.util.SparseArray
-import android.view.HapticFeedbackConstants
 import android.view.KeyEvent
 import android.view.MotionEvent
 import android.widget.PopupWindow
@@ -390,7 +389,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                     dx2 + dy2 < mFlickSensitivitySquared -> {
                         if (mFlickState != EnumSet.of(FlickState.NONE)) {
                             mFlickState = EnumSet.of(FlickState.NONE)
-                            performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+                            performHapticFeedback(skkPrefs.haptic)
                         }
                         mArrowFlicked = false
                     }
@@ -468,7 +467,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
         }
         if (mFlickState != newState) {
             mFlickState = newState
-            performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+            performHapticFeedback(skkPrefs.haptic)
             stopRepeatKey()
         }
     }
@@ -515,7 +514,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
             )
         ) {
             mFlickState = newstate
-            performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+            performHapticFeedback(skkPrefs.haptic)
         }
     }
 

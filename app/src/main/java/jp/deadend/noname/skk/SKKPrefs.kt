@@ -68,6 +68,10 @@ class SKKPrefs(context: Context) {
         get() = prefs.getBoolean(res.getString(R.string.prefkey_show_status_icon), true)
         set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_show_status_icon), value).apply()
 
+    var haptic: Int
+        get() = prefs.getInt(res.getString(R.string.prefkey_haptic), 1)
+        set(value) = prefs.edit().putInt(res.getString(R.string.prefkey_haptic), value).apply()
+
     var preferFlick: Boolean
         get() = prefs.getBoolean(res.getString(R.string.prefkey_use_flick), true)
         set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_use_flick), value).apply()

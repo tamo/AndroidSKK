@@ -284,7 +284,7 @@ open class KeyboardView @JvmOverloads constructor(
     var isFlicked = 0
         set(value) {
             if (field != value) {
-                performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+                performHapticFeedback(skkPrefs.haptic)
                 if (value != 0) mHandler.removeMessages(MSG_LONGPRESS)
                 else if (mCurrentKey != NOT_A_KEY) {
                     mHandler.sendMessageDelayed(
@@ -570,7 +570,7 @@ open class KeyboardView @JvmOverloads constructor(
 
     private fun pressKey(keyIndex: Int) {
         if (keyIndex < 0 || keyIndex >= mKeyboard.keys.size) { return }
-        performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+        performHapticFeedback(skkPrefs.haptic)
         mKeyboard.keys[keyIndex].press()
         invalidateKey(keyIndex)
         showPreview(keyIndex)

@@ -21,6 +21,15 @@
                 app:key="@string/prefkey_show_status_icon"
                 app:summary="ソフトウェアキーボード使用時にも「あ」「ア」「Ａ」「ab」といった状態を表示します"
                 app:title="ステータスアイコンを表示" />
+            <androidx.preference.SeekBarPreference
+                android:max="27"
+                app:defaultValue="1"
+                app:iconSpaceReserved="false"
+                app:key="@string/prefkey_haptic"
+                app:min="-1"
+                app:showSeekBarValue="true"
+                app:summary="-1 でオフになり 4 や 27 が弱いです"
+                app:title="触感フィードバック種類" />
             <androidx.preference.PreferenceCategory
                 app:iconSpaceReserved="false"
                 app:title="日本語キーボード">

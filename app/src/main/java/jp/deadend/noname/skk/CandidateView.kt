@@ -23,7 +23,6 @@ import android.graphics.Path
 import android.graphics.drawable.Drawable
 import android.util.AttributeSet
 import android.view.GestureDetector
-import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
 import android.view.View
 import androidx.core.content.res.ResourcesCompat
@@ -320,7 +319,7 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
             setScrollButtonsEnabled(targetX)
             invalidate()
             mScrolled = true
-            performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+            performHapticFeedback(skkPrefs.haptic)
         }
     }
 
@@ -358,7 +357,7 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
                 if (!mScrolled) {
                     if (mSelectedIndex >= 0) {
                         mService.pickCandidateViewManually(mSelectedIndex)
-                        performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+                        performHapticFeedback(skkPrefs.haptic)
                     }
                 }
                 mSelectedIndex = -1

@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.util.AttributeSet
 import android.util.SparseArray
-import android.view.HapticFeedbackConstants
 import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.WindowManager
@@ -461,7 +460,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
                     dx * dx + dy * dy < mFlickSensitivitySquared -> {
                         if (mFlickState != EnumSet.of(FlickState.NONE)) {
                             mFlickState = EnumSet.of(FlickState.NONE)
-                            performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+                            performHapticFeedback(skkPrefs.haptic)
                         }
                     }
                     mArrowPressed -> {
@@ -543,7 +542,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
         }
         if (mFlickState != newState) {
             mFlickState = newState
-            performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+            performHapticFeedback(skkPrefs.haptic)
             stopRepeatKey()
         }
     }
@@ -601,7 +600,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
             )
         ) {
             mFlickState = newstate
-            performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+            performHapticFeedback(skkPrefs.haptic)
         }
     }
 

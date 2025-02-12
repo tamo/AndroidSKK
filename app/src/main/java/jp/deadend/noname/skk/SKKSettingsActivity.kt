@@ -15,6 +15,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
+import androidx.preference.PreferenceManager
 import jp.deadend.noname.skk.databinding.ActivitySettingsBinding
 
 
@@ -87,6 +88,15 @@ class SKKSettingsActivity : AppCompatActivity(),
         val imList = imManager.enabledInputMethodList
         if ("${packageName}/.SKKService" !in imList.map { it.id })
             startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS))
+
+        // 触感のプレビュー
+        PreferenceManager.getDefaultSharedPreferences(applicationContext)
+            .registerOnSharedPreferenceChangeListener { prefs, key ->
+                if (key == applicationContext.resources.getString(R.string.prefkey_haptic)) {
+                    val haptic = prefs.getInt(key, 1)
+                    ViewCompat.performHapticFeedback(binding.root, haptic)
+                }
+            }
     }
 
     override fun onPreferenceStartFragment(caller: PreferenceFragmentCompat, pref: Preference): Boolean {

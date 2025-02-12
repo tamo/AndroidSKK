@@ -57,6 +57,7 @@
 	<string translatable="false" name="prefkey_ignore_high_contrast">PrefKeyOriginalColor</string>
 	<string translatable="false" name="prefkey_use_softkey">PrefKeyUseSoftKey</string>
 	<string translatable="false" name="prefkey_show_status_icon">PrefKeyShowStatusIcon</string>
+	<string translatable="false" name="prefkey_haptic">PrefKeyHaptic</string>
 	<string translatable="false" name="prefkey_use_flick">PrefKeyPreferFlick</string>
 	<string translatable="false" name="prefkey_use_godan">PrefKeyPreferGodan</string>
 	<string translatable="false" name="prefkey_godan_simple">PrefKeyGodanSimple</string>
