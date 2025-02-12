@@ -268,7 +268,7 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
             var lineW = 0
             var totalLineW = 0
             mTotalWidth = mSuggestions.map { suggestion ->
-                mPaint.measureText(suggestion).toInt().coerceAtLeast(mLineHeight / 2) + X_GAP * 2
+                mPaint.measureText(suggestion).coerceAtLeast(mLineHeight * 0.7f) + X_GAP * 2
             }.foldIndexed(0) { i, _, wordWidth ->
                 // 改行
                 if (lineW != 0 && lineW + wordWidth > width) {
@@ -283,10 +283,10 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
                 }
 
                 // 登録
-                mWordWidth[i] = wordWidth
+                mWordWidth[i] = wordWidth.toInt()
                 mWordX[i] = lineX + lineW
                 mWordL[i] = lineN
-                lineW += wordWidth
+                lineW += wordWidth.toInt()
                 totalLineW = lineW.coerceAtLeast(totalLineW)
                 lineX + totalLineW
             }
