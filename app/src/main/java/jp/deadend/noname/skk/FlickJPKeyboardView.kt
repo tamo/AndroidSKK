@@ -195,7 +195,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
             mKutoutenKey.codes[0] = KEYCODE_FLICK_JP_CHAR_TEN_SHIFTED
             mKutoutenKey.label = "「\n（□）\n」"
             mSpaceKey.label = "設定"
-            mQwertyKey.label = "abbr"
+            mQwertyKey.label = "全角ａ\n☻略記\nqwerty"
         } else {
             mKutoutenKey.codes[0] = KEYCODE_FLICK_JP_CHAR_TEN
             mKutoutenKey.label = mKutoutenLabel
@@ -897,16 +897,12 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
                 EnumSet.of(FlickState.DOWN) -> if (keyboard !== mVoiceKeyboard) { keyboard = mVoiceKeyboard }
             }
             KEYCODE_FLICK_JP_TOKANA -> if (keyboard !== mJPKeyboard) { keyboard = mJPKeyboard }
-            KEYCODE_FLICK_JP_TOQWERTY -> if (isShifted) {
-                mService.processKey('/'.code)
-            } else {
-                when (mFlickState) {
-                    EnumSet.of(FlickState.NONE)  -> mService.processKey('l'.code)
-                    EnumSet.of(FlickState.LEFT)  -> mService.emojiCandidates()
-                    EnumSet.of(FlickState.UP)    -> mService.processKey('L'.code)
-                    EnumSet.of(FlickState.RIGHT) -> mService.symbolCandidates()
-                    EnumSet.of(FlickState.DOWN)  -> mService.changeSoftKeyboard(SKKASCIIState)
-                }
+            KEYCODE_FLICK_JP_TOQWERTY -> when (mFlickState) {
+                EnumSet.of(FlickState.NONE) -> mService.processKey((if (isShifted) '/' else 'l').code)
+                EnumSet.of(FlickState.LEFT) -> mService.emojiCandidates(isShifted)
+                EnumSet.of(FlickState.UP) -> mService.processKey('L'.code)
+                EnumSet.of(FlickState.RIGHT) -> mService.symbolCandidates(isShifted)
+                EnumSet.of(FlickState.DOWN) -> mService.changeSoftKeyboard(SKKASCIIState)
             }
             KEYCODE_FLICK_JP_SPEECH -> mService.recognizeSpeech()
             KEYCODE_FLICK_JP_PASTE  -> mService.pasteClip()

@@ -772,8 +772,8 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                         if (mIsASCII) mService.handleKanaKey() // ひらがなを経由
                         mService.processKey(17)
                     }
-                    "記号" -> mService.symbolCandidates()
-                    "絵☻" -> mService.emojiCandidates()
+                    "記号" -> mService.symbolCandidates(isShifted)
+                    "絵☻" -> mService.emojiCandidates(isShifted)
                     else -> if (
                         popupText.length == 2 &&
                         popupText[0] in listOf(

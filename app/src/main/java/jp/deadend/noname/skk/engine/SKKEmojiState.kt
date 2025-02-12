@@ -1,6 +1,7 @@
 package jp.deadend.noname.skk.engine
 
 object SKKEmojiState : SKKState {
+    var isSequential = false
     override val isTransient = false
     override val icon = 0
 
@@ -12,7 +13,10 @@ object SKKEmojiState : SKKState {
         when (pcode) {
             ' '.code -> context.chooseAdjacentSuggestion(true)
             'x'.code -> context.chooseAdjacentSuggestion(false)
-            ':'.code -> context.changeState(SKKNarrowingState)
+            ':'.code -> {
+                context.changeState(SKKNarrowingState)
+                SKKNarrowingState.isSequential = isSequential
+            }
             else -> {
                 context.oldState.processKey(context, pcode)
                 if (context.state === SKKEmojiState) {

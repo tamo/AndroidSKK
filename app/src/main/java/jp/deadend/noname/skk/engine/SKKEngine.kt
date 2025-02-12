@@ -818,8 +818,9 @@ class SKKEngine(
         )
     }
 
-    internal fun symbolCandidates() {
+    internal fun symbolCandidates(sequential: Boolean) {
         changeState(SKKEmojiState)
+        SKKEmojiState.isSequential = sequential
         val set = mutableSetOf<Pair<String, String>>()
         runBlocking {
             addFound(this, set, "/きごう", mASCIIDict)
@@ -834,8 +835,9 @@ class SKKEngine(
         mService.setCandidates(mCandidatesList, "/きごう", skkPrefs.candidatesNormalLines)
     }
 
-    internal fun emojiCandidates() {
+    internal fun emojiCandidates(sequential: Boolean) {
         changeState(SKKEmojiState)
+        SKKEmojiState.isSequential = sequential
         updateSuggestions("emoji")
     }
 
@@ -924,6 +926,7 @@ class SKKEngine(
             )
         }
 
+        if (state === SKKNarrowingState && SKKNarrowingState.isSequential) { return }
         reset()
         changeState(kanaState)
     }
@@ -992,6 +995,7 @@ class SKKEngine(
                     }
                     SKKEmojiState -> {
                         commitTextSKK(removeAnnotation(s))
+                        if (SKKEmojiState.isSequential) { return }
                         reset() // 暗黙の確定がされないように
                         changeState(oldState)
                     }
@@ -1107,6 +1111,7 @@ class SKKEngine(
                 SKKNarrowingState.mHint.setLength(0)
                 SKKNarrowingState.mOriginalCandidates = null
                 SKKNarrowingState.mSpaceUsed = false
+                SKKNarrowingState.isSequential = false
                 setCurrentCandidateToComposing()
             }
         }

@@ -1,6 +1,7 @@
 package jp.deadend.noname.skk.engine
 
 object SKKNarrowingState : SKKState {
+    var isSequential = false
     override val isTransient = true
     override val icon = 0
 

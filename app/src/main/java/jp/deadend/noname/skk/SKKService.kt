@@ -865,11 +865,11 @@ class SKKService : InputMethodService() {
     fun googleTransliterate() {
         mEngine.googleTransliterate()
     }
-    fun symbolCandidates() {
-        mEngine.symbolCandidates()
+    fun symbolCandidates(sequential: Boolean) {
+        mEngine.symbolCandidates(sequential)
     }
-    fun emojiCandidates() {
-        mEngine.emojiCandidates()
+    fun emojiCandidates(sequential: Boolean) {
+        mEngine.emojiCandidates(sequential)
     }
     fun pickCandidateViewManually(index: Int) {
         mEngine.pickCandidateViewManually(index)
