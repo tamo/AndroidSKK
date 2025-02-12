@@ -8,8 +8,6 @@ import jp.deadend.noname.skk.engine.SKKAbbrevState
 import jp.deadend.noname.skk.engine.SKKState
 
 class AbbrevKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
-    private var mFlickSensitivitySquared = 100
-
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
     constructor(context: Context, attrs: AttributeSet?, defStyle: Int) : super(context, attrs, defStyle)
 
@@ -24,10 +22,6 @@ class AbbrevKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
         super.onDetachedFromWindow()
         isShifted = false
         isCapsLocked = false
-    }
-
-    fun setFlickSensitivity(sensitivity: Int) {
-        mFlickSensitivitySquared = sensitivity * sensitivity
     }
 
 //    override fun onLongPress(key: Keyboard.Key): Boolean {

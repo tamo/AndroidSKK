@@ -22,7 +22,6 @@ import jp.deadend.noname.skk.engine.SKKZenkakuState
 import java.util.EnumSet
 
 class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(context, attrs), KeyboardView.OnKeyboardActionListener {
-    private var mFlickSensitivitySquared = 100
     private var mLastPressedKey = KEYCODE_GODAN_NONE
     private var mFlickState = EnumSet.of(FlickState.NONE)
     private var mFlickStartX = -1f
@@ -217,15 +216,6 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
     }
 
     private fun readPrefs(context: Context) {
-        // フリック感度
-        val density = context.resources.displayMetrics.density
-        val sensitivity = when (skkPrefs.flickSensitivity) {
-            "low"  -> (36 * density + 0.5f).toInt()
-            "high" -> (12 * density + 0.5f).toInt()
-            else   -> (24 * density + 0.5f).toInt()
-        }
-        mFlickSensitivitySquared = sensitivity * sensitivity
-
         // シフトかな交換
         setShiftPosition()
         // その後でキャンセル Q 交換

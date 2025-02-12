@@ -17,8 +17,6 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
         Keyboard(context, R.xml.symbols, mService.mScreenWidth, mService.mScreenHeight)
     }
 
-    private var mFlickSensitivitySquared = 100
-
     private var mSpacePressed = false
     private var mSpaceFlicked = false
 
@@ -40,10 +38,6 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
     override fun handleBack(): Boolean {
         mService.clearCandidatesView()
         return super.handleBack()
-    }
-
-    fun setFlickSensitivity(sensitivity: Int) {
-        mFlickSensitivitySquared = sensitivity * sensitivity
     }
 
     override fun onLongPress(key: Keyboard.Key): Boolean {

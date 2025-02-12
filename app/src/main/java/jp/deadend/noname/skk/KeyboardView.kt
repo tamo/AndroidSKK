@@ -88,6 +88,8 @@ open class KeyboardView @JvmOverloads constructor(
     private val mSwipeTracker = SwipeTracker()
     private val mSwipeThreshold = (500 * resources.displayMetrics.density).toInt()
     private val mDisambiguateSwipe = resources.getBoolean(R.bool.config_swipeDisambiguation)
+    open var mFlickSensitivitySquared = 100
+
 
     // Variables for dealing with multiple pointers
     private var mActivePointerId = -1 // 有効な ID は 0 とか 1 とかなので初期値は負にしておく
@@ -248,6 +250,10 @@ open class KeyboardView @JvmOverloads constructor(
     }
 
     open fun setKeyState(state: SKKState): KeyboardView = this
+
+    open fun setFlickSensitivity(sensitivity: Int) {
+        mFlickSensitivitySquared = sensitivity * sensitivity
+    }
 
     var keyboard: Keyboard
         get() = mKeyboard

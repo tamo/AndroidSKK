@@ -85,15 +85,6 @@
             <androidx.preference.PreferenceCategory
                 app:iconSpaceReserved="false"
                 app:title="英字キーボード">
-                <androidx.preference.ListPreference
-                    app:defaultValue="high"
-                    app:dialogTitle="フリック感度"
-                    app:entries="@array/sensitivity_entries"
-                    app:entryValues="@array/sensitivity_values"
-                    app:iconSpaceReserved="false"
-                    app:key="@string/prefkey_flick_sensitivity2"
-                    app:title="英字フリック感度"
-                    app:useSimpleSummaryProvider="true" />
                 <androidx.preference.CheckBoxPreference
                     app:defaultValue="true"
                     app:iconSpaceReserved="false"
@@ -140,6 +131,15 @@
         <androidx.preference.PreferenceCategory
             app:iconSpaceReserved="false"
             app:title="サイズ">
+            <androidx.preference.ListPreference
+                app:defaultValue="high"
+                app:dialogTitle="フリック感度"
+                app:entries="@array/sensitivity_entries"
+                app:entryValues="@array/sensitivity_values"
+                app:iconSpaceReserved="false"
+                app:key="@string/prefkey_flick_sensitivity2"
+                app:title="フリック感度"
+                app:useSimpleSummaryProvider="true" />
             <androidx.preference.SeekBarPreference
                 android:max="200"
                 app:defaultValue="100"

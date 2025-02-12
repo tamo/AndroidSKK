@@ -357,6 +357,8 @@ class SKKService : InputMethodService() {
             "high" -> (12 * density + 0.5f).toInt()
             else   -> (24 * density + 0.5f).toInt()
         }
+        flick.setFlickSensitivity(sensitivity)
+        godan.setFlickSensitivity(sensitivity)
         qwerty.setFlickSensitivity(sensitivity)
         qwerty.backgroundAlpha = 255 * alpha / 100
         abbrev.setFlickSensitivity(sensitivity)
