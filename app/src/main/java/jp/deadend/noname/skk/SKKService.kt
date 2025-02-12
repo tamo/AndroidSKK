@@ -949,14 +949,6 @@ class SKKService : InputMethodService() {
         }
     }
 
-    fun onStartRegister() {
-        mFlickJPInputView?.setRegisterMode(true)
-    }
-
-    fun onFinishRegister() {
-        mFlickJPInputView?.setRegisterMode(false)
-    }
-
     fun sendToMushroom() {
         val clip = (getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager)
                         .primaryClip?.getItemAt(0)?.coerceToText(this) ?: ""

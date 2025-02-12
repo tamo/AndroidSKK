@@ -196,20 +196,12 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
             mKutoutenKey.label = "「\n（□）\n」"
             mSpaceKey.label = "設定"
             mQwertyKey.label = "全角ａ\n☻略記\nqwerty"
-        } else {
-            mKutoutenKey.codes[0] = KEYCODE_FLICK_JP_CHAR_TEN
-            mKutoutenKey.label = mKutoutenLabel
-            mSpaceKey.label = ""
-            mQwertyKey.label = "全角ａ\n☻abc記\nqwerty" // 変更したら voice.xml も更新すること
-        }
-    }
 
-    internal fun setRegisterMode(isRegistering: Boolean) {
-        if (isRegistering) {
+            // ＜＞を変更
             var key = findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_LEFT)
             if (key != null) {
                 key.codes[0] = KEYCODE_FLICK_JP_PASTE
-                key.label = "貼り付け"
+                key.label = "貼付"
             }
             key = findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_RIGHT)
             if (key != null) {
@@ -217,6 +209,12 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
                 key.label = "Google"
             }
         } else {
+            mKutoutenKey.codes[0] = KEYCODE_FLICK_JP_CHAR_TEN
+            mKutoutenKey.label = mKutoutenLabel
+            mSpaceKey.label = ""
+            mQwertyKey.label = "全角ａ\n☻abc記\nqwerty" // 変更したら voice.xml も更新すること
+
+            // ＜＞を復元
             var key = findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_PASTE)
             if (key != null) {
                 key.codes[0] = KEYCODE_FLICK_JP_LEFT
@@ -228,7 +226,6 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
                 key.label = ""
             }
         }
-        invalidateAllKeys()
     }
 
     internal fun prepareNewKeyboard(context: Context, widthPixel: Int, heightPixel: Int, bottomPercent: Int) {

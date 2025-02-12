@@ -133,7 +133,6 @@ class SKKEngine(
     fun handleBackKey(): Boolean {
         if (!mRegistrationStack.isEmpty()) {
             mRegistrationStack.removeFirst()
-            mService.onFinishRegister()
         }
 
         if (state.isTransient) {
@@ -704,8 +703,6 @@ class SKKEngine(
         reset()
         changeState(kanaState)
         //setComposingTextSKK("", 1);
-
-        mService.onStartRegister()
     }
 
     private fun registerWord() {
@@ -734,8 +731,6 @@ class SKKEngine(
         }
         reset()
         if (!mRegistrationStack.isEmpty()) setComposingTextSKK("")
-
-        mService.onFinishRegister()
     }
 
     internal fun cancelRegister() {
@@ -753,20 +748,18 @@ class SKKEngine(
         changeState(SKKKanjiState)
         setComposingTextSKK("${mKanjiKey}${mComposing}")
         updateSuggestions(mKanjiKey.toString())
-        mService.onFinishRegister()
     }
 
     internal fun googleTransliterate() {
         if (mRegistrationStack.isEmpty()) {
             if (mKanjiKey.isEmpty()) return
         } else {
-            // candidate から選択しただけで登録されるので、onFinishRegister してから変換
+            // candidate から選択しただけで登録されるので
             val regInfo = mRegistrationStack.removeFirst() ?: return
             mComposing.setLength(0)
             mKanjiKey.setLength(0)
             mKanjiKey.append(regInfo.key)
             mOkurigana = regInfo.okurigana
-            mService.onFinishRegister()
         }
         dlog("googleTransliterate mKanjiKey=${mKanjiKey} mOkurigana=${mOkurigana}")
 
