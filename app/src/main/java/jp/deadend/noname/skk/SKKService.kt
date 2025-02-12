@@ -896,9 +896,9 @@ class SKKService : InputMethodService() {
     }
 
     fun handleDpad(keyCode: Int): Boolean {
+        dlog("handleDpad(${KeyEvent.keyCodeToString(keyCode)}) in ${mEngine.state}")
         if (mStickyShift) mShiftKey.useState()
         when {
-            mEngine.isRegistering -> { return true }
             mEngine.state === SKKChooseState -> {
                 when (keyCode) {
                     KeyEvent.KEYCODE_DPAD_LEFT -> mEngine.chooseAdjacentCandidate(false)
@@ -913,6 +913,7 @@ class SKKService : InputMethodService() {
                 }
                 return true
             }
+            mEngine.isRegistering -> { return true }
             mEngine.state.isTransient -> { return true }
         }
 
@@ -950,12 +951,10 @@ class SKKService : InputMethodService() {
 
     fun onStartRegister() {
         mFlickJPInputView?.setRegisterMode(true)
-        mGodanInputView?.setRegisterMode(true)
     }
 
     fun onFinishRegister() {
         mFlickJPInputView?.setRegisterMode(false)
-        mGodanInputView?.setRegisterMode(false)
     }
 
     fun sendToMushroom() {

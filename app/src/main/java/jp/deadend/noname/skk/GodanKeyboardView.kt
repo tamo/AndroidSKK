@@ -172,33 +172,6 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
         spaceKey.label = if (isShifted) "設定" else ""
     }
 
-    internal fun setRegisterMode(isRegistering: Boolean) {
-        if (isRegistering) {
-            var key = findKeyByCode(keyboard, KEYCODE_GODAN_LEFT)
-            if (key != null) {
-                key.codes[0] = KEYCODE_GODAN_PASTE
-                key.label = "貼り付け"
-            }
-            key = findKeyByCode(keyboard, KEYCODE_GODAN_RIGHT)
-            if (key != null) {
-                key.codes[0] = KEYCODE_GODAN_GOOGLE
-                key.label = "Google"
-            }
-        } else {
-            var key = findKeyByCode(keyboard, KEYCODE_GODAN_PASTE)
-            if (key != null) {
-                key.codes[0] = KEYCODE_GODAN_LEFT
-                key.label = ""
-            }
-            key = findKeyByCode(keyboard, KEYCODE_GODAN_GOOGLE)
-            if (key != null) {
-                key.codes[0] = KEYCODE_GODAN_RIGHT
-                key.label = ""
-            }
-        }
-        invalidateAllKeys()
-    }
-
     internal fun prepareNewKeyboard(context: Context, widthPixel: Int, heightPixel: Int, bottomPercent: Int) {
         keyboard = Keyboard(
             context,
@@ -401,8 +374,10 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                         when {
                             adx2 > ady2 && adx2 > mFlickSensitivitySquared -> {
                                 if (adx < 0) {
-                                    mService.keyDownUp(KeyEvent.KEYCODE_DPAD_LEFT)
-                                } else {
+                                    if (!mService.handleDpad(KeyEvent.KEYCODE_DPAD_LEFT)) {
+                                        mService.keyDownUp(KeyEvent.KEYCODE_DPAD_LEFT)
+                                    }
+                                } else if (!mService.handleDpad(KeyEvent.KEYCODE_DPAD_RIGHT)) {
                                     mService.keyDownUp(KeyEvent.KEYCODE_DPAD_RIGHT)
                                 }
                                 mArrowFlicked = true
@@ -413,8 +388,10 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                             }
                             adx2 < ady2 && ady2 > mFlickSensitivitySquared -> {
                                 if (ady < 0) {
-                                    mService.keyDownUp(KeyEvent.KEYCODE_DPAD_UP)
-                                } else {
+                                    if (!mService.handleDpad(KeyEvent.KEYCODE_DPAD_UP)) {
+                                        mService.keyDownUp(KeyEvent.KEYCODE_DPAD_UP)
+                                    }
+                                } else if (!mService.handleDpad(KeyEvent.KEYCODE_DPAD_DOWN)) {
                                     mService.keyDownUp(KeyEvent.KEYCODE_DPAD_DOWN)
                                 }
                                 mArrowFlicked = true

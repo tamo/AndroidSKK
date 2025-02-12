@@ -471,8 +471,10 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
                         when {
                             adx2 > ady2 && adx2 > mFlickSensitivitySquared -> {
                                 if (adx < 0) {
-                                    mService.keyDownUp(KeyEvent.KEYCODE_DPAD_LEFT)
-                                } else {
+                                    if (!mService.handleDpad(KeyEvent.KEYCODE_DPAD_LEFT)) {
+                                        mService.keyDownUp(KeyEvent.KEYCODE_DPAD_LEFT)
+                                    }
+                                } else if (!mService.handleDpad(KeyEvent.KEYCODE_DPAD_RIGHT)) {
                                     mService.keyDownUp(KeyEvent.KEYCODE_DPAD_RIGHT)
                                 }
                                 mArrowFlicked = true
@@ -483,8 +485,10 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
                             }
                             adx2 < ady2 && ady2 > mFlickSensitivitySquared -> {
                                 if (ady < 0) {
-                                    mService.keyDownUp(KeyEvent.KEYCODE_DPAD_UP)
-                                } else {
+                                    if (!mService.handleDpad(KeyEvent.KEYCODE_DPAD_UP)) {
+                                        mService.keyDownUp(KeyEvent.KEYCODE_DPAD_UP)
+                                    }
+                                } else if (!mService.handleDpad(KeyEvent.KEYCODE_DPAD_DOWN)) {
                                     mService.keyDownUp(KeyEvent.KEYCODE_DPAD_DOWN)
                                 }
                                 mArrowFlicked = true
