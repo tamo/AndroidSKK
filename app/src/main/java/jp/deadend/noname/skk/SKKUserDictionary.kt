@@ -106,21 +106,38 @@ class SKKUserDictionary private constructor (
         }
     }
 
-    private fun removeEntry(key: String) {
-        safeRun {
-            mOldValue = mBTree.find(key)?.also {
-                mBTree.remove(key)
-                mRecMan.commit()
-            } ?: ""
-            mOldKey = key
+    fun removeEntry(key: String, value: String, okuri: String?) {
+        val entry = getEntry(key) ?: return
+        val cands = entry.candidates // 送/遅/贈;ユーザー辞書にも注釈がある
+        val okrs = entry.okuriBlocks // [ら/送/]/[り/送/]/[る/送;注釈もありうる?/]
+        val rawVal = value.takeWhile { it != ';' } // 注釈を無視して探す
+
+        if (!okrs.removeIf { pair ->
+            pair.first == okuri && pair.second.takeWhile { it != ';' } == rawVal
+        } || okrs.isEmpty()) { // 送りブロックが残らない場合は丸ごと消す、でいいのか?
+            cands.removeIf { old ->
+                old.takeWhile { it != ';' } == rawVal
+            }
         }
+
+        val newVal = cands.fold("") { acc, str -> "$acc/$str" } +
+                okrs.fold("") { acc, pair -> "$acc/[${pair.first}/${pair.second}/]" } +
+                "/"
+        replaceEntry(key, newVal)
     }
 
-    fun replaceEntry(key: String, value: String, okuri: String?) {
-        removeEntry(key)
-        val oldValue = mOldValue
-        addEntry(key, value, okuri)
-        mOldValue = oldValue
+    fun replaceEntry(key: String, value: String) {
+        safeRun {
+            // ここは再変換と関係ないので old を更新しない
+            //mOldKey = key
+            //mOldValue = mBTree.find(key)
+            if (value.isEmpty() || Regex("/*").matchEntire(value) != null) {
+                mBTree.remove(key)
+            } else {
+                mBTree.insert(key, value, true)
+            }
+            mRecMan.commit()
+        }
     }
 
     fun rollBack() {

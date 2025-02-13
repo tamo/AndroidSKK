@@ -24,6 +24,7 @@ object SKKChooseState : SKKState {
             when (pcode) {
                 ' '.code -> chooseAdjacentCandidate(true)
                 'x'.code -> chooseAdjacentCandidate(false)
+                'X'.code -> pickCurrentCandidate(unregister = true)
                 '>'.code -> {
                     // 接尾辞入力
                     pickCurrentCandidate()

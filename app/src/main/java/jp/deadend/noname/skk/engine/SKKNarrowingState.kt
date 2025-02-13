@@ -27,6 +27,8 @@ object SKKNarrowingState : SKKState {
                     changeInputMode(pcode)
                 }
 
+                'X'.code -> pickCurrentCandidate(unregister = true)
+
                 else -> if (mSpaceUsed && pcode == 'x'.code) {
                     chooseAdjacentCandidate(false)
                 } else {

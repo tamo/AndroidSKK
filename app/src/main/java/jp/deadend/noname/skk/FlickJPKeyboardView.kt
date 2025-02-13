@@ -13,6 +13,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.content.res.ResourcesCompat
 import jp.deadend.noname.skk.databinding.PopupFlickguideBinding
 import jp.deadend.noname.skk.engine.SKKASCIIState
+import jp.deadend.noname.skk.engine.SKKChooseState
 import jp.deadend.noname.skk.engine.SKKEngine
 import jp.deadend.noname.skk.engine.SKKHanKanaState
 import jp.deadend.noname.skk.engine.SKKHiraganaState
@@ -606,18 +607,20 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
     }
 
     private fun processFlickForLetter(keyCode: Int, flick: EnumSet<FlickState>) {
-        var vowel: Int = 'a'.code
-        when {
-            flick.contains(FlickState.LEFT) -> vowel = 'i'.code
-            flick.contains(FlickState.UP) -> vowel = 'u'.code
-            flick.contains(FlickState.RIGHT) -> vowel = 'e'.code
-            flick.contains(FlickState.DOWN) -> vowel = 'o'.code
-        }
+        val vowel = when {
+            flick.contains(FlickState.LEFT) -> 'i'
+            flick.contains(FlickState.UP) -> 'u'
+            flick.contains(FlickState.RIGHT) -> 'e'
+            flick.contains(FlickState.DOWN) -> 'o'
+            else -> 'a'
+        }.code
 
-        val consonant: Int
-        when (keyCode) {
+        val consonant: Int = when (keyCode) {
             KEYCODE_FLICK_JP_CHAR_A -> {
                 if (isLeftCurve(flick)) {
+                    if (mService.engineState === SKKChooseState) {
+                        mService.handleEnter() // x の前に確定しておく
+                    }
                     mService.processKey('x'.code)
                     mService.processKey(vowel)
                 } else if (!mService.isHiragana && flick == EnumSet.of(FlickState.UP, FlickState.CURVE_RIGHT)) {
@@ -630,16 +633,16 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
                 }
                 return
             }
-            KEYCODE_FLICK_JP_CHAR_KA -> consonant = (if (isRightCurve(flick)) 'g' else 'k').code
-            KEYCODE_FLICK_JP_CHAR_SA -> consonant = (if (isRightCurve(flick)) 'z' else 's').code
-            KEYCODE_FLICK_JP_CHAR_TA -> consonant = (if (isRightCurve(flick)) 'd' else 't').code
-            KEYCODE_FLICK_JP_CHAR_NA -> consonant = 'n'.code
-            KEYCODE_FLICK_JP_CHAR_HA -> consonant = when {
-                isRightCurve(flick) -> 'b'.code
-                isLeftCurve(flick)  -> 'p'.code
-                else -> 'h'.code
+            KEYCODE_FLICK_JP_CHAR_KA -> if (isRightCurve(flick)) 'g' else 'k'
+            KEYCODE_FLICK_JP_CHAR_SA -> if (isRightCurve(flick)) 'z' else 's'
+            KEYCODE_FLICK_JP_CHAR_TA -> if (isRightCurve(flick)) 'd' else 't'
+            KEYCODE_FLICK_JP_CHAR_NA -> 'n'
+            KEYCODE_FLICK_JP_CHAR_HA -> when {
+                isRightCurve(flick) -> 'b'
+                isLeftCurve(flick)  -> 'p'
+                else -> 'h'
             }
-            KEYCODE_FLICK_JP_CHAR_MA -> consonant = 'm'.code
+            KEYCODE_FLICK_JP_CHAR_MA -> 'm'
             KEYCODE_FLICK_JP_CHAR_YA -> {
                 val yaSymbol = when {
                     flick.contains(FlickState.LEFT) -> when {
@@ -659,9 +662,9 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
                     mService.processKey(yaSymbol.code)
                     return
                 }
-                consonant = 'y'.code
+                'y'
             }
-            KEYCODE_FLICK_JP_CHAR_RA -> consonant = 'r'.code
+            KEYCODE_FLICK_JP_CHAR_RA -> 'r'
             KEYCODE_FLICK_JP_CHAR_WA -> {
                 when (flick) {
                     EnumSet.of(FlickState.NONE) -> {
@@ -742,7 +745,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
                 return
             }
             else -> return
-        }
+        }.code
 
         mService.suspendSuggestions()
         if (isShifted) {

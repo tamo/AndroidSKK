@@ -307,6 +307,10 @@ class SKKEngine(
                 }
 
                 mCurrentCandidateIndex = 0
+                mUpdateSuggestionsJob.invokeOnCompletion {
+                    setCurrentCandidateToComposing()
+                }
+                return
             } else if (state === SKKNarrowingState) {
                 mCurrentCandidateIndex = candList.size - 1
             }
@@ -612,8 +616,12 @@ class SKKEngine(
                     for (dic in mDicts) { addFound(this@launch, set, replacedStr, dic) }
                 }
 
-                mCompletionList = set.map { it.first }.distinct()
-                mCandidatesList = set.map { it.second }.distinct()
+                set.distinctBy { it.second }
+                    .let { uniqueSet ->
+                        mCompletionList = uniqueSet.map { it.first }
+                        mCandidatesList = uniqueSet.map { it.second }
+                    }
+
                 mCandidateKanjiKey = str
                 mCurrentCandidateIndex = 0
                 withContext(Dispatchers.Main) {
@@ -873,17 +881,22 @@ class SKKEngine(
         }
     }
 
-    internal fun pickCurrentCandidate(backspace: Boolean = false) {
-        pickCandidate(mCurrentCandidateIndex, backspace)
+    internal fun pickCurrentCandidate(backspace: Boolean = false, unregister: Boolean = false) {
+        pickCandidate(mCurrentCandidateIndex, backspace, unregister)
     }
 
-    private fun pickCandidate(index: Int, backspace: Boolean = false) {
-        if (state !== SKKChooseState && state !== SKKNarrowingState) return
+    private fun pickCandidate(index: Int, backspace: Boolean = false, unregister: Boolean = false) {
+        if (state !in listOf(SKKChooseState, SKKNarrowingState, SKKEmojiState)) return
         if (mCandidateKanjiKey == "emoji") {
             mKanjiKey.setLength(0)
             mKanjiKey.append(mCandidateKanjiKey)
             mCompletionList = mCandidatesList?.map { "emoji" }
-            pickSuggestion(index)
+            pickSuggestion(index, unregister)
+            if (unregister) {
+                reset()
+                changeState(oldState)
+                return
+            }
         }
         val candList = mCandidatesList ?: return
         val candidate = StringBuilder(getCandidate(index) ?: return)
@@ -892,6 +905,14 @@ class SKKEngine(
         val kanjiKey = Regex("\\d+(\\.\\d+)?").find(mKanjiKey)?.let { d ->
             mKanjiKey.replaceRange(d.range, "#")
         } ?: mKanjiKey
+
+        if (unregister) {
+            // TODO: 本当に削除するかを確認するべき!
+            mUserDict.removeEntry(kanjiKey.toString(), candList[index], mOkurigana)
+            reset()
+            changeState(kanaState)
+            return
+        }
 
         if (isPersonalizedLearning) {
             mUserDict.addEntry(kanjiKey.toString(), candList[index], mOkurigana)
@@ -924,7 +945,7 @@ class SKKEngine(
         changeState(kanaState)
     }
 
-    private fun pickSuggestion(index: Int) {
+    private fun pickSuggestion(index: Int, unregister: Boolean = false) {
         val number = Regex("\\d+(\\.\\d+)?").find(mKanjiKey)?.value ?: "#"
         val candList = mCandidatesList ?: return
         val s = candList[index].replaceFirst("#", number)
@@ -959,23 +980,33 @@ class SKKEngine(
 
             // 絵文字のときだけ Narrowing でここに来る
             SKKASCIIState, SKKEmojiState, SKKNarrowingState -> {
-                if (isPersonalizedLearning) {
-                    var newEntry = "160/$s"
+                if (isPersonalizedLearning || unregister) {
+                    // TODO: unregister の場合、本当に削除するかを確認する!
+                    var newEntry = "/160/$s"
                     (mASCIIDict.getEntry(c)?.let { entry ->
                         entry.candidates.asSequence() // freq1, val1, freq2, val2
                             .zipWithNext() // (freq1, val1), (val1, freq2), (freq2, val2)
                             .filterIndexed { i, _ -> i % 2 == 0 } // (freq1, val1), (freq2, val2)
                             .mapNotNull {
                                 if (it.second == s) {
-                                    newEntry = "${it.first.toInt().coerceAtLeast(160)}/$s"
+                                    newEntry = "/${it.first.toInt().coerceAtLeast(160)}/$s"
                                     null
                                 } else it
                             }
-                            .fold("") { str, pair -> "$str/${pair.first}/${pair.second}" }
+                            .fold("/") { str, pair -> "$str${pair.first}/${pair.second}/" }
                     } ?: "")
                         .let {
-                            dlog("replaceEntry $c $newEntry$it")
-                            mASCIIDict.replaceEntry(c, newEntry + it, null)
+                            if (unregister) newEntry = ""
+                            dlog("replaceEntry($c, $newEntry$it)")
+                            mASCIIDict.replaceEntry(c, newEntry + it)
+                            if (unregister) {
+                                reset()
+                                when {
+                                    state === SKKEmojiState -> changeState(oldState)
+                                    state === SKKNarrowingState -> changeState(kanaState)
+                                }
+                                return
+                            }
                         }
                 }
                 when (state) {

@@ -13,6 +13,7 @@ object SKKEmojiState : SKKState {
         when (pcode) {
             ' '.code -> context.chooseAdjacentSuggestion(true)
             'x'.code -> context.chooseAdjacentSuggestion(false)
+            'X'.code -> context.pickCurrentCandidate(unregister = true)
             ':'.code -> {
                 context.changeState(SKKNarrowingState)
                 SKKNarrowingState.isSequential = isSequential
