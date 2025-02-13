@@ -673,19 +673,18 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
             KEYCODE_GODAN_CHAR_R,
             KEYCODE_GODAN_CHAR_O,
             KEYCODE_GODAN_CHAR_W -> {
-                var flickIndex = when {
+                val flickIndex = when {
                     mFlickState.contains(FlickState.NONE) -> 0
                     mFlickState.contains(FlickState.LEFT) -> 1
                     mFlickState.contains(FlickState.UP) -> 2
                     mFlickState.contains(FlickState.RIGHT) -> 3
                     mFlickState.contains(FlickState.DOWN) -> 4
                     else -> throw IllegalStateException("mFlickState is $mFlickState")
-                }
-                flickIndex = when {
-                    isLeftCurve(mFlickState) -> flickIndex * 2 + 5
-                    isRightCurve(mFlickState) -> flickIndex * 2 + 6
-                    else -> flickIndex
-                }
+                }.let { when {
+                    isLeftCurve(mFlickState) -> it * 2 + 5
+                    isRightCurve(mFlickState) -> it * 2 + 6
+                    else -> it
+                } }
                 val popupText = mPopupTextView?.getOrNull(flickIndex)?.text ?: ""
                 if (popupText.length == 1) {
                     val code = when (val guidedCode = popupText[0].code) {
@@ -761,6 +760,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                         mPopupTextView?.getOrNull(0)?.text?.let { vowelStr ->
                             when (val vowel = vowelStr.first()) {
                                 'A', 'I', 'U', 'E', 'O' -> {
+                                    mService.suspendSuggestions()
                                     mService.processKey(
                                         if (!isShifted) {
                                             Character.toLowerCase(vowel.code)
@@ -768,6 +768,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                                             vowel.code
                                         }
                                     )
+                                    mService.resumeSuggestions()
                                     // 前の processKey で▼モードになっていたら次で確定してしまうので止まる
                                     if (mService.engineState !== SKKChooseState) when (popupText[1]) {
                                         'っ', 'ッ' -> "xtu"
