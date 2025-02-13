@@ -108,9 +108,9 @@ class SKKPrefs(context: Context) {
         get() = prefs.getBoolean(res.getString(R.string.prefkey_exchange_shift_kana), true)
         set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_exchange_shift_kana), value).apply()
 
-    var flickSensitivity: String
-        get() = prefs.getString(res.getString(R.string.prefkey_flick_sensitivity2), null) ?: "high"
-        set(value) = prefs.edit().putString(res.getString(R.string.prefkey_flick_sensitivity2), value).apply()
+    var flickSensitivity: Int
+        get() = prefs.getInt(res.getString(R.string.prefkey_flick_sensitivity), 24)
+        set(value) = prefs.edit().putInt(res.getString(R.string.prefkey_flick_sensitivity), value).apply()
 
     var useMiniKey: Boolean
         get() = prefs.getBoolean(res.getString(R.string.prefkey_mini_keyboard), true)

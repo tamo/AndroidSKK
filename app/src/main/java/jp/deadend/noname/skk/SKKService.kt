@@ -352,11 +352,7 @@ class SKKService : InputMethodService() {
         abbrev.keyboard.resize(qwertyWidth, keyHeight, keyBottom)
 
         val density = context.resources.displayMetrics.density
-        val sensitivity = when (skkPrefs.flickSensitivity) {
-            "low"  -> (36 * density + 0.5f).toInt()
-            "high" -> (12 * density + 0.5f).toInt()
-            else   -> (24 * density + 0.5f).toInt()
-        }
+        val sensitivity = (skkPrefs.flickSensitivity * density + 0.5f).toInt()
         flick.setFlickSensitivity(sensitivity)
         godan.setFlickSensitivity(sensitivity)
         qwerty.setFlickSensitivity(sensitivity)
