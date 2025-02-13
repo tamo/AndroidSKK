@@ -195,6 +195,7 @@ class SKKUserDicTool : AppCompatActivity() {
     }
 
     public override fun onCreate(savedInstanceState: Bundle?) {
+        startServiceCommand(SKKService.COMMAND_RELOAD_DICS) // commit させる
         super.onCreate(savedInstanceState)
         mDicName = intent.dataString!!
         val binding = ActivityUserDicToolBinding.inflate(layoutInflater)
