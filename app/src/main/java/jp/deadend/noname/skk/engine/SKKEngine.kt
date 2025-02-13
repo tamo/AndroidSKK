@@ -892,11 +892,7 @@ class SKKEngine(
             mKanjiKey.append(mCandidateKanjiKey)
             mCompletionList = mCandidatesList?.map { "emoji" }
             pickSuggestion(index, unregister)
-            if (unregister) {
-                reset()
-                changeState(oldState)
-                return
-            }
+            if (unregister) return
         }
         val candList = mCandidatesList ?: return
         val candidate = StringBuilder(getCandidate(index) ?: return)
@@ -907,10 +903,15 @@ class SKKEngine(
         } ?: mKanjiKey
 
         if (unregister) {
-            // TODO: 本当に削除するかを確認するべき!
-            mUserDict.removeEntry(kanjiKey.toString(), candList[index], mOkurigana)
-            reset()
-            changeState(kanaState)
+            val confirmingState = state as SKKConfirmingState
+            confirmingState.oldComposingText = mComposingText.toString()
+            val unannotated = removeAnnotation(candList[index])
+            setComposingTextSKK("削除? (y/N) /$unannotated/${mOkurigana?.let { "[$mOkurigana/$unannotated/]/" } ?: ""}")
+            confirmingState.pendingLambda = {
+                mUserDict.removeEntry(kanjiKey.toString(), candList[index], mOkurigana)
+                reset()
+                changeState(kanaState)
+            }
             return
         }
 
@@ -981,33 +982,41 @@ class SKKEngine(
             // 絵文字のときだけ Narrowing でここに来る
             SKKASCIIState, SKKEmojiState, SKKNarrowingState -> {
                 if (isPersonalizedLearning || unregister) {
-                    // TODO: unregister の場合、本当に削除するかを確認する!
-                    var newEntry = "/160/$s"
-                    (mASCIIDict.getEntry(c)?.let { entry ->
-                        entry.candidates.asSequence() // freq1, val1, freq2, val2
-                            .zipWithNext() // (freq1, val1), (val1, freq2), (freq2, val2)
-                            .filterIndexed { i, _ -> i % 2 == 0 } // (freq1, val1), (freq2, val2)
-                            .mapNotNull {
-                                if (it.second == s) {
-                                    newEntry = "/${it.first.toInt().coerceAtLeast(160)}/$s"
-                                    null
-                                } else it
-                            }
-                            .fold("/") { str, pair -> "$str${pair.first}/${pair.second}/" }
-                    } ?: "")
-                        .let {
-                            if (unregister) newEntry = ""
-                            dlog("replaceEntry($c, $newEntry$it)")
-                            mASCIIDict.replaceEntry(c, newEntry + it)
-                            if (unregister) {
-                                reset()
-                                when {
-                                    state === SKKEmojiState -> changeState(oldState)
-                                    state === SKKNarrowingState -> changeState(kanaState)
+                    val lambda = {
+                        var newEntry = "/160/$s"
+                        val key = if (state === SKKASCIIState) c else "emoji"
+                        (mASCIIDict.getEntry(key)?.let { entry ->
+                            entry.candidates.asSequence() // freq1, val1, freq2, val2
+                                .zipWithNext() // (freq1, val1), (val1, freq2), (freq2, val2)
+                                .filterIndexed { i, _ -> i % 2 == 0 } // (freq1, val1), (freq2, val2)
+                                .mapNotNull {
+                                    if (it.second == s) {
+                                        newEntry = "/${it.first.toInt().coerceAtLeast(160)}/$s"
+                                        null
+                                    } else it
                                 }
-                                return
+                                .fold("/") { str, pair -> "$str${pair.first}/${pair.second}/" }
+                        } ?: "")
+                            .let {
+                                if (unregister) newEntry = ""
+                                dlog("replaceEntry($key, $newEntry$it)")
+                                mASCIIDict.replaceEntry(key, newEntry + it)
                             }
+                    }
+                    if (unregister) {
+                        val confirmingState = state as SKKConfirmingState
+                        confirmingState.oldComposingText = mComposingText.toString()
+                        val unannotated = removeAnnotation(candList[index])
+                        setComposingTextSKK("削除? (y/N) /$unannotated/${mOkurigana?.let { "[$mOkurigana/$unannotated/]/" } ?: ""}")
+                        confirmingState.pendingLambda = {
+                            lambda()
+                            reset()
+                            changeState(oldState)
                         }
+                        return
+                    } else {
+                        lambda()
+                    }
                 }
                 when (state) {
                     SKKASCIIState -> {

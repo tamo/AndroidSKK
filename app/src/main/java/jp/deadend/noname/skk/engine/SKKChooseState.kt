@@ -4,11 +4,14 @@ import jp.deadend.noname.skk.isAlphabet
 import jp.deadend.noname.skk.skkPrefs
 
 // 変換候補選択中(▼モード)
-object SKKChooseState : SKKState {
+object SKKChooseState : SKKConfirmingState {
     override val isTransient = true
     override val icon = 0
+    override var pendingLambda: (() -> Unit)? = null
+    override var oldComposingText = ""
 
     override fun handleKanaKey(context: SKKEngine) {
+        super.handleKanaKey(context)
         context.apply {
             pickCurrentCandidate() // kanaState になる (カタカナかもしれない)
             if (skkPrefs.toggleKanaKey) {
@@ -20,6 +23,7 @@ object SKKChooseState : SKKState {
     }
 
     override fun processKey(context: SKKEngine, pcode: Int) {
+        if (super.beforeProcessKey(context, pcode)) return
         context.apply {
             when (pcode) {
                 ' '.code -> chooseAdjacentCandidate(true)
@@ -50,12 +54,14 @@ object SKKChooseState : SKKState {
     }
 
     override fun afterBackspace(context: SKKEngine) {
+        super.afterBackspace(context)
         context.apply {
             pickCurrentCandidate(backspace = true)
         }
     }
 
     override fun handleCancel(context: SKKEngine): Boolean {
+        super.handleCancel(context)
         context.apply {
             if (mKanjiKey.isEmpty()) { // どういうとき？
                 changeState(kanaState)
