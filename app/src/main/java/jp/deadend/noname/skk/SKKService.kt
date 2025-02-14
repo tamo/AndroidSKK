@@ -867,8 +867,8 @@ class SKKService : InputMethodService() {
     fun emojiCandidates(sequential: Boolean) {
         mEngine.emojiCandidates(sequential)
     }
-    fun pickCandidateViewManually(index: Int) {
-        mEngine.pickCandidateViewManually(index)
+    fun pickCandidateViewManually(index: Int, unregister: Boolean = false) {
+        mEngine.pickCandidateViewManually(index, unregister)
     }
 
 //    fun getTextBeforeCursor(length: Int): CharSequence? {

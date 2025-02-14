@@ -112,6 +112,12 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
                 invalidate()
                 return true
             }
+
+            override fun onLongPress(e: MotionEvent) {
+                if (mSelectedIndex >= 0) {
+                    mService.pickCandidateViewManually(mSelectedIndex, unregister = true)
+                }
+            }
         })
 
         isHorizontalFadingEdgeEnabled = false

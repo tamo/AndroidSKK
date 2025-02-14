@@ -320,10 +320,19 @@ class SKKEngine(
         setCurrentCandidateToComposing()
     }
 
-    fun pickCandidateViewManually(index: Int) {
+    fun pickCandidateViewManually(index: Int, unregister: Boolean = false) {
+        if (state is SKKConfirmingState) {
+            (state as SKKConfirmingState).apply {
+                if (pendingLambda != null) {
+                    pendingLambda!!.invoke()
+                    pendingLambda = null
+                    return
+                }
+            }
+        }
         when (state) {
-            SKKChooseState, SKKNarrowingState -> pickCandidate(index)
-            SKKAbbrevState, SKKKanjiState, SKKASCIIState, SKKEmojiState -> pickSuggestion(index)
+            SKKChooseState, SKKNarrowingState -> pickCandidate(index, unregister = unregister)
+            SKKAbbrevState, SKKKanjiState, SKKASCIIState, SKKEmojiState -> pickSuggestion(index, unregister)
             else -> throw RuntimeException("cannot pick candidate in $state")
         }
     }
@@ -892,7 +901,7 @@ class SKKEngine(
             mKanjiKey.append(mCandidateKanjiKey)
             mCompletionList = mCandidatesList?.map { "emoji" }
             pickSuggestion(index, unregister)
-            if (unregister) return
+            return
         }
         val candList = mCandidatesList ?: return
         val candidate = StringBuilder(getCandidate(index) ?: return)
@@ -906,7 +915,9 @@ class SKKEngine(
             val confirmingState = state as SKKConfirmingState
             confirmingState.oldComposingText = mComposingText.toString()
             val unannotated = removeAnnotation(candList[index])
-            setComposingTextSKK("削除? (y/N) /$unannotated/${mOkurigana?.let { "[$mOkurigana/$unannotated/]/" } ?: ""}")
+            val entryString = "/$unannotated/${mOkurigana?.let { "[$mOkurigana/$unannotated/]/" } ?: ""}"
+            setComposingTextSKK("削除? (y/N) $entryString")
+            mService.setCandidates(listOf("削除する $entryString"), "", 1)
             confirmingState.pendingLambda = {
                 mUserDict.removeEntry(kanjiKey.toString(), candList[index], mOkurigana)
                 reset()
@@ -1007,7 +1018,9 @@ class SKKEngine(
                         val confirmingState = state as SKKConfirmingState
                         confirmingState.oldComposingText = mComposingText.toString()
                         val unannotated = removeAnnotation(candList[index])
-                        setComposingTextSKK("削除? (y/N) /$unannotated/${mOkurigana?.let { "[$mOkurigana/$unannotated/]/" } ?: ""}")
+                        val entryString = "/$unannotated/${mOkurigana?.let { "[$mOkurigana/$unannotated/]/" } ?: ""}"
+                        setComposingTextSKK("削除? (y/N) $entryString")
+                        mService.setCandidates(listOf("削除する $entryString"), "", 1)
                         confirmingState.pendingLambda = {
                             lambda()
                             reset()
@@ -1026,7 +1039,7 @@ class SKKEngine(
                             reset()
                         }
                     }
-                    SKKEmojiState -> {
+                    SKKEmojiState, SKKNarrowingState -> {
                         commitTextSKK(removeAnnotation(s))
                         if (SKKEmojiState.isSequential) { return }
                         reset() // 暗黙の確定がされないように
