@@ -143,11 +143,11 @@
             <androidx.preference.SeekBarPreference
                 android:max="70"
                 app:defaultValue="24"
-                app:dialogTitle="フリック感度"
                 app:iconSpaceReserved="false"
                 app:key="@string/prefkey_flick_sensitivity"
                 app:min="10"
                 app:showSeekBarValue="true"
+                app:summary="大きいほど鈍いです"
                 app:title="フリック感度" />
             <androidx.preference.SeekBarPreference
                 android:max="200"
