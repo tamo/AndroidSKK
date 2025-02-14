@@ -725,9 +725,15 @@ class SKKEngine(
     private fun registerWord() {
         val regInfo = mRegistrationStack.removeFirst()
         if (regInfo.entry.isNotEmpty()) {
-            var regEntryStr = regInfo.entry.toString()
+            var regEntryStr = regInfo.entry
+                .replace(Regex("\\d+"), "#0")
+                .replace(Regex("[０-９]+"), "#1") /*
+                #2, #3 まで一気に登録してしまうこともできるけど邪魔になる気がするし
+                〇一二三四五六七八九 で自動にするのは誤検出もある
+                そこまで求めるなら自分で #2, #3 を入力すればいい (FlickJP では無理だろうけど)
+                 */
             if (regEntryStr.indexOf(';') != -1 || regEntryStr.indexOf('/') != -1) {
-                // セミコロンとスラッシュのエスケープ
+                // セミコロンとスラッシュのエスケープ (なので登録で注釈を付けることはできない)
                 regEntryStr = (
                         "(concat \""
                         + regEntryStr.replace(";", "\\073").replace("/", "\\057")
@@ -735,7 +741,9 @@ class SKKEngine(
                         )
             }
             // if (isPersonalizedLearning) のチェックはこの場合しないでおく
-            mUserDict.addEntry(regInfo.key, regEntryStr, regInfo.okurigana)
+            mUserDict.addEntry(
+                regInfo.key.replace(Regex("\\d+"), "#"), regEntryStr, regInfo.okurigana
+            )
             mUserDict.commitChanges()
             // entry は生で登録するが okurigana はひらがな
             val okuri = regInfo.okurigana ?: ""
