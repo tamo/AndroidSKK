@@ -115,6 +115,7 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
 
             override fun onLongPress(e: MotionEvent) {
                 if (mSelectedIndex >= 0) {
+                    performHapticFeedback(skkPrefs.haptic)
                     mService.pickCandidateViewManually(mSelectedIndex, unregister = true)
                 }
             }
