@@ -14,6 +14,7 @@ interface SKKConfirmingState : SKKState {
             when (pcode) {
                 'y'.code, 'Y'.code -> {
                     pendingLambda!!.invoke()
+                    pendingLambda = null
                     return true
                 }
                 else -> pendingLambda = null
@@ -23,11 +24,11 @@ interface SKKConfirmingState : SKKState {
     }
 
     override fun afterBackspace(context: SKKEngine) {
-        SKKChooseState.pendingLambda = null
+        pendingLambda = null
     }
 
     override fun handleCancel(context: SKKEngine): Boolean {
-        SKKChooseState.pendingLambda = null
+        pendingLambda = null
         return false
     }
 }
