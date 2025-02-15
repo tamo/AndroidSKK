@@ -201,7 +201,7 @@ interface SKKDictionaryInterface {
         return list.map { it.first to it.second }.also { mIsLocked = false }
     }
 
-    open fun getCandidates(rawKey: String): List<String>? = null
+    fun getCandidates(rawKey: String): List<String>? = null
 
     fun close() {
         try {

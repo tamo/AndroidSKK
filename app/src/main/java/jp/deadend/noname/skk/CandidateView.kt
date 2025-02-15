@@ -61,7 +61,7 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
     private val mTextPath: Path
     private val mPaint = Paint()
     private val mLineHeight
-        get() = (mPaint.textSize * LINESCALE).toInt()
+        get() = (mPaint.textSize * LINE_SCALE).toInt()
 
     private var mTargetScrollX = 0
 
@@ -171,7 +171,7 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
         val touchY = mTouchY
         val scrollX = scrollX
         val scrolled = mScrolled
-        val y = (paint.textSize * (LINESCALE - 1) / 2 - paint.ascent()).toInt()
+        val y = (paint.textSize * (LINE_SCALE - 1) / 2 - paint.ascent()).toInt()
 
         mSuggestions.forEachIndexed { i, suggestion ->
             paint.color = mColorNormal
@@ -389,6 +389,6 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
         private const val OUT_OF_BOUNDS = -1
         private const val MAX_SUGGESTIONS = 2000 // 絵文字は1500程度ある
         private const val X_GAP = 5
-        internal const val LINESCALE = 1.3
+        internal const val LINE_SCALE = 1.3
     }
 }

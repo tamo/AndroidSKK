@@ -554,7 +554,7 @@ class SKKUserDicTool : AppCompatActivity() {
                     ?: mLayoutInflater.inflate(android.R.layout.simple_list_item_1, parent, false)
 
             val item = getItem(position) ?: Tuple("", "")
-            (tv as TextView).text = item.key + "  " + item.value
+            (tv as TextView).text = context.getString(R.string.item_user_entry, item.key, item.value)
 
             return tv
         }

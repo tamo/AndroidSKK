@@ -21,7 +21,7 @@ import android.content.res.Configuration
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.widget.LinearLayout
-import jp.deadend.noname.skk.CandidateView.Companion.LINESCALE
+import jp.deadend.noname.skk.CandidateView.Companion.LINE_SCALE
 import jp.deadend.noname.skk.databinding.ViewCandidatesBinding
 import kotlin.math.abs
 
@@ -187,7 +187,7 @@ class CandidateViewContainer(screen: Context, attrs: AttributeSet) : LinearLayou
             binding.candidates.setTextSize(px)
             mFontSize = px
         }
-        val height = (px * lines * LINESCALE).toInt()
+        val height = (px * lines * LINE_SCALE).toInt()
         binding.candidates.layoutParams = LayoutParams(0, height, 1f)
         requestLayout()
     }

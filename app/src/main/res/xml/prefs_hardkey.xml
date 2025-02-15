@@ -3,13 +3,9 @@
     <androidx.preference.PreferenceCategory
         app:iconSpaceReserved="false"
         app:title="@string/label_pref_hardkeyboard">
-        <jp.deadend.noname.skk.SetKeyPreference
-            app:dialogTitle="Press a key ..."
+        <androidx.preference.Preference
             app:iconSpaceReserved="false"
             app:key="@string/prefkey_kana_key"
-            app:negativeButtonText="キャンセル"
-            app:positiveButtonText="OK"
-            app:summary="かなモードに移行するキー"
             app:title="かなキー" />
         <androidx.preference.CheckBoxPreference
             app:defaultValue="false"
@@ -17,12 +13,9 @@
             app:key="@string/prefkey_toggle_kana_key"
             app:summary="オンだと，かなモードでかなキーを押すとASCIIモードに戻ります"
             app:title="かなキーをASCIIとのトグルに" />
-        <jp.deadend.noname.skk.SetKeyPreference
-            app:dialogTitle="Press a key ..."
+        <androidx.preference.Preference
             app:iconSpaceReserved="false"
             app:key="@string/prefkey_cancel_key"
-            app:negativeButtonText="キャンセル"
-            app:positiveButtonText="OK"
             app:title="キャンセルキー" />
         <androidx.preference.CheckBoxPreference
             app:defaultValue="true"

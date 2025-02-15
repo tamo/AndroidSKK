@@ -88,9 +88,8 @@ class SKKService : InputMethodService() {
             val oldState = kanaState
             mEngine.kanaState = state
             if (oldState != state) {
-                mFlickJPInputView?.setKeyState(state)
-                mQwertyInputView?.setKeyState(state)
-                mGodanInputView?.setKeyState(state)
+                listOf(mFlickJPInputView, mQwertyInputView, mGodanInputView)
+                    .forEach { it?.setKeyState(state) }
             }
         }
     internal val isComposingN
@@ -614,10 +613,8 @@ class SKKService : InputMethodService() {
         super.onStartInputView(editorInfo, restarting)
 
         // シフト等の状態を同期
-        mFlickJPInputView?.setKeyState(engineState)
-        mGodanInputView?.setKeyState(engineState)
-        mQwertyInputView?.setKeyState(engineState)
-        mAbbrevKeyboardView?.setKeyState(engineState)
+        listOf(mFlickJPInputView, mGodanInputView, mQwertyInputView, mAbbrevKeyboardView)
+            .forEach { it?.setKeyState(engineState) }
 
         showStatusIcon(engineState.icon)
     }
@@ -738,7 +735,7 @@ class SKKService : InputMethodService() {
      */
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
         val engineState = mEngine.state
-        val encodedKey = SetKeyDialogFragment.encodeKey(event)
+        val encodedKey = SetKeyUtil.encodeKey(event)
 
         // Process special keys
         if (encodedKey == skkPrefs.kanaKey) {

@@ -21,6 +21,7 @@
 	<string name="label_dicmanager_input_name">辞書の名前を入力</string>
 	<string name="label_dicmanager_reset">辞書を初期化</string>
 	<string name="descr_closeButton">閉じる</string>
+	<string name="item_user_entry">%1$s %2$s</string>
 
 	<string name="message_confirm_remove">このエントリを削除しますか？</string>
 	<string name="message_confirm_clear">現在のユーザー辞書の内容はすべて消去されます。よろしいですか？</string>

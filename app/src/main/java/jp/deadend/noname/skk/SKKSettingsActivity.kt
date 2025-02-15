@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.view.KeyEvent
 import android.view.MenuItem
 import android.view.inputmethod.InputMethodManager
 import androidx.appcompat.app.AppCompatActivity
@@ -17,11 +18,16 @@ import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.PreferenceManager
 import jp.deadend.noname.skk.databinding.ActivitySettingsBinding
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 
-class SKKSettingsActivity : AppCompatActivity(),
-    PreferenceFragmentCompat.OnPreferenceStartFragmentCallback {
+class SKKSettingsActivity : AppCompatActivity() {
     private lateinit var binding: ActivitySettingsBinding
+    var keyPref: Preference? = null
+
     class SettingsMainFragment : PreferenceFragmentCompat() {
         override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
             setPreferencesFromResource(R.xml.prefs_main, rootKey)
@@ -30,20 +36,35 @@ class SKKSettingsActivity : AppCompatActivity(),
     class SettingsSoftKeyFragment : PreferenceFragmentCompat() {
         override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
             setPreferencesFromResource(R.xml.prefs_softkey, rootKey)
+
+            // 触感のプレビュー
+            findPreference<Preference>(getString(R.string.prefkey_haptic))
+                ?.setOnPreferenceChangeListener { _, haptic ->
+                    ViewCompat.performHapticFeedback(requireActivity().window.decorView, haptic as Int)
+                }
         }
     }
+
     class SettingsHardKeyFragment : PreferenceFragmentCompat() {
         override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
             setPreferencesFromResource(R.xml.prefs_hardkey, rootKey)
-        }
 
-        override fun onDisplayPreferenceDialog(preference: Preference) {
-            if (preference is SetKeyPreference) {
-                val dialogFragment = SetKeyDialogFragment.newInstance(preference.key)
-                dialogFragment.setTargetFragment(this, 0)
-                dialogFragment.show(parentFragmentManager, "dialog")
-            } else {
-                super.onDisplayPreferenceDialog(preference)
+            findPreference<Preference>(getString(R.string.prefkey_kana_key))?.apply {
+                setSummary(SetKeyUtil.getKeyName(skkPrefs.kanaKey))
+                setOnPreferenceClickListener {
+                    setSummary("Push any key...")
+                    (requireActivity() as SKKSettingsActivity).keyPref = this
+                    true
+                }
+            }
+
+            findPreference<Preference>(getString(R.string.prefkey_cancel_key))?.apply {
+                setSummary(SetKeyUtil.getKeyName(skkPrefs.cancelKey))
+                setOnPreferenceClickListener {
+                    setSummary("Push any key...")
+                    (requireActivity() as SKKSettingsActivity).keyPref = this
+                    true
+                }
             }
         }
     }
@@ -88,30 +109,34 @@ class SKKSettingsActivity : AppCompatActivity(),
         val imList = imManager.enabledInputMethodList
         if ("${packageName}/.SKKService" !in imList.map { it.id })
             startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS))
-
-        // 触感のプレビュー
-        PreferenceManager.getDefaultSharedPreferences(applicationContext)
-            .registerOnSharedPreferenceChangeListener { prefs, key ->
-                if (key == applicationContext.resources.getString(R.string.prefkey_haptic)) {
-                    val haptic = prefs.getInt(key, 1)
-                    ViewCompat.performHapticFeedback(binding.root, haptic)
-                }
-            }
     }
 
-    override fun onPreferenceStartFragment(caller: PreferenceFragmentCompat, pref: Preference): Boolean {
-        val args = pref.extras
-        val className = pref.fragment ?: return false
-        val fragment = supportFragmentManager.fragmentFactory.instantiate(classLoader, className)
-        fragment.arguments = args
-        fragment.setTargetFragment(caller, 0)
-        supportFragmentManager.beginTransaction()
-            .replace(binding.content.id, fragment)
-            .addToBackStack(null)
-            .commit()
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (keyPref == null) {
+            return super.dispatchKeyEvent(event)
+        }
 
-        return true
+        dlog("dispatchKeyEvent($event)")
+        return when (event.keyCode) {
+            KeyEvent.KEYCODE_BACK, KeyEvent.KEYCODE_ENTER -> false
+            KeyEvent.KEYCODE_HOME -> true
+            else -> if (event.action == KeyEvent.ACTION_DOWN) {
+                val key = SetKeyUtil.encodeKey(event)
+                val name = SetKeyUtil.getKeyName(key)
+                if (!name.endsWith("Unknown")) {
+                    PreferenceManager.getDefaultSharedPreferences(applicationContext)
+                        .edit().putInt(keyPref!!.key, key).apply()
+                    keyPref!!.setSummary(name)
+                    MainScope().launch(Dispatchers.Default) {
+                        delay(500) // UP で何か実行されてしまわないように少し待つ
+                        keyPref = null
+                    }
+                    true
+                } else false
+            } else false
+        }
     }
+
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {

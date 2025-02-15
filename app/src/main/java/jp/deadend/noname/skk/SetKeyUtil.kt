@@ -1,64 +1,10 @@
 package jp.deadend.noname.skk
 
-import android.app.Dialog
-import android.os.Bundle
 import android.view.KeyEvent
-import android.view.View
-import android.widget.TextView
-import androidx.preference.PreferenceDialogFragmentCompat
 
-class SetKeyDialogFragment : PreferenceDialogFragmentCompat() {
-    private var mValue = SetKeyPreference.DEFAULT_VALUE
-    private lateinit var mTextView: TextView
-
-    override fun onBindDialogView(view: View) {
-        super.onBindDialogView(view)
-
-        val pref = preference
-        if (pref is SetKeyPreference) { mValue = pref.value }
-        mTextView = view.findViewById(R.id.textView) ?: return
-        mTextView.text = getKeyName(mValue)
-    }
-
-    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        val dialog = super.onCreateDialog(savedInstanceState)
-
-        dialog.setOnKeyListener { _, keyCode, event ->
-            when (keyCode) {
-                KeyEvent.KEYCODE_BACK, KeyEvent.KEYCODE_ENTER -> false
-                KeyEvent.KEYCODE_HOME -> true
-                else -> {
-                    if (event.action == KeyEvent.ACTION_DOWN) {
-                        mValue = encodeKey(event)
-                        if (mValue != SetKeyPreference.DEFAULT_VALUE) {
-                            mTextView.text = getKeyName(mValue)
-                        }
-                    }
-                    true
-                }
-            }
-        }
-
-        return dialog
-    }
-
-    override fun onDialogClosed(positiveResult: Boolean) {
-        if (positiveResult) {
-            val pref = preference
-            if (pref is SetKeyPreference) { pref.value = mValue }
-        }
-    }
-
+class SetKeyUtil {
     companion object {
-        fun newInstance(key: String): SetKeyDialogFragment {
-            val fragment = SetKeyDialogFragment()
-            val args = Bundle().apply {
-                putString(ARG_KEY, key)
-            }
-            fragment.arguments = args
-
-            return fragment
-        }
+        //const val DEFAULT_VALUE = KeyEvent.KEYCODE_UNKNOWN shl 4
 
         private const val SHIFT_PRESSED = 1
         private const val ALT_PRESSED   = 2
@@ -84,7 +30,7 @@ class SetKeyDialogFragment : PreferenceDialogFragmentCompat() {
             return keycode shl 4 or meta
         }
 
-        private fun getKeyName(key: Int): String {
+        fun getKeyName(key: Int): String {
             val result = StringBuilder()
             if (key and META_PRESSED != 0)  result.append("META+")
             if (key and CTRL_PRESSED != 0)  result.append("CTRL+")

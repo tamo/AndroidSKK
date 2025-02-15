@@ -7,6 +7,7 @@ import java.io.PrintWriter
 import java.lang.Thread.UncaughtExceptionHandler
 import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.Locale
 import android.content.Context
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager.NameNotFoundException
@@ -38,10 +39,11 @@ internal class MyUncaughtExceptionHandler(val context: Context) : UncaughtExcept
         mDefaultUEH?.uncaughtException(th, t)
     }
 
+    @Suppress("ConvertToStringTemplate")
     @Throws(FileNotFoundException::class)
     private fun saveState(e: Throwable) {
         val d = Date()
-        val df = SimpleDateFormat("yyyyMMddHHmm")
+        val df = SimpleDateFormat("yyyyMMddHHmm", Locale.US)
         val dateTimeStr = df.format(d)
 
         val dir = context.getExternalFilesDir(null) ?: return
