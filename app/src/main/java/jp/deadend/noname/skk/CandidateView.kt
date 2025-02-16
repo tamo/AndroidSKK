@@ -159,7 +159,14 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
 */
 
         // Maximum possible width and desired height
-        setMeasuredDimension(measuredWidth, resolveSize(mLineHeight * mContainer.lines, heightMeasureSpec))
+        val buttonSize = resources.getDimensionPixelSize(R.dimen.candidates_scrollbutton_width)
+        setMeasuredDimension(
+            measuredWidth,
+            resolveSize(
+                (mLineHeight * mContainer.lines).coerceAtLeast(buttonSize),
+                heightMeasureSpec
+            )
+        )
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -240,9 +247,8 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
     }
 
     private fun setScrollButtonsEnabled(targetX: Int) {
-        val left = targetX > 0
-        val right = targetX + width < mTotalWidth
-        mContainer.setScrollButtonsEnabled(left, right)
+        mContainer.binding.candidateLeft.active = targetX > 0
+        mContainer.binding.candidateRight.active = targetX + width < mTotalWidth
     }
 
     fun setContents(list: List<String>?, kanjiKey: String) {
@@ -361,18 +367,24 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
             }
             MotionEvent.ACTION_UP -> {
                 // ここは生きている。
-                if (!mScrolled) {
-                    if (mSelectedIndex >= 0) {
-                        mService.pickCandidateViewManually(mSelectedIndex)
-                        performHapticFeedback(skkPrefs.haptic)
-                    }
-                }
-                mSelectedIndex = -1
-                mTouchX = OUT_OF_BOUNDS
-                invalidate()
+                performClick()
             }
         }
         return true
+    }
+
+    override fun performClick(): Boolean {
+        super.performClick()
+
+        val rv = if (!mScrolled && mSelectedIndex >= 0) {
+            mService.pickCandidateViewManually(mSelectedIndex)
+            performHapticFeedback(skkPrefs.haptic)
+            true
+        } else false
+        mSelectedIndex = -1
+        mTouchX = OUT_OF_BOUNDS
+        invalidate()
+        return rv
     }
 
     fun choose(chosenIndex: Int) {

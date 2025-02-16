@@ -80,18 +80,18 @@ open class Keyboard {
     class Key(parent: Row) {
         var codes: IntArray = intArrayOf()
         var label: CharSequence = ""
-        var shiftedCode = 0
+        private var shiftedCode = 0
         var shiftedLabel: CharSequence = ""
-        var downCode = 0
+        private var downCode = 0
         var downLabel: CharSequence = ""
         var icon: Drawable? = null
-        var iconPreview: Drawable? = null
+        private var iconPreview: Drawable? = null
         var width: Int
         var defaultWidth: Int
         var height: Int
         var horizontalGap: Int
         var defaultHorizontalGap: Int
-        var sticky = false
+        private var sticky = false
         var repeatable = false
 
         var text: CharSequence? = null
@@ -104,7 +104,7 @@ open class Keyboard {
         var pressed = false
         var on = false
 
-        var edgeFlags: Int
+        private var edgeFlags: Int
 
         private val keyboard: Keyboard = parent.parent
 
@@ -378,11 +378,11 @@ open class Keyboard {
         return IntArray(0)
     }
 
-    protected fun createRowFromXml(res: Resources, parser: XmlResourceParser): Row {
+    private fun createRowFromXml(res: Resources, parser: XmlResourceParser): Row {
         return Row(res, this, parser)
     }
 
-    protected fun createKeyFromXml(
+    private fun createKeyFromXml(
         res: Resources, parent: Row, x: Int, y: Int, parser: XmlResourceParser
     ): Key {
         return Key(res, parent, x, y, parser)

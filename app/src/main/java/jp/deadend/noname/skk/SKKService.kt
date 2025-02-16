@@ -52,6 +52,15 @@ class SKKService : InputMethodService() {
     private var mAbbrevKeyboardView: AbbrevKeyboardView? = null
     // 現在表示中の KeyboardView
     private var mInputView: KeyboardView? = mFlickJPInputView
+    internal var inputViewWidth
+        get() = mInputView?.keyboard?.width ?: mScreenWidth
+        set(width) {
+            mInputView?.let { inputView ->
+                inputView.keyboard.resize(width, keyboardHeight(), skkPrefs.keyPaddingBottom)
+                inputView.requestLayout()
+                setInputView(null)
+            }
+        }
     // 幅の確認
     internal val isFlickWidth: Boolean
         get() = (mInputView != mQwertyInputView && mInputView != mAbbrevKeyboardView)
@@ -109,6 +118,7 @@ class SKKService : InputMethodService() {
     private var mPendingInput: String? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        dlog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
         when (intent?.getStringExtra(KEY_COMMAND)) {
             COMMAND_LOCK_USERDIC -> {
                 dlog("commit user dictionary!")
@@ -193,6 +203,7 @@ class SKKService : InputMethodService() {
     }
 
     override fun onCreate() {
+        dlog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
         if (BuildConfig.DEBUG) {
             StrictMode.setThreadPolicy(
                 StrictMode.ThreadPolicy.Builder()
@@ -369,6 +380,7 @@ class SKKService : InputMethodService() {
     }
 
     override fun onBindInput() {
+        dlog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
         super.onBindInput()
 
         if (!mPendingInput.isNullOrEmpty()) {
@@ -382,12 +394,14 @@ class SKKService : InputMethodService() {
      * is called after creation and any configuration change.
      */
     override fun onInitializeInterface() {
+        dlog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
         setInputView(onCreateInputView())
         readPrefs()
         updateInputViewShown()
     }
 
     override fun onEvaluateInputViewShown(): Boolean {
+        dlog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
         // candidatesView は inputViewShown に依存するはず
         val atLeastCandidatesAreShown = skkPrefs.useCandidatesView ||
                 checkUseSoftKeyboard(super.onEvaluateInputViewShown())
@@ -396,6 +410,7 @@ class SKKService : InputMethodService() {
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
+        dlog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
         assert(newConfig.orientation == resources.configuration.orientation)
         mOrientation = resources.configuration.orientation
         mScreenWidth = if (Build.VERSION.SDK_INT >= 35) {
@@ -448,6 +463,7 @@ class SKKService : InputMethodService() {
     }
 
     override fun onCreateInputView(): View? {
+        dlog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
         setCandidatesView(onCreateCandidatesView())
 
         val wasGodan =
@@ -473,6 +489,7 @@ class SKKService : InputMethodService() {
      * all of the detailed information about the target of our edits.
      */
     override fun onStartInput(attribute: EditorInfo, restarting: Boolean) {
+        dlog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
         if (attribute.inputType == InputType.TYPE_NULL) {
             requestHideSelf(0)
             return
@@ -480,6 +497,7 @@ class SKKService : InputMethodService() {
         super.onStartInput(attribute, restarting)
 
         if (!mPendingInput.isNullOrEmpty()) {
+            dlog("commiting pending input: $mPendingInput")
             currentInputConnection.commitText(mPendingInput!!, 1)
             mPendingInput = null
         }
@@ -550,9 +568,17 @@ class SKKService : InputMethodService() {
             else ->
                 if (restarting) {
                     if (mEngine.mComposingText.isNotEmpty()) {
+                        val composingText = mEngine.mComposingText.toString()
                         dlog("restarting: setComposingText(${mEngine.mComposingText})")
-                        currentInputConnection
-                            .setComposingText(mEngine.mComposingText, 1)
+                        currentInputConnection.apply {
+                            getTextBeforeCursor(composingText.length, 0).let {
+                                if (it == composingText) {
+                                    deleteSurroundingText(it.length, 0)
+                                } // 回転などでテキストが確定されていることがあるので消す
+                            }
+                            setComposingText(mEngine.mComposingText, 1)
+                            // candidateView も復元したいけど無理っぽい
+                        }
                     }
                 } else {
                     mEngine.resetOnStartInput()
@@ -565,6 +591,7 @@ class SKKService : InputMethodService() {
      * needs to be generated, like [.onCreateInputView].
      */
     override fun onCreateCandidatesView(): View {
+        dlog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
         val context = when (skkPrefs.theme) {
             "light" -> createNightModeContext(applicationContext, false)
             "dark" -> createNightModeContext(applicationContext, true)
@@ -582,7 +609,7 @@ class SKKService : InputMethodService() {
                         context.resources.displayMetrics
                     ).toInt()
                 )
-                setAlpha(96)
+                setAlpha(skkPrefs.inactiveAlpha)
 
                 mCandidateView = findViewById<CandidateView>(R.id.candidates)
                     .also { view ->
@@ -593,12 +620,14 @@ class SKKService : InputMethodService() {
     }
 
     override fun setCandidatesView(view: View?) {
+        dlog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
         (view?.parent as? FrameLayout)?.removeView(view)
         super.setCandidatesView(view)
         mCandidateViewContainer = view as CandidateViewContainer
     }
 
     override fun onStartInputView(editorInfo: EditorInfo?, restarting: Boolean) {
+        dlog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
         // 設定を変更した場合に反映する
         when {
             skkPrefs.preferGodan && mInputView != mGodanInputView ->
@@ -620,6 +649,7 @@ class SKKService : InputMethodService() {
     }
 
     override fun onFinishInputView(finishingInput: Boolean) {
+        dlog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
         mEngine.commitComposing()
         super.onFinishInputView(finishingInput)
         hideStatusIcon()
@@ -631,6 +661,7 @@ class SKKService : InputMethodService() {
      * this to reset our state.
      */
     override fun onFinishInput() {
+        dlog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
         mEngine.commitComposing()
         super.onFinishInput()
         hideStatusIcon()
@@ -642,6 +673,7 @@ class SKKService : InputMethodService() {
     }
 
     override fun onUnbind(intent: Intent?): Boolean {
+        dlog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
         super.onUnbind(intent)
 
         // このあと onDestroy() が呼ばれないことがあるので強制終了しておく
@@ -652,6 +684,7 @@ class SKKService : InputMethodService() {
     }
 
     override fun onDestroy() {
+        dlog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
         if (instance == null) {
             dlog("skip onDestroy(): instance is null")
             return
@@ -668,6 +701,7 @@ class SKKService : InputMethodService() {
     override fun onEvaluateFullscreenMode() = false
 
     override fun onComputeInsets(outInsets: Insets?) {
+        //dlog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
         super.onComputeInsets(outInsets)
         if (outInsets == null || mInputView == null || mCandidateViewContainer == null) return
         outInsets.apply {
@@ -685,6 +719,7 @@ class SKKService : InputMethodService() {
     }
 
     override fun onUpdateEditorToolType(toolType: Int) {
+        dlog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
         super.onUpdateEditorToolType(toolType)
         updateSuggestionsASCII()
     }
@@ -735,7 +770,7 @@ class SKKService : InputMethodService() {
      */
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
         val engineState = mEngine.state
-        val encodedKey = SetKeyUtil.encodeKey(event)
+        val encodedKey = encodeKey(event)
 
         // Process special keys
         if (encodedKey == skkPrefs.kanaKey) {
@@ -1050,13 +1085,15 @@ class SKKService : InputMethodService() {
         mEngine.resumeSuggestions()
     }
 
-    fun setCandidates(list: List<String>?, kanjiKey: String, lines: Int) {
-        if (list.isNullOrEmpty()) {
-            mCandidateViewContainer?.setAlpha(96)
-            mCandidateViewContainer?.lines = 1
-        } else {
-            mCandidateViewContainer?.setAlpha(255)
-            mCandidateViewContainer?.lines = lines
+    fun setCandidates(list: List<String>?, kanjiKey: String, viewLines: Int) {
+        mCandidateViewContainer?.apply {
+            if (list.isNullOrEmpty()) {
+                setAlpha(skkPrefs.inactiveAlpha)
+                lines = 0
+            } else {
+                setAlpha(skkPrefs.activeAlpha)
+                lines = viewLines
+            }
         }
         mCandidateView?.setContents(list, kanjiKey)
     }
@@ -1066,7 +1103,7 @@ class SKKService : InputMethodService() {
     }
 
     fun clearCandidatesView() {
-        setCandidates(null, "", 1)
+        setCandidates(null, "", 0)
     }
 
     // カーソル直前に引数と同じ文字列があるなら，それを消してtrue なければfalse
@@ -1084,6 +1121,7 @@ class SKKService : InputMethodService() {
     // engineState とは違うものが指定されることもある
     // (FlickJP から、ひらがなモードのまま Qwerty に変更する場合など)
     fun changeSoftKeyboard(state: SKKState) {
+        dlog("changeSoftKeyboard($state)")
         // 長押しリピートの message が残っている可能性があるので止める
         for (kv in arrayOf(mAbbrevKeyboardView, mFlickJPInputView, mGodanInputView, mQwertyInputView)) {
             kv?.stopRepeatKey()
@@ -1112,15 +1150,8 @@ class SKKService : InputMethodService() {
         }
     }
 
-    internal fun setInputViewWidth(width: Int) {
-        mInputView?.let { inputView ->
-            inputView.keyboard.resize(width, keyboardHeight(), skkPrefs.keyPaddingBottom)
-            inputView.requestLayout()
-            setInputView(null)
-        }
-    }
-
     override fun setInputView(view: View?) {
+        dlog("setInputView($view)")
         // view が null のときはここをスキップして再描画だけする (ドラッグで位置調整のとき使う)
         (view as? KeyboardView)?.let { inputView ->
             mInputView = inputView
@@ -1140,6 +1171,7 @@ class SKKService : InputMethodService() {
         mCandidateViewContainer?.parent?.let {
             (it as FrameLayout).setPadding(leftOffset, 0, right, 0)
         }
+        mCandidateViewContainer?.setSize(-1)
     }
 
     private fun keyboardWidth() =

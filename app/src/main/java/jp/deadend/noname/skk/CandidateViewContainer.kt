@@ -20,6 +20,7 @@ import android.content.Context
 import android.content.res.Configuration
 import android.util.AttributeSet
 import android.view.MotionEvent
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import jp.deadend.noname.skk.CandidateView.Companion.LINE_SCALE
 import jp.deadend.noname.skk.databinding.ViewCandidatesBinding
@@ -27,17 +28,14 @@ import kotlin.math.abs
 
 class CandidateViewContainer(screen: Context, attrs: AttributeSet) : LinearLayout(screen, attrs) {
     internal lateinit var binding: ViewCandidatesBinding
-    internal var lines = 1
+    internal var lines = 0
         set(value) {
             field = value
             setSize(-1)
         }
     private lateinit var mService: SKKService
-    private var mFontSize = -1
 
-    private var mLeftEnabled = false
-    private var mRightEnabled = false
-    private var mActivePointerIds = mutableListOf<Int>()
+    private val mActivePointers = mutableListOf<Pair<Int, Float>>()
     private var mDragging = false
     private var mDragStartLeft = 0
     private var mDragStartX = 0f
@@ -56,39 +54,31 @@ class CandidateViewContainer(screen: Context, attrs: AttributeSet) : LinearLayou
     fun initViews() {
         val onTouchListener = OnTouchListener { view, event ->
             try {
+                val id = event.getPointerId(event.actionIndex)
+                val idx = mActivePointers.indexOfFirst { it.first == id }
+                val x = event.getRawX(event.findPointerIndex(id))
                 when (event.action and MotionEvent.ACTION_MASK) {
-                    MotionEvent.ACTION_DOWN -> when {
-                        view == binding.candidateLeft && mLeftEnabled -> {
-                            binding.candidates.scrollPrev()
-                        }
-                        view == binding.candidateRight && mRightEnabled -> {
-                            binding.candidates.scrollNext()
-                        }
-                        else -> {
-                            mActivePointerIds = mutableListOf(event.getPointerId(0))
-                            mDragStartLeft = mService.leftOffset
-                            mDragStartX =
-                                event.getRawX(event.findPointerIndex(mActivePointerIds[0]))
-                            mDragging = true
-                        }
-                    }
-
-                    MotionEvent.ACTION_POINTER_DOWN -> { // 2本目以降の指追加
-                        mActivePointerIds.add(event.getPointerId(event.actionIndex))
-                        assert(mActivePointerIds.count() > 1)
+                    MotionEvent.ACTION_DOWN,
+                    MotionEvent.ACTION_POINTER_DOWN -> if (!view.performClick()) {
+                        mActivePointers.add(id to x)
                         mDragStartLeft = mService.leftOffset
-                        mPinchStartWidth = width
-                        mPinchStartDistance = abs(
-                            event.getRawX(event.findPointerIndex(mActivePointerIds[1])) -
-                                    event.getRawX(event.findPointerIndex(mActivePointerIds[0]))
-                        )
+                        if (mActivePointers.count() == 1) {
+                            mDragStartX = x
+                            mDragging = true
+                        } else {
+                            mPinchStartWidth = width
+                            mPinchStartDistance = abs(
+                                mActivePointers.last().second - mActivePointers.first().second
+                            )
+                        }
                     }
 
                     MotionEvent.ACTION_MOVE -> {
-                        if (mActivePointerIds.count() > 1) { // 幅の調整
+                        assert(idx != -1)
+                        mActivePointers[idx] = id to x
+                        if (mActivePointers.count() > 1) { // 幅の調整
                             val currentDistance = abs(
-                                event.getRawX(event.findPointerIndex(mActivePointerIds[1])) -
-                                        event.getRawX(event.findPointerIndex(mActivePointerIds[0]))
+                                mActivePointers.last().second - mActivePointers.first().second
                             )
                             val newWidth =
                                 (mPinchStartWidth - mPinchStartDistance + currentDistance)
@@ -100,11 +90,10 @@ class CandidateViewContainer(screen: Context, attrs: AttributeSet) : LinearLayou
                                 mDragStartLeft + (mPinchStartDistance - currentDistance).toInt() / 2
                             mService.leftOffset =
                                 newLeftOffset.coerceIn(0, mService.mScreenWidth - newWidth)
-                            mService.setInputViewWidth(newWidth)
+                            mService.inputViewWidth = newWidth
                         } else if (mDragging) { // 位置の調整
                             val newLeftOffset = mDragStartLeft + (
-                                    event.getRawX(event.findPointerIndex(mActivePointerIds[0])) -
-                                            mDragStartX
+                                    mActivePointers.first().second - mDragStartX
                                     ).toInt()
                             mService.leftOffset =
                                 newLeftOffset.coerceIn(0, mService.mScreenWidth - width)
@@ -113,27 +102,27 @@ class CandidateViewContainer(screen: Context, attrs: AttributeSet) : LinearLayou
                     }
 
                     MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_UP -> {
-                        mActivePointerIds.remove(event.getPointerId(event.actionIndex))
-                        if (mActivePointerIds.count() == 1) {
+                        mActivePointers.removeAt(idx)
+                        if (mActivePointers.count() == 1) {
                             saveWidth()
                             // もう一度ドラッグに戻る
                             mDragStartLeft = mService.leftOffset
-                            mDragStartX =
-                                event.getRawX(event.findPointerIndex(mActivePointerIds[0]))
-                        } else if (mActivePointerIds.isEmpty()) {
+                            mDragStartX = mActivePointers.first().second
+                        } else if (mActivePointers.isEmpty()) {
                             if (mDragging) {
                                 if (mDragStartLeft != mService.leftOffset) {
                                     saveLeft(mService.leftOffset)
                                 }
                                 mDragging = false
-                            } else {
-                                view.performClick() // ???
                             }
+                            // DOWN で performClick() しているので else は無視
                         }
                     }
+                    else -> dlog(event.toString())
                 }
                 true
-            } catch (_: IllegalArgumentException) {
+            } catch (e: Exception) {
+                dlog(e.stackTraceToString())
                 false
             }
         }
@@ -152,6 +141,7 @@ class CandidateViewContainer(screen: Context, attrs: AttributeSet) : LinearLayou
     }
 
     private fun saveWidth() {
+        setSize(-1)
         val widthToSave = width * 100 /
                 if (mService.isFlickWidth) 100 else skkPrefs.keyWidthQwertyZoom
         when (resources.configuration.orientation) {
@@ -169,31 +159,48 @@ class CandidateViewContainer(screen: Context, attrs: AttributeSet) : LinearLayou
         binding.candidateRight.background.alpha = alpha
     }
 
-    fun setScrollButtonsEnabled(left: Boolean, right: Boolean) {
-        mLeftEnabled = left
-        mRightEnabled = right
-        val alphaLeft = if (left) ALPHA_ON else ALPHA_OFF
-        val alphaRight = if (right) ALPHA_ON else ALPHA_OFF
-        binding.candidateLeft.alpha = alphaLeft / 255f
-        binding.candidateRight.alpha = alphaRight / 255f
-        binding.candidateLeft.background.alpha = alphaLeft
-        binding.candidateRight.background.alpha = alphaRight
-    }
-
     // 負数のときはフォントを変更せず行数だけ更新する
     fun setSize(px: Int) {
         if (px > 0) {
-            if (px == mFontSize) return
             binding.candidates.setTextSize(px)
-            mFontSize = px
         }
-        val height = (px * lines * LINE_SCALE).toInt()
-        binding.candidates.layoutParams = LayoutParams(0, height, 1f)
+        val buttonSize = resources.getDimensionPixelSize(R.dimen.candidates_scrollbutton_width)
+        val width = mService.inputViewWidth - buttonSize * 2
+        val height = if (lines > 0) (px * lines * LINE_SCALE).toInt() else buttonSize
+        binding.frame.layoutParams = LayoutParams(width, height)
+        binding.candidates.layoutParams = FrameLayout.LayoutParams(width, height)
         requestLayout()
     }
+}
 
-    companion object {
-        private const val ALPHA_OFF = 96
-        private const val ALPHA_ON = 255
+class ImageButton(screen: Context, attrs: AttributeSet?, defStyleAttr: Int) : androidx.appcompat.widget.AppCompatImageButton(screen, attrs, defStyleAttr) {
+    constructor(screen: Context, attrs: AttributeSet?) : this(screen, attrs, 0)
+    constructor(screen: Context) : this(screen, null)
+
+    private val side: String
+    var active = false
+        set(value) {
+            field = value
+            background.alpha = if (value) skkPrefs.activeAlpha else skkPrefs.inactiveAlpha
+            alpha = background.alpha / 255f
+        }
+
+    init {
+        context.obtainStyledAttributes(attrs, intArrayOf(R.attr.side)).apply {
+            side = getString(0) ?: "null"
+            recycle()
+        }
+        contentDescription = side
+    }
+
+    override fun performClick(): Boolean {
+        super.performClick()
+        if (!active) return false
+        when (side) {
+            "left" -> (parent as CandidateViewContainer).binding.candidates.scrollPrev()
+            "right" -> (parent as CandidateViewContainer).binding.candidates.scrollNext()
+            else -> return false
+        }
+        return true
     }
 }

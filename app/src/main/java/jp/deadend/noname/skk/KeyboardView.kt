@@ -22,6 +22,7 @@ import android.view.View
 import android.view.ViewConfiguration
 import android.widget.PopupWindow
 import android.widget.TextView
+import android.widget.Toast
 import jp.deadend.noname.skk.engine.SKKState
 import kotlin.math.abs
 import kotlin.math.ceil
@@ -33,6 +34,7 @@ open class KeyboardView @JvmOverloads constructor(
     defStyleRes: Int = 0
 ) : View(context, attrs, defStyleAttr, defStyleRes), View.OnClickListener {
 
+    @Suppress("EmptyMethod")
     interface OnKeyboardActionListener {
         fun onPress(primaryCode: Int)
         fun onRelease(primaryCode: Int)
@@ -796,6 +798,7 @@ open class KeyboardView @JvmOverloads constructor(
                 result = onModifiedTouchEvent(event, false)
                 mOldPointerX = event.x
                 mOldPointerY = event.y
+                this.performClick() // ダミー
             }
             MotionEvent.ACTION_POINTER_DOWN -> { // 2本目以降の指
                 // こっちを有効にして
@@ -975,6 +978,14 @@ open class KeyboardView @JvmOverloads constructor(
     protected open fun swipeLeft()  = onKeyboardActionListener?.swipeLeft()
     protected open fun swipeUp()    = onKeyboardActionListener?.swipeUp()
     protected open fun swipeDown()  = onKeyboardActionListener?.swipeDown()
+
+    override fun performClick(): Boolean {
+        if (mActivePointerId == -1) {
+            Toast.makeText(context, "フリックできない環境ではほぼ使えません", Toast.LENGTH_SHORT).show()
+            return super.performClick()
+        }
+        return false
+    }
 
     private fun closing() {
         if (mPreviewPopup.isShowing) { mPreviewPopup.dismiss() }

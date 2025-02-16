@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.SKK" parent="Theme.AppCompat.DayNight.DarkActionBar">
+    <!-- おもに声入力の候補が複数のとき使うテーマなので dialog -->
+    <style name="Theme.SKK" parent="Theme.AppCompat.DayNight.Dialog">
         <item name="keyboardViewStyle">@style/KeyboardView</item>
     </style>
 

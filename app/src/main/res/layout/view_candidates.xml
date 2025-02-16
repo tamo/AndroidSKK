@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!--
+<?xml version="1.0" encoding="utf-8"?><!--
 /*
 **
 ** Copyright 2008, The Android Open Source Project
@@ -18,34 +17,45 @@
 */
 -->
 
-<jp.deadend.noname.skk.CandidateViewContainer
-        xmlns:android="http://schemas.android.com/apk/res/android"
-        android:orientation="horizontal"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        >
-	<ImageButton
-		android:id="@+id/candidate_left"
-		android:background="@drawable/suggest_scroll_button_bg"
-		android:src="@drawable/ic_arrow_left"
-		android:layout_width="@dimen/candidates_scrollbutton_width"
-		android:layout_height="fill_parent"
-		android:clickable="true"
-		android:scaleType="fitCenter"
-		/>
-    <jp.deadend.noname.skk.CandidateView
-        android:id="@+id/candidates"
+<jp.deadend.noname.skk.CandidateViewContainer xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal">
+
+    <jp.deadend.noname.skk.ImageButton
+        android:id="@+id/candidate_left"
+        android:layout_width="@dimen/candidates_scrollbutton_width"
+        android:layout_height="match_parent"
+        android:background="@drawable/suggest_scroll_button_bg"
+        android:clickable="true"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_arrow_left"
+        android:theme="@style/Theme.SKK"
+        app:side="left" />
+
+    <FrameLayout
+        android:id="@+id/frame"
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        />
-	<ImageButton
-		android:id="@+id/candidate_right"
-		android:background="@drawable/suggest_scroll_button_bg"
-		android:src="@drawable/ic_arrow_right"
-		android:layout_width="@dimen/candidates_scrollbutton_width"
-		android:layout_height="fill_parent"
-		android:clickable="true"
-		android:scaleType="fitCenter"
-		/>
+        android:layout_height="match_parent"
+        app:layout_constraintEnd_toStartOf="@id/candidate_right"
+        app:layout_constraintStart_toEndOf="@id/candidate_left">
+
+        <jp.deadend.noname.skk.CandidateView
+            android:id="@+id/candidates"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+    </FrameLayout>
+
+    <jp.deadend.noname.skk.ImageButton
+        android:id="@+id/candidate_right"
+        android:layout_width="@dimen/candidates_scrollbutton_width"
+        android:layout_height="match_parent"
+        android:background="@drawable/suggest_scroll_button_bg"
+        android:clickable="true"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_arrow_right"
+        android:theme="@style/Theme.SKK"
+        app:side="right" />
 </jp.deadend.noname.skk.CandidateViewContainer>

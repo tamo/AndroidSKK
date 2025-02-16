@@ -92,4 +92,7 @@
              requested keyboard mode, the key will be skipped -->
         <attr name="keyboardMode" />
     </declare-styleable>
+    <declare-styleable name="ImageButton">
+        <attr name="side" format="string" />
+    </declare-styleable>
 </resources>

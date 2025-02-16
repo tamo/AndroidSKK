@@ -50,7 +50,7 @@ class SKKSettingsActivity : AppCompatActivity() {
             setPreferencesFromResource(R.xml.prefs_hardkey, rootKey)
 
             findPreference<Preference>(getString(R.string.prefkey_kana_key))?.apply {
-                setSummary(SetKeyUtil.getKeyName(skkPrefs.kanaKey))
+                setSummary(getKeyName(skkPrefs.kanaKey))
                 setOnPreferenceClickListener {
                     setSummary("Push any key...")
                     (requireActivity() as SKKSettingsActivity).keyPref = this
@@ -59,7 +59,7 @@ class SKKSettingsActivity : AppCompatActivity() {
             }
 
             findPreference<Preference>(getString(R.string.prefkey_cancel_key))?.apply {
-                setSummary(SetKeyUtil.getKeyName(skkPrefs.cancelKey))
+                setSummary(getKeyName(skkPrefs.cancelKey))
                 setOnPreferenceClickListener {
                     setSummary("Push any key...")
                     (requireActivity() as SKKSettingsActivity).keyPref = this
@@ -111,32 +111,26 @@ class SKKSettingsActivity : AppCompatActivity() {
             startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS))
     }
 
-    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-        if (keyPref == null) {
-            return super.dispatchKeyEvent(event)
-        }
-
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean = keyPref?.let { pref ->
         dlog("dispatchKeyEvent($event)")
-        return when (event.keyCode) {
+        when (event.keyCode) {
             KeyEvent.KEYCODE_BACK, KeyEvent.KEYCODE_ENTER -> false
             KeyEvent.KEYCODE_HOME -> true
             else -> if (event.action == KeyEvent.ACTION_DOWN) {
-                val key = SetKeyUtil.encodeKey(event)
-                val name = SetKeyUtil.getKeyName(key)
-                if (!name.endsWith("Unknown")) {
-                    PreferenceManager.getDefaultSharedPreferences(applicationContext)
-                        .edit().putInt(keyPref!!.key, key).apply()
-                    keyPref!!.setSummary(name)
-                    MainScope().launch(Dispatchers.Default) {
-                        delay(500) // UP で何か実行されてしまわないように少し待つ
-                        keyPref = null
-                    }
-                    true
-                } else false
+                val key = encodeKey(event)
+                val name = getKeyName(key)
+                if (name.isEmpty()) return false
+                PreferenceManager.getDefaultSharedPreferences(applicationContext).edit()
+                    .putInt(pref.key, key).apply()
+                pref.setSummary(name)
+                MainScope().launch(Dispatchers.Default) {
+                    delay(500) // UP で何か実行されてしまわないように少し待つ
+                    keyPref = null
+                }
+                true
             } else false
         }
-    }
-
+    } ?: super.dispatchKeyEvent(event)
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {

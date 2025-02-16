@@ -128,6 +128,9 @@ class SKKPrefs(context: Context) {
         get() = prefs.getInt(res.getString(R.string.prefkey_background_alpha), 100)
         set(value) = prefs.edit().putInt(res.getString(R.string.prefkey_background_alpha), value).apply()
 
+    val activeAlpha = 255 // いつか可変にしたくなるかもしれないのでここに入れておく
+    val inactiveAlpha = 96 // 不透明度なので、小さいほど薄く、存在感がなくなる
+
     var originalColor: Boolean
         get() = prefs.getBoolean(res.getString(R.string.prefkey_ignore_high_contrast), false)
         set(value) = prefs.edit().putBoolean(res.getString(R.string.prefkey_ignore_high_contrast), value).apply()
