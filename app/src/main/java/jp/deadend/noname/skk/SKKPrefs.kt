@@ -27,7 +27,7 @@ class SKKPrefs(context: Context) {
         set(value) = prefs.edit().putInt(res.getString(R.string.prefkey_candidates_size), value).apply()
 
     var candidatesNormalLines: Int
-        get() = prefs.getInt(res.getString(R.string.prefkey_candidates_normal_lines), 1)
+        get() = prefs.getInt(res.getString(R.string.prefkey_candidates_normal_lines), 2)
         set(value) = prefs.edit().putInt(res.getString(R.string.prefkey_candidates_normal_lines), value).apply()
 
     var candidatesEmojiLines: Int

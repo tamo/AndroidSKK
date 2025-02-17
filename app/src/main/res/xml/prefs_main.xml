@@ -32,7 +32,7 @@
         app:key="@string/prefkey_candidates_normal_lines"
         app:min="1"
         android:max="10"
-        app:defaultValue="1"
+        app:defaultValue="2"
         app:title="候補表示の行数 (通常)"
         app:showSeekBarValue="true"
         app:iconSpaceReserved="false"
