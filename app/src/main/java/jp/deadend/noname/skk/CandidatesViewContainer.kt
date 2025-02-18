@@ -128,8 +128,8 @@ class CandidatesViewContainer(screen: Context, attrs: AttributeSet) : LinearLayo
                 false
             }
         }
-        binding.candidateLeft.setOnTouchListener(onTouchListener)
-        binding.candidateRight.setOnTouchListener(onTouchListener)
+        binding.candidatesLeft.setOnTouchListener(onTouchListener)
+        binding.candidatesRight.setOnTouchListener(onTouchListener)
     }
 
     private fun saveLeft(leftOffset: Int) {
@@ -156,10 +156,10 @@ class CandidatesViewContainer(screen: Context, attrs: AttributeSet) : LinearLayo
 
     fun setAlpha(alpha: Int) {
         binding.candidates.background.alpha = alpha
-        binding.candidateLeft.alpha = alpha / 255f
-        binding.candidateRight.alpha = alpha / 255f
-        binding.candidateLeft.background.alpha = alpha
-        binding.candidateRight.background.alpha = alpha
+        binding.candidatesLeft.alpha = alpha / 255f
+        binding.candidatesRight.alpha = alpha / 255f
+        binding.candidatesLeft.background.alpha = alpha
+        binding.candidatesRight.background.alpha = alpha
     }
 
     // 負数のときはフォントを変更せず行数だけ更新する

@@ -39,7 +39,7 @@ class SKKEngine(
     private var cameFromFlick: Boolean = skkPrefs.preferFlick
 
     // 候補のリスト．KanjiStateとAbbrevStateでは補完リスト，ChooseStateでは変換候補リストになる
-    private var mCandidatesList: List<String>? = null
+    private var mCandidateList: List<String>? = null
     private var mCompletionList: List<String>? = null
     private var mCurrentCandidateIndex = 0
     private var mCandidateKanjiKey = ""
@@ -252,7 +252,7 @@ class SKKEngine(
         mComposing.setLength(0)
         mKanjiKey.setLength(0)
         mOkurigana = null
-        mCandidatesList = null
+        mCandidateList = null
         mCandidateKanjiKey = ""
         when {
             state.isTransient -> {
@@ -268,7 +268,7 @@ class SKKEngine(
     }
 
     fun chooseAdjacentSuggestion(isForward: Boolean) {
-        val candidateList = mCandidatesList ?: return
+        val candidateList = mCandidateList ?: return
 
         if (isForward) {
             mCurrentCandidateIndex++
@@ -290,7 +290,7 @@ class SKKEngine(
     }
 
     fun chooseAdjacentCandidate(isForward: Boolean) {
-        val candidateList = mCandidatesList ?: return
+        val candidateList = mCandidateList ?: return
 
         if (isForward) {
             mCurrentCandidateIndex++
@@ -568,7 +568,7 @@ class SKKEngine(
             str.replace(Regex("\\d+(\\.\\d+)?"), "#")
         ) ?: return registerStart(str)
 
-        mCandidatesList = list
+        mCandidateList = list
         mCurrentCandidateIndex = 0
         mCandidateKanjiKey = str
         mService.setCandidates(list, str, skkPrefs.candidatesNormalLines)
@@ -576,9 +576,9 @@ class SKKEngine(
     }
 
     internal fun narrowCandidates(hint: String) {
-        val candidates = SKKNarrowingState.mOriginalCandidates ?: mCandidatesList ?: return
+        val candidates = SKKNarrowingState.mOriginalCandidates ?: mCandidateList ?: return
         if (SKKNarrowingState.mOriginalCandidates == null) {
-            SKKNarrowingState.mOriginalCandidates = mCandidatesList
+            SKKNarrowingState.mOriginalCandidates = mCandidateList
         }
 
         val narrowed = if (hint.isEmpty()) candidates else {
@@ -602,7 +602,7 @@ class SKKEngine(
         }
 
         if (narrowed.isNotEmpty()) {
-            mCandidatesList = narrowed
+            mCandidateList = narrowed
             mCurrentCandidateIndex = 0
             mService.setCandidates(
                 narrowed,
@@ -629,11 +629,11 @@ class SKKEngine(
             mKanjiKey.setLength(0)
             mKanjiKey.append(lastConv.kanjiKey)
             mOkurigana = lastConv.okurigana
-            mCandidatesList = lastConv.list
+            mCandidateList = lastConv.list
             mCurrentCandidateIndex = lastConv.index
             mCandidateKanjiKey = lastConv.kanjiKey
             mService.setCandidates(
-                mCandidatesList,
+                mCandidateList,
                 mCandidateKanjiKey,
                 skkPrefs.candidatesNormalLines
             )
@@ -666,7 +666,7 @@ class SKKEngine(
                 set.distinctBy { it.second }
                     .let { uniqueSet ->
                         mCompletionList = uniqueSet.map { it.first }
-                        mCandidatesList = uniqueSet.map { it.second }
+                        mCandidateList = uniqueSet.map { it.second }
                     }
 
                 mCandidateKanjiKey = str
@@ -674,12 +674,12 @@ class SKKEngine(
                 withContext(Dispatchers.Main) {
                     if (str == "emoji")
                         mService.setCandidates(
-                            mCandidatesList?.map { removeAnnotation(it) },
+                            mCandidateList?.map { removeAnnotation(it) },
                             str,
                             skkPrefs.candidatesEmojiLines
                         )
                     else
-                        mService.setCandidates(mCandidatesList, str, skkPrefs.candidatesNormalLines)
+                        mService.setCandidates(mCandidateList, str, skkPrefs.candidatesNormalLines)
                 }
             }
             mUpdateSuggestionsJob.start()
@@ -868,7 +868,7 @@ class SKKEngine(
                         )
                     } finally {
                         changeState(SKKChooseState)
-                        mCandidatesList = list
+                        mCandidateList = list
                         mCurrentCandidateIndex = 0
                         mCandidateKanjiKey = mKanjiKey.toString()
                         mService.setCandidates(
@@ -891,14 +891,14 @@ class SKKEngine(
         runBlocking {
             addFound(this, set, "/きごう", mASCIIDict)
         }
-        mCandidatesList = set.map { it.second } +
+        mCandidateList = set.map { it.second } +
                 "\"#$%&'()=^~¥|@`[{;+*]},<.>\\_←↓↑→“”‘’『』【】！＂＃＄％＆＇（）－＝＾～￥｜＠｀［｛；＋：＊］｝，＜．＞／？＼＿、。"
                     .toCharArray()
                     .map { it.toString() }
-        mCompletionList = mCandidatesList!!.map { "/きごう" }
+        mCompletionList = mCandidateList!!.map { "/きごう" }
         mCurrentCandidateIndex = 0
         mCandidateKanjiKey = "/きごう"
-        mService.setCandidates(mCandidatesList, "/きごう", skkPrefs.candidatesNormalLines)
+        mService.setCandidates(mCandidateList, "/きごう", skkPrefs.candidatesNormalLines)
     }
 
     internal fun emojiCandidates(sequential: Boolean) {
@@ -936,7 +936,7 @@ class SKKEngine(
             }
     }
 
-    private fun getCandidate(index: Int): String? = mCandidatesList?.let {
+    private fun getCandidate(index: Int): String? = mCandidateList?.let {
         processConcatAndMore(removeAnnotation(it[index]), mCandidateKanjiKey)
     }
 
@@ -955,11 +955,11 @@ class SKKEngine(
         if (mCandidateKanjiKey == "emoji") {
             mKanjiKey.setLength(0)
             mKanjiKey.append(mCandidateKanjiKey)
-            mCompletionList = mCandidatesList?.map { "emoji" }
+            mCompletionList = mCandidateList?.map { "emoji" }
             pickSuggestion(index, unregister)
             return
         }
-        val candidateList = mCandidatesList ?: return
+        val candidateList = mCandidateList ?: return
         val candidate = StringBuilder(getCandidate(index) ?: return)
 
         if (unregister) {
@@ -1012,7 +1012,7 @@ class SKKEngine(
 
     private fun pickSuggestion(index: Int, unregister: Boolean = false) {
         var number = Regex("\\d+(\\.\\d+)?").find(mKanjiKey)
-        val rawSuggestion = mCandidatesList?.get(index) ?: return
+        val rawSuggestion = mCandidateList?.get(index) ?: return
         val s = rawSuggestion.map { ch ->
             if (ch != '#' || number == null) ch.toString() else {
                 number!!.let {
@@ -1117,7 +1117,7 @@ class SKKEngine(
         mComposing.setLength(0)
         mKanjiKey.setLength(0)
         mOkurigana = null
-        mCandidatesList = null
+        mCandidateList = null
         mCandidateKanjiKey = ""
         mService.clearCandidatesView()
         if (mService.currentInputConnection.getSelectedText(0).isNullOrEmpty()) {

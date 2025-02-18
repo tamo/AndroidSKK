@@ -75,7 +75,7 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
         val r = context.resources
 
         mSelectionHighlight =
-            ResourcesCompat.getDrawable(r, R.drawable.candidate_scroll_button_bg, null)
+            ResourcesCompat.getDrawable(r, R.drawable.candidates_scroll_button_bg, null)
         mSelectionHighlight?.state = intArrayOf(
             android.R.attr.state_enabled,
             android.R.attr.state_focused,
@@ -249,8 +249,8 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
     }
 
     private fun setScrollButtonsEnabled(targetX: Int) {
-        mContainer.binding.candidateLeft.active = targetX > 0
-        mContainer.binding.candidateRight.active = targetX + width < mTotalWidth
+        mContainer.binding.candidatesLeft.active = targetX > 0
+        mContainer.binding.candidatesRight.active = targetX + width < mTotalWidth
     }
 
     fun setContents(list: List<String>?, kanjiKey: String) {
@@ -340,7 +340,7 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
 
     override fun onTouchEvent(me: MotionEvent): Boolean {
         if (mCandidateList.isEmpty()) { // ドラッグで位置調整
-            return mContainer.binding.candidateLeft.dispatchTouchEvent(me)
+            return mContainer.binding.candidatesLeft.dispatchTouchEvent(me)
         }
         // スクロールした時にはここで処理されて終わりのようだ。ソースの頭で定義している。
         if (mGestureDetector.onTouchEvent(me)) {

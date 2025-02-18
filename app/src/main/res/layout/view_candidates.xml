@@ -24,10 +24,10 @@
     android:orientation="horizontal">
 
     <jp.deadend.noname.skk.CandidatesViewImageButton
-        android:id="@+id/candidate_left"
+        android:id="@+id/candidates_left"
         android:layout_width="@dimen/candidates_scroll_button_width"
         android:layout_height="match_parent"
-        android:background="@drawable/candidate_scroll_button_bg"
+        android:background="@drawable/candidates_scroll_button_bg"
         android:clickable="true"
         android:contentDescription="@string/descr_left_button"
         android:scaleType="fitCenter"
@@ -39,8 +39,8 @@
         android:id="@+id/frame"
         android:layout_width="0dp"
         android:layout_height="match_parent"
-        app:layout_constraintEnd_toStartOf="@id/candidate_right"
-        app:layout_constraintStart_toEndOf="@id/candidate_left">
+        app:layout_constraintEnd_toStartOf="@id/candidates_right"
+        app:layout_constraintStart_toEndOf="@id/candidates_left">
 
         <jp.deadend.noname.skk.CandidatesView
             android:id="@+id/candidates"
@@ -50,10 +50,10 @@
     </FrameLayout>
 
     <jp.deadend.noname.skk.CandidatesViewImageButton
-        android:id="@+id/candidate_right"
+        android:id="@+id/candidates_right"
         android:layout_width="@dimen/candidates_scroll_button_width"
         android:layout_height="match_parent"
-        android:background="@drawable/candidate_scroll_button_bg"
+        android:background="@drawable/candidates_scroll_button_bg"
         android:clickable="true"
         android:contentDescription="@string/descr_right_button"
         android:scaleType="fitCenter"
