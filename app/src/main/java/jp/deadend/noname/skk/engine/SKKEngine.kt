@@ -564,13 +564,9 @@ class SKKEngine(
 
         changeState(SKKChooseState)
 
-        val list = findCandidates(str) ?: Regex("\\d+(\\.\\d+)?").find(str)?.let { num ->
-            findCandidates(str.replaceRange(num.range, "#"))
-        }
-        if (list == null) {
-            registerStart(str)
-            return
-        }
+        val list = findCandidates(str) ?: findCandidates(
+            str.replace(Regex("\\d+(\\.\\d+)?"), "#")
+        ) ?: return registerStart(str)
 
         mCandidatesList = list
         mCurrentCandidateIndex = 0
@@ -661,10 +657,9 @@ class SKKEngine(
                     for (dic in mDictList) {
                         addFound(this@launch, set, str, dic)
                     }
-                Regex("\\d+(\\.\\d+)?").find(str)?.let {
-                    val replacedStr = str.replaceRange(it.range, "#")
-                    for (dic in mDictList) {
-                        addFound(this@launch, set, replacedStr, dic)
+                str.replace(Regex("\\d+(\\.\\d+)?"), "#").let {
+                    if (it != str) for (dic in mDictList) {
+                        addFound(this@launch, set, it, dic)
                     }
                 }
 
@@ -771,26 +766,19 @@ class SKKEngine(
     private fun registerWord() {
         val regInfo = mRegistrationStack.removeFirst()
         if (regInfo.entry.isNotEmpty()) {
-            var regEntryStr = regInfo.entry
-                .replace(Regex("\\d+"), "#0")
-                .replace(Regex("[０-９]+"), "#1") /*
-                #2, #3 まで一気に登録してしまうこともできるけど邪魔になる気がするし
-                〇一二三四五六七八九 で自動にするのは誤検出もある
-                そこまで求めるなら自分で #2, #3 を入力すればいい (FlickJP では無理だろうけど)
-                 */
-            if (regEntryStr.indexOf(';') != -1 || regEntryStr.indexOf('/') != -1) {
+            val regEntryStr = regInfo.entry.toString().let {
                 // セミコロンとスラッシュのエスケープ (なので登録で注釈を付けることはできない)
-                regEntryStr = (
-                        "(concat \""
-                                + regEntryStr
-                            .replace(";", "\\073")
+                if (it.contains(';') || it.contains('/')) {
+                    "(concat \"${
+                        it.replace(";", "\\073")
                             .replace("/", "\\057")
-                                + "\")"
-                        )
+                        //  .replace("#", "\\043") をしてしまうと数値変換が登録できなくなる
+                    }\")"
+                } else it
             }
             // if (isPersonalizedLearning) のチェックはこの場合しないでおく
             mUserDict.addEntry(
-                regInfo.key.replace(Regex("\\d+"), "#"), regEntryStr, regInfo.okurigana
+                regInfo.key, regEntryStr, regInfo.okurigana
             )
             mUserDict.commitChanges()
             // entry は生で登録するが okurigana はひらがな
@@ -974,11 +962,6 @@ class SKKEngine(
         val candidateList = mCandidatesList ?: return
         val candidate = StringBuilder(getCandidate(index) ?: return)
 
-        // 「だい4かい」ではなく「だい#かい」で登録する
-        val kanjiKey = Regex("\\d+(\\.\\d+)?").find(mKanjiKey)?.let { d ->
-            mKanjiKey.replaceRange(d.range, "#")
-        } ?: mKanjiKey
-
         if (unregister) {
             val confirmingState = state as SKKConfirmingState
             confirmingState.oldComposingText = mComposingText.toString()
@@ -988,7 +971,7 @@ class SKKEngine(
             setComposingTextSKK("削除? (y/N) $entryString")
             mService.setCandidates(listOf("削除する $entryString"), "", 1)
             confirmingState.pendingLambda = {
-                mUserDict.removeEntry(kanjiKey.toString(), candidateList[index], mOkurigana)
+                mUserDict.removeEntry(mKanjiKey.toString(), candidateList[index], mOkurigana)
                 reset()
                 changeState(kanaState)
             }
@@ -996,7 +979,7 @@ class SKKEngine(
         }
 
         if (isPersonalizedLearning) {
-            mUserDict.addEntry(kanjiKey.toString(), candidateList[index], mOkurigana)
+            mUserDict.addEntry(mKanjiKey.toString(), candidateList[index], mOkurigana)
             // ユーザー辞書登録時はエスケープや注釈を消さない
         }
 
@@ -1028,11 +1011,17 @@ class SKKEngine(
     }
 
     private fun pickSuggestion(index: Int, unregister: Boolean = false) {
-        val number = Regex("\\d+(\\.\\d+)?").find(mKanjiKey)?.value ?: "#"
-        val candidateList = mCandidatesList ?: return
-        val s = candidateList[index].replaceFirst("#", number)
-        val compList = mCompletionList ?: return
-        val c = compList[index]
+        var number = Regex("\\d+(\\.\\d+)?").find(mKanjiKey)
+        val rawSuggestion = mCandidatesList?.get(index) ?: return
+        val s = rawSuggestion.map { ch ->
+            if (ch != '#' || number == null) ch.toString() else {
+                number!!.let {
+                    number = it.next()
+                    it.value
+                }
+            }
+        }.joinToString("")
+        val c = mCompletionList?.get(index) ?: return
 
         when (state) {
             SKKAbbrevState -> {
@@ -1087,7 +1076,7 @@ class SKKEngine(
                     if (unregister) {
                         val confirmingState = state as SKKConfirmingState
                         confirmingState.oldComposingText = mComposingText.toString()
-                        val unannotated = removeAnnotation(candidateList[index])
+                        val unannotated = removeAnnotation(rawSuggestion)
                         val entryString =
                             "/$unannotated/${
                                 mOkurigana?.let { "[$mOkurigana/$unannotated/]/" } ?: ""

@@ -121,10 +121,16 @@ fun removeAnnotation(str: String): String {
     return if (i == -1) str else str.substring(0, i)
 }
 
-private fun processNumber(str: String, number: String): String {
-    return str
-        .replace("#0", number) // 半角
-        .replace("#1", number // 全角
+private fun processNumber(str: String, numberList: List<String>): String {
+    var result = str
+    numberList.forEach { result = processSingleNumber(result, it) }
+    return result.replace(Regex("#[0-3]"), "#")
+}
+
+private fun processSingleNumber(str: String, number: String): String {
+    return when (val target = Regex("#[0-3]?").find(str)?.value) {
+        "#0", "#" -> str.replaceFirst(target, number)
+        "#1" -> str.replaceFirst(target, number // 全角
             .map { char ->
                 when (char.code) {
                     in '0'.code..'9'.code -> (char.code + '０'.code - '0'.code).toChar()
@@ -134,7 +140,8 @@ private fun processNumber(str: String, number: String): String {
             }
             .joinToString("")
         )
-        .replace("#2", number // 単純漢数字
+
+        "#2" -> str.replaceFirst(target, number // 単純漢数字
             .map { char ->
                 when (char.code) {
                     in '0'.code..'9'.code -> "〇一二三四五六七八九"[char.code - '0'.code]
@@ -144,7 +151,8 @@ private fun processNumber(str: String, number: String): String {
             }
             .joinToString("")
         )
-        .replace("#3", number // 位取りのある漢数字 (たぶんバグがある)
+
+        "#3" -> str.replaceFirst(target, number // 位取りのある漢数字 (たぶんバグがある)
             .takeWhile { it != '.' } // 整数部のみ
             .reversed()
             .mapIndexed { index, char ->
@@ -187,7 +195,9 @@ private fun processNumber(str: String, number: String): String {
             }
             .joinToString("")
         )
-        .replace("#", number) // suggestion 用
+
+        else -> str
+    }
 }
 
 private fun unquote(str: String): String = PAT_QUOTED.findAll(str)
@@ -199,10 +209,12 @@ private fun unescapeOctal(str: String): String = PAT_ESCAPE_NUM.replace(str) {
 } // emacs-lispのリテラルは8進数
 
 fun processConcatAndMore(rawStr: String, kanjiKey: String): String {
-    val number = Regex("\\d+").find(kanjiKey)?.value?.toIntOrNull()?.toString() ?: "#"
+    val numberList = Regex("\\d+(\\.\\d+)?")
+        .findAll(kanjiKey)
+        .map { it.value }.toMutableList()
 
     if (rawStr.startsWith("(concat ") && rawStr.endsWith(")")) {
-        return unescapeOctal(unquote(processNumber(rawStr, number)))
+        return unescapeOctal(unquote(processNumber(rawStr, numberList)))
     }
 
     operator fun MatchResult.Destructured.component11(): String =
@@ -226,8 +238,8 @@ fun processConcatAndMore(rawStr: String, kanjiKey: String): String {
 
             val calendar = Calendar.getInstance(TimeZone.getTimeZone("Asia/Tokyo"), Locale.JAPAN)
 
-            if (number != "#") {
-                val num = number.toInt()
+            if (numberList.isNotEmpty()) {
+                val num = numberList.removeAt(0).toInt()
                 when (argUnit) {
                     "y" -> {
                         if (isDelta) calendar.add(Calendar.YEAR, num * sign * times.toInt())
@@ -244,8 +256,11 @@ fun processConcatAndMore(rawStr: String, kanjiKey: String): String {
                         else calendar.set(Calendar.DAY_OF_MONTH, num * times.toInt())
                     }
 
-                    else -> return processNumber(str, (num * times + calcDelta).toString())
                     // 単位換算など
+                    else -> return processNumber(
+                        str,
+                        listOf((num * times + calcDelta).toString()) + numberList
+                    )
                 }
             } else if (hasArg.isNotEmpty()) {
                 return str.replace(Regex("[ymd]{1,4}"), "#")
@@ -273,7 +288,7 @@ fun processConcatAndMore(rawStr: String, kanjiKey: String): String {
             return DateFormat.format(format, calendar).toString()
         }
 
-    return processNumber(rawStr, number)
+    return processNumber(rawStr, numberList)
 }
 
 fun createTrimmedBuilder(orig: StringBuilder): StringBuilder {

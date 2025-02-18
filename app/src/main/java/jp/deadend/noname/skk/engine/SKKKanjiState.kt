@@ -128,6 +128,7 @@ object SKKKanjiState : SKKState {
                         val hiraganaChar = getZenkakuSeparator(composing)
                             ?: RomajiConverter.convert(composing)
                             ?: composing.toIntOrNull()?.toString()
+                            ?: if (composing == "#") composing else null
 
                         if (hiraganaChar != null) {
                             mComposing.setLength(0)

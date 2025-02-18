@@ -116,7 +116,10 @@ class SKKUserDictionary private constructor(
     }
 
     fun removeEntry(key: String, value: String, okurigana: String?) {
-        val entry = getEntry(key) ?: return
+        val entry = getEntry(key) ?: getEntry(
+            // 「だい4かい」がなければ「だい#かい」を削除する
+            key.replace(Regex("\\d+(\\.\\d+)?"), "#")
+        ) ?: return
         val candidates = entry.candidates // 送/遅/贈;ユーザー辞書にも注釈がある
         val okuriganaBlocks = entry.okuriganaBlocks // [ら/送/]/[り/送/]/[る/送;注釈もありうる?/]
         val rawVal = value.takeWhile { it != ';' } // 注釈を無視して探す
