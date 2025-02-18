@@ -150,7 +150,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                 ).forEach { keyCode ->
                     val key = checkNotNull(findKeyByCode(keyboard, keyCode)) { "BUG: no $keyCode key" }
                     key.label = if (isKatakana)
-                        hirakana2katakana(key.label.toString()) ?: ""
+                        hiragana2katakana(key.label.toString()) ?: ""
                     else katakana2hiragana(key.label.toString()) ?: ""
                 }
             }
@@ -523,7 +523,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                 mCurrentPopupLabels[i] = labels[i]
             } else {
                 mCurrentPopupLabels[i] = checkNotNull(
-                    hirakana2katakana(labels[i], reversed = true)
+                    hiragana2katakana(labels[i], reversed = true)
                 ) { "BUG: invalid popup label!!"}
             }
         }

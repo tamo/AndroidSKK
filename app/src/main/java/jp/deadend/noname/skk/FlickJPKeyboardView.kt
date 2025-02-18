@@ -796,7 +796,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
                     mCurrentPopupLabels[i] = labels[i]
                 } else {
                     mCurrentPopupLabels[i] = checkNotNull(
-                        hirakana2katakana(labels[i], reversed = true)
+                        hiragana2katakana(labels[i], reversed = true)
                     ) { "BUG: invalid popup label!!"}
                 }
             }

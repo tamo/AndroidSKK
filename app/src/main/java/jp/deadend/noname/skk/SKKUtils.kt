@@ -75,7 +75,7 @@ fun zenkaku2hankaku(str: String?): String? {
 }
 
 // ひらがなを全角カタカナにする
-fun hirakana2katakana(str: String?, reversed: Boolean = false): String? {
+fun hiragana2katakana(str: String?, reversed: Boolean = false): String? {
     if (str == null) { return null }
 
     var skipNext = false // 「う゛」を「ヴ」にして文字数が減るときのフラグ

@@ -1,7 +1,7 @@
 package jp.deadend.noname.skk.engine
 
 import jp.deadend.noname.skk.createTrimmedBuilder
-import jp.deadend.noname.skk.hirakana2katakana
+import jp.deadend.noname.skk.hiragana2katakana
 import jp.deadend.noname.skk.isVowel
 import jp.deadend.noname.skk.katakana2hiragana
 import jp.deadend.noname.skk.skkPrefs
@@ -51,7 +51,7 @@ object SKKKanjiState : SKKState {
                     // カタカナ変換
                     if (mKanjiKey.isNotEmpty()) {
                         val str = if (kanaState == SKKHiraganaState) {
-                            hirakana2katakana(mKanjiKey.toString())
+                            hiragana2katakana(mKanjiKey.toString())
                         } else {
                             mKanjiKey.toString() // すでにひらがななのでそのまま
                         }
@@ -63,7 +63,7 @@ object SKKKanjiState : SKKState {
 
                 17 /* Ctrl-Q */ -> {
                     if (mKanjiKey.isNotEmpty()) {
-                        val zenkata = hirakana2katakana(mKanjiKey.toString())
+                        val zenkata = hiragana2katakana(mKanjiKey.toString())
                         val str = if (kanaState === SKKHanKanaState) {
                             zenkata // 半角カナで半角を出すのはエンターだから Ctrl-Q は全角カナが自然だと思う
                         } else {

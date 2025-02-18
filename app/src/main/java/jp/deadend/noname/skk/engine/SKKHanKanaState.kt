@@ -1,7 +1,7 @@
 package jp.deadend.noname.skk.engine
 
 import jp.deadend.noname.skk.R
-import jp.deadend.noname.skk.hirakana2katakana
+import jp.deadend.noname.skk.hiragana2katakana
 import jp.deadend.noname.skk.skkPrefs
 import jp.deadend.noname.skk.zenkaku2hankaku
 
@@ -22,7 +22,7 @@ object SKKHanKanaState : SKKState {
     override fun processKey(context: SKKEngine, pcode: Int) {
         if (context.changeInputMode(pcode)) return
         SKKHiraganaState.processKana(context, pcode) { engine, hchr ->
-            val str = zenkaku2hankaku(hirakana2katakana(hchr))
+            val str = zenkaku2hankaku(hiragana2katakana(hchr))
             if (str != null) engine.commitTextSKK(str)
             engine.mComposing.setLength(0)
         }

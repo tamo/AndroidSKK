@@ -480,8 +480,8 @@ class SKKEngine(
 
             val regInfo = mRegistrationStack.peekFirst()
             if (regInfo != null) {
-                val key = if (kanaState === SKKHiraganaState) regInfo.key else hirakana2katakana(regInfo.key)!!
-                val okuri = if (kanaState === SKKHiraganaState) regInfo.okurigana else hirakana2katakana(regInfo.okurigana)
+                val key = if (kanaState === SKKHiraganaState) regInfo.key else hiragana2katakana(regInfo.key)!!
+                val okuri = if (kanaState === SKKHiraganaState) regInfo.okurigana else hiragana2katakana(regInfo.okurigana)
                 // 半角カナ変換はあとで
                 if (okuri == null) {
                     ct.append(key)
@@ -507,7 +507,7 @@ class SKKEngine(
         } else if (text.isEmpty()) {
             ct.append(" ")
         }
-        ct.append(if (mService.isHiragana) text else hirakana2katakana(text.toString(), reversed = true))
+        ct.append(if (mService.isHiragana) text else hiragana2katakana(text.toString(), reversed = true))
         if (state === SKKNarrowingState) {
             ct.append(" hint: ", SKKNarrowingState.mHint, mComposing)
         }
@@ -562,7 +562,7 @@ class SKKEngine(
             candidates.filter { str -> /* str("漢字; 注釈も含む") */
                 str.any { ch -> hintKanjis.contains(ch) } /* hintKanjisは注釈を除いてある */
                         || str.contains(hint) /* ひらがなかカタカナでヒントを含むstrもOK */
-                        || hirakana2katakana(hint)?.let { str.contains(it) } ?: false
+                        || hiragana2katakana(hint)?.let { str.contains(it) } ?: false
             }.let { nList ->
                 if (mCandidateKanjiKey == "emoji")
                     nList.map { removeAnnotation(it) }
@@ -680,7 +680,7 @@ class SKKEngine(
             target.addAll(dictionary.findKeys(scope, key))
         } else for (suggestion in dictionary.findKeys(scope, key)) {
             val hiraSuggestion = suggestion.first
-            target.add(hiraSuggestion to hirakana2katakana(hiraSuggestion, reversed = true)!!)
+            target.add(hiraSuggestion to hiragana2katakana(hiraSuggestion, reversed = true)!!)
         }
     }
 
@@ -749,8 +749,8 @@ class SKKEngine(
             val okuri = regInfo.okurigana ?: ""
             commitTextSKK(regInfo.entry.toString() + when (kanaState) {
                 SKKHiraganaState -> okuri
-                SKKKatakanaState -> hirakana2katakana(okuri)
-                SKKHanKanaState -> zenkaku2hankaku(hirakana2katakana(okuri))
+                SKKKatakanaState -> hiragana2katakana(okuri)
+                SKKHanKanaState -> zenkaku2hankaku(hiragana2katakana(okuri))
                 else -> throw RuntimeException("kanaState: $kanaState")
             })
         }
@@ -820,7 +820,7 @@ class SKKEngine(
                         dlog(" googleTransliterate JSON error: ${e.message}")
                         list.addAll(arrayListOf(
                             "(エラー)",
-                            hirakana2katakana(mKanjiKey.toString()) ?: mKanjiKey.toString()
+                            hiragana2katakana(mKanjiKey.toString()) ?: mKanjiKey.toString()
                         ))
                     } finally {
                         changeState(SKKChooseState)
@@ -940,7 +940,7 @@ class SKKEngine(
         }
 
         val okuri = StringBuilder(
-            (if (kanaState === SKKHiraganaState) mOkurigana else hirakana2katakana(mOkurigana)) ?: ""
+            (if (kanaState === SKKHiraganaState) mOkurigana else hiragana2katakana(mOkurigana)) ?: ""
         )
         if (backspace) {
             if (okuri.isNotEmpty()) okuri.deleteCharAt(okuri.lastIndex)
@@ -949,8 +949,8 @@ class SKKEngine(
         val concat = candidate.toString() + okuri.toString()
         val text = when (kanaState) {
             SKKHiraganaState -> concat
-            SKKKatakanaState -> hirakana2katakana(concat, reversed = true) ?: ""
-            SKKHanKanaState -> zenkaku2hankaku(hirakana2katakana(concat)) ?: ""
+            SKKKatakanaState -> hiragana2katakana(concat, reversed = true) ?: ""
+            SKKHanKanaState -> zenkaku2hankaku(hiragana2katakana(concat)) ?: ""
             else -> throw RuntimeException("kanaState: $kanaState")
         } // カナかなは互換性あるけど半角カナと全角かなは互換性ない感覚があるので reverse しない
         commitTextSKK(text)
@@ -1114,8 +1114,8 @@ class SKKEngine(
                 mKanjiKey.deleteCharAt(mKanjiKey.lastIndex)
             }
             commitTextSKK(when (kanaState) {
-                SKKKatakanaState -> hirakana2katakana(mKanjiKey.toString()) ?: ""
-                SKKHanKanaState -> zenkaku2hankaku(hirakana2katakana(mKanjiKey.toString())) ?: ""
+                SKKKatakanaState -> hiragana2katakana(mKanjiKey.toString()) ?: ""
+                SKKHanKanaState -> zenkaku2hankaku(hiragana2katakana(mKanjiKey.toString())) ?: ""
                 else -> mKanjiKey.toString()
             })
         }

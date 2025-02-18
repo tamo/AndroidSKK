@@ -43,7 +43,7 @@ class SKKUserDictionary private constructor (
 
         if (value.contains("/[") && value.contains("/]")) {
             // 送りがなブロック
-            val regex = """/\[.*?/\]""".toRegex()
+            val regex = """/\[.*?/]""".toRegex()
             regex.findAll(value).forEach { result: MatchResult ->
                 result.value.substring(2, result.value.length - 2) // "/[" と "/]" をとる
                     .split('/')

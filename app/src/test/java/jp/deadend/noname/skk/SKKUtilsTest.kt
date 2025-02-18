@@ -1,0 +1,74 @@
+package jp.deadend.noname.skk
+
+import org.junit.Assert.assertEquals
+import org.junit.Test
+
+class SKKUtilsTest {
+
+    @Test
+    fun testHankaku2Zenkaku() {
+        assertEquals("ａｂｃ", hankaku2zenkaku("abc"))
+        assertEquals("１２３", hankaku2zenkaku("123"))
+        assertEquals("アイウ", hankaku2zenkaku("ｱｲｳ"))
+        assertEquals("ガギグゲゴ", hankaku2zenkaku("ｶﾞｷﾞｸﾞｹﾞｺﾞ"))
+        assertEquals("パピプペポ", hankaku2zenkaku("ﾊﾟﾋﾟﾌﾟﾍﾟﾎﾟ"))
+        assertEquals("ヴ", hankaku2zenkaku("ｳﾞ"))
+        assertEquals(null, hankaku2zenkaku(null))
+    }
+
+    @Test
+    fun testZenkaku2Hankaku() {
+        assertEquals("abc xyz ", zenkaku2hankaku("ａｂｃ　xyz "))
+        assertEquals("123890", zenkaku2hankaku("１２３890"))
+        assertEquals("ｱｲｳあいう", zenkaku2hankaku("アイウあいう"))
+        assertEquals("ｶﾞｷﾞｸﾞｹﾞｺﾞ", zenkaku2hankaku("ガギグゲゴ"))
+        assertEquals("ﾊﾟﾋﾟﾌﾟﾍﾟﾎﾟ", zenkaku2hankaku("パピプペポ"))
+        assertEquals("ｳﾞ", zenkaku2hankaku("ヴ"))
+        assertEquals(null, zenkaku2hankaku(null))
+    }
+
+    @Test
+    fun testHiragana2Katakana() {
+        assertEquals("アイウアイウ", hiragana2katakana("あいうアイウ"))
+        assertEquals("ヴヴ", hiragana2katakana("う゛ヴ"))
+        assertEquals("アイウあいう", hiragana2katakana("あいうアイウ", true))
+        assertEquals("ヴゔ", hiragana2katakana("う゛ヴ", true))
+        assertEquals(null, hiragana2katakana(null))
+    }
+
+    @Test
+    fun testKatakana2Hiragana() {
+        assertEquals("あいうあいう", katakana2hiragana("アイウあいう"))
+        assertEquals("ゔ", katakana2hiragana("ヴ"))
+        assertEquals(null, katakana2hiragana(null))
+    }
+
+    @Test
+    fun testIsAlphabet() {
+        assertEquals(true, isAlphabet('a'.code))
+        assertEquals(true, isAlphabet('Z'.code))
+        assertEquals(false, isAlphabet('1'.code))
+    }
+
+    @Test
+    fun testIsVowel() {
+        assertEquals(true, isVowel('a'.code))
+        assertEquals(true, isVowel('u'.code))
+        assertEquals(false, isVowel('b'.code))
+    }
+
+    @Test
+    fun testRemoveAnnotation() {
+        assertEquals("変換", removeAnnotation("変換;注釈"))
+        assertEquals("単品", removeAnnotation("単品"))
+    }
+
+    @Test
+    fun testProcessConcatAndMore() {
+        assertEquals("第123回/", processConcatAndMore("(concat \"第#0回\\057\")", "123"))
+        assertEquals("第１２３回", processConcatAndMore("(concat \"第#1回\")", "123"))
+        assertEquals("第一二三回", processConcatAndMore("(concat \"第#2回\")", "123"))
+        assertEquals("第百二十三回", processConcatAndMore("(concat \"第#3回\")", "123"))
+        assertEquals("第123回", processConcatAndMore("(concat \"第#回\")", "123"))
+    }
+}
