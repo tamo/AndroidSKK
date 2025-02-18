@@ -13,7 +13,7 @@ import java.util.zip.ZipInputStream
 import kotlin.math.max
 
 private val PAT_QUOTED = "\"(.+?)\"".toRegex()
-private val PAT_ESCAPE_NUM = """\\(\d+)""".toRegex()
+private val PAT_ESCAPE_NUM = """\\\d{1,3}""".toRegex()
 
 // 半角から全角 (UNICODE)
 fun hankaku2zenkaku(str: String?): String? {
