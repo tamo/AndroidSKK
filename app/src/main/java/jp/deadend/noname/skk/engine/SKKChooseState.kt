@@ -22,10 +22,10 @@ object SKKChooseState : SKKConfirmingState {
         }
     }
 
-    override fun processKey(context: SKKEngine, pcode: Int) {
-        if (super.beforeProcessKey(context, pcode)) return
+    override fun processKey(context: SKKEngine, keyCode: Int) {
+        if (super.beforeProcessKey(context, keyCode)) return
         context.apply {
-            when (pcode) {
+            when (keyCode) {
                 ' '.code -> chooseAdjacentCandidate(true)
                 'x'.code -> chooseAdjacentCandidate(false)
                 'X'.code -> pickCurrentCandidate(unregister = true)
@@ -40,14 +40,14 @@ object SKKChooseState : SKKConfirmingState {
                 'l'.code, 'L'.code, '/'.code -> {
                     // 暗黙の確定
                     pickCurrentCandidate()
-                    changeInputMode(pcode)
+                    changeInputMode(keyCode)
                 }
 
                 ':'.code -> changeState(SKKNarrowingState) // Abbrevキーボードのことは無視
                 else -> {
                     // 暗黙の確定
                     pickCurrentCandidate()
-                    kanaState.processKey(context, pcode)
+                    kanaState.processKey(context, keyCode)
                 }
             }
         }

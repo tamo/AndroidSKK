@@ -17,18 +17,19 @@
 */
 -->
 
-<jp.deadend.noname.skk.CandidateViewContainer xmlns:android="http://schemas.android.com/apk/res/android"
+<jp.deadend.noname.skk.CandidatesViewContainer xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal">
 
-    <jp.deadend.noname.skk.ImageButton
+    <jp.deadend.noname.skk.CandidatesViewImageButton
         android:id="@+id/candidate_left"
-        android:layout_width="@dimen/candidates_scrollbutton_width"
+        android:layout_width="@dimen/candidates_scroll_button_width"
         android:layout_height="match_parent"
-        android:background="@drawable/suggest_scroll_button_bg"
+        android:background="@drawable/candidate_scroll_button_bg"
         android:clickable="true"
+        android:contentDescription="@string/descr_left_button"
         android:scaleType="fitCenter"
         android:src="@drawable/ic_arrow_left"
         android:theme="@style/Theme.SKK"
@@ -41,21 +42,22 @@
         app:layout_constraintEnd_toStartOf="@id/candidate_right"
         app:layout_constraintStart_toEndOf="@id/candidate_left">
 
-        <jp.deadend.noname.skk.CandidateView
+        <jp.deadend.noname.skk.CandidatesView
             android:id="@+id/candidates"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
 
     </FrameLayout>
 
-    <jp.deadend.noname.skk.ImageButton
+    <jp.deadend.noname.skk.CandidatesViewImageButton
         android:id="@+id/candidate_right"
-        android:layout_width="@dimen/candidates_scrollbutton_width"
+        android:layout_width="@dimen/candidates_scroll_button_width"
         android:layout_height="match_parent"
-        android:background="@drawable/suggest_scroll_button_bg"
+        android:background="@drawable/candidate_scroll_button_bg"
         android:clickable="true"
+        android:contentDescription="@string/descr_right_button"
         android:scaleType="fitCenter"
         android:src="@drawable/ic_arrow_right"
         android:theme="@style/Theme.SKK"
         app:side="right" />
-</jp.deadend.noname.skk.CandidateViewContainer>
+</jp.deadend.noname.skk.CandidatesViewContainer>

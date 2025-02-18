@@ -2,106 +2,101 @@
 <androidx.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     app:title="@string/label_pref_activity">
-    <androidx.preference.ListPreference
-        app:key="@string/prefkey_kutouten_type"
-        app:title="句読点のタイプ"
+    <androidx.preference.DropDownPreference
+        app:defaultValue="jp"
+        app:dialogTitle="句読点のタイプ"
         app:entries="@array/kutouten_entries"
         app:entryValues="@array/kutouten_values"
-        app:dialogTitle="句読点のタイプ"
-        app:defaultValue="jp"
-        app:useSimpleSummaryProvider="true"
         app:iconSpaceReserved="false"
-        />
+        app:key="@string/pref_kutouten_type"
+        app:title="句読点のタイプ"
+        app:useSimpleSummaryProvider="true" />
     <androidx.preference.CheckBoxPreference
-        app:key="@string/prefkey_prefix_mark"
-        app:title="変換中の▽や▼を表示"
-        app:summary="表示しないでおけば途中で確定されても問題になりにくいです"
         app:defaultValue="true"
         app:iconSpaceReserved="false"
-        />
+        app:key="@string/pref_prefix_mark"
+        app:summary="表示しなければ途中で確定されても問題になりにくいです"
+        app:title="変換中の▽や▼を表示" />
     <androidx.preference.SeekBarPreference
-        app:key="@string/prefkey_candidates_size"
-        app:min="12"
         android:max="60"
         app:defaultValue="30"
-        app:title="候補表示の文字サイズ"
-        app:showSeekBarValue="true"
         app:iconSpaceReserved="false"
-        />
+        app:key="@string/pref_candidates_size"
+        app:min="12"
+        app:showSeekBarValue="true"
+        app:title="候補表示の文字サイズ" />
     <androidx.preference.SeekBarPreference
-        app:key="@string/prefkey_candidates_normal_lines"
-        app:min="1"
         android:max="10"
         app:defaultValue="2"
-        app:title="候補表示の行数 (通常)"
-        app:showSeekBarValue="true"
         app:iconSpaceReserved="false"
-        />
-    <androidx.preference.SeekBarPreference
-        app:key="@string/prefkey_candidates_emoji_lines"
+        app:key="@string/pref_candidates_normal_lines"
         app:min="1"
+        app:showSeekBarValue="true"
+        app:title="候補表示の行数 (通常)" />
+    <androidx.preference.SeekBarPreference
         android:max="10"
         app:defaultValue="4"
-        app:title="候補表示の行数 (絵文字)"
-        app:showSeekBarValue="true"
         app:iconSpaceReserved="false"
-        />
-    <androidx.preference.Preference
-        app:title="@string/label_dicmanager_activity" >
-        <intent android:action="android.intent.action.MAIN"
-            android:targetPackage="jp.deadend.noname.skk"
-            android:targetClass="jp.deadend.noname.skk.SKKDicManager" />
+        app:key="@string/pref_candidates_emoji_lines"
+        app:min="1"
+        app:showSeekBarValue="true"
+        app:title="候補表示の行数 (絵文字)" />
+    <androidx.preference.Preference app:title="@string/label_dict_manager_activity">
+        <intent
+            android:action="android.intent.action.MAIN"
+            android:targetClass="jp.deadend.noname.skk.SKKDictManager"
+            android:targetPackage="jp.deadend.noname.skk" />
     </androidx.preference.Preference>
-    <androidx.preference.Preference
-        app:title="@string/label_dictool_activity" >
-        <intent android:action="android.intent.action.MAIN"
-            android:data="@string/dic_name_user"
-            android:targetPackage="jp.deadend.noname.skk"
-            android:targetClass="jp.deadend.noname.skk.SKKUserDicTool" />
+    <androidx.preference.Preference app:title="@string/label_dict_tool_activity">
+        <intent
+            android:action="android.intent.action.MAIN"
+            android:data="@string/dict_name_user"
+            android:targetClass="jp.deadend.noname.skk.SKKUserDictTool"
+            android:targetPackage="jp.deadend.noname.skk" />
     </androidx.preference.Preference>
-    <androidx.preference.Preference
-        app:title="@string/label_asciitool_activity" >
-        <intent android:action="android.intent.action.MAIN"
-            android:data="@string/dic_name_ascii"
-            android:targetPackage="jp.deadend.noname.skk"
-            android:targetClass="jp.deadend.noname.skk.SKKUserDicTool" />
+    <androidx.preference.Preference app:title="@string/label_ascii_tool_activity">
+        <intent
+            android:action="android.intent.action.MAIN"
+            android:data="@string/dict_name_ascii"
+            android:targetClass="jp.deadend.noname.skk.SKKUserDictTool"
+            android:targetPackage="jp.deadend.noname.skk" />
     </androidx.preference.Preference>
-    <androidx.preference.Preference
-        app:title="@string/label_emojitool_activity" >
-        <intent android:action="android.intent.action.MAIN"
-            android:data="@string/dic_name_emoji"
-            android:targetPackage="jp.deadend.noname.skk"
-            android:targetClass="jp.deadend.noname.skk.SKKUserDicTool" />
+    <androidx.preference.Preference app:title="@string/label_emoji_tool_activity">
+        <intent
+            android:action="android.intent.action.MAIN"
+            android:data="@string/dict_name_emoji"
+            android:targetClass="jp.deadend.noname.skk.SKKUserDictTool"
+            android:targetPackage="jp.deadend.noname.skk" />
     </androidx.preference.Preference>
     <androidx.preference.Preference
         app:fragment="jp.deadend.noname.skk.SKKSettingsActivity$SettingsHardKeyFragment"
-        app:title="@string/label_pref_hardkeyboard"/>
+        app:title="@string/label_pref_hard_keyboard" />
     <androidx.preference.Preference
         app:fragment="jp.deadend.noname.skk.SKKSettingsActivity$SettingsSoftKeyFragment"
-        app:title="@string/label_pref_softkeyboard"/>
+        app:title="@string/label_pref_soft_keyboard" />
     <androidx.preference.PreferenceCategory
-        app:title="@string/label_dicmanager_reset"
-        app:icon="@android:drawable/ic_notification_clear_all">
-        <androidx.preference.Preference
-            app:title="@string/label_dictool_recreate" >
-            <intent android:action="android.intent.action.MAIN"
-                android:data="@string/dic_name_user_recreate"
-                android:targetPackage="jp.deadend.noname.skk"
-                android:targetClass="jp.deadend.noname.skk.SKKUserDicTool" />
+        app:icon="@android:drawable/ic_notification_clear_all"
+        app:title="@string/label_dict_manager_reset">
+        <androidx.preference.Preference app:title="@string/label_dict_tool_recreate">
+            <intent
+                android:action="android.intent.action.MAIN"
+                android:data="@string/dict_name_user_recreate"
+                android:targetClass="jp.deadend.noname.skk.SKKUserDictTool"
+                android:targetPackage="jp.deadend.noname.skk" />
         </androidx.preference.Preference>
-        <androidx.preference.Preference
-            app:title="@string/label_asciitool_recreate" >
-            <intent android:action="android.intent.action.MAIN"
-                android:data="@string/dic_name_ascii_recreate"
-                android:targetPackage="jp.deadend.noname.skk"
-                android:targetClass="jp.deadend.noname.skk.SKKUserDicTool" />
+        <androidx.preference.Preference app:title="@string/label_ascii_tool_recreate">
+            <intent
+                android:action="android.intent.action.MAIN"
+                android:data="@string/dict_name_ascii_recreate"
+                android:targetClass="jp.deadend.noname.skk.SKKUserDictTool"
+                android:targetPackage="jp.deadend.noname.skk" />
         </androidx.preference.Preference>
-        <androidx.preference.Preference
-            app:title="@string/label_emojitool_recreate" >
-            <intent android:action="android.intent.action.MAIN"
-                android:data="@string/dic_name_emoji_recreate"
-                android:targetPackage="jp.deadend.noname.skk"
-                android:targetClass="jp.deadend.noname.skk.SKKUserDicTool" />
+        <androidx.preference.Preference app:title="@string/label_emoji_tool_recreate">
+            <intent
+                android:action="android.intent.action.MAIN"
+                android:data="@string/dict_name_emoji_recreate"
+                android:targetClass="jp.deadend.noname.skk.SKKUserDictTool"
+                android:targetPackage="jp.deadend.noname.skk" />
         </androidx.preference.Preference>
     </androidx.preference.PreferenceCategory>
 </androidx.preference.PreferenceScreen>

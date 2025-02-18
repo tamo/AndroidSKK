@@ -37,13 +37,13 @@ class SKKSettingsActivityUITest {
     }
 
     @Test
-    fun testUserDicTool() {
+    fun testUserDictTool() {
         // SettingsActivity を開くとシステムのキーボード設定が開いてしまうので直接 Intent で開く
         val intent = Intent("android.intent.action.MAIN", Uri.parse("*skk_userdict")).apply {
             component =
-                ComponentName("jp.deadend.noname.skk", "jp.deadend.noname.skk.SKKUserDicTool")
+                ComponentName("jp.deadend.noname.skk", "jp.deadend.noname.skk.SKKUserDictTool")
         }
-        ActivityScenario.launch<SKKUserDicTool>(intent)
+        ActivityScenario.launch<SKKUserDictTool>(intent)
         // 初期化されます。よろしいですか
         onView(withText("OK")).perform(click())
         // 初期化された状態からハンバーガーメニュー

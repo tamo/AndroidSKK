@@ -1,9 +1,9 @@
 package jp.deadend.noname.skk
 
 import android.content.Context
+import android.util.AttributeSet
 import android.view.KeyEvent
 import android.view.MotionEvent
-import android.util.AttributeSet
 import jp.deadend.noname.skk.engine.SKKASCIIState
 import jp.deadend.noname.skk.engine.SKKHiraganaState
 import jp.deadend.noname.skk.engine.SKKState
@@ -21,7 +21,11 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
     private var mSpaceFlicked = false
 
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
-    constructor(context: Context, attrs: AttributeSet?, defStyle: Int) : super(context, attrs, defStyle)
+    constructor(context: Context, attrs: AttributeSet?, defStyle: Int) : super(
+        context,
+        attrs,
+        defStyle
+    )
 
     override fun setService(service: SKKService) {
         super.setService(service)
@@ -56,6 +60,7 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                 flickStartY = me.y
                 isFlicked = FLICK_NONE
             }
+
             MotionEvent.ACTION_MOVE -> {
                 val dx = me.x - flickStartX
                 val dy = me.y - flickStartY
@@ -85,14 +90,17 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                             }
                             return true
                         }
+
                         dy < 0 && dx2 < dy2 -> {
                             isFlicked = FLICK_UP
                             return true
                         }
+
                         dy > 0 && dx2 < dy2 -> {
                             isFlicked = FLICK_DOWN
                             return true
                         }
+
                         else -> {
                             isFlicked = FLICK_NONE
                             // 左右に外れて別のキーになるかもしれないので return しない
@@ -140,24 +148,28 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                         isShifted = !isShifted
                         isCapsLocked = false
                     }
+
                     else -> {
                         isShifted = true
                         isCapsLocked = true
                     }
                 }
             }
+
             KEYCODE_QWERTY_ENTER -> {
                 if (!isCapsLocked) isShifted = false
                 if (!mService.handleEnter()) mService.pressEnter()
             }
-            KEYCODE_QWERTY_TOJP -> {
+
+            KEYCODE_QWERTY_TO_JP -> {
                 when (isFlicked) {
                     if (skkPrefs.preferFlick) flickNone else FLICK_DOWN -> mService.changeToFlick()
                     if (skkPrefs.preferFlick) FLICK_DOWN else flickNone -> mService.handleKanaKey()
                     flickUp -> mService.pasteClip()
                 }
             }
-            KEYCODE_QWERTY_TOSYM -> {
+
+            KEYCODE_QWERTY_TO_SYM -> {
                 if (!isCapsLocked) isShifted = false
                 when (isFlicked) {
                     flickNone -> {
@@ -166,11 +178,13 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                         isCapsLocked = keyboard.isCapsLocked
                         // 記号は capslock にならない気がするが一応
                     }
+
                     flickUp -> mService.googleTransliterate()
                     FLICK_DOWN -> mService.handleCancel()
                 }
             }
-            KEYCODE_QWERTY_TOLATIN -> {
+
+            KEYCODE_QWERTY_TO_LATIN -> {
                 // 単純 shift を capslock として扱うので状態を残す
                 when (isFlicked) {
                     FLICK_NONE, FLICK_UP -> {
@@ -179,12 +193,14 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                         isCapsLocked = keyboard.isCapsLocked
                         // latin に capslock が残っている場合がある
                     }
+
                     FLICK_DOWN -> {
                         mService.handleCancel()
                         if (!isCapsLocked) isShifted = false
                     }
                 }
             }
+
             else -> {
                 if (primaryCode == ' '.code && mSpaceFlicked) {
                     mService.updateSuggestionsASCII()
@@ -196,15 +212,17 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                 val code = when (isFlicked) {
                     FLICK_DOWN ->
                         if (downCode > 0) downCode else primaryCode
+
                     flickUp ->
                         if (shiftedCode > 0) shiftedCode else primaryCode
+
                     else -> primaryCode
                 }
                 mService.processKey(code)
             }
         }
         when (primaryCode) {
-            Keyboard.KEYCODE_SHIFT, KEYCODE_QWERTY_TOSYM, KEYCODE_QWERTY_TOLATIN -> {}
+            Keyboard.KEYCODE_SHIFT, KEYCODE_QWERTY_TO_SYM, KEYCODE_QWERTY_TO_LATIN -> {}
             else -> if (keyboard === mLatinKeyboard && !isCapsLocked) isShifted = false
             // 記号モードでは普通の shift も capslock として扱う (対応する { と } 等に便利だろうから)
         }
@@ -215,7 +233,7 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
         keyboard.keys.find { it.codes[0] == code }
 
     override fun setKeyState(state: SKKState): QwertyKeyboardView {
-        val kanaKey = findKeyByCode(KEYCODE_QWERTY_TOJP)
+        val kanaKey = findKeyByCode(KEYCODE_QWERTY_TO_JP)
         val kanaLabel = if (state.isTransient) "確定" else "かな"
         kanaKey?.label = if (skkPrefs.preferFlick) "Flick" else kanaLabel
         kanaKey?.downLabel = if (skkPrefs.preferFlick) kanaLabel else "Flick"
@@ -253,10 +271,10 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
     override fun swipeUp() {}
 
     companion object {
-        private const val KEYCODE_QWERTY_TOJP    = -1008
-        private const val KEYCODE_QWERTY_TOSYM   = -1009
-        private const val KEYCODE_QWERTY_TOLATIN = -1010
-        private const val KEYCODE_QWERTY_ENTER   = -1011
+        private const val KEYCODE_QWERTY_TO_JP = -1008
+        private const val KEYCODE_QWERTY_TO_SYM = -1009
+        private const val KEYCODE_QWERTY_TO_LATIN = -1010
+        private const val KEYCODE_QWERTY_ENTER = -1011
         private const val FLICK_UP = 1
         private const val FLICK_NONE = 0
         private const val FLICK_DOWN = -1

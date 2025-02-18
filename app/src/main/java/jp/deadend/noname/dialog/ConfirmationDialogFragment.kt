@@ -2,8 +2,8 @@ package jp.deadend.noname.dialog
 
 import android.app.Dialog
 import android.os.Bundle
-import androidx.fragment.app.DialogFragment
 import androidx.appcompat.app.AlertDialog
+import androidx.fragment.app.DialogFragment
 
 class ConfirmationDialogFragment : DialogFragment() {
     private var mListener: Listener? = null
@@ -19,17 +19,17 @@ class ConfirmationDialogFragment : DialogFragment() {
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         return AlertDialog.Builder(requireContext())
-                .setMessage(arguments?.getString("message"))
-                .setCancelable(true)
-                .setPositiveButton(android.R.string.ok) { _, _ ->
-                    mListener?.onPositiveClick()
-                    dismiss()
-                }
-                .setNegativeButton(android.R.string.cancel) { _, _ ->
-                    mListener?.onNegativeClick()
-                    dismiss()
-                }
-                .create()
+            .setMessage(arguments?.getString("message"))
+            .setCancelable(true)
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                mListener?.onPositiveClick()
+                dismiss()
+            }
+            .setNegativeButton(android.R.string.cancel) { _, _ ->
+                mListener?.onNegativeClick()
+                dismiss()
+            }
+            .create()
     }
 
     companion object {

@@ -20,9 +20,13 @@ open class Keyboard {
     var isShifted = false
         set(value) {
             for (shiftKey in mShiftKeys) {
-                if (shiftKey != null) { shiftKey.on = value }
+                if (shiftKey != null) {
+                    shiftKey.on = value
+                }
             }
-            if (field != value) { field = value }
+            if (field != value) {
+                field = value
+            }
         }
     var isCapsLocked = false
 
@@ -32,7 +36,7 @@ open class Keyboard {
         private set
     private var bottom = 0
 
-    val keys: MutableList<Key>  = mutableListOf()
+    val keys: MutableList<Key> = mutableListOf()
     val shiftedCodes = mutableMapOf<Int, Int>() // code から shiftedCode への逆引き
     val downCodes = mutableMapOf<Int, Int>() // code から downCode への逆引き
     private val rows: MutableList<Row> = mutableListOf()
@@ -56,7 +60,7 @@ open class Keyboard {
 
         var rowEdgeFlags = 0
 
-        constructor(res: Resources, parent: Keyboard, parser: XmlResourceParser): this(parent) {
+        constructor(res: Resources, parent: Keyboard, parser: XmlResourceParser) : this(parent) {
             var a = res.obtainAttributes(Xml.asAttributeSet(parser), R.styleable.Keyboard)
             defaultWidth = getDimensionOrFraction(
                 a, R.styleable.Keyboard_keyWidth, parent.mDisplayWidth, parent.defaultKeyWidth
@@ -65,10 +69,16 @@ open class Keyboard {
                 a, R.styleable.Keyboard_keyHeight, parent.mDisplayHeight, parent.defaultKeyHeight
             )
             defaultHorizontalGap = getDimensionOrFraction(
-                a, R.styleable.Keyboard_horizontalGap, parent.mDisplayWidth, parent.defaultHorizontalGap
+                a,
+                R.styleable.Keyboard_horizontalGap,
+                parent.mDisplayWidth,
+                parent.defaultHorizontalGap
             )
             verticalGap = getDimensionOrFraction(
-                a, R.styleable.Keyboard_verticalGap, parent.mDisplayHeight, parent.defaultVerticalGap
+                a,
+                R.styleable.Keyboard_verticalGap,
+                parent.mDisplayHeight,
+                parent.defaultVerticalGap
             )
             a.recycle()
             a = res.obtainAttributes(Xml.asAttributeSet(parser), R.styleable.Keyboard_Row)
@@ -117,7 +127,9 @@ open class Keyboard {
             edgeFlags = parent.rowEdgeFlags
         }
 
-        constructor(res: Resources, parent: Row, x: Int, y: Int, parser: XmlResourceParser) : this(parent) {
+        constructor(res: Resources, parent: Row, x: Int, y: Int, parser: XmlResourceParser) : this(
+            parent
+        ) {
             this.x = x
             this.y = y
             var a = res.obtainAttributes(Xml.asAttributeSet(parser), R.styleable.Keyboard)
@@ -129,7 +141,10 @@ open class Keyboard {
                 a, R.styleable.Keyboard_keyHeight, keyboard.mDisplayHeight, parent.defaultHeight
             )
             horizontalGap = getDimensionOrFraction(
-                a, R.styleable.Keyboard_horizontalGap, keyboard.mDisplayWidth, parent.defaultHorizontalGap
+                a,
+                R.styleable.Keyboard_horizontalGap,
+                keyboard.mDisplayWidth,
+                parent.defaultHorizontalGap
             )
             defaultHorizontalGap = horizontalGap
             a.recycle()
@@ -141,7 +156,7 @@ open class Keyboard {
                 codes = intArrayOf(codesValue.data)
             } else if (codesValue.type == TypedValue.TYPE_STRING) {
                 codes = codesValue.string.toString()
-                            .split(",").map { it.trim().toInt() }.toIntArray()
+                    .split(",").map { it.trim().toInt() }.toIntArray()
             }
             shiftedCode = a.getInt(R.styleable.Keyboard_Key_shiftedCode, 0)
             downCode = a.getInt(R.styleable.Keyboard_Key_downCode, 0)
@@ -177,10 +192,15 @@ open class Keyboard {
             a.recycle()
         }
 
-        fun press() { pressed = true }
+        fun press() {
+            pressed = true
+        }
+
         fun release() {
             pressed = false
-            if (sticky) { on != on }
+            if (sticky) {
+                on != on
+            }
         }
 
         fun isInside(x: Int, y: Int): Boolean {
@@ -282,24 +302,30 @@ open class Keyboard {
             x += key.width + key.horizontalGap
             keys.add(key)
             row.keys.add(key)
-            if (x > width) { width = x }
+            if (x > width) {
+                width = x
+            }
         }
         height = y + defaultKeyHeight
         rows.add(row)
     }
 
     fun resize(newWidth: Int, newHeight: Int, newBottom: Int) {
-        if ((newWidth == width) && (newHeight == height) && newBottom == bottom) { return }
-        if ((newWidth < 1) || newHeight < 1) { return }
+        if ((newWidth == width) && (newHeight == height) && newBottom == bottom) return
+        if ((newWidth < 1) || newHeight < 1) return
 
         var totalHeight = 0
         var maxWidth = 0
         for (row in rows) {
             var totalWidth = 0
-            for (key in row.keys) { totalWidth += key.defaultHorizontalGap + key.defaultWidth }
-            if (totalWidth > maxWidth) { maxWidth = totalWidth }
+            for (key in row.keys) {
+                totalWidth += key.defaultHorizontalGap + key.defaultWidth
+            }
+            if (totalWidth > maxWidth) {
+                maxWidth = totalWidth
+            }
 
-                totalHeight += row.defaultHeight + row.verticalGap
+            totalHeight += row.defaultHeight + row.verticalGap
         }
 
         val hScaleFactor = newWidth.toFloat() / maxWidth
@@ -330,7 +356,9 @@ open class Keyboard {
 
     fun setShifted(shiftState: Boolean): Boolean {
         for (shiftKey in mShiftKeys) {
-            if (shiftKey != null) { shiftKey.on = shiftState }
+            if (shiftKey != null) {
+                shiftKey.on = shiftState
+            }
         }
         if (isShifted != shiftState) {
             isShifted = shiftState
@@ -354,7 +382,10 @@ open class Keyboard {
                     val key = keys[i]
                     if (key.squaredDistanceFrom(x, y) < mProximityThreshold
                         || key.squaredDistanceFrom(x + mCellWidth - 1, y) < mProximityThreshold
-                        || key.squaredDistanceFrom(x + mCellWidth - 1, y + mCellHeight - 1) < mProximityThreshold
+                        || key.squaredDistanceFrom(
+                            x + mCellWidth - 1,
+                            y + mCellHeight - 1
+                        ) < mProximityThreshold
                         || key.squaredDistanceFrom(x, y + mCellHeight - 1) < mProximityThreshold
                     ) {
                         indices[count++] = i
@@ -368,7 +399,9 @@ open class Keyboard {
     }
 
     fun getNearestKeys(x: Int, y: Int): IntArray {
-        if (mGridNeighbors[0] == null) { computeNearestNeighbors() }
+        if (mGridNeighbors[0] == null) {
+            computeNearestNeighbors()
+        }
         if (x in 0 until width && y in 0 until height * (100 - bottom) / 100) {
             val index = (y / mCellHeight) * GRID_WIDTH + x / mCellWidth
             if (index < GRID_SIZE) {
@@ -409,6 +442,7 @@ open class Keyboard {
                                 currentRow = createRowFromXml(res, parser)
                                 rows.add(currentRow)
                             }
+
                             TAG_KEY -> {
                                 currentRow?.let { crow ->
                                     inKey = true
@@ -426,24 +460,30 @@ open class Keyboard {
                                                 }
                                                 modifierKeys.add(it)
                                             }
+
                                             KEYCODE_ALT -> modifierKeys.add(it)
                                         }
                                         crow.keys.add(it)
                                     }
                                 }
                             }
+
                             TAG_KEYBOARD -> parseKeyboardAttributes(res, parser)
                         }
                     }
+
                     XmlResourceParser.END_TAG -> {
                         when {
                             inKey -> {
                                 inKey = false
                                 key?.let {
                                     x += it.horizontalGap + it.width
-                                    if (x > width) { width = x }
+                                    if (x > width) {
+                                        width = x
+                                    }
                                 }
                             }
+
                             inRow -> {
                                 inRow = false
                                 currentRow?.let {
@@ -452,6 +492,7 @@ open class Keyboard {
                                     row++
                                 }
                             }
+
                             else -> {
                                 // TODO: error or extend?
                             }
@@ -522,6 +563,7 @@ open class Keyboard {
         const val EDGE_TOP = 0x04
         const val EDGE_BOTTOM = 0x08
         const val KEYCODE_SHIFT = -1
+
         // const val KEYCODE_MODE_CHANGE = -2
         // const val KEYCODE_CANCEL = -3
         // const val KEYCODE_DONE = -4
@@ -539,7 +581,9 @@ open class Keyboard {
             val value = a.peekValue(index) ?: return defValue
             return when (value.type) {
                 TypedValue.TYPE_DIMENSION -> a.getDimensionPixelOffset(index, defValue)
-                TypedValue.TYPE_FRACTION -> a.getFraction(index, base, base, defValue.toFloat()).roundToInt()
+                TypedValue.TYPE_FRACTION -> a.getFraction(index, base, base, defValue.toFloat())
+                    .roundToInt()
+
                 else -> defValue
             }
         }

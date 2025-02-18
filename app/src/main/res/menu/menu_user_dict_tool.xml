@@ -3,16 +3,16 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <group>
         <item
-            android:id="@+id/menu_user_dic_tool_import"
-            android:title="@string/label_import"
+            android:id="@+id/menu_user_dict_tool_import"
+            android:title="@string/label_tools_import"
             app:showAsAction="never" />
         <item
-            android:id="@+id/menu_user_dic_tool_export"
-            android:title="@string/label_export"
+            android:id="@+id/menu_user_dict_tool_export"
+            android:title="@string/label_tools_export"
             app:showAsAction="never" />
         <item
-            android:id="@+id/menu_user_dic_tool_clear"
-            android:title="@string/label_clear_userdic"
+            android:id="@+id/menu_user_dict_tool_clear"
+            android:title="@string/label_tools_clear"
             app:showAsAction="never" />
     </group>
 </menu>

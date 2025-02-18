@@ -19,15 +19,15 @@ import kotlin.math.max
 
 @Throws(IOException::class)
 private fun appendToEntry(key: String, value: String, btree: BTree<String, String>) {
-    val oldval = btree.find(key)
+    val oldVal = btree.find(key)
 
-    if (oldval != null) {
+    if (oldVal != null) {
         val valList = value.substring(1).split("/").dropLastWhile { it.isEmpty() }
-        val oldvalList = oldval.substring(1).split("/").dropLastWhile { it.isEmpty() }
+        val oldValList = oldVal.substring(1).split("/").dropLastWhile { it.isEmpty() }
 
         val newValue = StringBuilder()
         newValue.append("/")
-        valList.union(oldvalList).forEach { newValue.append(it, "/") }
+        valList.union(oldValList).forEach { newValue.append(it, "/") }
         btree.insert(key, newValue.toString(), true)
     } else {
         btree.insert(key, value, true)
@@ -48,10 +48,10 @@ internal fun isTextDicInEucJp(inputStream: InputStream): Boolean {
                 // if (count > 1000) { return@forEachLine }
             }
         } catch (e: CharacterCodingException) {
-            dlog("euc checker: failed after $prevLine")
+            dLog("euc checker: failed after $prevLine")
             failed = true
         }
-        dlog("euc checker: read $count lines")
+        dLog("euc checker: read $count lines")
     }
     return !failed
 }
@@ -70,7 +70,7 @@ internal fun loadFromTextDic(
     decoder.onMalformedInput(CodingErrorAction.REPORT)
     decoder.onUnmappableCharacter(CodingErrorAction.REPLACE)
 
-    val loadSKKLine = fun (line: String) {
+    val loadSKKLine = fun(line: String) {
         val idx = line.indexOf(' ')
         if (idx != -1 && !line.startsWith(";;")) {
             val key = line.substring(0, idx)
@@ -86,12 +86,16 @@ internal fun loadFromTextDic(
     var prevKey = ""
     var prevFreq = 0
     var isShortCut: Boolean
-    val loadWordListLine = fun (line: String) {
+    val loadWordListLine = fun(line: String) {
         val csv = line.split(',', '=')
         if (csv.size < 4) return
         val key = csv[1]
         val freq = if (csv[0] == " word" && csv[2] == "f") {
-            val f = try { csv[3].toInt() } catch (e: NumberFormatException) { 0 }
+            val f = try {
+                csv[3].toInt()
+            } catch (e: NumberFormatException) {
+                0
+            }
             prevKey = key
             prevFreq = f
             isShortCut = false
@@ -102,7 +106,11 @@ internal fun loadFromTextDic(
             f
         } else if (csv[0] == "  shortcut" && csv[2] == "f") {
             isShortCut = true
-            try { csv[3].toInt() } catch (e: NumberFormatException) { prevFreq }
+            try {
+                csv[3].toInt()
+            } catch (e: NumberFormatException) {
+                prevFreq
+            }
         } else return
         if (freq == 0) return
         if (!isShortCut && overwrite) {
@@ -112,7 +120,11 @@ internal fun loadFromTextDic(
                 .split('/').asSequence().filter { it.isNotEmpty() }
                 .zipWithNext().filterIndexed { index, _ -> index % 2 == 0 }
                 .map { (f, s) ->
-                    s to try { f.toInt() } catch (e:NumberFormatException) { 0 }
+                    s to try {
+                        f.toInt()
+                    } catch (e: NumberFormatException) {
+                        0
+                    }
                 }
                 .toMap().toMutableMap()
             val oldFreq = pairs[key] ?: 0
@@ -129,7 +141,9 @@ internal fun loadFromTextDic(
         bufferedReader.forEachLine { line ->
             loadLine(line)
             callback(count)
-            if (++count % 1000 == 0) { recMan.commit() }
+            if (++count % 1000 == 0) {
+                recMan.commit()
+            }
         }
         recMan.commit()
     }
@@ -146,7 +160,9 @@ interface SKKDictionaryInterface {
         while (mIsLocked) delay(50)
         mIsLocked = true
 
-        val key = katakana2hiragana(rawKey) ?: return listOf<Pair<String, String>>().also { mIsLocked = false }
+        val key = katakana2hiragana(rawKey) ?: return listOf<Pair<String, String>>().also {
+            mIsLocked = false
+        }
         val list = mutableListOf<Triple<String, String, Int>>()
         val tuple = Tuple<String, String>()
         val browser: TupleBrowser<String, String>
@@ -154,9 +170,11 @@ interface SKKDictionaryInterface {
         val topFreq = ArrayList<Int>()
 
         try {
-            browser = mBTree.browse(key) ?: return listOf<Pair<String, String>>().also { mIsLocked = false }
+            browser = mBTree.browse(key) ?: return listOf<Pair<String, String>>().also {
+                mIsLocked = false
+            }
 
-            // 絵文字は1500ほどあるし CandidateView の行数が可変になったので多めが良さそう
+            // 絵文字は1500ほどあるし CandidatesView の行数が可変になったので多めが良さそう
             while (list.size < if (mIsASCII) 1500 else 15) {
                 if (!scope.isActive) {
                     mIsLocked = false

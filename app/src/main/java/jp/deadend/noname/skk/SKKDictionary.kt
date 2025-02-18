@@ -1,16 +1,16 @@
 package jp.deadend.noname.skk
 
 import android.util.Log
-import java.io.IOException
 import jdbm.RecordManager
 import jdbm.RecordManagerFactory
 import jdbm.btree.BTree
+import java.io.IOException
 
-class SKKDictionary private constructor (
-        override val mRecMan: RecordManager,
-        override val mRecID: Long,
-        override val mBTree: BTree<String, String>
-): SKKDictionaryInterface {
+class SKKDictionary private constructor(
+    override val mRecMan: RecordManager,
+    override val mRecID: Long,
+    override val mBTree: BTree<String, String>
+) : SKKDictionaryInterface {
     override val mIsASCII = false
     override var mIsLocked = false
 
@@ -39,11 +39,11 @@ class SKKDictionary private constructor (
     companion object {
         fun newInstance(mDicFile: String, btreeName: String): SKKDictionary? {
             return try {
-                val recman = RecordManagerFactory.createRecordManager(mDicFile)
-                val recid = recman.getNamedObject(btreeName)
-                val btree = BTree<String, String>().load(recman, recid)
+                val recMan = RecordManagerFactory.createRecordManager(mDicFile)
+                val recID = recMan.getNamedObject(btreeName)
+                val btree = BTree<String, String>().load(recMan, recID)
 
-                SKKDictionary(recman, recid, btree)
+                SKKDictionary(recMan, recID, btree)
             } catch (e: Exception) {
                 Log.e("SKK", "Error in opening the dictionary: $e")
 

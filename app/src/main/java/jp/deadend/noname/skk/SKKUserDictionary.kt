@@ -9,20 +9,23 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import java.io.File
 
-class SKKUserDictionary private constructor (
+class SKKUserDictionary private constructor(
     override var mRecMan: RecordManager,
     override var mRecID: Long,
     override var mBTree: BTree<String, String>,
     override val mIsASCII: Boolean,
     private val mDicFile: String,
     private val mBtreeName: String
-): SKKDictionaryInterface {
+) : SKKDictionaryInterface {
     override var mIsLocked = false
 
     private var mOldKey: String = ""
     private var mOldValue: String = ""
 
-    class Entry(val candidates: MutableList<String>, val okuriBlocks: MutableList<Pair<String, String>>)
+    class Entry(
+        val candidates: MutableList<String>,
+        val okuriganaBlocks: MutableList<Pair<String, String>>
+    )
 
     fun getEntry(rawKey: String): Entry? {
         val key = katakana2hiragana(rawKey) ?: return null
@@ -30,7 +33,7 @@ class SKKUserDictionary private constructor (
         val okr = mutableListOf<Pair<String, String>>()
 
         val value: String? = safeRun { mBTree.find(key) }
-        if (value == null) { return null }
+        if (value == null) return null
 
         val valList = value.substring(1, value.length - 1).split("/")  // 先頭と最後のスラッシュをとってから分割
         if (valList.isEmpty()) {
@@ -51,7 +54,7 @@ class SKKUserDictionary private constructor (
                         if (pair.size == 2) {
                             okr.add(pair[0] to pair[1])
                         } else {
-                            Log.e("SKK", "Invalid value found: Key=$key value=$value (${result.value})")
+                            Log.e("SKK", "Invalid: Key=$key value=$value (${result.value})")
                         }
                     }
             }
@@ -63,36 +66,42 @@ class SKKUserDictionary private constructor (
     override fun getCandidates(rawKey: String): List<String>? =
         getEntry(rawKey)?.candidates?.distinct()
 
-    fun addEntry(key: String, value: String, okuri: String?) {
+    fun addEntry(key: String, value: String, okurigana: String?) {
         mOldKey = key
         val newVal = StringBuilder()
         val entry = getEntry(key)
 
         if (entry == null) {
             newVal.append("/", value, "/")
-            if (okuri != null) newVal.append("[", okuri, "/", value, "/]/")
+            if (okurigana != null) newVal.append("[", okurigana, "/", value, "/]/")
             mOldValue = ""
         } else {
-            val cands = entry.candidates
-            cands.remove(value)
-            cands.add(0, value)
+            val candidates = entry.candidates
+            candidates.remove(value)
+            candidates.add(0, value)
 
             val okrs = mutableListOf<Pair<String, String>>()
-            if (okuri != null) {
+            if (okurigana != null) {
                 var matched = false
-                for (pair in entry.okuriBlocks) {
-                    if (pair.first == okuri && pair.second == value) {
+                for (pair in entry.okuriganaBlocks) {
+                    if (pair.first == okurigana && pair.second == value) {
                         okrs.add(0, pair)
                         matched = true
                     } else {
                         okrs.add(pair)
                     }
                 }
-                if (!matched) { okrs.add(Pair(okuri, value)) }
+                if (!matched) {
+                    okrs.add(Pair(okurigana, value))
+                }
             }
 
-            for (str in cands) { newVal.append("/", str) }
-            for (pair in okrs) { newVal.append("/[", pair.first, "/", pair.second, "/]") }
+            for (str in candidates) {
+                newVal.append("/", str)
+            }
+            for (pair in okrs) {
+                newVal.append("/[", pair.first, "/", pair.second, "/]")
+            }
             newVal.append("/")
 
             safeRun {
@@ -106,22 +115,22 @@ class SKKUserDictionary private constructor (
         }
     }
 
-    fun removeEntry(key: String, value: String, okuri: String?) {
+    fun removeEntry(key: String, value: String, okurigana: String?) {
         val entry = getEntry(key) ?: return
-        val cands = entry.candidates // 送/遅/贈;ユーザー辞書にも注釈がある
-        val okrs = entry.okuriBlocks // [ら/送/]/[り/送/]/[る/送;注釈もありうる?/]
+        val candidates = entry.candidates // 送/遅/贈;ユーザー辞書にも注釈がある
+        val okuriganaBlocks = entry.okuriganaBlocks // [ら/送/]/[り/送/]/[る/送;注釈もありうる?/]
         val rawVal = value.takeWhile { it != ';' } // 注釈を無視して探す
 
-        if (!okrs.removeIf { pair ->
-            pair.first == okuri && pair.second.takeWhile { it != ';' } == rawVal
-        } || okrs.isEmpty()) { // 送りブロックが残らない場合は丸ごと消す、でいいのか?
-            cands.removeIf { old ->
+        if (!okuriganaBlocks.removeIf { pair ->
+                pair.first == okurigana && pair.second.takeWhile { it != ';' } == rawVal
+            } || okuriganaBlocks.isEmpty()) { // 送りブロックが残らない場合は丸ごと消す、でいいのか?
+            candidates.removeIf { old ->
                 old.takeWhile { it != ';' } == rawVal
             }
         }
 
-        val newVal = cands.fold("") { acc, str -> "$acc/$str" } +
-                okrs.fold("") { acc, pair -> "$acc/[${pair.first}/${pair.second}/]" } +
+        val newVal = candidates.fold("") { acc, str -> "$acc/$str" } +
+                okuriganaBlocks.fold("") { acc, pair -> "$acc/[${pair.first}/${pair.second}/]" } +
                 "/"
         replaceEntry(key, newVal)
     }
@@ -175,7 +184,7 @@ class SKKUserDictionary private constructor (
         }
     }
 
-    private fun <T>safeRun(block: () -> T): T {
+    private fun <T> safeRun(block: () -> T): T {
         return try {
             runBlocking { while (mIsLocked) delay(50) }
             mIsLocked = true
@@ -189,26 +198,35 @@ class SKKUserDictionary private constructor (
     }
 
     companion object {
-        fun openDB(filename: String, btreeName: String): Triple<RecordManager, Long, BTree<String, String>> {
-            val recman = RecordManagerFactory.createRecordManager(filename)
-            val recid = recman.getNamedObject(btreeName)
-            if (recid == 0L) {
-                val btree = BTree<String, String>(recman, StringComparator())
-                recman.setNamedObject(btreeName, btree.recordId)
-                recman.commit()
-                dlog("New user dictionary created")
-                return Triple(recman, recid, btree)
+        fun openDB(
+            filename: String,
+            btreeName: String
+        ): Triple<RecordManager, Long, BTree<String, String>> {
+            val recMan = RecordManagerFactory.createRecordManager(filename)
+            val recID = recMan.getNamedObject(btreeName)
+            if (recID == 0L) {
+                val btree = BTree<String, String>(recMan, StringComparator())
+                recMan.setNamedObject(btreeName, btree.recordId)
+                recMan.commit()
+                dLog("New user dictionary created")
+                return Triple(recMan, recID, btree)
             }
-            return Triple(recman, recid, BTree<String, String>().load(recman, recid))
+            return Triple(recMan, recID, BTree<String, String>().load(recMan, recID))
         }
-        fun newInstance(context: SKKService, mDicFile: String, btreeName: String, isASCII: Boolean): SKKUserDictionary? {
+
+        fun newInstance(
+            context: SKKService,
+            mDicFile: String,
+            btreeName: String,
+            isASCII: Boolean
+        ): SKKUserDictionary? {
             val dbFile = File("$mDicFile.db")
             if (isASCII && !dbFile.exists()) {
                 context.extractDictionary(dbFile.nameWithoutExtension)
             }
             try {
-                val (recman, recid, btree) = openDB(mDicFile, btreeName)
-                return SKKUserDictionary(recman, recid, btree, isASCII, mDicFile, btreeName)
+                val (recMan, recID, btree) = openDB(mDicFile, btreeName)
+                return SKKUserDictionary(recMan, recID, btree, isASCII, mDicFile, btreeName)
             } catch (e: Exception) {
                 Log.e("SKK", "Error in opening the dictionary: $e")
                 return null

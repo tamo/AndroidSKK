@@ -15,53 +15,57 @@ object SKKHiraganaState : SKKState {
     }
 
     internal fun processKana(
-            context: SKKEngine,
-            pcode: Int, commitFunc:
+        context: SKKEngine,
+        keyCode: Int, commitFunc:
             (SKKEngine, String) -> Unit
     ) {
         // シフトキーの状態をチェック
-        val isUpper = Character.isUpperCase(pcode)
+        val isUpper = Character.isUpperCase(keyCode)
         // 大文字なら，ローマ字変換のために小文字に戻す
-        val pcodeLower = if (isUpper) Character.toLowerCase(pcode) else pcode
+        val codeLower = if (isUpper) Character.toLowerCase(keyCode) else keyCode
 
         context.apply {
             val canRetry = mComposing.isNotEmpty() // 無限ループ防止
             if (mComposing.length == 1) {
-                val hchr = RomajiConverter.checkSpecialConsonants(mComposing[0], pcodeLower)
-                if (hchr != null) commitFunc(context, hchr)
+                val hiraganaChar = RomajiConverter.checkSpecialConsonants(mComposing[0], codeLower)
+                if (hiraganaChar != null) commitFunc(context, hiraganaChar)
             }
             if (isUpper) {
                 // 漢字変換候補入力の開始。KanjiModeへの移行
                 // すでに composing がある場合はそこから KanjiMode だったものとする (mA = Ma)
                 changeState(SKKKanjiState)
-                SKKKanjiState.processKey(context, pcodeLower)
+                SKKKanjiState.processKey(context, codeLower)
             } else {
-                mComposing.append(pcodeLower.toChar())
+                mComposing.append(codeLower.toChar())
                 // 全角にする記号ならば全角，そうでなければローマ字変換
-                val hchr = getZenkakuSeparator(mComposing.toString())
+                val hiraganaChar = getZenkakuSeparator(mComposing.toString())
                     ?: RomajiConverter.convert(mComposing.toString())
 
-                if (hchr != null) { // 確定できるものがあれば確定
-                    commitFunc(context, hchr)
+                if (hiraganaChar != null) { // 確定できるものがあれば確定
+                    commitFunc(context, hiraganaChar)
                 } else { // アルファベットならComposingに積む
-                    if (isAlphabet(pcodeLower)) {
+                    if (isAlphabet(codeLower)) {
                         if (!RomajiConverter.isIntermediateRomaji(mComposing.toString())) {
                             mComposing.setLength(0) // これまでの composing は typo とみなす
-                            if (canRetry) return processKana(context, pcode, commitFunc) // 「ca」などもあるので再突入
+                            if (canRetry) return processKana(
+                                context,
+                                keyCode,
+                                commitFunc
+                            ) // 「ca」などもあるので再突入
                         }
                         setComposingTextSKK(mComposing)
                     } else {
-                        commitFunc(context, pcodeLower.toChar().toString())
+                        commitFunc(context, codeLower.toChar().toString())
                     }
                 }
             }
         }
     }
 
-    override fun processKey(context: SKKEngine, pcode: Int) {
-        if (context.changeInputMode(pcode)) return
-        processKana(context, pcode) { engine, hchr ->
-            engine.commitTextSKK(hchr)
+    override fun processKey(context: SKKEngine, keyCode: Int) {
+        if (context.changeInputMode(keyCode)) return
+        processKana(context, keyCode) { engine, hiraganaChar ->
+            engine.commitTextSKK(hiraganaChar)
             engine.mComposing.setLength(0)
         }
     }

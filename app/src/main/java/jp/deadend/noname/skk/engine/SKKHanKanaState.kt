@@ -19,10 +19,10 @@ object SKKHanKanaState : SKKState {
         }
     }
 
-    override fun processKey(context: SKKEngine, pcode: Int) {
-        if (context.changeInputMode(pcode)) return
-        SKKHiraganaState.processKana(context, pcode) { engine, hchr ->
-            val str = zenkaku2hankaku(hiragana2katakana(hchr))
+    override fun processKey(context: SKKEngine, keyCode: Int) {
+        if (context.changeInputMode(keyCode)) return
+        SKKHiraganaState.processKana(context, keyCode) { engine, hiraganaChar ->
+            val str = zenkaku2hankaku(hiragana2katakana(hiraganaChar))
             if (str != null) engine.commitTextSKK(str)
             engine.mComposing.setLength(0)
         }

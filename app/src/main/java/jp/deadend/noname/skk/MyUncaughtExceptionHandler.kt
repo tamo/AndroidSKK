@@ -1,5 +1,9 @@
 package jp.deadend.noname.skk
 
+import android.content.Context
+import android.content.pm.PackageInfo
+import android.content.pm.PackageManager.NameNotFoundException
+import android.os.Build
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.FileOutputStream
@@ -8,10 +12,6 @@ import java.lang.Thread.UncaughtExceptionHandler
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import android.content.Context
-import android.content.pm.PackageInfo
-import android.content.pm.PackageManager.NameNotFoundException
-import android.os.Build
 
 internal class MyUncaughtExceptionHandler(val context: Context) : UncaughtExceptionHandler {
     private val mDefaultUEH: UncaughtExceptionHandler? = Thread.getDefaultUncaughtExceptionHandler()

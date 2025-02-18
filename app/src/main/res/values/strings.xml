@@ -1,98 +1,107 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-	<string name="ime_name">SKK for Android</string>
-	<string name="label_mushroom">マッシュルーム</string>
-	<string name="label_pref_activity">SKK for Androidの設定</string>
-	<string name="label_pref_softkeyboard">ソフトウェアキーボードの設定</string>
-	<string name="label_pref_hardkeyboard">ハードウェアキーボードの設定</string>
-	<string name="label_dictool_activity">SKK ユーザー辞書ツール</string>
-	<string name="label_asciitool_activity">SKK ASCII 辞書ツール</string>
-	<string name="label_emojitool_activity">SKK 絵文字辞書ツール</string>
-	<string name="label_dictool_recreate">ユーザー辞書の初期化</string>
-	<string name="label_asciitool_recreate">ASCII 辞書の初期化</string>
-	<string name="label_emojitool_recreate">絵文字辞書の初期化</string>
-	<string name="label_import">インポート</string>
-	<string name="label_export">エクスポート</string>
-	<string name="label_clear_userdic">ユーザー辞書初期化</string>
-	<string name="label_no_entry_found">エントリがありません</string>
-	<string name="label_dicmanager_activity">SKK 辞書管理</string>
-	<string name="label_dicmanager_optionaldic">SKK 追加辞書</string>
-	<string name="label_dicmanager_add">辞書を追加</string>
-	<string name="label_dicmanager_input_name">辞書の名前を入力</string>
-	<string name="label_dicmanager_reset">辞書を初期化</string>
-	<string name="descr_closeButton">閉じる</string>
-	<string name="item_user_entry">%1$s %2$s</string>
+    <string name="ime_name">SKK for Android</string>
 
-	<string name="message_confirm_remove">このエントリを削除しますか？</string>
-	<string name="message_confirm_clear">現在のユーザー辞書の内容はすべて消去されます。よろしいですか？</string>
-	<string name="message_confirm_clear_dics">現在の変換辞書をすべて削除します。よろしいですか？</string>
-	<string name="message_written_to_external_storage">ユーザー辞書をテキスト形式で保存しました: %1$s</string>
-	<string name="message_confirm_remove_dic">この辞書を削除しますか？</string>
-	<string name="message_confirm_download_dic">SKK %s 辞書をダウンロードしますか？</string>
-	<string name="message_extracting_dic">辞書を解凍しています…</string>
-	<string name="message_dic_extracted">辞書を解凍しました</string>
+    <string name="label_pref_activity">SKK for Androidの設定</string>
+    <string name="label_dict_manager_activity">SKK 辞書管理</string>
+    <string name="label_dict_tool_activity">ユーザー辞書ツール</string>
+    <string name="label_ascii_tool_activity">ASCII 辞書ツール</string>
+    <string name="label_emoji_tool_activity">絵文字辞書ツール</string>
+    <string name="label_pref_hard_keyboard">ハードウェアキーボードの設定</string>
+    <string name="label_pref_soft_keyboard">ソフトウェアキーボードの設定</string>
+    <string name="label_dict_manager_reset">辞書を初期化</string>
+    <string name="label_dict_tool_recreate">ユーザー辞書の初期化</string>
+    <string name="label_ascii_tool_recreate">ASCII 辞書の初期化</string>
+    <string name="label_emoji_tool_recreate">絵文字辞書の初期化</string>
 
-	<string name="error_access_failed">アクセスできません: %1$s</string>
-	<string name="error_open_dicfile">辞書ファイルを開けません</string>
-	<string name="error_user_dic">ユーザー辞書が開けません。設定画面から、ユーザー辞書を初期化してみてください</string>
-	<string name="error_open_user_dic">ユーザー辞書を開くときにエラーが発生しました。初期化してもよろしいですか？</string>
-	<string name="error_file_load">ファイル読みこみに失敗しました: %1$s</string>
-	<string name="error_no_mushroom">マッシュルームアプリがひとつもインストールされていません</string>
-	<string name="error_write_to_external_storage">テキスト形式の保存に失敗しました: %1$s</string>
-	<string name="error_text_dic_coding">UTF-8のファイルではないようです</string>
-	<string name="error_dic_exists">この辞書はすでに存在します: %1$s\n削除しますか？</string>
-	<string name="error_extracting_dic_failed">辞書の解凍に失敗しました。一旦アンインストールしてみてください</string>
+    <string name="label_dict_manager_optional_dict">SKK 追加辞書</string>
+    <string name="label_dict_manager_add">辞書を追加</string>
+    <string name="label_dict_manager_input_name">辞書の名前を入力</string>
 
-	<string translatable="false" name="prefkey_kutouten_type">PrefKeyKutoutenType</string>
-	<string translatable="false" name="prefkey_prefix_mark">PrefKeyPrefixMark</string>
-	<string translatable="false" name="prefkey_kana_key">PrefKeyKanaKey</string>
-	<string translatable="false" name="prefkey_toggle_kana_key">PrefKeyToggleKanaKey</string>
-	<string translatable="false" name="prefkey_cancel_key">PrefKeyCancelKey</string>
-	<string translatable="false" name="prefkey_candidates_size">PrefKeyCandidatesSize</string>
-	<string translatable="false" name="prefkey_candidates_normal_lines">PrefKeyCandidatesNormalLines</string>
-	<string translatable="false" name="prefkey_candidates_emoji_lines">PrefKeyCandidatesEmojiLines</string>
-	<string translatable="false" name="prefkey_use_candidates_view">PrefKeyUseCandidatesView</string>
-	<string translatable="false" name="prefkey_flick_sensitivity">PrefKeyFlickSensitivity</string>
-	<string translatable="false" name="prefkey_theme">PrefKeyTheme</string>
-	<string translatable="false" name="prefkey_use_inset">PrefKeyInset</string>
-	<string translatable="false" name="prefkey_ignore_high_contrast">PrefKeyOriginalColor</string>
-	<string translatable="false" name="prefkey_use_softkey">PrefKeyUseSoftKey</string>
-	<string translatable="false" name="prefkey_show_status_icon">PrefKeyShowStatusIcon</string>
-	<string translatable="false" name="prefkey_haptic">PrefKeyHaptic</string>
-	<string translatable="false" name="prefkey_use_flick">PrefKeyPreferFlick</string>
-	<string translatable="false" name="prefkey_use_godan">PrefKeyPreferGodan</string>
-	<string translatable="false" name="prefkey_godan_simple">PrefKeyGodanSimple</string>
-	<string translatable="false" name="prefkey_godan_swap_qc">PrefKeyGodanSwapQC</string>
-	<string translatable="false" name="prefkey_use_popup">PrefKeyUsePopup</string>
-	<string translatable="false" name="prefkey_fixed_popup">PrefKeyFixedPopup</string>
-	<string translatable="false" name="prefkey_mini_keyboard">PrefKeyUseMiniKey</string>
-	<string translatable="false" name="prefkey_use_soft_cancel_key">PrefKeyUseSoftCancelKey</string>
-	<string translatable="false" name="prefkey_use_soft_trans_key">PrefKeyUseSoftTransKey</string>
-	<string translatable="false" name="prefkey_exchange_shift_kana">PrefKeyChangeShift</string>
-	<string translatable="false" name="prefkey_key_label_zoom">PrefKeyKeyZoom</string>
-	<string translatable="false" name="prefkey_key_height_port">PrefKeyKeyHeightPort</string>
-	<string translatable="false" name="prefkey_key_height_land">PrefKeyKeyHeightLand</string>
-	<string translatable="false" name="prefkey_key_width_port">PrefKeyKeyWidthPort</string>
-	<string translatable="false" name="prefkey_key_width_land">PrefKeyKeyWidthLand</string>
-	<string translatable="false" name="prefkey_key_padding_bottom">PrefKeyKeyPaddingBottom</string>
-	<string translatable="false" name="prefkey_key_width_qwerty_zoom">PrefKeyKeyWidthQwertyZoom</string>
-	<string translatable="false" name="prefkey_key_center_port">PrefKeyKeyCenterPort</string>
-	<string translatable="false" name="prefkey_key_center_land">PrefKeyKeyCenterLand</string>
-	<string translatable="false" name="prefkey_type_uri">PrefKeyTypeURI</string>
-	<string translatable="false" name="prefkey_type_number">PrefKeyTypeNumber</string>
-	<string translatable="false" name="prefkey_type_phone">PrefKeyTypePhone</string>
-	<string translatable="false" name="prefkey_type_password">PrefKeyTypePassword</string>
-	<string translatable="false" name="prefkey_type_text">PrefKeyTypeText</string>
-	<string translatable="false" name="prefkey_background_alpha">PrefKeyBackgroundAlpha</string>
-	<string translatable="false" name="prefkey_sticky_meta">PrefKeyStickyMeta</string>
-	<string translatable="false" name="prefkey_sands">PrefKeySandS</string>
-	<string translatable="false" name="prefkey_dics_order">PrefKeyDicsOrder</string>
+    <string name="label_tools_import">インポート</string>
+    <string name="label_tools_export">エクスポート</string>
+    <string name="label_tools_clear">全消去</string>
+    <string name="label_tools_no_entry_found">エントリがありません</string>
 
-	<string translatable="false" name="btree_name">skk_dict</string>
-	<string translatable="false" name="dic_name_user">skk_userdict</string>
-	<string translatable="false" name="dic_name_ascii">skk_asciidict</string>
-	<string translatable="false" name="dic_name_emoji">skk_emojidict</string>
-	<string translatable="false" name="dic_name_user_recreate">*skk_userdict</string>
-	<string translatable="false" name="dic_name_ascii_recreate">+skk_asciidict</string>
-	<string translatable="false" name="dic_name_emoji_recreate">+skk_emojidict</string>
+    <string name="label_mushroom">マッシュルーム</string>
+
+    <string name="descr_close_button">閉じる</string>
+    <string name="descr_left_button">左</string>
+    <string name="descr_right_button">右</string>
+
+    <string name="item_tools_entry">%1$s %2$s</string>
+    <string name="message_tools_confirm_remove_entry">このエントリを削除しますか？</string>
+    <string name="message_tools_confirm_clear">現在のユーザー辞書の内容はすべて消去されます。よろしいですか？</string>
+    <string name="message_tools_written_to_external_storage">ユーザー辞書をテキスト形式で保存しました: %1$s</string>
+
+    <string name="message_dict_manager_confirm_clear">現在の変換辞書をすべて削除します。よろしいですか？</string>
+    <string name="message_dict_manager_confirm_remove_dict">この辞書を削除しますか？</string>
+    <string name="message_dict_manager_confirm_download_dict">SKK %s 辞書をダウンロードしますか？</string>
+
+    <string name="message_extracting_dict">辞書を解凍しています…</string>
+    <string name="message_dict_extracted">辞書を解凍しました</string>
+
+    <string name="error_access_failed">アクセスできません: %1$s</string>
+    <string name="error_open_dict">辞書ファイルを開けません</string>
+    <string name="error_open_user_dict">辞書 %1$s が開けません。設定画面から初期化してみてください</string>
+    <string name="error_tools_open_user_dict">辞書を開くときにエラーが発生しました。初期化してもよろしいですか？</string>
+    <string name="error_file_load">ファイル読みこみに失敗しました: %1$s</string>
+    <string name="error_no_mushroom">マッシュルームアプリがひとつもインストールされていません</string>
+    <string name="error_write_to_external_storage">テキスト形式の保存に失敗しました: %1$s</string>
+    <string name="error_text_dict_coding">UTF-8のファイルではないようです</string>
+    <string name="error_dict_exists">この辞書はすでに存在します: %1$s\n削除しますか？</string>
+    <string name="error_extracting_dict_failed">辞書の解凍に失敗しました。一旦アンインストールしてみてください</string>
+
+    <string name="pref_kutouten_type" translatable="false">PrefKeyKutoutenType</string>
+    <string name="pref_prefix_mark" translatable="false">PrefKeyPrefixMark</string>
+    <string name="pref_kana_key" translatable="false">PrefKeyKanaKey</string>
+    <string name="pref_toggle_kana_key" translatable="false">PrefKeyToggleKanaKey</string>
+    <string name="pref_cancel_key" translatable="false">PrefKeyCancelKey</string>
+    <string name="pref_candidates_size" translatable="false">PrefKeyCandidatesSize</string>
+    <string name="pref_candidates_normal_lines" translatable="false">PrefKeyCandidatesNormalLines</string>
+    <string name="pref_candidates_emoji_lines" translatable="false">PrefKeyCandidatesEmojiLines</string>
+    <string name="pref_use_candidates_view" translatable="false">PrefKeyUseCandidatesView</string>
+    <string name="pref_flick_sensitivity" translatable="false">PrefKeyFlickSensitivity</string>
+    <string name="pref_theme" translatable="false">PrefKeyTheme</string>
+    <string name="pref_use_inset" translatable="false">PrefKeyInset</string>
+    <string name="pref_ignore_high_contrast" translatable="false">PrefKeyOriginalColor</string>
+    <string name="pref_use_soft_key" translatable="false">PrefKeyUseSoftKey</string>
+    <string name="pref_show_status_icon" translatable="false">PrefKeyShowStatusIcon</string>
+    <string name="pref_haptic" translatable="false">PrefKeyHaptic</string>
+    <string name="pref_use_flick" translatable="false">PrefKeyPreferFlick</string>
+    <string name="pref_use_godan" translatable="false">PrefKeyPreferGodan</string>
+    <string name="pref_godan_simple" translatable="false">PrefKeyGodanSimple</string>
+    <string name="pref_godan_swap_qc" translatable="false">PrefKeyGodanSwapQC</string>
+    <string name="pref_use_popup" translatable="false">PrefKeyUsePopup</string>
+    <string name="pref_fixed_popup" translatable="false">PrefKeyFixedPopup</string>
+    <string name="pref_mini_keyboard" translatable="false">PrefKeyUseMiniKey</string>
+    <string name="pref_use_soft_cancel_key" translatable="false">PrefKeyUseSoftCancelKey</string>
+    <string name="pref_use_soft_trans_key" translatable="false">PrefKeyUseSoftTransKey</string>
+    <string name="pref_exchange_shift_kana" translatable="false">PrefKeyChangeShift</string>
+    <string name="pref_key_label_zoom" translatable="false">PrefKeyKeyZoom</string>
+    <string name="pref_key_height_port" translatable="false">PrefKeyKeyHeightPort</string>
+    <string name="pref_key_height_land" translatable="false">PrefKeyKeyHeightLand</string>
+    <string name="pref_key_width_port" translatable="false">PrefKeyKeyWidthPort</string>
+    <string name="pref_key_width_land" translatable="false">PrefKeyKeyWidthLand</string>
+    <string name="pref_key_padding_bottom" translatable="false">PrefKeyKeyPaddingBottom</string>
+    <string name="pref_key_width_qwerty_zoom" translatable="false">PrefKeyKeyWidthQwertyZoom</string>
+    <string name="pref_key_center_port" translatable="false">PrefKeyKeyCenterPort</string>
+    <string name="pref_key_center_land" translatable="false">PrefKeyKeyCenterLand</string>
+    <string name="pref_type_uri" translatable="false">PrefKeyTypeURI</string>
+    <string name="pref_type_number" translatable="false">PrefKeyTypeNumber</string>
+    <string name="pref_type_phone" translatable="false">PrefKeyTypePhone</string>
+    <string name="pref_type_password" translatable="false">PrefKeyTypePassword</string>
+    <string name="pref_type_text" translatable="false">PrefKeyTypeText</string>
+    <string name="pref_background_alpha" translatable="false">PrefKeyBackgroundAlpha</string>
+    <string name="pref_sticky_meta" translatable="false">PrefKeyStickyMeta</string>
+    <string name="pref_sands" translatable="false">PrefKeySandS</string>
+    <string name="pref_dict_order" translatable="false">PrefKeyDicsOrder</string>
+
+    <string name="btree_name" translatable="false">skk_dict</string>
+    <string name="dict_name_user" translatable="false">skk_userdict</string>
+    <string name="dict_name_ascii" translatable="false">skk_asciidict</string>
+    <string name="dict_name_emoji" translatable="false">skk_emojidict</string>
+    <string name="dict_name_user_recreate" translatable="false">*skk_userdict</string>
+    <string name="dict_name_ascii_recreate" translatable="false">+skk_asciidict</string>
+    <string name="dict_name_emoji_recreate" translatable="false">+skk_emojidict</string>
 </resources>

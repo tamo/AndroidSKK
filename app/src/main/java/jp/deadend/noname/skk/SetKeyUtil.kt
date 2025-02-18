@@ -33,9 +33,9 @@ fun getKeyName(key: Int): String {
     if (KeyEvent.isModifierKey(rawKeyCode)) return ""
 
     val result = StringBuilder()
-    if (key and META_PRESSED != 0)  result.append("META+")
-    if (key and CTRL_PRESSED != 0)  result.append("CTRL+")
-    if (key and ALT_PRESSED != 0)   result.append("ALT+")
+    if (key and META_PRESSED != 0) result.append("META+")
+    if (key and CTRL_PRESSED != 0) result.append("CTRL+")
+    if (key and ALT_PRESSED != 0) result.append("ALT+")
     if (key and SHIFT_PRESSED != 0) result.append("SHIFT+")
 
     // extract the keycode

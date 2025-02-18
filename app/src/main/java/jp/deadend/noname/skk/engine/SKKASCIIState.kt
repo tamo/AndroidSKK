@@ -9,8 +9,8 @@ object SKKASCIIState : SKKState {
         context.changeState(SKKHiraganaState) // Flickにするのは別キーなので内部だけひらがなに
     }
 
-    override fun processKey(context: SKKEngine, pcode: Int) {
-        context.commitTextSKK(pcode.toChar().toString())
+    override fun processKey(context: SKKEngine, keyCode: Int) {
+        context.commitTextSKK(keyCode.toChar().toString())
         context.updateSuggestionsASCII()
     }
 

@@ -19,37 +19,37 @@ object SKKOkuriganaState : SKKState {
         }
     }
 
-    override fun processKey(context: SKKEngine, pcode: Int) {
+    override fun processKey(context: SKKEngine, keyCode: Int) {
         // シフトキーの状態をチェック
-        val isUpper = Character.isUpperCase(pcode)
+        val isUpper = Character.isUpperCase(keyCode)
         // 大文字なら，ローマ字変換のために小文字に戻す
-        val pcodeLower = if (isUpper) Character.toLowerCase(pcode) else pcode
+        val codeLower = if (isUpper) Character.toLowerCase(keyCode) else keyCode
 
         context.apply {
             // l, L, q, / による暗黙の確定
-            if (changeInputMode(pcode)) return
+            if (changeInputMode(keyCode)) return
 
             if (mComposing.length == 1 && mOkurigana == null) {
                 // 「ん」か「っ」を処理したらここで終わり
-                val hchr = RomajiConverter.checkSpecialConsonants(mComposing[0], pcodeLower)
-                if (hchr != null) {
-                    mOkurigana = hchr
+                val hiraganaChar = RomajiConverter.checkSpecialConsonants(mComposing[0], codeLower)
+                if (hiraganaChar != null) {
+                    mOkurigana = hiraganaChar
                     setComposingTextSKK(
                         createTrimmedBuilder(mKanjiKey)
-                            .append('*').append(hchr).append(pcodeLower.toChar())
+                            .append('*').append(hiraganaChar).append(codeLower.toChar())
                     )
                     mComposing.setLength(0)
-                    mComposing.append(pcodeLower.toChar())
+                    mComposing.append(codeLower.toChar())
                     return
                 }
             }
             // 送りがなが確定すれば変換，そうでなければComposingに積む
-            mComposing.append(pcodeLower.toChar())
-            val hchr = RomajiConverter.convert(mComposing.toString())
+            mComposing.append(codeLower.toChar())
+            val hiraganaChar = RomajiConverter.convert(mComposing.toString())
             if (mOkurigana != null) { //「ん」か「っ」がある場合
-                if (hchr != null) {
+                if (hiraganaChar != null) {
                     mComposing.setLength(0)
-                    mOkurigana += hchr
+                    mOkurigana += hiraganaChar
                     conversionStart(mKanjiKey)
                 } else {
                     setComposingTextSKK(
@@ -58,16 +58,16 @@ object SKKOkuriganaState : SKKState {
                     )
                 }
             } else {
-                if (hchr != null) {
+                if (hiraganaChar != null) {
                     mComposing.setLength(0)
-                    mOkurigana = hchr
+                    mOkurigana = hiraganaChar
                     conversionStart(mKanjiKey)
                 } else {
                     if (!RomajiConverter.isIntermediateRomaji(mComposing.toString())) {
                         mComposing.setLength(0) // これまでの composing は typo とみなしてやり直す
                         mKanjiKey.deleteCharAt(mKanjiKey.lastIndex)
                         changeState(SKKKanjiState)
-                        SKKKanjiState.processKey(context, Character.toUpperCase(pcode))
+                        SKKKanjiState.processKey(context, Character.toUpperCase(keyCode))
                         return
                     }
                     setComposingTextSKK(

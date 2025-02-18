@@ -1,24 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-	android:orientation="vertical"
-	android:layout_width="fill_parent"
-	android:layout_height="fill_parent"
-	android:padding="2sp"
-	>
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical"
+    android:padding="2sp">
 
-	<ListView
-		android:id="@+id/listView"
-		android:layout_width="fill_parent"
-		android:layout_height="fill_parent"
-		android:layout_weight="1"
-		/>
-	<TextView
-		android:id="@+id/emptyView"
-		android:textAppearance="?android:attr/textAppearanceLarge"
-		android:layout_width="fill_parent"
-		android:layout_height="fill_parent"
-		android:text="@string/label_no_entry_found"
-		android:layout_weight="1"
-		/>
+    <ListView
+        android:id="@+id/listView"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_weight="1"
+        tools:listitem="@android:layout/activity_list_item" />
+
+    <TextView
+        android:id="@+id/emptyView"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_weight="1"
+        android:text="@string/error_no_mushroom"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:visibility="gone" />
 </LinearLayout>
 

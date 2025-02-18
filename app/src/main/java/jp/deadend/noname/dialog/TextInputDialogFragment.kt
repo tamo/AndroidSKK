@@ -2,9 +2,9 @@ package jp.deadend.noname.dialog
 
 import android.app.Dialog
 import android.os.Bundle
-import androidx.fragment.app.DialogFragment
-import androidx.appcompat.app.AlertDialog
 import android.widget.EditText
+import androidx.appcompat.app.AlertDialog
+import androidx.fragment.app.DialogFragment
 
 class TextInputDialogFragment : DialogFragment() {
     private var mListener: Listener? = null
@@ -37,18 +37,18 @@ class TextInputDialogFragment : DialogFragment() {
         mEditText.text.append(mPlaceHolder)
 
         return AlertDialog.Builder(requireContext())
-                .setMessage(arguments?.getString("message"))
-                .setView(mEditText)
-                .setCancelable(true)
-                .setPositiveButton(android.R.string.ok) { _, _ ->
-                    mListener?.onPositiveClick(mEditText.text.toString())
-                    dismiss()
-                }
-                .setNegativeButton(android.R.string.cancel) { _, _ ->
-                    mListener?.onNegativeClick()
-                    dismiss()
-                }
-                .create()
+            .setMessage(arguments?.getString("message"))
+            .setView(mEditText)
+            .setCancelable(true)
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                mListener?.onPositiveClick(mEditText.text.toString())
+                dismiss()
+            }
+            .setNegativeButton(android.R.string.cancel) { _, _ ->
+                mListener?.onNegativeClick()
+                dismiss()
+            }
+            .create()
     }
 
     companion object {

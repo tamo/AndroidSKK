@@ -20,13 +20,14 @@ import android.content.Context
 import android.content.res.Configuration
 import android.util.AttributeSet
 import android.view.MotionEvent
+import android.view.View.OnTouchListener
 import android.widget.FrameLayout
 import android.widget.LinearLayout
-import jp.deadend.noname.skk.CandidateView.Companion.LINE_SCALE
+import jp.deadend.noname.skk.CandidatesView.Companion.LINE_SCALE
 import jp.deadend.noname.skk.databinding.ViewCandidatesBinding
 import kotlin.math.abs
 
-class CandidateViewContainer(screen: Context, attrs: AttributeSet) : LinearLayout(screen, attrs) {
+class CandidatesViewContainer(screen: Context, attrs: AttributeSet) : LinearLayout(screen, attrs) {
     internal lateinit var binding: ViewCandidatesBinding
     internal var lines = 0
         set(value) {
@@ -118,11 +119,12 @@ class CandidateViewContainer(screen: Context, attrs: AttributeSet) : LinearLayou
                             // DOWN で performClick() しているので else は無視
                         }
                     }
-                    else -> dlog(event.toString())
+
+                    else -> dLog(event.toString())
                 }
                 true
             } catch (e: Exception) {
-                dlog(e.stackTraceToString())
+                dLog(e.stackTraceToString())
                 false
             }
         }
@@ -147,6 +149,7 @@ class CandidateViewContainer(screen: Context, attrs: AttributeSet) : LinearLayou
         when (resources.configuration.orientation) {
             Configuration.ORIENTATION_LANDSCAPE ->
                 skkPrefs.keyWidthLand = widthToSave.coerceIn(101, mService.mScreenWidth)
+
             else -> skkPrefs.keyWidthPort = widthToSave.coerceIn(101, mService.mScreenWidth)
         }
     }
@@ -164,7 +167,7 @@ class CandidateViewContainer(screen: Context, attrs: AttributeSet) : LinearLayou
         if (px > 0) {
             binding.candidates.setTextSize(px)
         }
-        val buttonSize = resources.getDimensionPixelSize(R.dimen.candidates_scrollbutton_width)
+        val buttonSize = resources.getDimensionPixelSize(R.dimen.candidates_scroll_button_width)
         val width = mService.inputViewWidth - buttonSize * 2
         val height = if (lines > 0) (px * lines * LINE_SCALE).toInt() else buttonSize
         binding.frame.layoutParams = LayoutParams(width, height)
@@ -173,7 +176,8 @@ class CandidateViewContainer(screen: Context, attrs: AttributeSet) : LinearLayou
     }
 }
 
-class ImageButton(screen: Context, attrs: AttributeSet?, defStyleAttr: Int) : androidx.appcompat.widget.AppCompatImageButton(screen, attrs, defStyleAttr) {
+class CandidatesViewImageButton(screen: Context, attrs: AttributeSet?, defStyleAttr: Int) :
+    androidx.appcompat.widget.AppCompatImageButton(screen, attrs, defStyleAttr) {
     constructor(screen: Context, attrs: AttributeSet?) : this(screen, attrs, 0)
     constructor(screen: Context) : this(screen, null)
 
@@ -190,15 +194,14 @@ class ImageButton(screen: Context, attrs: AttributeSet?, defStyleAttr: Int) : an
             side = getString(0) ?: "null"
             recycle()
         }
-        contentDescription = side
     }
 
     override fun performClick(): Boolean {
         super.performClick()
         if (!active) return false
         when (side) {
-            "left" -> (parent as CandidateViewContainer).binding.candidates.scrollPrev()
-            "right" -> (parent as CandidateViewContainer).binding.candidates.scrollNext()
+            "left" -> (parent as CandidatesViewContainer).binding.candidates.scrollPrev()
+            "right" -> (parent as CandidatesViewContainer).binding.candidates.scrollNext()
             else -> return false
         }
         return true

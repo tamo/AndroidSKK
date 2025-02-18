@@ -1,68 +1,181 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Keyboard xmlns:app="http://schemas.android.com/apk/res-auto"
-    app:keyWidth="10%p"
     app:horizontalGap="0dip"
-    app:verticalGap="0dip"
-    app:keyHeight="8%p">
+    app:keyHeight="8%p"
+    app:keyWidth="10%p"
+    app:verticalGap="0dip">
 
     <Row>
-        <Key app:keyLabel="q" app:shiftedLabel="Q" app:downLabel="1" app:keyEdgeFlags="left"/>
-        <Key app:keyLabel="w" app:shiftedLabel="W" app:downLabel="2"/>
-        <Key app:keyLabel="e" app:shiftedLabel="E" app:downLabel="3"
-			app:popupKeyboard="@xml/keys_popup" app:popupCharacters="E3èéêë" />
-        <Key app:keyLabel="r" app:shiftedLabel="R" app:downLabel="4"/>
-        <Key app:keyLabel="t" app:shiftedLabel="T" app:downLabel="5"/>
-        <Key app:keyLabel="y" app:shiftedLabel="Y" app:downLabel="6"/>
-        <Key app:keyLabel="u" app:shiftedLabel="U" app:downLabel="7"
-			app:popupKeyboard="@xml/keys_popup" app:popupCharacters="U7ùúûü" />
-        <Key app:keyLabel="i" app:shiftedLabel="I" app:downLabel="8"
-			app:popupKeyboard="@xml/keys_popup" app:popupCharacters="I8ìíîï" />
-        <Key app:keyLabel="o" app:shiftedLabel="O" app:downLabel="9"
-			app:popupKeyboard="@xml/keys_popup" app:popupCharacters="O9òóôõöø" />
-        <Key app:keyLabel="p" app:shiftedLabel="P" app:downLabel="0" app:keyEdgeFlags="right"/>
+        <Key
+            app:downLabel="1"
+            app:keyEdgeFlags="left"
+            app:keyLabel="q"
+            app:shiftedLabel="Q" />
+        <Key
+            app:downLabel="2"
+            app:keyLabel="w"
+            app:shiftedLabel="W" />
+        <Key
+            app:downLabel="3"
+            app:keyLabel="e"
+            app:popupCharacters="E3èéêë"
+            app:popupKeyboard="@xml/keys_popup"
+            app:shiftedLabel="E" />
+        <Key
+            app:downLabel="4"
+            app:keyLabel="r"
+            app:shiftedLabel="R" />
+        <Key
+            app:downLabel="5"
+            app:keyLabel="t"
+            app:shiftedLabel="T" />
+        <Key
+            app:downLabel="6"
+            app:keyLabel="y"
+            app:shiftedLabel="Y" />
+        <Key
+            app:downLabel="7"
+            app:keyLabel="u"
+            app:popupCharacters="U7ùúûü"
+            app:popupKeyboard="@xml/keys_popup"
+            app:shiftedLabel="U" />
+        <Key
+            app:downLabel="8"
+            app:keyLabel="i"
+            app:popupCharacters="I8ìíîï"
+            app:popupKeyboard="@xml/keys_popup"
+            app:shiftedLabel="I" />
+        <Key
+            app:downLabel="9"
+            app:keyLabel="o"
+            app:popupCharacters="O9òóôõöø"
+            app:popupKeyboard="@xml/keys_popup"
+            app:shiftedLabel="O" />
+        <Key
+            app:downLabel="0"
+            app:keyEdgeFlags="right"
+            app:keyLabel="p"
+            app:shiftedLabel="P" />
     </Row>
 
     <Row>
-        <Key app:keyLabel="a" app:shiftedLabel="A" app:downLabel="\@" app:horizontalGap="5%p"
-			app:popupKeyboard="@xml/keys_popup" app:popupCharacters="A\@àáâãäåæ" app:keyEdgeFlags="left"/>
-        <Key app:keyLabel="s" app:shiftedLabel="S" app:downLabel="#"/>
-        <Key app:keyLabel="d" app:shiftedLabel="D" app:downLabel="$"/>
-        <Key app:keyLabel="f" app:shiftedLabel="F" app:downLabel="_"/>
-        <Key app:keyLabel="g" app:shiftedLabel="G" app:downLabel="&amp;"/>
-        <Key app:keyLabel="h" app:shiftedLabel="H" app:downLabel="-"/>
-        <Key app:keyLabel="j" app:shiftedLabel="J" app:downLabel="+"/>
-        <Key app:keyLabel="k" app:shiftedLabel="K" app:downLabel="("/>
-        <Key app:keyLabel="l" app:shiftedLabel="L" app:downLabel=")" app:keyEdgeFlags="right"/>
+        <Key
+            app:downLabel="\@"
+            app:horizontalGap="5%p"
+            app:keyEdgeFlags="left"
+            app:keyLabel="a"
+            app:popupCharacters="A\@àáâãäåæ"
+            app:popupKeyboard="@xml/keys_popup"
+            app:shiftedLabel="A" />
+        <Key
+            app:downLabel="#"
+            app:keyLabel="s"
+            app:shiftedLabel="S" />
+        <Key
+            app:downLabel="$"
+            app:keyLabel="d"
+            app:shiftedLabel="D" />
+        <Key
+            app:downLabel="_"
+            app:keyLabel="f"
+            app:shiftedLabel="F" />
+        <Key
+            app:downLabel="&amp;"
+            app:keyLabel="g"
+            app:shiftedLabel="G" />
+        <Key
+            app:downLabel="-"
+            app:keyLabel="h"
+            app:shiftedLabel="H" />
+        <Key
+            app:downLabel="+"
+            app:keyLabel="j"
+            app:shiftedLabel="J" />
+        <Key
+            app:downLabel="("
+            app:keyLabel="k"
+            app:shiftedLabel="K" />
+        <Key
+            app:downLabel=")"
+            app:keyEdgeFlags="right"
+            app:keyLabel="l"
+            app:shiftedLabel="L" />
     </Row>
 
     <Row>
-        <Key app:codes="-1,-7" app:keyIcon="@drawable/ic_keyboard_shift"
-                app:keyWidth="15%p" app:keyEdgeFlags="left"/>
-        <Key app:keyLabel="z" app:shiftedLabel="Z" app:downLabel="*"/>
-        <Key app:keyLabel="x" app:shiftedLabel="X" app:downLabel="&quot;"/>
-        <Key app:keyLabel="c" app:shiftedLabel="C" app:downLabel="\'"
-			app:popupKeyboard="@xml/keys_popup" app:popupCharacters="C\'çćĉċč" />
-        <Key app:keyLabel="v" app:shiftedLabel="V" app:downLabel=":"/>
-        <Key app:keyLabel="b" app:shiftedLabel="B" app:downLabel=";"/>
-        <Key app:keyLabel="n" app:shiftedLabel="N" app:downLabel="!"
-			app:popupKeyboard="@xml/keys_popup" app:popupCharacters="N!ñ" />
-        <Key app:keyLabel="m" app:shiftedLabel="M" app:downLabel="\?"/>
-        <Key app:codes="-5" app:keyIcon="@drawable/ic_keyboard_backspace"
-                app:keyWidth="15%p" app:keyEdgeFlags="right"
-                app:isRepeatable="true"/>
+        <Key
+            app:codes="-1,-7"
+            app:keyEdgeFlags="left"
+            app:keyIcon="@drawable/ic_keyboard_shift"
+            app:keyWidth="15%p" />
+        <Key
+            app:downLabel="*"
+            app:keyLabel="z"
+            app:shiftedLabel="Z" />
+        <Key
+            app:downLabel="&quot;"
+            app:keyLabel="x"
+            app:shiftedLabel="X" />
+        <Key
+            app:downLabel="\'"
+            app:keyLabel="c"
+            app:popupCharacters="C\'çćĉċč"
+            app:popupKeyboard="@xml/keys_popup"
+            app:shiftedLabel="C" />
+        <Key
+            app:downLabel=":"
+            app:keyLabel="v"
+            app:shiftedLabel="V" />
+        <Key
+            app:downLabel=";"
+            app:keyLabel="b"
+            app:shiftedLabel="B" />
+        <Key
+            app:downLabel="!"
+            app:keyLabel="n"
+            app:popupCharacters="N!ñ"
+            app:popupKeyboard="@xml/keys_popup"
+            app:shiftedLabel="N" />
+        <Key
+            app:downLabel="\?"
+            app:keyLabel="m"
+            app:shiftedLabel="M" />
+        <Key
+            app:codes="-5"
+            app:isRepeatable="true"
+            app:keyEdgeFlags="right"
+            app:keyIcon="@drawable/ic_keyboard_backspace"
+            app:keyWidth="15%p" />
     </Row>
 
     <Row app:rowEdgeFlags="bottom">
-        <Key app:codes="-1008" app:keyLabel="かな" app:downLabel="Flick" app:shiftedLabel="貼付"
-                app:keyWidth="20%p" app:keyEdgeFlags="left"/>
-        <Key app:codes="-1009" app:keyLabel="記号" app:downLabel="CXL" app:shiftedLabel="Google"
-                app:keyWidth="15%p"/>
-        <Key app:codes="32" app:keyIcon="@drawable/ic_keyboard_spacebar"
-                app:keyWidth="30%p"/>
-        <Key app:keyLabel="." app:shiftedLabel=","
-                app:popupKeyboard="@xml/keys_popup" app:popupCharacters=",:>/L…"
-                app:keyWidth="15%p"/>
-        <Key app:codes="-1011" app:keyIcon="@drawable/ic_keyboard_return"
-                app:keyWidth="20%p" app:keyEdgeFlags="right"/>
+        <Key
+            app:codes="-1008"
+            app:downLabel="Flick"
+            app:keyEdgeFlags="left"
+            app:keyLabel="かな"
+            app:keyWidth="20%p"
+            app:shiftedLabel="貼付" />
+        <Key
+            app:codes="-1009"
+            app:downLabel="CXL"
+            app:keyLabel="記号"
+            app:keyWidth="15%p"
+            app:shiftedLabel="Google" />
+        <Key
+            app:codes="32"
+            app:keyIcon="@drawable/ic_keyboard_space_bar"
+            app:keyWidth="30%p" />
+        <Key
+            app:keyLabel="."
+            app:keyWidth="15%p"
+            app:popupCharacters=",:>/L…"
+            app:popupKeyboard="@xml/keys_popup"
+            app:shiftedLabel="," />
+        <Key
+            app:codes="-1011"
+            app:keyEdgeFlags="right"
+            app:keyIcon="@drawable/ic_keyboard_return"
+            app:keyWidth="20%p" />
     </Row>
 </Keyboard>

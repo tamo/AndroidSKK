@@ -12,9 +12,9 @@ object SKKEmojiState : SKKConfirmingState {
         context.oldState.handleKanaKey(context)
     }
 
-    override fun processKey(context: SKKEngine, pcode: Int) {
-        if (super.beforeProcessKey(context, pcode)) return
-        when (pcode) {
+    override fun processKey(context: SKKEngine, keyCode: Int) {
+        if (super.beforeProcessKey(context, keyCode)) return
+        when (keyCode) {
             ' '.code -> context.chooseAdjacentSuggestion(true)
             'x'.code -> context.chooseAdjacentSuggestion(false)
             'X'.code -> context.pickCurrentCandidate(unregister = true)
@@ -22,8 +22,9 @@ object SKKEmojiState : SKKConfirmingState {
                 context.changeState(SKKNarrowingState)
                 SKKNarrowingState.isSequential = isSequential
             }
+
             else -> {
-                context.oldState.processKey(context, pcode)
+                context.oldState.processKey(context, keyCode)
                 if (context.state === SKKEmojiState) {
                     context.changeState(context.oldState)
                 }

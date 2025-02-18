@@ -8,15 +8,16 @@ interface SKKConfirmingState : SKKState {
         pendingLambda = null
     }
 
-    fun beforeProcessKey(context: SKKEngine, pcode: Int): Boolean {
+    fun beforeProcessKey(context: SKKEngine, keyCode: Int): Boolean {
         pendingLambda?.let {
             context.setComposingTextSKK(oldComposingText)
-            when (pcode) {
+            when (keyCode) {
                 'y'.code, 'Y'.code -> {
                     pendingLambda!!.invoke()
                     pendingLambda = null
                     return true
                 }
+
                 else -> pendingLambda = null
             }
         }

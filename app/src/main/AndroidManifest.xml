@@ -1,57 +1,65 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-	<uses-permission android:name="android.permission.RECORD_AUDIO"/>
-	<uses-permission android:name="android.permission.INTERNET"/>
-	<uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
-	<queries>
-		<intent>
-			<action android:name="android.speech.RecognitionService"/>
-		</intent>
-		<intent>
-			<action android:name="com.adamrocker.android.simeji.ACTION_INTERCEPT" />
-			<category android:name="com.adamrocker.android.simeji.REPLACE"/>
-		</intent>
-	</queries>
-	<application android:label="@string/ime_name"
-			android:allowBackup="true"
-			android:name=".SKKApplication"
-			android:icon="@drawable/icon"
-			android:supportsRtl="false"
-		>
-		<service android:name=".SKKService"
-			android:permission="android.permission.BIND_INPUT_METHOD"
-			android:exported="false" >
-			<intent-filter>
-				<action android:name="android.view.InputMethod" />
-			</intent-filter>
-			<meta-data android:name="android.view.im" android:resource="@xml/method" />
-		</service>
-		<activity android:name=".SKKService$PermissionRequestActivity"
-			android:theme="@style/Theme.AppCompat.DayNight.NoActionBar" />
 
-		<activity android:name=".SKKSettingsActivity"
-			android:launchMode="singleInstance"
-			android:theme="@style/Theme.AppCompat.DayNight.NoActionBar"
-			android:label="@string/label_pref_activity"
-			android:exported="true">
-			<intent-filter>
-				<action android:name="android.intent.action.MAIN"/>
-				<category android:name="android.intent.category.LAUNCHER"/>
-			</intent-filter>
-		</activity>
-		<activity android:name=".SKKUserDicTool"
-			android:launchMode="singleInstance"
-			android:theme="@style/Theme.AppCompat.DayNight.NoActionBar"
-			android:label="@string/label_dictool_activity">
-		</activity>
-		<activity android:name=".SKKDicManager"
-			android:launchMode="singleInstance"
-			android:theme="@style/Theme.AppCompat.DayNight.NoActionBar"
-			android:label="@string/label_dicmanager_activity">
-		</activity>
-		<activity android:name=".SKKMushroom"
-			android:label="@string/label_mushroom"
-			android:theme="@style/Theme.AppCompat.DayNight.Dialog">
-		</activity>
-	</application>
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <queries>
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
+        <intent>
+            <action android:name="com.adamrocker.android.simeji.ACTION_INTERCEPT" />
+            <category android:name="com.adamrocker.android.simeji.REPLACE" />
+        </intent>
+    </queries>
+    <application
+        android:name=".SKKApplication"
+        android:allowBackup="true"
+        android:icon="@drawable/icon"
+        android:label="@string/ime_name"
+        android:supportsRtl="false">
+        <service
+            android:name=".SKKService"
+            android:exported="false"
+            android:permission="android.permission.BIND_INPUT_METHOD">
+            <intent-filter>
+                <action android:name="android.view.InputMethod" />
+            </intent-filter>
+            <meta-data
+                android:name="android.view.im"
+                android:resource="@xml/method" />
+        </service>
+
+        <activity
+            android:name=".SKKService$PermissionRequestActivity"
+            android:theme="@style/Theme.AppCompat.DayNight.NoActionBar" />
+
+        <activity
+            android:name=".SKKSettingsActivity"
+            android:exported="true"
+            android:label="@string/label_pref_activity"
+            android:launchMode="singleInstance"
+            android:theme="@style/Theme.AppCompat.DayNight.NoActionBar">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".SKKUserDictTool"
+            android:label="@string/label_dict_tool_activity"
+            android:launchMode="singleInstance"
+            android:theme="@style/Theme.AppCompat.DayNight.NoActionBar" />
+        <activity
+            android:name=".SKKDictManager"
+            android:label="@string/label_dict_manager_activity"
+            android:launchMode="singleInstance"
+            android:theme="@style/Theme.AppCompat.DayNight.NoActionBar" />
+        <activity
+            android:name=".SKKMushroom"
+            android:label="@string/label_mushroom"
+            android:theme="@style/Theme.AppCompat.DayNight.Dialog" />
+    </application>
 </manifest>

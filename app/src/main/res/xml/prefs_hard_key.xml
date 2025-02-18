@@ -2,37 +2,37 @@
 <androidx.preference.PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
     <androidx.preference.PreferenceCategory
         app:iconSpaceReserved="false"
-        app:title="@string/label_pref_hardkeyboard">
+        app:title="@string/label_pref_hard_keyboard">
         <androidx.preference.Preference
             app:iconSpaceReserved="false"
-            app:key="@string/prefkey_kana_key"
+            app:key="@string/pref_kana_key"
             app:title="かなキー" />
         <androidx.preference.CheckBoxPreference
             app:defaultValue="false"
             app:iconSpaceReserved="false"
-            app:key="@string/prefkey_toggle_kana_key"
+            app:key="@string/pref_toggle_kana_key"
             app:summary="オンだと，かなモードでかなキーを押すとASCIIモードに戻ります"
             app:title="かなキーをASCIIとのトグルに" />
         <androidx.preference.Preference
             app:iconSpaceReserved="false"
-            app:key="@string/prefkey_cancel_key"
+            app:key="@string/pref_cancel_key"
             app:title="キャンセルキー" />
         <androidx.preference.CheckBoxPreference
             app:defaultValue="true"
             app:iconSpaceReserved="false"
-            app:key="@string/prefkey_use_candidates_view"
+            app:key="@string/pref_use_candidates_view"
             app:summary="補完候補や変換候補を一覧表示します"
             app:title="補完・候補の一覧表示" />
         <androidx.preference.CheckBoxPreference
             app:defaultValue="false"
             app:iconSpaceReserved="false"
-            app:key="@string/prefkey_sticky_meta"
+            app:key="@string/pref_sticky_meta"
             app:summary="shiftを同時押しでなくても効くようにします"
             app:title="Sticky shift" />
         <androidx.preference.CheckBoxPreference
             app:defaultValue="false"
             app:iconSpaceReserved="false"
-            app:key="@string/prefkey_sands"
+            app:key="@string/pref_sands"
             app:summary="スペースキーをshiftとして使います"
             app:title="SandS" />
     </androidx.preference.PreferenceCategory>

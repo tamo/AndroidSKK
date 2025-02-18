@@ -16,10 +16,10 @@ object SKKNarrowingState : SKKConfirmingState {
         SKKChooseState.handleKanaKey(context)
     }
 
-    override fun processKey(context: SKKEngine, pcode: Int) {
-        if (super.beforeProcessKey(context, pcode)) return
+    override fun processKey(context: SKKEngine, keyCode: Int) {
+        if (super.beforeProcessKey(context, keyCode)) return
         context.apply {
-            when (pcode) {
+            when (keyCode) {
                 ' '.code -> {
                     mSpaceUsed = true
                     chooseAdjacentCandidate(true)
@@ -28,17 +28,17 @@ object SKKNarrowingState : SKKConfirmingState {
                 'l'.code, 'L'.code, '/'.code -> {
                     // 暗黙の確定
                     pickCurrentCandidate()
-                    changeInputMode(pcode)
+                    changeInputMode(keyCode)
                 }
 
                 'X'.code -> pickCurrentCandidate(unregister = true)
 
-                else -> if (mSpaceUsed && pcode == 'x'.code) {
+                else -> if (mSpaceUsed && keyCode == 'x'.code) {
                     chooseAdjacentCandidate(false)
                 } else {
                     SKKHiraganaState
-                        .processKana(this, Character.toLowerCase(pcode)) { _, hchr ->
-                            mHint.append(hchr)
+                        .processKana(this, Character.toLowerCase(keyCode)) { _, hiraganaChar ->
+                            mHint.append(hiraganaChar)
                             mComposing.setLength(0)
                             narrowCandidates(mHint.toString())
                         }

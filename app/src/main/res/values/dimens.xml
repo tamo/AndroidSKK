@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!--
+<?xml version="1.0" encoding="utf-8"?><!--
 /*
 **
 ** Copyright 2008, The Android Open Source Project
@@ -19,8 +18,8 @@
 -->
 
 <resources>
-	<dimen name="candidate_font_height">30sp</dimen>
-	<dimen name="candidates_scroll_size">40dp</dimen>
-	<dimen name="candidates_scrollbutton_width">50dp</dimen>
-	<dimen name="keyboard_minimum_width">200dp</dimen>
+    <dimen name="candidate_font_height">30sp</dimen>
+    <dimen name="candidates_scroll_size">40dp</dimen>
+    <dimen name="candidates_scroll_button_width">50dp</dimen>
+    <dimen name="keyboard_minimum_width">200dp</dimen>
 </resources>

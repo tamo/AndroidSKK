@@ -3,8 +3,6 @@ package jp.deadend.noname.skk.engine
 import jp.deadend.noname.skk.R
 import jp.deadend.noname.skk.hankaku2zenkaku
 
-// import jp.deadend.noname.skk.skkPrefs
-
 // 全角英数モード
 object SKKZenkakuState : SKKState {
     override val isTransient = false
@@ -15,8 +13,8 @@ object SKKZenkakuState : SKKState {
         context.changeState(SKKHiraganaState)
     }
 
-    override fun processKey(context: SKKEngine, pcode: Int) {
-        hankaku2zenkaku(Char(pcode).toString())?.let {
+    override fun processKey(context: SKKEngine, keyCode: Int) {
+        hankaku2zenkaku(Char(keyCode).toString())?.let {
             context.commitTextSKK(it)
         }
     }

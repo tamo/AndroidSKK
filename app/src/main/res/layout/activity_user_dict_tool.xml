@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical"
+    android:padding="2sp">
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/userDictToolToolbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <androidx.appcompat.widget.SearchView
+        android:id="@+id/userDictToolSearch"
+        android:layout_width="wrap_content"
+        android:layout_height="44sp"
+        android:layout_gravity="end"
+        android:hapticFeedbackEnabled="true"
+        app:iconifiedByDefault="false" />
+
+    <ListView
+        android:id="@+id/userDictToolList"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_weight="1"
+        tools:listitem="@android:layout/simple_list_item_1" />
+
+    <TextView
+        android:id="@+id/EmptyListItem"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_weight="1"
+        android:text="@string/label_tools_no_entry_found"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:visibility="gone" />
+</LinearLayout>
+

@@ -31,14 +31,14 @@ import kotlinx.coroutines.runBlocking
 import kotlin.math.ceil
 
 /**
- * Construct a CandidateView for showing suggested words for completion.
+ * Construct a CandidatesView for showing suggested words for completion.
  * @param context
  * @param attrs
  */
-class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs) {
-    private lateinit var mContainer: CandidateViewContainer
+class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attrs) {
+    private lateinit var mContainer: CandidatesViewContainer
     private lateinit var mService: SKKService
-    private val mSuggestions = mutableListOf<String>()
+    private val mCandidateList = mutableListOf<String>()
     private var mSelectedIndex = 0
 
     private var mChosenIndex = 0
@@ -48,9 +48,9 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
     private val mSelectionHighlight: Drawable?
     private var mScrollPixels = 0
 
-    private val mWordWidth = IntArray(MAX_SUGGESTIONS)
-    private val mWordX = IntArray(MAX_SUGGESTIONS)
-    private val mWordL = IntArray(MAX_SUGGESTIONS)
+    private val mWordWidth = IntArray(MAX_CANDIDATES)
+    private val mWordX = IntArray(MAX_CANDIDATES)
+    private val mWordL = IntArray(MAX_CANDIDATES)
 
     private var mDrawing = false
     private var mScrolled = false
@@ -74,12 +74,13 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
     init {
         val r = context.resources
 
-        mSelectionHighlight = ResourcesCompat.getDrawable(r, R.drawable.suggest_scroll_button_bg, null)
+        mSelectionHighlight =
+            ResourcesCompat.getDrawable(r, R.drawable.candidate_scroll_button_bg, null)
         mSelectionHighlight?.state = intArrayOf(
-                android.R.attr.state_enabled,
-                android.R.attr.state_focused,
-                android.R.attr.state_window_focused,
-                android.R.attr.state_pressed
+            android.R.attr.state_enabled,
+            android.R.attr.state_focused,
+            android.R.attr.state_window_focused,
+            android.R.attr.state_pressed
         )
 
         setBackgroundColor(ResourcesCompat.getColor(r, R.color.candidate_background, null))
@@ -98,28 +99,29 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
             strokeWidth = 0f
         }
 
-        mGestureDetector = GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
-            override fun onScroll(
+        mGestureDetector =
+            GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
+                override fun onScroll(
                     e1: MotionEvent?,
                     e2: MotionEvent,
                     distanceX: Float,
                     distanceY: Float
-            ): Boolean {
-                val width = width
-                mScrolled = true
-                mScrollX = (scrollX + distanceX.toInt()).coerceIn(0, mTotalWidth - width)
-                mTargetScrollX = mScrollX
-                invalidate()
-                return true
-            }
-
-            override fun onLongPress(e: MotionEvent) {
-                if (mSelectedIndex >= 0) {
-                    performHapticFeedback(skkPrefs.haptic)
-                    mService.pickCandidateViewManually(mSelectedIndex, unregister = true)
+                ): Boolean {
+                    val width = width
+                    mScrolled = true
+                    mScrollX = (scrollX + distanceX.toInt()).coerceIn(0, mTotalWidth - width)
+                    mTargetScrollX = mScrollX
+                    invalidate()
+                    return true
                 }
-            }
-        })
+
+                override fun onLongPress(e: MotionEvent) {
+                    if (mSelectedIndex >= 0) {
+                        performHapticFeedback(skkPrefs.haptic)
+                        mService.pickCandidatesViewManually(mSelectedIndex, unregister = true)
+                    }
+                }
+            })
 
         isHorizontalFadingEdgeEnabled = false
         setWillNotDraw(false)
@@ -135,7 +137,7 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
         mService = listener
     }
 
-    fun setContainer(c: CandidateViewContainer) {
+    fun setContainer(c: CandidatesViewContainer) {
         mContainer = c
     }
 
@@ -143,7 +145,7 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
         mPaint.textSize = px.toFloat()
     }
 
-    public override fun computeHorizontalScrollRange() =  mTotalWidth
+    public override fun computeHorizontalScrollRange() = mTotalWidth
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val measuredWidth = resolveSize(50, widthMeasureSpec)
@@ -151,15 +153,15 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
 
         // Get the desired height of the icon menu view (last row of items does
         // not have a divider below)
-/*
+        /*
         val padding = new Rect()
         mSelectionHighlight.getPadding(padding)
         val desiredHeight = mPaint.getTextSize().toInt() + mVerticalPadding
                 + padding.top + padding.bottom
-*/
+        */
 
         // Maximum possible width and desired height
-        val buttonSize = resources.getDimensionPixelSize(R.dimen.candidates_scrollbutton_width)
+        val buttonSize = resources.getDimensionPixelSize(R.dimen.candidates_scroll_button_width)
         setMeasuredDimension(
             measuredWidth,
             resolveSize(
@@ -180,7 +182,7 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
         val scrolled = mScrolled
         val y = (paint.textSize * (LINE_SCALE - 1) / 2 - paint.ascent()).toInt()
 
-        mSuggestions.forEachIndexed { i, suggestion ->
+        mCandidateList.forEachIndexed { i, candidate ->
             paint.color = mColorNormal
             if (touchX + scrollX >= mWordX[i]
                 && touchX + scrollX < mWordX[i] + mWordWidth[i]
@@ -202,14 +204,14 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
             }
             if (skkPrefs.originalColor) { // 高コントラストテキストの設定を無視
                 paint.getTextPath(
-                    suggestion, 0, suggestion.length,
+                    candidate, 0, candidate.length,
                     (mWordX[i] + X_GAP).toFloat(), (y + mWordL[i] * mLineHeight).toFloat(),
                     mTextPath
                 )
                 canvas.drawPath(mTextPath, paint)
             } else {
                 canvas.drawText(
-                    suggestion,
+                    candidate,
                     (mWordX[i] + X_GAP).toFloat(), (y + mWordL[i] * mLineHeight).toFloat(),
                     paint
                 )
@@ -254,8 +256,8 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
     fun setContents(list: List<String>?, kanjiKey: String) {
         runBlocking {
             while (mDrawing) delay(50)
-            mSuggestions.clear()
-            list?.take(MAX_SUGGESTIONS)?.forEach { str ->
+            mCandidateList.clear()
+            list?.take(MAX_CANDIDATES)?.forEach { str ->
                 str.indexOf(";").let { semicolon ->
                     if (semicolon == -1) {
                         processConcatAndMore(str, kanjiKey)
@@ -264,7 +266,7 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
                                 ";" +
                                 processConcatAndMore(str.substring(semicolon + 1, str.length), "#")
                     }.let {
-                        mSuggestions.add(it)
+                        mCandidateList.add(it)
                     }
                 }
             }
@@ -280,8 +282,8 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
             var lineX = 0
             var lineW = 0
             var totalLineW = 0
-            mTotalWidth = mSuggestions.map { suggestion ->
-                mPaint.measureText(suggestion).coerceAtLeast(mLineHeight * 0.7f) + X_GAP * 2
+            mTotalWidth = mCandidateList.map { candidate ->
+                mPaint.measureText(candidate).coerceAtLeast(mLineHeight * 0.7f) + X_GAP * 2
             }.foldIndexed(0) { i, _, wordWidth ->
                 // 改行
                 if (lineW != 0 && lineW + wordWidth > width) {
@@ -309,7 +311,7 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
         }
     }
 
-//    fun getContent(index: Int) = mSuggestions.getOrElse(index) { "" }
+//    fun getContent(index: Int) = mCandidateList.getOrElse(index) { "" }
 
     fun scrollPrev() {
         mScrollX = scrollX
@@ -337,11 +339,13 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
     }
 
     override fun onTouchEvent(me: MotionEvent): Boolean {
-        if (mSuggestions.isEmpty()) { // ドラッグで位置調整
+        if (mCandidateList.isEmpty()) { // ドラッグで位置調整
             return mContainer.binding.candidateLeft.dispatchTouchEvent(me)
         }
         // スクロールした時にはここで処理されて終わりのようだ。ソースの頭で定義している。
-        if (mGestureDetector.onTouchEvent(me)) { return true }
+        if (mGestureDetector.onTouchEvent(me)) {
+            return true
+        }
 
         val action = me.action
         val x = me.x.toInt()
@@ -354,17 +358,19 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
                 mScrolled = false
                 invalidate()
             }
+
             MotionEvent.ACTION_MOVE -> {
                 // よってここのコードは生きていない。使用されない。
                 if (y <= 0) {
                     // Fling up!?
                     if (mSelectedIndex >= 0) {
-                        mService.pickCandidateViewManually(mSelectedIndex)
+                        mService.pickCandidatesViewManually(mSelectedIndex)
                         mSelectedIndex = -1
                     }
                 }
                 invalidate()
             }
+
             MotionEvent.ACTION_UP -> {
                 // ここは生きている。
                 performClick()
@@ -377,7 +383,7 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
         super.performClick()
 
         val rv = if (!mScrolled && mSelectedIndex >= 0) {
-            mService.pickCandidateViewManually(mSelectedIndex)
+            mService.pickCandidatesViewManually(mSelectedIndex)
             performHapticFeedback(skkPrefs.haptic)
             true
         } else false
@@ -399,7 +405,7 @@ class CandidateView(context: Context, attrs: AttributeSet) : View(context, attrs
 
     companion object {
         private const val OUT_OF_BOUNDS = -1
-        private const val MAX_SUGGESTIONS = 2000 // 絵文字は1500程度ある
+        private const val MAX_CANDIDATES = 2000 // 絵文字は1500程度ある
         private const val X_GAP = 5
         internal const val LINE_SCALE = 1.3
     }

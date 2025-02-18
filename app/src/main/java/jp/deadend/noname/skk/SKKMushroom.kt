@@ -7,7 +7,9 @@ import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
-import android.widget.*
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
+import android.widget.TextView
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -25,7 +27,7 @@ class SKKMushroom : AppCompatActivity() {
     )
 
     private val callMushroom =
-        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result : ActivityResult ->
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
             if (result.resultCode == Activity.RESULT_OK) {
                 val extras = result.data?.extras
                 val s = if (extras == null) "" else extras.getString(REPLACE_KEY)
@@ -44,20 +46,22 @@ class SKKMushroom : AppCompatActivity() {
         setContentView(binding.root)
 
         val extras = intent.extras
-        mStr = if (extras == null) "" else { extras.getString(REPLACE_KEY) ?: "" }
+        mStr = if (extras == null) "" else {
+            extras.getString(REPLACE_KEY) ?: ""
+        }
         binding.listView.emptyView = binding.emptyView
         binding.listView.adapter = AppListAdapter(this, loadMushroomAppList())
-        binding.listView.onItemClickListener = AdapterView.OnItemClickListener { l, _, position, _ ->
-            val info = l.getItemAtPosition(position) as AppInfo
+        binding.listView.onItemClickListener =
+            AdapterView.OnItemClickListener { l, _, position, _ ->
+                val info = l.getItemAtPosition(position) as AppInfo
 
-            val intent = Intent(ACTION_SIMEJI_MUSHROOM)
-            intent.addCategory(CATEGORY_SIMEJI_MUSHROOM)
-            intent.setClassName(info.packageName, info.className)
-            intent.putExtra(REPLACE_KEY, mStr)
-            // intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            callMushroom.launch(intent)
-        }
-        binding.emptyView.text = getString(R.string.error_no_mushroom)
+                val intent = Intent(ACTION_SIMEJI_MUSHROOM)
+                intent.addCategory(CATEGORY_SIMEJI_MUSHROOM)
+                intent.setClassName(info.packageName, info.className)
+                intent.putExtra(REPLACE_KEY, mStr)
+                // intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                callMushroom.launch(intent)
+            }
     }
 
     private fun loadMushroomAppList(): List<AppInfo> {
@@ -76,8 +80,8 @@ class SKKMushroom : AppCompatActivity() {
     }
 
     private inner class AppListAdapter(
-            context: Context,
-            items: List<AppInfo>
+        context: Context,
+        items: List<AppInfo>
     ) : ArrayAdapter<AppInfo>(context, 0, items) {
         override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
             val tv = convertView ?: TextView(this@SKKMushroom).apply {

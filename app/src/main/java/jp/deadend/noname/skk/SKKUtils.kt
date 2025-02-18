@@ -17,7 +17,7 @@ private val PAT_ESCAPE_NUM = """\\(\d+)""".toRegex()
 
 // 半角から全角 (UNICODE)
 fun hankaku2zenkaku(str: String?): String? {
-    if (str == null) { return null }
+    if (str == null) return null
 
     var skipNext = false
     return str.mapIndexedNotNull { index, it ->
@@ -56,7 +56,7 @@ fun hankaku2zenkaku(str: String?): String? {
 }
 
 fun zenkaku2hankaku(str: String?): String? {
-    if (str == null) { return null }
+    if (str == null) return null
 
     return str.map {
         val fc = Z2H[it.code]
@@ -76,7 +76,7 @@ fun zenkaku2hankaku(str: String?): String? {
 
 // ひらがなを全角カタカナにする
 fun hiragana2katakana(str: String?, reversed: Boolean = false): String? {
-    if (str == null) { return null }
+    if (str == null) return null
 
     var skipNext = false // 「う゛」を「ヴ」にして文字数が減るときのフラグ
     val str2 = str.mapIndexedNotNull { index, it ->
@@ -88,13 +88,14 @@ fun hiragana2katakana(str: String?, reversed: Boolean = false): String? {
                 if (it == 'う' && str.length > index + 1 && str[index + 1] == '゛') {
                     skipNext = true
                     'ヴ'
-                }
-                else it.plus(0x60)
+                } else it.plus(0x60)
             }
+
             in 'ァ'..'ヴ' -> {
                 if (reversed) it.minus(0x60)
                 else it
             }
+
             else -> it
         }
     }.joinToString("")
@@ -103,7 +104,7 @@ fun hiragana2katakana(str: String?, reversed: Boolean = false): String? {
 }
 
 fun katakana2hiragana(str: String?): String? {
-    if (str == null) { return null }
+    if (str == null) return null
 
     return str.map { if (it in 'ァ'..'ヴ') it.minus(0x60) else it }.joinToString("")
     // 「ヴ」が「う゛」ではなく「ゔ」になる
@@ -111,7 +112,8 @@ fun katakana2hiragana(str: String?): String? {
 
 fun isAlphabet(code: Int) = (code in 0x41..0x5A || code in 0x61..0x7A)
 
-fun isVowel(code: Int) = (code == 0x61 || code == 0x69 || code == 0x75 || code == 0x65 || code == 0x6F)
+fun isVowel(code: Int) =
+    (code == 0x61 || code == 0x69 || code == 0x75 || code == 0x65 || code == 0x6F)
 // a, i, u, e, o
 
 fun removeAnnotation(str: String): String {
@@ -123,19 +125,23 @@ private fun processNumber(str: String, number: String): String {
     return str
         .replace("#0", number) // 半角
         .replace("#1", number // 全角
-            .map { char -> when (char.code) {
-                in '0'.code..'9'.code -> (char.code + '０'.code - '0'.code).toChar()
-                '.'.code -> '．' // もしかして「・」の方がいい?
-                else -> char
-            } }
+            .map { char ->
+                when (char.code) {
+                    in '0'.code..'9'.code -> (char.code + '０'.code - '0'.code).toChar()
+                    '.'.code -> '．' // もしかして「・」の方がいい?
+                    else -> char
+                }
+            }
             .joinToString("")
         )
         .replace("#2", number // 単純漢数字
-            .map { char -> when (char.code) {
-                in '0'.code..'9'.code -> "〇一二三四五六七八九"[char.code - '0'.code]
-                '.'.code -> '．' // もしかして「・」の方がいい?
-                else -> char
-            } }
+            .map { char ->
+                when (char.code) {
+                    in '0'.code..'9'.code -> "〇一二三四五六七八九"[char.code - '0'.code]
+                    '.'.code -> '．' // もしかして「・」の方がいい?
+                    else -> char
+                }
+            }
             .joinToString("")
         )
         .replace("#3", number // 位取りのある漢数字 (たぶんバグがある)
@@ -162,7 +168,8 @@ private fun processNumber(str: String, number: String): String {
                     if ((number.substring( // 4桁まるごと0000かどうか
                             max(number.length - index - 4, 0),
                             number.length - index
-                    ).toIntOrNull() ?: 0) > 0) {
+                        ).toIntOrNull() ?: 0) > 0
+                    ) {
                         sb.append("一万億兆京垓"[index / 4])
                     }
                 }
@@ -170,12 +177,14 @@ private fun processNumber(str: String, number: String): String {
             }
             .reversed()
             .joinToString("")
-            + number.dropWhile { it != '.' } // 小数点以下は位がないので別扱いにする
-            .map { char -> when (char.code) {
-                in '0'.code..'9'.code -> "〇一二三四五六七八九"[char.code - '0'.code]
-                '.'.code -> '．' // もしかして「・」の方がいい?
-                else -> char
-            } }
+                + number.dropWhile { it != '.' } // 小数点以下は位がないので別扱いにする
+            .map { char ->
+                when (char.code) {
+                    in '0'.code..'9'.code -> "〇一二三四五六七八九"[char.code - '0'.code]
+                    '.'.code -> '．' // もしかして「・」の方がいい?
+                    else -> char
+                }
+            }
             .joinToString("")
         )
         .replace("#", number) // suggestion 用
@@ -198,12 +207,13 @@ fun processConcatAndMore(rawStr: String, kanjiKey: String): String {
 
     operator fun MatchResult.Destructured.component11(): String =
         this.toList()[10] // 不足を拡張
-    Regex("^\\(cal-" +
-            "(arg([-+*=]+)([\\d.]*)?([ymd])?-)?" +
-            "(year([-+]\\d+)-)?" +
-            "(month([-+]\\d+)-)?" +
-            "(date([-+]\\d+)-)?" +
-            "format (.+)\\)"
+    Regex(
+        "^\\(cal-" +
+                "(arg([-+*=]+)([\\d.]*)?([ymd])?-)?" +
+                "(year([-+]\\d+)-)?" +
+                "(month([-+]\\d+)-)?" +
+                "(date([-+]\\d+)-)?" +
+                "format (.+)\\)"
     ).matchEntire(rawStr)?.destructured
         ?.let { (hasArg, argOpts, argTimes, argUnit, _, yearDelta, _, monthDelta, _, dateDelta, raw) ->
             val isDelta = !argOpts.contains('=')
@@ -223,14 +233,17 @@ fun processConcatAndMore(rawStr: String, kanjiKey: String): String {
                         if (isDelta) calendar.add(Calendar.YEAR, num * sign * times.toInt())
                         else calendar.set(Calendar.YEAR, num * times.toInt())
                     }
+
                     "m" -> {
                         if (isDelta) calendar.add(Calendar.MONTH, num * sign * times.toInt())
                         else calendar.set(Calendar.MONTH, num * times.toInt())
                     }
+
                     "d" -> {
                         if (isDelta) calendar.add(Calendar.DATE, num * sign * times.toInt())
                         else calendar.set(Calendar.DAY_OF_MONTH, num * times.toInt())
                     }
+
                     else -> return processNumber(str, (num * times + calcDelta).toString())
                     // 単位換算など
                 }
@@ -270,7 +283,7 @@ fun createTrimmedBuilder(orig: StringBuilder): StringBuilder {
 }
 
 // debug log
-fun dlog(msg: String) {
+fun dLog(msg: String) {
     if (BuildConfig.DEBUG) android.util.Log.d("SKK", msg)
 }
 
@@ -279,11 +292,12 @@ fun getFileNameFromUri(context: Context, uri: Uri): String? {
     when (uri.scheme) {
         "content" -> {
             val cursor = context.contentResolver
-                            .query(uri, arrayOf((OpenableColumns.DISPLAY_NAME)), null, null, null)
+                .query(uri, arrayOf((OpenableColumns.DISPLAY_NAME)), null, null, null)
             cursor?.moveToFirst()
             fileName = cursor?.getString(cursor.getColumnIndexOrThrow(OpenableColumns.DISPLAY_NAME))
             cursor?.close()
         }
+
         "file" -> fileName = uri.path?.let { File(it).name }
         else -> fileName = null
     }

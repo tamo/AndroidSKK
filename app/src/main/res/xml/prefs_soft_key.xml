@@ -3,29 +3,29 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <androidx.preference.PreferenceCategory
         app:iconSpaceReserved="false"
-        app:title="@string/label_pref_softkeyboard">
+        app:title="@string/label_pref_soft_keyboard">
         <androidx.preference.PreferenceCategory
             app:iconSpaceReserved="false"
             app:title="動作">
-            <androidx.preference.ListPreference
+            <androidx.preference.DropDownPreference
                 app:defaultValue="auto"
-                app:entries="@array/usesoftkey_entries"
-                app:entryValues="@array/usesoftkey_values"
+                app:entries="@array/use_soft_key_entries"
+                app:entryValues="@array/use_soft_key_values"
                 app:iconSpaceReserved="false"
-                app:key="@string/prefkey_use_softkey"
+                app:key="@string/pref_use_soft_key"
                 app:title="ソフトウェアキーボードの表示"
                 app:useSimpleSummaryProvider="true" />
             <androidx.preference.CheckBoxPreference
                 app:defaultValue="true"
                 app:iconSpaceReserved="false"
-                app:key="@string/prefkey_show_status_icon"
+                app:key="@string/pref_show_status_icon"
                 app:summary="ソフトウェアキーボード使用時にも「あ」「ア」「Ａ」「ab」といった状態を表示します"
                 app:title="ステータスアイコンを表示" />
             <androidx.preference.SeekBarPreference
                 android:max="27"
                 app:defaultValue="1"
                 app:iconSpaceReserved="false"
-                app:key="@string/prefkey_haptic"
+                app:key="@string/pref_haptic"
                 app:min="-1"
                 app:showSeekBarValue="true"
                 app:summary="-1 でオフになり 4 や 27 が弱いです"
@@ -36,58 +36,58 @@
                 <androidx.preference.CheckBoxPreference
                     app:defaultValue="true"
                     app:iconSpaceReserved="false"
-                    app:key="@string/prefkey_use_flick"
+                    app:key="@string/pref_use_flick"
                     app:summary="オフだと日本語もqwertyキーで入力します"
                     app:title="フリック入力の優先" />
                 <androidx.preference.CheckBoxPreference
                     app:defaultValue="false"
                     app:disableDependentsState="false"
                     app:iconSpaceReserved="false"
-                    app:key="@string/prefkey_use_godan"
+                    app:key="@string/pref_use_godan"
                     app:summary="すべてGodanで入力します"
                     app:title="Godan入力の強制" />
                 <androidx.preference.CheckBoxPreference
                     app:defaultValue="true"
-                    app:dependency="@string/prefkey_use_godan"
-                    app:key="@string/prefkey_godan_simple"
+                    app:dependency="@string/pref_use_godan"
+                    app:key="@string/pref_godan_simple"
                     app:summary="かな入力のとき見やすくします"
                     app:title="Godan表示の簡素化" />
                 <androidx.preference.CheckBoxPreference
                     app:defaultValue="false"
-                    app:dependency="@string/prefkey_use_godan"
-                    app:key="@string/prefkey_godan_swap_qc"
+                    app:dependency="@string/pref_use_godan"
+                    app:key="@string/pref_godan_swap_qc"
                     app:summary="「下シフト」の後に交換されます"
                     app:title="GodanでQとキャンセルの交換" />
                 <androidx.preference.CheckBoxPreference
                     app:defaultValue="true"
                     app:disableDependentsState="false"
                     app:iconSpaceReserved="false"
-                    app:key="@string/prefkey_use_popup"
+                    app:key="@string/pref_use_popup"
                     app:summary="フリック入力用のガイドを表示します"
                     app:title="ポップアップ (フリック入力用のガイド) の表示" />
                 <androidx.preference.CheckBoxPreference
                     app:defaultValue="true"
-                    app:dependency="@string/prefkey_use_popup"
-                    app:key="@string/prefkey_fixed_popup"
+                    app:dependency="@string/pref_use_popup"
+                    app:key="@string/pref_fixed_popup"
                     app:summary="フリック入力ガイドを，常に上部の同じ場所に表示します"
                     app:title="ポップアップの固定" />
                 <androidx.preference.CheckBoxPreference
                     app:defaultValue="false"
                     app:disableDependentsState="true"
                     app:iconSpaceReserved="false"
-                    app:key="@string/prefkey_use_soft_cancel_key"
+                    app:key="@string/pref_use_soft_cancel_key"
                     app:summary="小文字キーとキャンセルキーの操作を交換します (上フリックで小文字)"
                     app:title="キャンセルキーの使用" />
                 <androidx.preference.CheckBoxPreference
                     app:defaultValue="true"
-                    app:dependency="@string/prefkey_use_soft_cancel_key"
-                    app:key="@string/prefkey_use_soft_trans_key"
+                    app:dependency="@string/pref_use_soft_cancel_key"
+                    app:key="@string/pref_use_soft_trans_key"
                     app:summary="小文字キーが連打で濁点や半濁点にもなります"
                     app:title="「◻゙□゚」の使用" />
                 <androidx.preference.CheckBoxPreference
                     app:defaultValue="true"
                     app:iconSpaceReserved="false"
-                    app:key="@string/prefkey_exchange_shift_kana"
+                    app:key="@string/pref_exchange_shift_kana"
                     app:summary="かなキー (Godanではキャンセルキー) が上でシフトキーが下になります"
                     app:title="下シフトキーの使用" />
             </androidx.preference.PreferenceCategory>
@@ -97,7 +97,7 @@
                 <androidx.preference.CheckBoxPreference
                     app:defaultValue="true"
                     app:iconSpaceReserved="false"
-                    app:key="@string/prefkey_mini_keyboard"
+                    app:key="@string/pref_mini_keyboard"
                     app:summary="アルファベットや . の長押しでポップアップを出します"
                     app:title="アクセント文字の使用" />
             </androidx.preference.PreferenceCategory>
@@ -105,27 +105,27 @@
         <androidx.preference.PreferenceCategory
             app:iconSpaceReserved="false"
             app:title="外見">
-            <androidx.preference.ListPreference
+            <androidx.preference.DropDownPreference
                 app:defaultValue="default"
                 app:dialogTitle="テーマ"
                 app:entries="@array/theme_entries"
                 app:entryValues="@array/theme_values"
                 app:iconSpaceReserved="false"
-                app:key="@string/prefkey_theme"
+                app:key="@string/pref_theme"
                 app:title="テーマの強制"
                 app:useSimpleSummaryProvider="true" />
             <androidx.preference.CheckBoxPreference
                 app:defaultValue="false"
                 app:disableDependentsState="false"
                 app:iconSpaceReserved="false"
-                app:key="@string/prefkey_use_inset"
+                app:key="@string/pref_use_inset"
                 app:summary="キーの間に間隔をあけます"
                 app:title="外枠" />
             <androidx.preference.SeekBarPreference
                 android:max="100"
                 app:defaultValue="100"
                 app:iconSpaceReserved="false"
-                app:key="@string/prefkey_background_alpha"
+                app:key="@string/pref_background_alpha"
                 app:min="0"
                 app:showSeekBarValue="true"
                 app:summary="0で完全に透明になります"
@@ -133,7 +133,7 @@
             <androidx.preference.CheckBoxPreference
                 app:defaultValue="false"
                 app:iconSpaceReserved="false"
-                app:key="@string/prefkey_ignore_high_contrast"
+                app:key="@string/pref_ignore_high_contrast"
                 app:summary="変換候補の文字が白黒になるのを防ぎます"
                 app:title="ハイコントラスト設定の無視" />
         </androidx.preference.PreferenceCategory>
@@ -144,7 +144,7 @@
                 android:max="70"
                 app:defaultValue="24"
                 app:iconSpaceReserved="false"
-                app:key="@string/prefkey_flick_sensitivity"
+                app:key="@string/pref_flick_sensitivity"
                 app:min="10"
                 app:showSeekBarValue="true"
                 app:summary="大きいほど鈍いです"
@@ -153,7 +153,7 @@
                 android:max="200"
                 app:defaultValue="100"
                 app:iconSpaceReserved="false"
-                app:key="@string/prefkey_key_label_zoom"
+                app:key="@string/pref_key_label_zoom"
                 app:min="10"
                 app:showSeekBarValue="true"
                 app:title="キー表面の文字の大きさ（％）" />
@@ -161,7 +161,7 @@
                 android:max="100"
                 app:defaultValue="30"
                 app:iconSpaceReserved="false"
-                app:key="@string/prefkey_key_height_port"
+                app:key="@string/pref_key_height_port"
                 app:min="1"
                 app:showSeekBarValue="true"
                 app:summary="幅は候補表示を2本指でつまんで調整できます"
@@ -170,7 +170,7 @@
                 android:max="100"
                 app:defaultValue="50"
                 app:iconSpaceReserved="false"
-                app:key="@string/prefkey_key_height_land"
+                app:key="@string/pref_key_height_land"
                 app:min="1"
                 app:showSeekBarValue="true"
                 app:summary="幅は候補表示を2本指でつまんで調整できます"
@@ -179,7 +179,7 @@
                 android:max="50"
                 app:defaultValue="0"
                 app:iconSpaceReserved="false"
-                app:key="@string/prefkey_key_padding_bottom"
+                app:key="@string/pref_key_padding_bottom"
                 app:min="0"
                 app:showSeekBarValue="true"
                 app:summary="最下段から下にスワイプしやすくするなど"
@@ -188,7 +188,7 @@
                 android:max="400"
                 app:defaultValue="200"
                 app:iconSpaceReserved="false"
-                app:key="@string/prefkey_key_width_qwerty_zoom"
+                app:key="@string/pref_key_width_qwerty_zoom"
                 app:min="100"
                 app:showSeekBarValue="true"
                 app:summary="日本語キーボードに対する割合（％）"
@@ -202,7 +202,7 @@
                 app:entries="@array/input_type_entries"
                 app:entryValues="@array/input_type_values"
                 app:iconSpaceReserved="false"
-                app:key="@string/prefkey_type_uri"
+                app:key="@string/pref_type_uri"
                 app:title="アドレスバー等のキーボード"
                 app:useSimpleSummaryProvider="true" />
             <androidx.preference.DropDownPreference
@@ -210,7 +210,7 @@
                 app:entries="@array/input_type_entries"
                 app:entryValues="@array/input_type_values"
                 app:iconSpaceReserved="false"
-                app:key="@string/prefkey_type_number"
+                app:key="@string/pref_type_number"
                 app:title="数字入力欄のキーボード"
                 app:useSimpleSummaryProvider="true" />
             <androidx.preference.DropDownPreference
@@ -218,7 +218,7 @@
                 app:entries="@array/input_type_entries"
                 app:entryValues="@array/input_type_values"
                 app:iconSpaceReserved="false"
-                app:key="@string/prefkey_type_phone"
+                app:key="@string/pref_type_phone"
                 app:title="電話番号欄のキーボード"
                 app:useSimpleSummaryProvider="true" />
             <androidx.preference.DropDownPreference
@@ -226,7 +226,7 @@
                 app:entries="@array/input_type_entries"
                 app:entryValues="@array/input_type_values"
                 app:iconSpaceReserved="false"
-                app:key="@string/prefkey_type_password"
+                app:key="@string/pref_type_password"
                 app:title="パスワード欄のキーボード"
                 app:useSimpleSummaryProvider="true" />
             <androidx.preference.DropDownPreference
@@ -234,7 +234,7 @@
                 app:entries="@array/input_type_entries"
                 app:entryValues="@array/input_type_values"
                 app:iconSpaceReserved="false"
-                app:key="@string/prefkey_type_text"
+                app:key="@string/pref_type_text"
                 app:title="設定されていないテキスト欄のキーボード"
                 app:useSimpleSummaryProvider="true" />
         </androidx.preference.PreferenceCategory>

@@ -20,7 +20,8 @@ import jp.deadend.noname.skk.engine.SKKState
 import jp.deadend.noname.skk.engine.SKKZenkakuState
 import java.util.EnumSet
 
-class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(context, attrs), KeyboardView.OnKeyboardActionListener {
+class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(context, attrs),
+    KeyboardView.OnKeyboardActionListener {
     private var mLastPressedKey = KEYCODE_GODAN_NONE
     private var mFlickState = EnumSet.of(FlickState.NONE)
     private var mFlickStartX = -1f
@@ -30,7 +31,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
     private var mArrowFlicked = false
     private var mArrowStartX = -1f
     private var mArrowStartY = -1f
-    private var mCurrentPopupLabels = (0..14).map{ "" }.toTypedArray()
+    private var mCurrentPopupLabels = (0..14).map { "" }.toTypedArray()
 
     private var mUsePopup = true
     private var mFixedPopup = false
@@ -55,16 +56,31 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
         a.append(KEYCODE_GODAN_CHAR_H, arrayOf("H", "P", "F", "B", "3") + t)
         a.append(KEYCODE_GODAN_CHAR_I, arrayOf("I", "いっ", "いん", "ぃ", "4") + t)
         a.append(KEYCODE_GODAN_CHAR_S, arrayOf("S", "＆", "J", "Z", "5", "", "", "％", "＄") + t)
-        a.append(KEYCODE_GODAN_CHAR_M, arrayOf("M", "／", "L", "ー", "6", "", "", "￥", "＼", "", "", "〜", "＿") + t)
+        a.append(
+            KEYCODE_GODAN_CHAR_M,
+            arrayOf("M", "／", "L", "ー", "6", "", "", "￥", "＼", "", "", "〜", "＿") + t
+        )
         a.append(KEYCODE_GODAN_CHAR_U, arrayOf("U", "うっ", "うん", "ゅ", "7") + t)
         a.append(KEYCODE_GODAN_CHAR_T, arrayOf("T", "＋", "C", "D", "8", "", "", "＃", "＊") + t)
-        a.append(KEYCODE_GODAN_CHAR_Y, arrayOf("Y", "（", "X", "）", "9", "＜", "＞", "［", "｛", "", "", "］", "｝") + t)
+        a.append(
+            KEYCODE_GODAN_CHAR_Y,
+            arrayOf("Y", "（", "X", "）", "9", "＜", "＞", "［", "｛", "", "", "］", "｝") + t
+        )
         a.append(KEYCODE_GODAN_CHAR_Q, arrayOf("Q", "絵☻", "^J", "記号", "ｶﾅ") + t)
         a.append(KEYCODE_GODAN_CHAR_E, arrayOf("E", "えっ", "えん", "ぇ", "00") + t)
-        a.append(KEYCODE_GODAN_CHAR_N, arrayOf("N", "：", "ん", "・", "0", "", "", "；", "＜", "", "", "｜", "＞") + t)
-        a.append(KEYCODE_GODAN_CHAR_R, arrayOf("R", "。", "？", "！", "、", "", "", "…", "〜", "", "", "↑", "↓", "→", "←"))
+        a.append(
+            KEYCODE_GODAN_CHAR_N,
+            arrayOf("N", "：", "ん", "・", "0", "", "", "；", "＜", "", "", "｜", "＞") + t
+        )
+        a.append(
+            KEYCODE_GODAN_CHAR_R,
+            arrayOf("R", "。", "？", "！", "、", "", "", "…", "〜", "", "", "↑", "↓", "→", "←")
+        )
         a.append(KEYCODE_GODAN_CHAR_O, arrayOf("O", "おっ", "おん", "ょ", "＇", "′", "`") + t)
-        a.append(KEYCODE_GODAN_CHAR_W, arrayOf("W", "「", "V", "」", "＂", "", "", "『", "【", "", "", "』", "】", "”", "“"))
+        a.append(
+            KEYCODE_GODAN_CHAR_W,
+            arrayOf("W", "「", "V", "」", "＂", "", "", "『", "【", "", "", "』", "】", "”", "“")
+        )
         a.append(KEYCODE_GODAN_SPACE, arrayOf("SPACE", "", "Mush") + t)
         a.append(Keyboard.KEYCODE_SHIFT, arrayOf("SHIFT", "", "CAPSLOCK") + t)
     }
@@ -93,7 +109,8 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
 
     private fun setShiftPosition() {
         val defaultShiftKey = keyboard.keys[0]
-        val defaultCancelKey = checkNotNull(findKeyByCode(keyboard, KEYCODE_GODAN_CANCEL)) { "BUG: no cancel key" }
+        val defaultCancelKey =
+            checkNotNull(findKeyByCode(keyboard, KEYCODE_GODAN_CANCEL)) { "BUG: no cancel key" }
         val (shiftKey, cancelKey) = if (!skkPrefs.changeShift) {
             defaultShiftKey to defaultCancelKey
         } else {
@@ -111,15 +128,18 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
 
         cancelKey.codes[0] = KEYCODE_GODAN_CANCEL
         cancelKey.codes[1] = KEYCODE_GODAN_NONE
-        cancelKey.label = /* if (!mIsASCII && skkPrefs.simpleGodan) "cxl" else */ "貼付\n：cxl＞\ngoogle"
+        cancelKey.label = /* if (!mIsASCII && skkPrefs.simpleGodan) "cxl" else */
+            "貼付\n：cxl＞\ngoogle"
         cancelKey.icon = null
 
         keyboard.reloadShiftKeys()
     }
 
     private fun setCancelPosition() {
-        val oldCancelKey = checkNotNull(findKeyByCode(keyboard, KEYCODE_GODAN_CANCEL)) { "BUG: no cancel key" }
-        val oldQKey = checkNotNull(findKeyByCode(keyboard, KEYCODE_GODAN_CHAR_Q)) { "BUG: no Q key"}
+        val oldCancelKey =
+            checkNotNull(findKeyByCode(keyboard, KEYCODE_GODAN_CANCEL)) { "BUG: no cancel key" }
+        val oldQKey =
+            checkNotNull(findKeyByCode(keyboard, KEYCODE_GODAN_CHAR_Q)) { "BUG: no Q key" }
 
         val (cancelKey, qKey) = if (skkPrefs.swapQCxl) {
             oldQKey to oldCancelKey
@@ -128,7 +148,8 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
         }
 
         cancelKey.codes[0] = KEYCODE_GODAN_CANCEL
-        cancelKey.label = /* if (!mIsASCII && skkPrefs.simpleGodan) "cxl" else */ "貼付\n：cxl＞\ngoogle"
+        cancelKey.label = /* if (!mIsASCII && skkPrefs.simpleGodan) "cxl" else */
+            "貼付\n：cxl＞\ngoogle"
 
         qKey.codes[0] = KEYCODE_GODAN_CHAR_Q
         qKey.label = /* if (!mIsASCII && skkPrefs.simpleGodan) "Q" else */ "^J\n☻Q記\n半ｶﾅ"
@@ -142,13 +163,18 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
         }
 
         val qKey = checkNotNull(findKeyByCode(keyboard, KEYCODE_GODAN_CHAR_Q)) { "BUG: no Q key" }
-        qKey.on = (state !in listOf(SKKASCIIState, SKKEmojiState, SKKZenkakuState) && !mService.isHiragana)
+        qKey.on = (state !in listOf(
+            SKKASCIIState,
+            SKKEmojiState,
+            SKKZenkakuState
+        ) && !mService.isHiragana)
             .also { isKatakana ->
                 listOf(
                     KEYCODE_GODAN_CHAR_A, KEYCODE_GODAN_CHAR_I, KEYCODE_GODAN_CHAR_U,
                     KEYCODE_GODAN_CHAR_E, KEYCODE_GODAN_CHAR_O, KEYCODE_GODAN_CHAR_N,
                 ).forEach { keyCode ->
-                    val key = checkNotNull(findKeyByCode(keyboard, keyCode)) { "BUG: no $keyCode key" }
+                    val key =
+                        checkNotNull(findKeyByCode(keyboard, keyCode)) { "BUG: no $keyCode key" }
                     key.label = if (isKatakana)
                         hiragana2katakana(key.label.toString()) ?: ""
                     else katakana2hiragana(key.label.toString()) ?: ""
@@ -165,14 +191,20 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
     }
 
     private fun findKeyByCode(keyboard: Keyboard, code: Int) =
-            keyboard.keys.find { it.codes[0] == code }
+        keyboard.keys.find { it.codes[0] == code }
 
     private fun onSetShifted(isShifted: Boolean) {
-        val spaceKey = checkNotNull(findKeyByCode(keyboard, KEYCODE_GODAN_SPACE)) { "BUG: no space key" }
+        val spaceKey =
+            checkNotNull(findKeyByCode(keyboard, KEYCODE_GODAN_SPACE)) { "BUG: no space key" }
         spaceKey.label = if (isShifted) "設定" else ""
     }
 
-    internal fun prepareNewKeyboard(context: Context, widthPixel: Int, heightPixel: Int, bottomPercent: Int) {
+    internal fun prepareNewKeyboard(
+        context: Context,
+        widthPixel: Int,
+        heightPixel: Int,
+        bottomPercent: Int
+    ) {
         keyboard = Keyboard(
             context,
             if (!mIsASCII && skkPrefs.simpleGodan) R.xml.keys_godan_simple else R.xml.keys_godan,
@@ -197,19 +229,24 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
             skkPrefs.useSoftCancelKey -> {
                 findKeyByCode(keyboard, KEYCODE_GODAN_KOMOJI)?.label = "小\n ◻゙cxl◻゚ \n▽"
                 mFlickGuideLabelList.put(
-                    KEYCODE_GODAN_KOMOJI, arrayOf("CXL", "◻゙", "小", "◻゚", "▽") + POPUP_LABELS_NULL
+                    KEYCODE_GODAN_KOMOJI,
+                    arrayOf("CXL", "◻゙", "小", "◻゚", "▽") + POPUP_LABELS_NULL
                 )
             }
+
             skkPrefs.useSoftTransKey -> {
                 findKeyByCode(keyboard, KEYCODE_GODAN_KOMOJI)?.label = "cxl\n ◻゙□゚ \n▽"
                 mFlickGuideLabelList.put(
-                    KEYCODE_GODAN_KOMOJI, arrayOf("◻゙□゚", "◻゙", "CXL", "◻゚", "▽") + POPUP_LABELS_NULL
+                    KEYCODE_GODAN_KOMOJI,
+                    arrayOf("◻゙□゚", "◻゙", "CXL", "◻゚", "▽") + POPUP_LABELS_NULL
                 )
             }
+
             else -> {
                 findKeyByCode(keyboard, KEYCODE_GODAN_KOMOJI)?.label = "cxl\n ◻゙小◻゚ \n▽"
                 mFlickGuideLabelList.put(
-                    KEYCODE_GODAN_KOMOJI, arrayOf("小", "◻゙", "CXL", "◻゚", "▽") + POPUP_LABELS_NULL
+                    KEYCODE_GODAN_KOMOJI,
+                    arrayOf("小", "◻゙", "CXL", "◻゚", "▽") + POPUP_LABELS_NULL
                 )
             }
         }
@@ -221,21 +258,21 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
             mPopup = popup
             val binding = PopupFlickguideBinding.bind(popup.contentView)
             mPopupTextView = arrayOf(
-                    binding.labelA,
-                    binding.labelI,
-                    binding.labelU,
-                    binding.labelE,
-                    binding.labelO,
-                    binding.labelLeftA,
-                    binding.labelRightA,
-                    binding.labelLeftI,
-                    binding.labelRightI,
-                    binding.labelLeftU,
-                    binding.labelRightU,
-                    binding.labelLeftE,
-                    binding.labelRightE,
-                    binding.labelLeftO,
-                    binding.labelRightO
+                binding.labelA,
+                binding.labelI,
+                binding.labelU,
+                binding.labelE,
+                binding.labelO,
+                binding.labelLeftA,
+                binding.labelRightA,
+                binding.labelLeftI,
+                binding.labelRightI,
+                binding.labelLeftU,
+                binding.labelRightU,
+                binding.labelLeftE,
+                binding.labelRightE,
+                binding.labelLeftO,
+                binding.labelRightO
             )
         }
     }
@@ -276,6 +313,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                     else -> 0
                 }
             }
+
             mFlickState.contains(FlickState.LEFT) -> {
                 if (!isCurve(mFlickState)) {
                     labels[0].text = mCurrentPopupLabels[0]
@@ -289,12 +327,13 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                     else -> 1
                 }
             }
+
             mFlickState.contains(FlickState.UP) -> {
                 if (!isCurve(mFlickState)) {
                     labels[0].text = mCurrentPopupLabels[0]
                 }
-                labels[2].text  = mCurrentPopupLabels[2]
-                labels[9].text  = mCurrentPopupLabels[9]
+                labels[2].text = mCurrentPopupLabels[2]
+                labels[9].text = mCurrentPopupLabels[9]
                 labels[10].text = mCurrentPopupLabels[10]
                 when {
                     isLeftCurve(mFlickState) -> 9
@@ -302,11 +341,12 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                     else -> 2
                 }
             }
+
             mFlickState.contains(FlickState.RIGHT) -> {
                 if (!isCurve(mFlickState)) {
                     labels[0].text = mCurrentPopupLabels[0]
                 }
-                labels[3].text  = mCurrentPopupLabels[3]
+                labels[3].text = mCurrentPopupLabels[3]
                 labels[11].text = mCurrentPopupLabels[11]
                 labels[12].text = mCurrentPopupLabels[12]
                 when {
@@ -315,11 +355,12 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                     else -> 3
                 }
             }
+
             mFlickState.contains(FlickState.DOWN) -> {
                 if (!isCurve(mFlickState)) {
                     labels[0].text = mCurrentPopupLabels[0]
                 }
-                labels[4].text  = mCurrentPopupLabels[4]
+                labels[4].text = mCurrentPopupLabels[4]
                 labels[13].text = mCurrentPopupLabels[13]
                 labels[14].text = mCurrentPopupLabels[14]
                 when {
@@ -328,6 +369,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                     else -> 4
                 }
             }
+
             else -> -1
         }
         labels[activeLabel].setBackgroundResource(R.drawable.popup_label_highlighted)
@@ -340,9 +382,14 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
         }
     }
 
-    private fun isLeftCurve(flick: EnumSet<FlickState>): Boolean = flick.contains(FlickState.CURVE_LEFT)
-    private fun isRightCurve(flick: EnumSet<FlickState>): Boolean = flick.contains(FlickState.CURVE_RIGHT)
-    private fun isCurve(flick: EnumSet<FlickState>): Boolean = isLeftCurve(flick) || isRightCurve(flick)
+    private fun isLeftCurve(flick: EnumSet<FlickState>): Boolean =
+        flick.contains(FlickState.CURVE_LEFT)
+
+    private fun isRightCurve(flick: EnumSet<FlickState>): Boolean =
+        flick.contains(FlickState.CURVE_RIGHT)
+
+    private fun isCurve(flick: EnumSet<FlickState>): Boolean =
+        isLeftCurve(flick) || isRightCurve(flick)
 
     override fun onModifiedTouchEvent(me: MotionEvent, possiblePoly: Boolean): Boolean {
         when (me.action) {
@@ -352,6 +399,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                 mArrowStartX = me.x
                 mArrowStartY = me.y
             }
+
             MotionEvent.ACTION_MOVE -> {
                 val dx = me.x - mFlickStartX
                 val dy = me.y - mFlickStartY
@@ -366,6 +414,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                         }
                         mArrowFlicked = false
                     }
+
                     mArrowPressed -> {
                         val adx = me.x - mArrowStartX
                         val ady = me.y - mArrowStartY
@@ -386,6 +435,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                                 stopRepeatKey()
                                 return true
                             }
+
                             adx2 < ady2 && ady2 > mFlickSensitivitySquared -> {
                                 if (ady < 0) {
                                     if (!mService.handleDpad(KeyEvent.KEYCODE_DPAD_UP)) {
@@ -402,6 +452,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                             }
                         }
                     }
+
                     mFlickState.contains(FlickState.NONE) -> processFirstFlick(dx, dy)
                     else -> processCurveFlick(dx, dy)
                 }
@@ -409,6 +460,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                 if (mUsePopup) setupPopupTextView()
                 return true
             }
+
             MotionEvent.ACTION_UP -> release()
         }
         return super.onModifiedTouchEvent(me, possiblePoly)
@@ -427,19 +479,21 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
         val hasRightCurve = mCurrentPopupLabels[6].isNotEmpty()
 
         val newState = when (val dAngle = diamondAngle(dx, dy)) {
-            in 0.5f..1.5f   -> EnumSet.of(FlickState.DOWN)
-            in 1.5f..2.5f  -> EnumSet.of(FlickState.LEFT)
+            in 0.5f..1.5f -> EnumSet.of(FlickState.DOWN)
+            in 1.5f..2.5f -> EnumSet.of(FlickState.LEFT)
             in 2.29f..2.71f -> when {
-                    (hasLeftCurve)  -> EnumSet.of(FlickState.NONE, FlickState.CURVE_LEFT)
-                    (dAngle < 2.5f) -> EnumSet.of(FlickState.LEFT)
-                    else -> EnumSet.of(FlickState.UP)
-                }
+                (hasLeftCurve) -> EnumSet.of(FlickState.NONE, FlickState.CURVE_LEFT)
+                (dAngle < 2.5f) -> EnumSet.of(FlickState.LEFT)
+                else -> EnumSet.of(FlickState.UP)
+            }
+
             in 2.5f..3.5f -> EnumSet.of(FlickState.UP)
             in 3.29f..3.71f -> when {
-                    (hasRightCurve) -> EnumSet.of(FlickState.NONE, FlickState.CURVE_RIGHT)
-                    (dAngle < 3.5f) -> EnumSet.of(FlickState.UP)
-                    else -> EnumSet.of(FlickState.RIGHT)
-                }
+                (hasRightCurve) -> EnumSet.of(FlickState.NONE, FlickState.CURVE_RIGHT)
+                (dAngle < 3.5f) -> EnumSet.of(FlickState.UP)
+                else -> EnumSet.of(FlickState.RIGHT)
+            }
+
             else -> EnumSet.of(FlickState.RIGHT)
         }
         if (mFlickState != newState) {
@@ -461,36 +515,40 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
         val hasLeftCurve = mCurrentPopupLabels[left + 0].isNotEmpty()
         val hasRightCurve = mCurrentPopupLabels[left + 1].isNotEmpty()
 
-        val newstate = when {
+        val newState = when {
             mFlickState.contains(FlickState.LEFT) -> when (diamondAngle(-dx, -dy)) {
                 in 0.45f..2f -> EnumSet.of(FlickState.LEFT, FlickState.CURVE_RIGHT)
                 in 2f..3.55f -> EnumSet.of(FlickState.LEFT, FlickState.CURVE_LEFT)
                 else -> EnumSet.of(FlickState.LEFT)
             }
+
             mFlickState.contains(FlickState.UP) -> when (diamondAngle(-dy, dx)) {
                 in 0.45f..2f -> EnumSet.of(FlickState.UP, FlickState.CURVE_RIGHT)
                 in 2f..3.55f -> EnumSet.of(FlickState.UP, FlickState.CURVE_LEFT)
                 else -> EnumSet.of(FlickState.UP)
             }
+
             mFlickState.contains(FlickState.RIGHT) -> when (diamondAngle(dx, dy)) {
                 in 0.45f..2f -> EnumSet.of(FlickState.RIGHT, FlickState.CURVE_RIGHT)
                 in 2f..3.55f -> EnumSet.of(FlickState.RIGHT, FlickState.CURVE_LEFT)
                 else -> EnumSet.of(FlickState.RIGHT)
             }
+
             mFlickState.contains(FlickState.DOWN) -> when (diamondAngle(dy, -dx)) {
                 in 0.45f..2f -> EnumSet.of(FlickState.DOWN, FlickState.CURVE_RIGHT)
                 in 2f..3.55f -> EnumSet.of(FlickState.DOWN, FlickState.CURVE_LEFT)
                 else -> EnumSet.of(FlickState.DOWN)
             }
+
             else -> return
         }
-        if (mFlickState != newstate &&
-            (!isCurve(newstate) ||
-                    (hasLeftCurve && isLeftCurve(newstate)) ||
-                    (hasRightCurve && isRightCurve(newstate))
-            )
+        if (mFlickState != newState &&
+            (!isCurve(newState) ||
+                    (hasLeftCurve && isLeftCurve(newState)) ||
+                    (hasRightCurve && isRightCurve(newState))
+                    )
         ) {
-            mFlickState = newstate
+            mFlickState = newState
             performHapticFeedback(skkPrefs.haptic)
         }
     }
@@ -514,7 +572,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
 
         val labels = mFlickGuideLabelList.get(primaryCode)
         if (labels == null) {
-            mCurrentPopupLabels = (0..14).map{ "" }.toTypedArray()
+            mCurrentPopupLabels = (0..14).map { "" }.toTypedArray()
             return
         }
 
@@ -524,7 +582,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
             } else {
                 mCurrentPopupLabels[i] = checkNotNull(
                     hiragana2katakana(labels[i], reversed = true)
-                ) { "BUG: invalid popup label!!"}
+                ) { "BUG: invalid popup label!!" }
             }
         }
         setupPopupTextView()
@@ -535,14 +593,14 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
             val popup = checkNotNull(mPopup) { "BUG: popup is null!!" }
             if (mFixedPopup) {
                 popup.showAtLocation(
-                        this, android.view.Gravity.NO_GRAVITY,
-                        mFixedPopupPos[0], mFixedPopupPos[1]
+                    this, android.view.Gravity.NO_GRAVITY,
+                    mFixedPopupPos[0], mFixedPopupPos[1]
                 )
             } else {
                 popup.showAtLocation(
-                        this, android.view.Gravity.NO_GRAVITY,
-                        mFlickStartX.toInt() + mPopupOffset[0],
-                        mFlickStartY.toInt() + mPopupOffset[1]
+                    this, android.view.Gravity.NO_GRAVITY,
+                    mFlickStartX.toInt() + mPopupOffset[0],
+                    mFlickStartY.toInt() + mPopupOffset[1]
                 )
             }
         }
@@ -569,13 +627,16 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                 if (!isCapsLocked) isShifted = false
                 mService.keyDownUp(KeyEvent.KEYCODE_DEL)
             }
+
             KEYCODE_GODAN_LEFT -> if (!mArrowFlicked && !mService.handleDpad(KeyEvent.KEYCODE_DPAD_LEFT)) {
                 mService.keyDownUp(KeyEvent.KEYCODE_DPAD_LEFT)
             }
+
             KEYCODE_GODAN_RIGHT -> if (!mArrowFlicked && !mService.handleDpad(KeyEvent.KEYCODE_DPAD_RIGHT)) {
                 mService.keyDownUp(KeyEvent.KEYCODE_DPAD_RIGHT)
             }
-            KEYCODE_GODAN_SPACE  -> if (isShifted) {
+
+            KEYCODE_GODAN_SPACE -> if (isShifted) {
                 val intent = Intent(context, SKKSettingsActivity::class.java)
                     .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 context.startActivity(intent)
@@ -601,7 +662,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
             // onKey で消費済み
             Keyboard.KEYCODE_DELETE, Keyboard.KEYCODE_CAPSLOCK -> {}
             // repeatable のフリック
-            KEYCODE_GODAN_SPACE  -> if (mFlickState == EnumSet.of(FlickState.UP))
+            KEYCODE_GODAN_SPACE -> if (mFlickState == EnumSet.of(FlickState.UP))
                 mService.sendToMushroom()
             // repeatable 以外
             Keyboard.KEYCODE_SHIFT -> {
@@ -610,6 +671,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                         isShifted = !isShifted
                         isCapsLocked = false
                     }
+
                     EnumSet.of(FlickState.UP) -> {
                         isShifted = true
                         isCapsLocked = true
@@ -617,7 +679,8 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                 }
                 onSetShifted(isShifted)
             }
-            KEYCODE_GODAN_ENTER  -> if (!mService.handleEnter()) mService.pressEnter()
+
+            KEYCODE_GODAN_ENTER -> if (!mService.handleEnter()) mService.pressEnter()
             KEYCODE_GODAN_CANCEL -> {
                 when (mFlickState) {
                     EnumSet.of(FlickState.NONE) -> mService.handleCancel()
@@ -627,6 +690,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                     EnumSet.of(FlickState.DOWN) -> mService.googleTransliterate()
                 }
             }
+
             KEYCODE_GODAN_KOMOJI -> {
                 val smallState = if (skkPrefs.useSoftCancelKey) FlickState.UP else FlickState.NONE
                 val cancelState = if (skkPrefs.useSoftCancelKey) FlickState.NONE else FlickState.UP
@@ -638,18 +702,23 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                             else
                                 SKKEngine.LAST_CONVERSION_SMALL
                         )
+
                     EnumSet.of(FlickState.LEFT) ->
                         mService.changeLastChar(SKKEngine.LAST_CONVERSION_DAKUTEN)
+
                     EnumSet.of(cancelState) ->
                         mService.handleCancel()
+
                     EnumSet.of(FlickState.RIGHT) ->
                         mService.changeLastChar(SKKEngine.LAST_CONVERSION_HANDAKUTEN)
-                    EnumSet.of(FlickState.DOWN)  -> {
+
+                    EnumSet.of(FlickState.DOWN) -> {
                         mService.changeLastChar(SKKEngine.LAST_CONVERSION_SHIFT)
                     }
                 }
             }
-            KEYCODE_GODAN_PASTE  -> mService.pasteClip()
+
+            KEYCODE_GODAN_PASTE -> mService.pasteClip()
             KEYCODE_GODAN_GOOGLE -> mService.googleTransliterate()
             KEYCODE_GODAN_CHAR_L -> {
                 when (mService.engineState) {
@@ -658,6 +727,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                     else -> mService.processKey(if (isShifted) 'L'.code else 'l'.code)
                 }
             }
+
             KEYCODE_GODAN_CHAR_A,
             KEYCODE_GODAN_CHAR_K,
             KEYCODE_GODAN_CHAR_H,
@@ -680,11 +750,13 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                     mFlickState.contains(FlickState.RIGHT) -> 3
                     mFlickState.contains(FlickState.DOWN) -> 4
                     else -> throw IllegalStateException("mFlickState is $mFlickState")
-                }.let { when {
-                    isLeftCurve(mFlickState) -> it * 2 + 5
-                    isRightCurve(mFlickState) -> it * 2 + 6
-                    else -> it
-                } }
+                }.let {
+                    when {
+                        isLeftCurve(mFlickState) -> it * 2 + 5
+                        isRightCurve(mFlickState) -> it * 2 + 6
+                        else -> it
+                    }
+                }
                 val popupText = mPopupTextView?.getOrNull(flickIndex)?.text ?: ""
                 if (popupText.length == 1) {
                     val code = when (val guidedCode = popupText[0].code) {
@@ -694,6 +766,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                             mService.processKey('z'.code)
                             '.'.code
                         }
+
                         '□'.code -> ' '.code
                         'ー'.code -> '-'.code
                         '〜'.code -> '~'.code
@@ -701,10 +774,12 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                             mService.processKey('z'.code)
                             '['.code
                         }
+
                         '』'.code -> {
                             mService.processKey('z'.code)
                             ']'.code
                         }
+
                         '、'.code -> ','.code
                         '。'.code -> '.'.code
                         '←'.code, '↑'.code, '→'.code, '↓'.code -> {
@@ -714,9 +789,16 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                                 '↑' -> 'k'.code
                                 '→' -> 'l'.code
                                 '↓' -> 'j'.code
-                                else -> throw IllegalArgumentException("Char($guidedCode) is not an arrow: ${Char(guidedCode)}")
+                                else -> throw IllegalArgumentException(
+                                    "Char($guidedCode) is not an arrow: ${
+                                        Char(
+                                            guidedCode
+                                        )
+                                    }"
+                                )
                             }
                         }
+
                         '￥'.code -> {
                             if (mService.engineState.isTransient) {
                                 '\\'.code // 無効だけど
@@ -725,15 +807,18 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                                 0
                             }
                         }
+
                         'ゃ'.code, 'ぃ'.code, 'ゅ'.code, 'ぇ'.code, 'ょ'.code,
                         'ャ'.code, 'ィ'.code, 'ュ'.code, 'ェ'.code, 'ョ'.code -> {
                             mService.processKey('y'.code)
                             getVowel(Char(guidedCode).toString())?.code ?: 0
                         }
+
                         'ん'.code, 'ン'.code -> {
                             if (!mService.isComposingN) mService.processKey('n'.code)
                             'n'.code
                         }
+
                         else -> {
                             mService.commitTextSKK(Char(guidedCode).toString())
                             0
@@ -748,6 +833,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                         if (mIsASCII) mService.handleKanaKey() // ひらがなを経由
                         mService.processKey(17)
                     }
+
                     "記号" -> mService.symbolCandidates(isShifted)
                     "絵☻" -> mService.emojiCandidates(isShifted)
                     else -> if (
@@ -755,8 +841,8 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                         popupText[0] in listOf(
                             'あ', 'い', 'う', 'え', 'お',
                             'ア', 'イ', 'ウ', 'エ', 'オ'
-                        ))
-                    {
+                        )
+                    ) {
                         mPopupTextView?.getOrNull(0)?.text?.let { vowelStr ->
                             when (val vowel = vowelStr.first()) {
                                 'A', 'I', 'U', 'E', 'O' -> {
@@ -839,13 +925,18 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
         private const val KEYCODE_GODAN_CHAR_Q = -1005
         private const val KEYCODE_GODAN_KOMOJI = -1006
         private const val KEYCODE_GODAN_ENTER = -1007
-//        private const val KEYCODE_GODAN_SEARCH = -1008
+
+        //private const val KEYCODE_GODAN_SEARCH = -1008
         private const val KEYCODE_GODAN_CANCEL = -1009
-//        private const val KEYCODE_GODAN_TOKANA = -1010
+
+        //private const val KEYCODE_GODAN_TO_KANA = -1010
         private const val KEYCODE_GODAN_PASTE = -1011
-//        private const val KEYCODE_GODAN_SPEECH = -1012
+
+        //private const val KEYCODE_GODAN_SPEECH = -1012
         private const val KEYCODE_GODAN_GOOGLE = -1013
+
         private enum class FlickState { NONE, LEFT, UP, RIGHT, DOWN, CURVE_LEFT, CURVE_RIGHT }
-        private val POPUP_LABELS_NULL = (0..14).map{ "" }
+
+        private val POPUP_LABELS_NULL = (0..14).map { "" }
     }
 }

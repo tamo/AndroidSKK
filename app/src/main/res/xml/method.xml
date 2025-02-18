@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!--
+<?xml version="1.0" encoding="utf-8"?><!--
 /**
  * Copyright (c) 2008, The Android Open Source Project
  *
@@ -21,6 +20,5 @@
 <!-- for the Search Manager. -->
 
 <input-method xmlns:android="http://schemas.android.com/apk/res/android"
-	android:settingsActivity="jp.deadend.noname.skk.SKKSettingsActivity"
-	android:isDefault="true"
-/>
+    android:isDefault="true"
+    android:settingsActivity="jp.deadend.noname.skk.SKKSettingsActivity" />

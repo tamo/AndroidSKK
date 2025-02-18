@@ -1,62 +1,123 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Keyboard xmlns:app="http://schemas.android.com/apk/res-auto"
-    app:keyWidth="10%p"
     app:horizontalGap="0dip"
-    app:verticalGap="0dip"
-    app:keyHeight="8%p">
+    app:keyHeight="8%p"
+    app:keyWidth="10%p"
+    app:verticalGap="0dip">
 
     <Row>
-        <Key app:keyLabel="1" app:keyEdgeFlags="left"/>
-        <Key app:keyLabel="2"/>
-        <Key app:keyLabel="3"/>
-        <Key app:keyLabel="4"/>
-        <Key app:keyLabel="5"/>
-        <Key app:keyLabel="6"/>
-        <Key app:keyLabel="7"/>
-        <Key app:keyLabel="8"/>
-        <Key app:keyLabel="9"/>
-        <Key app:keyLabel="0" app:keyEdgeFlags="right"/>
+        <Key
+            app:keyEdgeFlags="left"
+            app:keyLabel="1" />
+        <Key app:keyLabel="2" />
+        <Key app:keyLabel="3" />
+        <Key app:keyLabel="4" />
+        <Key app:keyLabel="5" />
+        <Key app:keyLabel="6" />
+        <Key app:keyLabel="7" />
+        <Key app:keyLabel="8" />
+        <Key app:keyLabel="9" />
+        <Key
+            app:keyEdgeFlags="right"
+            app:keyLabel="0" />
     </Row>
 
     <Row>
-        <Key app:keyLabel="!" app:shiftedLabel="&lt;" app:keyEdgeFlags="left"/>
-        <Key app:keyLabel="\@" app:shiftedLabel="&gt;"/>
-        <Key app:keyLabel="\#" app:shiftedLabel="|"/>
-        <Key app:keyLabel="$" app:shiftedLabel="\\"/>
-        <Key app:keyLabel="%" app:shiftedLabel="~"/>
-        <Key app:keyLabel="^" app:shiftedLabel="`"/>
-        <Key app:keyLabel="&amp;" app:shiftedLabel="¡"/>
-        <Key app:keyLabel="*" app:shiftedLabel="¿"/>
-        <Key app:keyLabel="(" app:shiftedLabel="“"/>
-        <Key app:keyLabel=")" app:shiftedLabel="”" app:keyEdgeFlags="right"/>
+        <Key
+            app:keyEdgeFlags="left"
+            app:keyLabel="!"
+            app:shiftedLabel="&lt;" />
+        <Key
+            app:keyLabel="\@"
+            app:shiftedLabel="&gt;" />
+        <Key
+            app:keyLabel="\#"
+            app:shiftedLabel="|" />
+        <Key
+            app:keyLabel="$"
+            app:shiftedLabel="\\" />
+        <Key
+            app:keyLabel="%"
+            app:shiftedLabel="~" />
+        <Key
+            app:keyLabel="^"
+            app:shiftedLabel="`" />
+        <Key
+            app:keyLabel="&amp;"
+            app:shiftedLabel="¡" />
+        <Key
+            app:keyLabel="*"
+            app:shiftedLabel="¿" />
+        <Key
+            app:keyLabel="("
+            app:shiftedLabel="“" />
+        <Key
+            app:keyEdgeFlags="right"
+            app:keyLabel=")"
+            app:shiftedLabel="”" />
     </Row>
 
     <Row>
-        <Key app:codes="-1" app:keyIcon="@drawable/ic_keyboard_shift"
-                app:keyWidth="15%p"
-                app:isSticky="true" app:keyEdgeFlags="left"/>
-        <Key app:keyLabel="-" app:shiftedLabel="_"/>
-        <Key app:keyLabel="=" app:shiftedLabel="+"/>
-        <Key app:keyLabel="[" app:shiftedLabel="{"/>
-        <Key app:keyLabel="]" app:shiftedLabel="}"/>
-        <Key app:keyLabel=";" app:shiftedLabel=":"/>
-        <Key app:keyLabel="\'" app:shiftedLabel="&quot;"/>
-        <Key app:keyLabel="/" app:shiftedLabel="\?"/>
-        <Key app:codes="-5" app:keyIcon="@drawable/ic_keyboard_backspace"
-                app:keyWidth="15%p" app:keyEdgeFlags="right"
-                app:isRepeatable="true"/>
+        <Key
+            app:codes="-1"
+            app:isSticky="true"
+            app:keyEdgeFlags="left"
+            app:keyIcon="@drawable/ic_keyboard_shift"
+            app:keyWidth="15%p" />
+        <Key
+            app:keyLabel="-"
+            app:shiftedLabel="_" />
+        <Key
+            app:keyLabel="="
+            app:shiftedLabel="+" />
+        <Key
+            app:keyLabel="["
+            app:shiftedLabel="{" />
+        <Key
+            app:keyLabel="]"
+            app:shiftedLabel="}" />
+        <Key
+            app:keyLabel=";"
+            app:shiftedLabel=":" />
+        <Key
+            app:keyLabel="\'"
+            app:shiftedLabel="&quot;" />
+        <Key
+            app:keyLabel="/"
+            app:shiftedLabel="\?" />
+        <Key
+            app:codes="-5"
+            app:isRepeatable="true"
+            app:keyEdgeFlags="right"
+            app:keyIcon="@drawable/ic_keyboard_backspace"
+            app:keyWidth="15%p" />
     </Row>
 
-    <Row  app:rowEdgeFlags="bottom">
-        <Key app:codes="-1008" app:keyLabel="かな" app:downLabel="Flick"
-                app:keyWidth="20%p" app:keyEdgeFlags="left"/>
-        <Key app:codes="-1010" app:keyLabel="abc" app:downLabel="CXL"
-                app:keyWidth="15%p"/>
-        <Key app:codes="32" app:keyIcon="@drawable/ic_keyboard_spacebar"
-                app:keyWidth="30%p" app:isRepeatable="true"/>
-        <Key app:keyLabel="." app:shiftedLabel=","
-                app:keyWidth="15%p"/>
-        <Key app:codes="-1011" app:keyIcon="@drawable/ic_keyboard_return"
-                app:keyWidth="20%p" app:keyEdgeFlags="right"/>
+    <Row app:rowEdgeFlags="bottom">
+        <Key
+            app:codes="-1008"
+            app:downLabel="Flick"
+            app:keyEdgeFlags="left"
+            app:keyLabel="かな"
+            app:keyWidth="20%p" />
+        <Key
+            app:codes="-1010"
+            app:downLabel="CXL"
+            app:keyLabel="abc"
+            app:keyWidth="15%p" />
+        <Key
+            app:codes="32"
+            app:isRepeatable="true"
+            app:keyIcon="@drawable/ic_keyboard_space_bar"
+            app:keyWidth="30%p" />
+        <Key
+            app:keyLabel="."
+            app:keyWidth="15%p"
+            app:shiftedLabel="," />
+        <Key
+            app:codes="-1011"
+            app:keyEdgeFlags="right"
+            app:keyIcon="@drawable/ic_keyboard_return"
+            app:keyWidth="20%p" />
     </Row>
 </Keyboard>

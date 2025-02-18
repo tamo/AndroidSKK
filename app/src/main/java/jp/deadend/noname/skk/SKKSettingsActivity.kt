@@ -33,23 +33,27 @@ class SKKSettingsActivity : AppCompatActivity() {
             setPreferencesFromResource(R.xml.prefs_main, rootKey)
         }
     }
+
     class SettingsSoftKeyFragment : PreferenceFragmentCompat() {
         override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
-            setPreferencesFromResource(R.xml.prefs_softkey, rootKey)
+            setPreferencesFromResource(R.xml.prefs_soft_key, rootKey)
 
             // 触感のプレビュー
-            findPreference<Preference>(getString(R.string.prefkey_haptic))
+            findPreference<Preference>(getString(R.string.pref_haptic))
                 ?.setOnPreferenceChangeListener { _, haptic ->
-                    ViewCompat.performHapticFeedback(requireActivity().window.decorView, haptic as Int)
+                    ViewCompat.performHapticFeedback(
+                        requireActivity().window.decorView,
+                        haptic as Int
+                    )
                 }
         }
     }
 
     class SettingsHardKeyFragment : PreferenceFragmentCompat() {
         override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
-            setPreferencesFromResource(R.xml.prefs_hardkey, rootKey)
+            setPreferencesFromResource(R.xml.prefs_hard_key, rootKey)
 
-            findPreference<Preference>(getString(R.string.prefkey_kana_key))?.apply {
+            findPreference<Preference>(getString(R.string.pref_kana_key))?.apply {
                 setSummary(getKeyName(skkPrefs.kanaKey))
                 setOnPreferenceClickListener {
                     setSummary("Push any key...")
@@ -58,7 +62,7 @@ class SKKSettingsActivity : AppCompatActivity() {
                 }
             }
 
-            findPreference<Preference>(getString(R.string.prefkey_cancel_key))?.apply {
+            findPreference<Preference>(getString(R.string.pref_cancel_key))?.apply {
                 setSummary(getKeyName(skkPrefs.cancelKey))
                 setOnPreferenceClickListener {
                     setSummary("Push any key...")
@@ -112,7 +116,7 @@ class SKKSettingsActivity : AppCompatActivity() {
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean = keyPref?.let { pref ->
-        dlog("dispatchKeyEvent($event)")
+        dLog("dispatchKeyEvent($event)")
         when (event.keyCode) {
             KeyEvent.KEYCODE_BACK, KeyEvent.KEYCODE_ENTER -> false
             KeyEvent.KEYCODE_HOME -> true
@@ -137,6 +141,7 @@ class SKKSettingsActivity : AppCompatActivity() {
             android.R.id.home -> {
                 onBackPressedDispatcher.onBackPressed()
             }
+
             else -> return super.onOptionsItemSelected(item)
         }
 

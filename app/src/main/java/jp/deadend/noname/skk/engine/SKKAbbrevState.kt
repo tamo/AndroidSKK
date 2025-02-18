@@ -13,10 +13,10 @@ object SKKAbbrevState : SKKState {
         context.changeState(SKKHiraganaState)
     }
 
-    override fun processKey(context: SKKEngine, pcode: Int) {
+    override fun processKey(context: SKKEngine, keyCode: Int) {
         context.apply {
             // スペースで変換するかそのままComposingに積む
-            when (pcode) {
+            when (keyCode) {
                 ' '.code -> if (mKanjiKey.isNotEmpty()) conversionStart(mKanjiKey)
                 17 -> {
                     // 全角変換
@@ -25,12 +25,13 @@ object SKKAbbrevState : SKKState {
                     }
                     handleKanaKey(context)
                 }
+
                 -1010 -> {
                     changeState(SKKKanjiState)
                 }
 
                 else -> {
-                    mKanjiKey.append(pcode.toChar())
+                    mKanjiKey.append(keyCode.toChar())
                     setComposingTextSKK(mKanjiKey)
                     updateSuggestions(mKanjiKey.toString())
                 }

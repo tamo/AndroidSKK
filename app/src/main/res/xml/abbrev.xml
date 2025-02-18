@@ -1,58 +1,143 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Keyboard xmlns:app="http://schemas.android.com/apk/res-auto"
-    app:keyWidth="10%p"
     app:horizontalGap="0dip"
-    app:verticalGap="0dip"
-    app:keyHeight="8%p">
+    app:keyHeight="8%p"
+    app:keyWidth="10%p"
+    app:verticalGap="0dip">
 
     <Row>
-        <Key app:keyLabel="q" app:shiftedLabel="Q" app:downLabel="1" app:keyEdgeFlags="left"/>
-        <Key app:keyLabel="w" app:shiftedLabel="W" app:downLabel="2"/>
-        <Key app:keyLabel="e" app:shiftedLabel="E" app:downLabel="3"/>
-        <Key app:keyLabel="r" app:shiftedLabel="R" app:downLabel="4"/>
-        <Key app:keyLabel="t" app:shiftedLabel="T" app:downLabel="5"/>
-        <Key app:keyLabel="y" app:shiftedLabel="Y" app:downLabel="6"/>
-        <Key app:keyLabel="u" app:shiftedLabel="U" app:downLabel="7"/>
-        <Key app:keyLabel="i" app:shiftedLabel="I" app:downLabel="8"/>
-        <Key app:keyLabel="o" app:shiftedLabel="O" app:downLabel="9"/>
-        <Key app:keyLabel="p" app:shiftedLabel="P" app:downLabel="0" app:keyEdgeFlags="right"/>
+        <Key
+            app:downLabel="1"
+            app:keyEdgeFlags="left"
+            app:keyLabel="q"
+            app:shiftedLabel="Q" />
+        <Key
+            app:downLabel="2"
+            app:keyLabel="w"
+            app:shiftedLabel="W" />
+        <Key
+            app:downLabel="3"
+            app:keyLabel="e"
+            app:shiftedLabel="E" />
+        <Key
+            app:downLabel="4"
+            app:keyLabel="r"
+            app:shiftedLabel="R" />
+        <Key
+            app:downLabel="5"
+            app:keyLabel="t"
+            app:shiftedLabel="T" />
+        <Key
+            app:downLabel="6"
+            app:keyLabel="y"
+            app:shiftedLabel="Y" />
+        <Key
+            app:downLabel="7"
+            app:keyLabel="u"
+            app:shiftedLabel="U" />
+        <Key
+            app:downLabel="8"
+            app:keyLabel="i"
+            app:shiftedLabel="I" />
+        <Key
+            app:downLabel="9"
+            app:keyLabel="o"
+            app:shiftedLabel="O" />
+        <Key
+            app:downLabel="0"
+            app:keyEdgeFlags="right"
+            app:keyLabel="p"
+            app:shiftedLabel="P" />
     </Row>
 
     <Row>
-        <Key app:keyLabel="a" app:shiftedLabel="A" app:horizontalGap="5%p" app:keyEdgeFlags="left"/>
-        <Key app:keyLabel="s" app:shiftedLabel="S"/>
-        <Key app:keyLabel="d" app:shiftedLabel="D"/>
-        <Key app:keyLabel="f" app:shiftedLabel="F"/>
-        <Key app:keyLabel="g" app:shiftedLabel="G"/>
-        <Key app:keyLabel="h" app:shiftedLabel="H"/>
-        <Key app:keyLabel="j" app:shiftedLabel="J"/>
-        <Key app:keyLabel="k" app:shiftedLabel="K"/>
-        <Key app:keyLabel="l" app:shiftedLabel="L" app:keyEdgeFlags="right"/>
+        <Key
+            app:horizontalGap="5%p"
+            app:keyEdgeFlags="left"
+            app:keyLabel="a"
+            app:shiftedLabel="A" />
+        <Key
+            app:keyLabel="s"
+            app:shiftedLabel="S" />
+        <Key
+            app:keyLabel="d"
+            app:shiftedLabel="D" />
+        <Key
+            app:keyLabel="f"
+            app:shiftedLabel="F" />
+        <Key
+            app:keyLabel="g"
+            app:shiftedLabel="G" />
+        <Key
+            app:keyLabel="h"
+            app:shiftedLabel="H" />
+        <Key
+            app:keyLabel="j"
+            app:shiftedLabel="J" />
+        <Key
+            app:keyLabel="k"
+            app:shiftedLabel="K" />
+        <Key
+            app:keyEdgeFlags="right"
+            app:keyLabel="l"
+            app:shiftedLabel="L" />
     </Row>
 
     <Row>
-        <Key app:codes="-1,-7" app:keyIcon="@drawable/ic_keyboard_shift"
-            app:keyWidth="15%p" app:keyEdgeFlags="left"/>
-        <Key app:keyLabel="z" app:shiftedLabel="Z"/>
-        <Key app:keyLabel="x" app:shiftedLabel="X"/>
-        <Key app:keyLabel="c" app:shiftedLabel="C"/>
-        <Key app:keyLabel="v" app:shiftedLabel="V"/>
-        <Key app:keyLabel="b" app:shiftedLabel="B"/>
-        <Key app:keyLabel="n" app:shiftedLabel="N"/>
-        <Key app:keyLabel="m" app:shiftedLabel="M"/>
-        <Key app:codes="-5" app:keyIcon="@drawable/ic_keyboard_backspace"
-            app:keyWidth="15%p" app:keyEdgeFlags="right"
-            app:isRepeatable="true"/>
+        <Key
+            app:codes="-1,-7"
+            app:keyEdgeFlags="left"
+            app:keyIcon="@drawable/ic_keyboard_shift"
+            app:keyWidth="15%p" />
+        <Key
+            app:keyLabel="z"
+            app:shiftedLabel="Z" />
+        <Key
+            app:keyLabel="x"
+            app:shiftedLabel="X" />
+        <Key
+            app:keyLabel="c"
+            app:shiftedLabel="C" />
+        <Key
+            app:keyLabel="v"
+            app:shiftedLabel="V" />
+        <Key
+            app:keyLabel="b"
+            app:shiftedLabel="B" />
+        <Key
+            app:keyLabel="n"
+            app:shiftedLabel="N" />
+        <Key
+            app:keyLabel="m"
+            app:shiftedLabel="M" />
+        <Key
+            app:codes="-5"
+            app:isRepeatable="true"
+            app:keyEdgeFlags="right"
+            app:keyIcon="@drawable/ic_keyboard_backspace"
+            app:keyWidth="15%p" />
     </Row>
 
     <Row app:rowEdgeFlags="bottom">
-        <Key app:codes="-1008" app:keyLabel="(確定)※変更されます" app:downLabel="(かな)※変更されます"
-                app:keyWidth="20%p" app:keyEdgeFlags="left"/>
-        <Key app:codes="-1010" app:keyLabel="全角" app:downLabel="CXL"
-                app:keyWidth="15%p"/>
-        <Key app:codes="32" app:keyIcon="@drawable/ic_keyboard_spacebar"
-                app:keyWidth="45%p"/>
-        <Key app:codes="-1011" app:keyIcon="@drawable/ic_keyboard_return"
-                app:keyWidth="20%p" app:keyEdgeFlags="right"/>
+        <Key
+            app:codes="-1008"
+            app:downLabel="(かな)※変更されます"
+            app:keyEdgeFlags="left"
+            app:keyLabel="(確定)※変更されます"
+            app:keyWidth="20%p" />
+        <Key
+            app:codes="-1010"
+            app:downLabel="CXL"
+            app:keyLabel="全角"
+            app:keyWidth="15%p" />
+        <Key
+            app:codes="32"
+            app:keyIcon="@drawable/ic_keyboard_space_bar"
+            app:keyWidth="45%p" />
+        <Key
+            app:codes="-1011"
+            app:keyEdgeFlags="right"
+            app:keyIcon="@drawable/ic_keyboard_return"
+            app:keyWidth="20%p" />
     </Row>
 </Keyboard>

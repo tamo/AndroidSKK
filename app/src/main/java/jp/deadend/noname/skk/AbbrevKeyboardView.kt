@@ -1,15 +1,19 @@
 package jp.deadend.noname.skk
 
 import android.content.Context
-import android.view.KeyEvent
 import android.util.AttributeSet
+import android.view.KeyEvent
 import android.view.MotionEvent
 import jp.deadend.noname.skk.engine.SKKAbbrevState
 import jp.deadend.noname.skk.engine.SKKState
 
 class AbbrevKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
-    constructor(context: Context, attrs: AttributeSet?, defStyle: Int) : super(context, attrs, defStyle)
+    constructor(context: Context, attrs: AttributeSet?, defStyle: Int) : super(
+        context,
+        attrs,
+        defStyle
+    )
 
     override fun setService(service: SKKService) {
         super.setService(service)
@@ -40,6 +44,7 @@ class AbbrevKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                 flickStartY = me.y
                 isFlicked = FLICK_NONE
             }
+
             MotionEvent.ACTION_MOVE -> {
                 val dx = me.x - flickStartX
                 val dy = me.y - flickStartY
@@ -51,10 +56,12 @@ class AbbrevKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                             isFlicked = FLICK_UP
                             return true
                         }
+
                         dy > 0 && dx2 < dy2 -> {
                             isFlicked = FLICK_DOWN
                             return true
                         }
+
                         else -> {
                             isFlicked = FLICK_NONE
                             // 左右に外れたので別のキーになるかもしれないので return しない
@@ -95,33 +102,39 @@ class AbbrevKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                         isShifted = !isShifted
                         isCapsLocked = false
                     }
+
                     else -> {
                         isShifted = true
                         isCapsLocked = true
                     }
                 }
             }
+
             KEYCODE_ABBREV_ENTER -> if (!mService.handleEnter()) mService.pressEnter()
-            KEYCODE_ABBREV_TOJP -> {
+            KEYCODE_ABBREV_TO_JP -> {
                 when (isFlicked) {
                     if (skkPrefs.preferFlick) FLICK_NONE else FLICK_DOWN -> mService.handleKanaKey()
                     if (skkPrefs.preferFlick) FLICK_DOWN else FLICK_NONE -> mService.processKey(-1010)
                 }
             }
+
             KEYCODE_ABBREV_ZENKAKU -> {
                 when (isFlicked) {
                     FLICK_NONE -> mService.processKey(17)
                     FLICK_DOWN -> mService.handleCancel()
                 }
             }
+
             else -> {
                 val shiftedCode = keyboard.shiftedCodes[primaryCode] ?: 0
                 val downCode = keyboard.downCodes[primaryCode] ?: 0
                 val code = when {
                     isFlicked == FLICK_DOWN ->
                         if (downCode > 0) downCode else primaryCode
+
                     isShifted xor (isFlicked == FLICK_UP) ->
                         if (shiftedCode > 0) shiftedCode else primaryCode
+
                     else -> primaryCode
                 }
                 mService.processKey(code)
@@ -133,7 +146,7 @@ class AbbrevKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
     }
 
     override fun setKeyState(state: SKKState): AbbrevKeyboardView {
-        val kanaKey = keyboard.keys.find { it.codes[0] == KEYCODE_ABBREV_TOJP }
+        val kanaKey = keyboard.keys.find { it.codes[0] == KEYCODE_ABBREV_TO_JP }
         kanaKey?.label = if (skkPrefs.preferFlick) "確定" else "かな"
         kanaKey?.downLabel = if (skkPrefs.preferFlick) "かな" else "確定"
 
@@ -154,10 +167,11 @@ class AbbrevKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
     override fun swipeUp() {}
 
     companion object {
-        private const val KEYCODE_ABBREV_TOJP     = -1008
+        private const val KEYCODE_ABBREV_TO_JP = -1008
+
         // private const val KEYCODE_ABBREV_CANCEL   = -1009
-        private const val KEYCODE_ABBREV_ZENKAKU  = -1010
-        private const val KEYCODE_ABBREV_ENTER    = -1011
+        private const val KEYCODE_ABBREV_ZENKAKU = -1010
+        private const val KEYCODE_ABBREV_ENTER = -1011
         private const val FLICK_UP = 1
         private const val FLICK_NONE = 0
         private const val FLICK_DOWN = -1
