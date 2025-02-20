@@ -9,10 +9,6 @@ class SKKPrefs(context: Context) {
     private val prefs = PreferenceManager.getDefaultSharedPreferences(context)
     private val res = context.resources
 
-//    var prefsVersion: Int
-//        get() = prefs.getInt(res.getString(R.string.pref_prefversion), -1)
-//        set(value) = prefs.edit().putInt(res.getString(R.string.pref_prefversion), value).apply()
-
     // prefs_main
     var kutoutenType: String
         get() = prefs.getString(res.getString(R.string.pref_kutouten_type), null) ?: "jp"
@@ -38,6 +34,14 @@ class SKKPrefs(context: Context) {
         get() = prefs.getInt(res.getString(R.string.pref_candidates_emoji_lines), 4)
         set(value) = prefs.edit()
             .putInt(res.getString(R.string.pref_candidates_emoji_lines), value).apply()
+
+    // 辞書管理
+    val defaultDictOrder =
+        "ユーザー辞書/${res.getString(R.string.dict_name_user)}/絵文字辞書/${res.getString(R.string.dict_name_emoji)}/"
+    var dictOrder: String
+        get() = prefs.getString(res.getString(R.string.pref_dict_order), defaultDictOrder)
+            ?: defaultDictOrder
+        set(value) = prefs.edit().putString(res.getString(R.string.pref_dict_order), value).apply()
 
     // prefs_hard_key
     var kanaKey: Int

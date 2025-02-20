@@ -15,7 +15,6 @@ import androidx.core.net.toUri
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
-import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -51,13 +50,6 @@ class SKKDictManager : AppCompatActivity() {
     private lateinit var binding: ActivityDicManagerBinding
     private val mAdapter: TupleAdapter
         get() = binding.dicManagerList.adapter as TupleAdapter
-    private val mPrefDictOrder: String by lazy {
-        PreferenceManager.getDefaultSharedPreferences(this)
-            .getString(
-                getString(R.string.pref_dict_order),
-                "ユーザー辞書/${getString(R.string.dict_name_user)}/絵文字辞書/${getString(R.string.dict_name_emoji)}/"
-            ) ?: throw RuntimeException("null preference")
-    }
     private var mDictList = listOf<Tuple<String, String>>()
 
     private val addDicFileLauncher = registerForActivityResult(
@@ -97,7 +89,7 @@ class SKKDictManager : AppCompatActivity() {
         setSupportActionBar(binding.dicManagerToolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
-        val dicList = mPrefDictOrder // インストール済み辞書をまず列挙
+        val dicList = skkPrefs.dictOrder // インストール済み辞書をまず列挙
             .split("/")
             .dropLastWhile { it.isEmpty() }
             .asSequence()
@@ -179,11 +171,8 @@ class SKKDictManager : AppCompatActivity() {
             .filter { !it.value.startsWith('/') }
             .forEach { dictListString.append(it.key, "/", it.value, "/") }
 
-        if (mPrefDictOrder != dictListString.toString()) {
-            PreferenceManager.getDefaultSharedPreferences(this)
-                .edit()
-                .putString(getString(R.string.pref_dict_order), dictListString.toString())
-                .apply()
+        if (skkPrefs.dictOrder != dictListString.toString()) {
+            skkPrefs.dictOrder = dictListString.toString()
 
             if (SKKService.isRunning()) { // まだ起動していないなら不要
                 val intent = Intent(this@SKKDictManager, SKKService::class.java)
