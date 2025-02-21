@@ -1,6 +1,7 @@
 package jp.deadend.noname.skk
 
 import android.content.Context
+import android.os.Build
 import android.os.Environment
 import android.view.KeyEvent
 import android.view.inputmethod.InputMethodManager
@@ -44,7 +45,12 @@ class SKKSettingsActivityUITest {
     fun testInputMethodSettings() {
         ActivityScenario.launch(SKKSettingsActivity::class.java)
         // インストール直後はシステムのキーボード設定が開くので UiDevice で操作
-        device.wait(Until.findObject(By.text("SKK for Android")), 1000)?.let {
+        device.wait(
+            Until.findObject(
+                By.checkable(true)
+                    .hasAncestor(By.hasChild(By.hasChild(By.text("SKK for Android"))))
+            ), 1000
+        )?.let {
             it.click()
             // Attention ... Use this input method?
             device.wait(Until.findObject(By.text("OK")), 1000).click()
@@ -52,6 +58,11 @@ class SKKSettingsActivityUITest {
             device.wait(Until.findObject(By.text("OK")), 1000).click()
             Thread.sleep(1000) // アニメーション効果で時間がかかることがある
             device.pressBack()
+            // 新しめの Android はインストール直後にまず通知権限を求める
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                device.wait(Until.findObject(By.text("Allow")), 1000)?.click()
+                    ?: device.wait(Until.findObject(By.text("許可")), 1000)?.click()
+            }
             Thread.sleep(1000)
             // ここから UiDevice ではなく espresso で操作できるようになる
         }
