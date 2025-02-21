@@ -111,6 +111,17 @@ fun katakana2hiragana(str: String?): String? {
 }
 
 fun isAlphabet(code: Int) = (code in 0x41..0x5A || code in 0x61..0x7A)
+fun isAlNum(code: Int) = isAlphabet(code) || (code in 0x30..0x39)
+
+fun isHiragana(code: Int) = (code in 0x3041..0x3096)
+fun isKatakana(code: Int) =
+    (hankaku2zenkaku(Char(code).toString())?.first()?.code in 0x30A1..0x30FA)
+
+fun isDakuten(code: Int) = (code == 0x3099 || code == 0x309B)
+fun isHandakuten(code: Int) = (code == 0x309A || code == 0x309C)
+fun isKanaSymbol(code: Int) = isDakuten(code) || isHandakuten(code)
+        || (code in 0x309D..0x309E) // ゝゞ
+        || (code in 0x30FD..0x30FE) // ヽヾ
 
 fun isVowel(code: Int) =
     (code == 0x61 || code == 0x69 || code == 0x75 || code == 0x65 || code == 0x6F)
@@ -395,12 +406,12 @@ private val Z2H_PAIRS =
         0x30F2 to 0x0FF65, // ヲ
         0x30F3 to 0x0FF9C, // ン
         0x30F4 to 0x1FF73, // ヴ
-        0x30F5 to 0x0FF76, // 小書きカ
-        0x30F6 to 0x0FF79, // 小書きケ
-        0x30F7 to 0x1FF9C, // ワに濁点
+        // 0x30F5 to 0x0FF76, // 小書きカ
+        // 0x30F6 to 0x0FF79, // 小書きケ
+        // 0x30F7 to 0x1FF9C, // ワに濁点
         // 0x30F8 to 0x1FF72, // ヰに濁点
         // 0x30F9 to 0x1FF74, // ヱに濁点
-        0x30FA to 0x1FF65, // ヲに濁点
+        // 0x30FA to 0x1FF65, // ヲに濁点
         0x30FB to 0x0FF65, // 中黒
         0x30FC to 0x0FF70, // ー
         // 0x30FD..0x30FF ゝゞヿ
@@ -420,11 +431,11 @@ private val Z2H_PAIRS =
         0xFFE6 to 0x20A9, // ウォン
     )
 private val Z2H_OPTIONAL = listOf(
+    0x30F5 to 0x0FF76, // 小書きカ
+    0x30F6 to 0x0FF79, // 小書きケ
     0x30EE to 0x0FF9C, // ヮ
     0x30F0 to 0x0FF72, // ヰ
     0x30F1 to 0x0FF74, // ヱ
-    0x30F8 to 0x1FF72, // ヰに濁点
-    0x30F9 to 0x1FF74, // ヱに濁点
 )
 
 val Z2H = (Z2H_PAIRS + Z2H_OPTIONAL).toMap()

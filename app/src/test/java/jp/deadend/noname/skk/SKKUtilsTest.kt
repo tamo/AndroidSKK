@@ -10,9 +10,12 @@ class SKKUtilsTest {
         assertEquals("ａｂｃ", hankaku2zenkaku("abc"))
         assertEquals("１２３", hankaku2zenkaku("123"))
         assertEquals("アイウ", hankaku2zenkaku("ｱｲｳ"))
+        assertEquals("カキクケコ", hankaku2zenkaku("ｶｷｸｹｺ"))
         assertEquals("ガギグゲゴ", hankaku2zenkaku("ｶﾞｷﾞｸﾞｹﾞｺﾞ"))
         assertEquals("パピプペポ", hankaku2zenkaku("ﾊﾟﾋﾟﾌﾟﾍﾟﾎﾟ"))
         assertEquals("ヴ", hankaku2zenkaku("ｳﾞ"))
+        assertEquals("－", hankaku2zenkaku("-")) // マイナス
+        assertEquals("ー", hankaku2zenkaku("ｰ")) // 長音
         assertEquals(null, hankaku2zenkaku(null))
     }
 
@@ -21,9 +24,12 @@ class SKKUtilsTest {
         assertEquals("abc xyz ", zenkaku2hankaku("ａｂｃ　xyz "))
         assertEquals("123890", zenkaku2hankaku("１２３890"))
         assertEquals("ｱｲｳあいう", zenkaku2hankaku("アイウあいう"))
+        assertEquals("ｶｷｸｹｺ", zenkaku2hankaku("カキクケコ"))
         assertEquals("ｶﾞｷﾞｸﾞｹﾞｺﾞ", zenkaku2hankaku("ガギグゲゴ"))
         assertEquals("ﾊﾟﾋﾟﾌﾟﾍﾟﾎﾟ", zenkaku2hankaku("パピプペポ"))
         assertEquals("ｳﾞ", zenkaku2hankaku("ヴ"))
+        assertEquals("ｰ", zenkaku2hankaku("ー")) // 長音
+        assertEquals("-", zenkaku2hankaku("－")) // マイナス
         assertEquals(null, zenkaku2hankaku(null))
     }
 
@@ -33,6 +39,7 @@ class SKKUtilsTest {
         assertEquals("ヴヴ", hiragana2katakana("う゛ヴ"))
         assertEquals("アイウあいう", hiragana2katakana("あいうアイウ", true))
         assertEquals("ヴゔ", hiragana2katakana("う゛ヴ", true))
+        assertEquals("ー", hiragana2katakana("ー")) // かなカナの区別なし
         assertEquals(null, hiragana2katakana(null))
     }
 

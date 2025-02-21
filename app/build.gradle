@@ -36,6 +36,9 @@ android {
     kotlinOptions {
         jvmTarget = '17'
     }
+    testOptions {
+        unitTests.returnDefaultValues true
+    }
 }
 
 dependencies {
