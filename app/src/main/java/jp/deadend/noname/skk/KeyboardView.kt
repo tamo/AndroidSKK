@@ -1009,7 +1009,10 @@ open class KeyboardView @JvmOverloads constructor(
                 mPreviewPopup.dismiss()
 
                 // If we're not on a repeatable key (which sends on a DOWN event)
-                if (!mKeyboard.keys[mCurrentKey].repeatable && !mMiniKeyboardOnScreen && !mAbortKey) {
+                if (
+                    mCurrentKey != NOT_A_KEY && !mKeyboard.keys[mCurrentKey].repeatable
+                    && !mMiniKeyboardOnScreen && !mAbortKey
+                ) {
                     detectAndSendKey(mCurrentKey, eventTime) // マルチタップのために必要
                 }
                 mRepeatKeyIndex = NOT_A_KEY
