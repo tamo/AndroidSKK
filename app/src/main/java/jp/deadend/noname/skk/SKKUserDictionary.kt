@@ -5,20 +5,21 @@ import jdbm.RecordManager
 import jdbm.RecordManagerFactory
 import jdbm.btree.BTree
 import jdbm.helper.StringComparator
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.io.File
 
 class SKKUserDictionary private constructor(
-    override var mRecMan: RecordManager,
-    override var mRecID: Long,
-    override var mBTree: BTree<String, String>,
+    override var mRecMan: RecordManager?,
+    override var mRecID: Long?,
+    override var mBTree: BTree<String, String>?,
     override val mIsASCII: Boolean,
     private val mDicFile: String,
     private val mBtreeName: String
 ) : SKKDictionaryInterface {
-    override var mIsLocked = false
-
+    override val mMutex = Mutex()
     private var mOldKey: String = ""
     private var mOldValue: String = ""
 
@@ -32,8 +33,7 @@ class SKKUserDictionary private constructor(
         val cd = mutableListOf<String>()
         val okr = mutableListOf<Pair<String, String>>()
 
-        val value: String? = safeRun { mBTree.find(key) }
-        if (value == null) return null
+        val value: String = safeRun { mBTree?.find(key) } ?: return null
 
         val valList = value.substring(1, value.length - 1).split("/")  // 先頭と最後のスラッシュをとってから分割
         if (valList.isEmpty()) {
@@ -104,14 +104,12 @@ class SKKUserDictionary private constructor(
             }
             newVal.append("/")
 
-            safeRun {
-                mOldValue = mBTree.find(key)
-            }
+            safeRun { mOldValue = mBTree?.find(key) ?: "" }
         }
 
         safeRun {
-            mBTree.insert(key, newVal.toString(), true)
-            mRecMan.commit()
+            mBTree?.insert(key, newVal.toString(), true)
+            mRecMan?.commit()
         }
     }
 
@@ -140,15 +138,13 @@ class SKKUserDictionary private constructor(
 
     fun replaceEntry(key: String, value: String) {
         safeRun {
-            // ここは再変換と関係ないので old を更新しない
-            //mOldKey = key
-            //mOldValue = mBTree.find(key)
+            // ここは再変換と関係ないので mOldKey / mOldValue を更新しない
             if (value.isEmpty() || Regex("/*").matchEntire(value) != null) {
-                mBTree.remove(key)
+                mBTree?.remove(key)
             } else {
-                mBTree.insert(key, value, true)
+                mBTree?.insert(key, value, true)
             }
-            mRecMan.commit()
+            mRecMan?.commit()
         }
     }
 
@@ -157,48 +153,38 @@ class SKKUserDictionary private constructor(
 
         safeRun {
             if (mOldValue.isEmpty()) {
-                mBTree.remove(mOldKey)
+                mBTree?.remove(mOldKey)
             } else {
-                mBTree.insert(mOldKey, mOldValue, true)
+                mBTree?.insert(mOldKey, mOldValue, true)
             }
-            mRecMan.commit()
+            mRecMan?.commit()
         }
 
         mOldValue = ""
         mOldKey = ""
     }
 
-    fun commitChanges() {
-        safeRun {
-            mRecMan.commit()
-        }
+    override fun close() {
+        safeRun { mRecMan?.commit() }
+        super.close()
+        mOldKey = ""
+        mOldValue = ""
+        mRecMan = null
+        mRecID = null
+        mBTree = null
     }
 
     fun reopen() {
-        safeRun {
-            close()
-            mOldKey = ""
-            mOldValue = ""
-            openDB(mDicFile, mBtreeName).let {
-                mRecMan = it.first
-                mRecID = it.second
-                mBTree = it.third
-            }
+        close()
+        openDB(mDicFile, mBtreeName).let {
+            mRecMan = it.first
+            mRecID = it.second
+            mBTree = it.third
         }
     }
 
-    private fun <T> safeRun(block: () -> T): T {
-        return try {
-            runBlocking { while (mIsLocked) delay(50) }
-            mIsLocked = true
-            val result = block()
-            mIsLocked = false
-            result
-        } catch (e: Exception) {
-            mIsLocked = false
-            throw RuntimeException(e)
-        }
-    }
+    private inline fun <T> safeRun(crossinline block: () -> T): T =
+        runBlocking(Dispatchers.IO) { mMutex.withLock { block() } }
 
     companion object {
         fun openDB(

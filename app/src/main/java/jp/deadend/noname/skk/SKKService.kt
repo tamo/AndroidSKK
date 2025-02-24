@@ -134,14 +134,9 @@ class SKKService : InputMethodService() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         dLog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
         when (intent?.getStringExtra(KEY_COMMAND)) {
-            COMMAND_LOCK_USER_DICT -> {
+            COMMAND_CLOSE_USER_DICT -> {
                 dLog("commit user dictionary!")
-                mEngine.commitUserDictChanges()
-                mEngine.lockUserDict()
-            }
-
-            COMMAND_UNLOCK_USER_DICT -> {
-                mEngine.unlockUserDict()
+                mEngine.closeUserDict()
             }
 
             COMMAND_READ_PREFS -> {
@@ -735,7 +730,7 @@ class SKKService : InputMethodService() {
             return
         }
 
-        mEngine.commitUserDictChanges()
+        mEngine.closeUserDict()
         mSpeechRecognizer.destroy()
         instance = null
 
@@ -1282,9 +1277,7 @@ class SKKService : InputMethodService() {
         }
 
         internal const val KEY_COMMAND = "jp.deadend.noname.skk.KEY_COMMAND"
-        internal const val COMMAND_LOCK_USER_DICT = "jp.deadend.noname.skk.COMMAND_LOCK_USER_DICT"
-        internal const val COMMAND_UNLOCK_USER_DICT =
-            "jp.deadend.noname.skk.COMMAND_UNLOCK_USER_DICT"
+        internal const val COMMAND_CLOSE_USER_DICT = "jp.deadend.noname.skk.COMMAND_CLOSE_USER_DICT"
         internal const val COMMAND_READ_PREFS = "jp.deadend.noname.skk.COMMAND_READ_PREFS"
         internal const val COMMAND_RELOAD_DICT = "jp.deadend.noname.skk.COMMAND_RELOAD_DICT"
         internal const val COMMAND_MUSHROOM = "jp.deadend.noname.skk.COMMAND_MUSHROOM"

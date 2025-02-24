@@ -31,6 +31,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -52,6 +53,7 @@ class SKKUserDictTool : AppCompatActivity() {
     private var mSearchJob: Job = Job()
     private var mDatabaseJob: Job = Job()
     private var mInFileLauncher = false
+    private val mDelay = 500L
 
     private val importFileLauncher = registerForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -222,7 +224,12 @@ class SKKUserDictTool : AppCompatActivity() {
         setSupportActionBar(binding.userDictToolToolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
-        binding.userDictToolList.emptyView = binding.EmptyListItem
+        MainScope().launch(Dispatchers.Default) {
+            delay(mDelay) // 無駄に一瞬 emptyView が出るのを防ぐための遅延
+            withContext(Dispatchers.Main) {
+                binding.userDictToolList.emptyView = binding.EmptyListItem
+            }
+        }
         binding.userDictToolList.onItemClickListener =
             AdapterView.OnItemClickListener { parent, _, position, _ ->
                 if (!mSearchView.isEnabled || mDatabaseJob.isActive) { // 読み込み中
@@ -425,7 +432,6 @@ class SKKUserDictTool : AppCompatActivity() {
     }
 
     private fun onFailToOpenUserDict() {
-        startServiceCommand(SKKService.COMMAND_UNLOCK_USER_DICT)
         mBtree = null
         mRecMan = null
 
@@ -437,6 +443,7 @@ class SKKUserDictTool : AppCompatActivity() {
                     }
 
                     override fun onNegativeClick() {
+                        startServiceCommand(SKKService.COMMAND_RELOAD_DICT)
                         finish()
                     }
                 })
@@ -451,7 +458,12 @@ class SKKUserDictTool : AppCompatActivity() {
             return false
         }
 
-        startServiceCommand(SKKService.COMMAND_LOCK_USER_DICT)
+        // onPause() か finish() で reload するまで service / engine から使用できなくする
+        // ただし、この時点で service が開始していなかった場合
+        // この後から開始した service / engine からは使用できるようになってしまう
+        // それを防ぐには、わざわざユーザー辞書の使えない状態で startService する必要がある
+        // が、実装も面倒だしテストもしづらくなるので放置しておくことにする
+        startServiceCommand(SKKService.COMMAND_CLOSE_USER_DICT)
 
         val recID: Long?
         try {
@@ -489,11 +501,9 @@ class SKKUserDictTool : AppCompatActivity() {
             mRecMan?.close()
             mRecMan = null
         } catch (e: IOException) {
-            Log.e("SKK", "closeUserDict error closing mRecMan: ${e.message}")
-            startServiceCommand(SKKService.COMMAND_UNLOCK_USER_DICT)
-            throw RuntimeException(e)
+            startServiceCommand(SKKService.COMMAND_RELOAD_DICT)
+            throw RuntimeException("closeUserDict error closing mRecMan: ${e.message}")
         }
-        startServiceCommand(SKKService.COMMAND_UNLOCK_USER_DICT)
         dLog("UserDictTool: closed")
     }
 
@@ -560,7 +570,7 @@ class SKKUserDictTool : AppCompatActivity() {
             intent.putExtra(SKKService.KEY_COMMAND, command)
             startService(intent)
             try {
-                Thread.sleep(100) // 本当は結果を待つのが正しい
+                Thread.sleep(mDelay) // 本当は結果を待つのが正しい
             } catch (e: InterruptedException) {
                 dLog("sleep was interrupted: ${e.message}")
             }

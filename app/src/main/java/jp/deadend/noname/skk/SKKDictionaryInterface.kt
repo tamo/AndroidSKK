@@ -7,8 +7,10 @@ import jdbm.helper.Tuple
 import jdbm.helper.TupleBrowser
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStream
@@ -150,84 +152,79 @@ internal fun loadFromTextDic(
 }
 
 interface SKKDictionaryInterface {
-    val mRecMan: RecordManager
-    val mRecID: Long
-    val mBTree: BTree<String, String>
+    val mRecMan: RecordManager?
+    val mRecID: Long?
+    val mBTree: BTree<String, String>?
     val mIsASCII: Boolean
-    var mIsLocked: Boolean
+    val mMutex: Mutex
 
     suspend fun findKeys(scope: CoroutineScope, rawKey: String): List<Pair<String, String>> {
-        while (mIsLocked) delay(50)
-        mIsLocked = true
+        mMutex.withLock {
+            val key = katakana2hiragana(rawKey) ?: return listOf()
+            val list = mutableListOf<Triple<String, String, Int>>()
+            val tuple = Tuple<String, String>()
+            val browser: TupleBrowser<String, String>
+            var str: String
+            val topFreq = ArrayList<Int>()
 
-        val key = katakana2hiragana(rawKey) ?: return listOf<Pair<String, String>>().also {
-            mIsLocked = false
-        }
-        val list = mutableListOf<Triple<String, String, Int>>()
-        val tuple = Tuple<String, String>()
-        val browser: TupleBrowser<String, String>
-        var str: String
-        val topFreq = ArrayList<Int>()
+            try {
+                browser = mBTree?.browse(key) ?: return listOf()
 
-        try {
-            browser = mBTree.browse(key) ?: return listOf<Pair<String, String>>().also {
-                mIsLocked = false
+                // 絵文字は1500ほどあるし CandidatesView の行数が可変になったので多めが良さそう
+                while (list.size < if (mIsASCII) 1500 else 15) {
+                    if (!scope.isActive) {
+                        throw CancellationException()
+                    }
+                    if (!browser.getNext(tuple)) break
+                    str = tuple.key
+                    if (!str.startsWith(key)) break
+                    if (mIsASCII) {
+                        tuple.value
+                            .split('/')
+                            .filter { it.isNotEmpty() }
+                            .zipWithNext()
+                            .filterIndexed { index, _ -> index % 2 == 0 }
+                            .forEach {
+                                val freq = it.first.toInt() +
+                                        if (str == key) 50 else 0 // 完全一致を優先
+                                if (topFreq.size < 5 || freq >= topFreq.last()) {
+                                    topFreq.add(freq)
+                                    topFreq.sortDescending()
+                                    if (topFreq.size > 5) topFreq.removeAt(5)
+                                }
+                                if (freq >= topFreq.last()) { // 頻度が5位に入らなければだめ
+                                    list.add(Triple(str, it.second, freq))
+                                }
+                            }
+                        continue
+                    }
+                    if (isAlphabet(str[str.length - 1].code) && !isAlphabet(str[0].code)) continue
+                    // 送りありエントリは飛ばす
+
+                    list.add(Triple(str, str, 0))
+                }
+            } catch (e: IOException) {
+                Log.e("SKK", "Error in findKeys(): $e")
+                throw RuntimeException(e)
+            }
+            if (mIsASCII) {
+                list.sortByDescending { it.third }
             }
 
-            // 絵文字は1500ほどあるし CandidatesView の行数が可変になったので多めが良さそう
-            while (list.size < if (mIsASCII) 1500 else 15) {
-                if (!scope.isActive) {
-                    mIsLocked = false
-                    throw CancellationException()
-                }
-                if (!browser.getNext(tuple)) break
-                str = tuple.key
-                if (!str.startsWith(key)) break
-                if (mIsASCII) {
-                    tuple.value
-                        .split('/')
-                        .filter { it.isNotEmpty() }
-                        .zipWithNext()
-                        .filterIndexed { index, _ -> index % 2 == 0 }
-                        .forEach {
-                            val freq = it.first.toInt() +
-                                    if (str == key) 50 else 0 // 完全一致を優先
-                            if (topFreq.size < 5 || freq >= topFreq.last()) {
-                                topFreq.add(freq)
-                                topFreq.sortDescending()
-                                if (topFreq.size > 5) topFreq.removeAt(5)
-                            }
-                            if (freq >= topFreq.last()) { // 頻度が5位に入らなければだめ
-                                list.add(Triple(str, it.second, freq))
-                            }
-                        }
-                    continue
-                }
-                if (isAlphabet(str[str.length - 1].code) && !isAlphabet(str[0].code)) continue
-                // 送りありエントリは飛ばす
-
-                list.add(Triple(str, str, 0))
-            }
-        } catch (e: IOException) {
-            Log.e("SKK", "Error in findKeys(): $e")
-            throw RuntimeException(e)
+            return list.map { it.first to it.second }
         }
-        if (mIsASCII) {
-            list.sortByDescending { it.third }
-        }
-
-        return list.map { it.first to it.second }.also { mIsLocked = false }
     }
 
     fun getCandidates(rawKey: String): List<String>? = null
 
     fun close() {
-        try {
-            mRecMan.commit()
-            mRecMan.close()
-        } catch (e: Exception) {
-            Log.e("SKK", "Error in close(): $e")
-            throw RuntimeException(e)
+        runBlocking {
+            mMutex.withLock {
+                mRecMan?.let {
+                    it.commit()
+                    it.close()
+                }
+            }
         }
     }
 }

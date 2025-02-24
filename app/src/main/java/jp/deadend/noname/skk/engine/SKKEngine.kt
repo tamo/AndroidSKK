@@ -124,22 +124,10 @@ class SKKEngine(
         }
     }
 
-    fun commitUserDictChanges() {
-        mUserDict.commitChanges()
-        mASCIIDict.commitChanges()
-        //mEmojiDict.commitChanges() // 現状ではEmojiに書き込むことがない
-    }
-
-    fun lockUserDict() {
-        mUserDict.mIsLocked = true
-        mASCIIDict.mIsLocked = true
-        //mEmojiDict.mIsLocked = true
-    }
-
-    fun unlockUserDict() {
-        mUserDict.mIsLocked = false
-        mASCIIDict.mIsLocked = false
-        //mEmojiDict.mIsLocked = false
+    fun closeUserDict() {
+        mUserDict.close()
+        mASCIIDict.close()
+        //mEmojiDict.close() // 現状ではEmojiに書き込むことがない
     }
 
     fun processKey(keyCode: Int) = state.processKey(this, keyCode)
@@ -780,7 +768,6 @@ class SKKEngine(
             mUserDict.addEntry(
                 regInfo.key, regEntryStr, regInfo.okurigana
             )
-            mUserDict.commitChanges()
             // entry は生で登録するが okurigana はひらがな
             val okurigana = regInfo.okurigana ?: ""
             commitTextSKK(

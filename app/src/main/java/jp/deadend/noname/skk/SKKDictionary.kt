@@ -4,6 +4,7 @@ import android.util.Log
 import jdbm.RecordManager
 import jdbm.RecordManagerFactory
 import jdbm.btree.BTree
+import kotlinx.coroutines.sync.Mutex
 import java.io.IOException
 
 class SKKDictionary private constructor(
@@ -12,7 +13,7 @@ class SKKDictionary private constructor(
     override val mBTree: BTree<String, String>
 ) : SKKDictionaryInterface {
     override val mIsASCII = false
-    override var mIsLocked = false
+    override val mMutex = Mutex()
 
     override fun getCandidates(rawKey: String): List<String>? {
         val key = katakana2hiragana(rawKey) ?: return null
