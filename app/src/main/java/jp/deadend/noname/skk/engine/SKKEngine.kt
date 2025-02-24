@@ -349,11 +349,11 @@ class SKKEngine(
             }
         }
         when (state) {
-            SKKChooseState, SKKNarrowingState -> pickCandidate(index, unregister = unregister)
-            SKKAbbrevState, SKKKanjiState, SKKASCIIState, SKKEmojiState -> pickSuggestion(
-                index,
-                unregister
-            )
+            SKKChooseState, SKKNarrowingState ->
+                pickCandidate(index, unregister = unregister)
+
+            SKKAbbrevState, SKKKanjiState, SKKASCIIState, SKKEmojiState, SKKOkuriganaState ->
+                pickSuggestion(index, unregister)
 
             else -> throw RuntimeException("cannot pick candidate in $state")
         }
@@ -1031,7 +1031,7 @@ class SKKEngine(
                 conversionStart(mKanjiKey)
             }
 
-            SKKKanjiState -> {
+            SKKKanjiState, SKKOkuriganaState -> {
                 val hira = if (kanaState === SKKHiraganaState) s else katakana2hiragana(s)!!
                 setComposingTextSKK(hira) // 向こうでカタカナにするので
                 val li = hira.length - 1
