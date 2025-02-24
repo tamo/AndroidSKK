@@ -78,6 +78,7 @@ class SKKSettingsActivityUITest {
 
     @Test
     fun testDictManager() {
+        // 新規インストールであることを前提としているので失敗したら再テストで通る
         assert(skkPrefs.dictOrder == skkPrefs.defaultDictOrder)
         onView(withText("SKK 辞書管理")).perform(click())
         onView(withText("SKK S 辞書"))
@@ -136,6 +137,7 @@ class SKKSettingsActivityUITest {
         device.pressKeyCode(KeyEvent.KEYCODE_ENTER)
         onView(withId(R.id.userDictToolSearch)).check { v, _ ->
             assert((v as SearchView).query.contentEquals("合/う"))
+            // テスト前に service が動いていたら失敗する: 再テストで通るはず
         }
         // 検索欄は「合/う」になっているので検索条件に合わなくなる
         onView(withText(dictText)).check(doesNotExist())
