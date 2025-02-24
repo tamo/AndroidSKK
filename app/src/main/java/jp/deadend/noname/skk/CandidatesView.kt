@@ -109,7 +109,9 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
                 ): Boolean {
                     val width = width
                     mScrolled = true
-                    mScrollX = (scrollX + distanceX.toInt()).coerceIn(0, mTotalWidth - width)
+                    mScrollX = (scrollX + distanceX.toInt())
+                        .coerceAtMost(mTotalWidth - width) // 負のこともある?
+                        .coerceAtLeast(0)
                     mTargetScrollX = mScrollX
                     invalidate()
                     return true
