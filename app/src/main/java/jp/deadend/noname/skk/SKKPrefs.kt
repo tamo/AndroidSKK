@@ -1,6 +1,7 @@
 package jp.deadend.noname.skk
 
 import android.content.Context
+import android.os.Build
 import androidx.preference.PreferenceManager
 import kotlin.math.max
 import kotlin.math.min
@@ -179,7 +180,7 @@ class SKKPrefs(context: Context) {
             .apply()
 
     var keyPaddingBottom: Int
-        get() = prefs.getInt(res.getString(R.string.pref_key_padding_bottom), 0)
+        get() = prefs.getInt(res.getString(R.string.pref_key_padding_bottom), if (Build.VERSION.SDK_INT >= 35) 15 else 0)
         set(value) = prefs.edit().putInt(res.getString(R.string.pref_key_padding_bottom), value)
             .apply()
 
