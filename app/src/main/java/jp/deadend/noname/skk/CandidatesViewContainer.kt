@@ -59,18 +59,19 @@ class CandidatesViewContainer(screen: Context, attrs: AttributeSet) : LinearLayo
                 val idx = mActivePointers.indexOfFirst { it.first == id }
                 val x = event.getRawX(event.findPointerIndex(id))
                 when (event.action and MotionEvent.ACTION_MASK) {
-                    MotionEvent.ACTION_DOWN,
-                    MotionEvent.ACTION_POINTER_DOWN -> if (!view.performClick()) {
+                    MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> {
                         mActivePointers.add(id to x)
-                        mDragStartLeft = mService.leftOffset
-                        if (mActivePointers.count() == 1) {
-                            mDragStartX = x
-                            mDragging = true
-                        } else {
-                            mPinchStartWidth = width
-                            mPinchStartDistance = abs(
-                                mActivePointers.last().second - mActivePointers.first().second
-                            )
+                        if (!view.performClick()) {
+                            mDragStartLeft = mService.leftOffset
+                            if (mActivePointers.count() == 1) {
+                                mDragStartX = x
+                                mDragging = true
+                            } else {
+                                mPinchStartWidth = width
+                                mPinchStartDistance = abs(
+                                    mActivePointers.last().second - mActivePointers.first().second
+                                )
+                            }
                         }
                     }
 
