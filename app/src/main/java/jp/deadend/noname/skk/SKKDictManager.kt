@@ -281,8 +281,11 @@ class SKKDictManager : AppCompatActivity() {
                                 "https://raw.githubusercontent.com/tamo/AndroidSKK/refs/heads/master/SKK-JISYO.${type}.gz"
                             } else "https://skk-dev.github.io/dict/SKK-JISYO.${type}.gz"
                         )
-                            .openStream()
-                            .copyTo(FileOutputStream(path))
+                            .openStream().use { us ->
+                                FileOutputStream(path).use { fs ->
+                                    us.copyTo(fs)
+                                }
+                            }
                         progressJob.let {
                             it.cancelAndJoin()
                             withContext(Dispatchers.Main) {

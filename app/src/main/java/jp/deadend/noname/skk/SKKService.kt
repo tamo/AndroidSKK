@@ -9,6 +9,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Configuration
+import android.hardware.display.DisplayManager
 import android.inputmethodservice.InputMethodService
 import android.media.AudioManager
 import android.net.Uri
@@ -24,6 +25,7 @@ import android.speech.SpeechRecognizer
 import android.text.InputType
 import android.util.Log
 import android.util.TypedValue
+import android.view.Display.DEFAULT_DISPLAY
 import android.view.KeyEvent
 import android.view.View
 import android.view.WindowInsets
@@ -226,8 +228,15 @@ class SKKService : InputMethodService() {
         if (BuildConfig.DEBUG) {
             StrictMode.setThreadPolicy(
                 StrictMode.ThreadPolicy.Builder()
-                    .detectNetwork()
-                    .detectCustomSlowCalls()
+                    .detectAll()
+                    .permitDiskReads()
+                    .permitDiskWrites()
+                    .penaltyLog()
+                    .build()
+            )
+            StrictMode.setVmPolicy(
+                StrictMode.VmPolicy.Builder()
+                    .detectAll()
                     .penaltyLog()
                     .build()
             )
@@ -368,11 +377,7 @@ class SKKService : InputMethodService() {
         val abbrev = mAbbrevKeyboardView?.setKeyState(engineState)
         if (flick == null || godan == null || qwerty == null || abbrev == null) return
 
-        val context = when (skkPrefs.theme) {
-            "light" -> createNightModeContext(applicationContext, false)
-            "dark" -> createNightModeContext(applicationContext, true)
-            else -> applicationContext
-        }
+        val context = createNightModeContext(applicationContext, skkPrefs.theme)
         val keyHeight = keyboardHeight()
         val keyBottom = skkPrefs.keyPaddingBottom
         val flickWidth = when (mOrientation) {
@@ -458,20 +463,24 @@ class SKKService : InputMethodService() {
         super.onConfigurationChanged(newConfig) // これが onInitializeInterface を呼ぶ
     }
 
-    private fun createNightModeContext(context: Context, isNightMode: Boolean): Context {
-        val uiModeFlag =
-            if (isNightMode) Configuration.UI_MODE_NIGHT_YES else Configuration.UI_MODE_NIGHT_NO
+    private fun createNightModeContext(context: Context, mode: String): Context {
+        val uiModeFlag = when (mode) {
+            "dark" -> Configuration.UI_MODE_NIGHT_YES
+            "light" -> Configuration.UI_MODE_NIGHT_NO
+            else -> Configuration.UI_MODE_NIGHT_UNDEFINED
+        }
         val config = Configuration(context.resources.configuration)
         config.uiMode = uiModeFlag or (config.uiMode and Configuration.UI_MODE_NIGHT_MASK.inv())
-        return context.createConfigurationContext(config)
+        return context
+            .createDisplayContext(
+                getSystemService(DisplayManager::class.java).getDisplay(DEFAULT_DISPLAY)
+            )
+            .createWindowContext(WindowManager.LayoutParams.TYPE_INPUT_METHOD, null)
+            .createConfigurationContext(config) // 上書きするため最後である必要がある
     }
 
     private fun createInputView() {
-        val context = when (skkPrefs.theme) {
-            "light" -> createNightModeContext(applicationContext, false)
-            "dark" -> createNightModeContext(applicationContext, true)
-            else -> applicationContext
-        }
+        val context = createNightModeContext(applicationContext, skkPrefs.theme)
 
         mFlickJPInputView = FlickJPKeyboardView(context, null)
         mFlickJPInputView?.setService(this)
@@ -630,11 +639,7 @@ class SKKService : InputMethodService() {
      */
     override fun onCreateCandidatesView(): View {
         dLog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
-        val context = when (skkPrefs.theme) {
-            "light" -> createNightModeContext(applicationContext, false)
-            "dark" -> createNightModeContext(applicationContext, true)
-            else -> applicationContext
-        }
+        val context = createNightModeContext(applicationContext, skkPrefs.theme)
 
         return (View.inflate(context, R.layout.view_candidates, null) as CandidatesViewContainer)
             .apply {

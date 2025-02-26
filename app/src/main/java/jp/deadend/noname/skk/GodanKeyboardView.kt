@@ -280,7 +280,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
     private fun createPopupGuide(context: Context): PopupWindow {
         val view = inflate(context, R.layout.popup_flickguide, null)
 
-        val scale = getContext().resources.displayMetrics.density
+        val scale = context.resources.displayMetrics.density
         val size = (mPopupSize * scale + 0.5f).toInt()
 
         val popup = PopupWindow(view, size, size)

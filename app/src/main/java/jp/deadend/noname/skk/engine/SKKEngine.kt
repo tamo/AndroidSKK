@@ -127,7 +127,7 @@ class SKKEngine(
     fun closeUserDict() {
         mUserDict.close()
         mASCIIDict.close()
-        //mEmojiDict.close() // 現状ではEmojiに書き込むことがない
+        mEmojiDict.close()
     }
 
     fun processKey(keyCode: Int) = state.processKey(this, keyCode)
