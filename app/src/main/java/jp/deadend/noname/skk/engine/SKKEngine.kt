@@ -1036,12 +1036,16 @@ class SKKEngine(
                 }
             }
 
-            // 絵文字のときだけ Narrowing でここに来る
+            // 絵文字か記号のときだけ Narrowing でここに来る
             SKKASCIIState, SKKEmojiState, SKKNarrowingState -> {
                 if (isPersonalizedLearning || unregister) {
                     val lambda = {
                         var newEntry = "/160/$s"
-                        val key = if (state === SKKASCIIState) c else "emoji"
+                        val key = when {
+                            state === SKKASCIIState -> c
+                            c == "/きごう" -> c
+                            else -> "emoji"
+                        }
                         (mASCIIDict.getEntry(key)?.let { entry ->
                             entry.candidates.asSequence() // freq1, val1, freq2, val2
                                 .zipWithNext() // (freq1, val1), (val1, freq2), (freq2, val2)
