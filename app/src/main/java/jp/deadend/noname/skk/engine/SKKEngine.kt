@@ -707,9 +707,8 @@ class SKKEngine(
         }
         if (mService.isHiragana) {
             target.addAll(dictionary.findKeys(scope, key))
-        } else for (suggestion in dictionary.findKeys(scope, key)) {
-            val hiraSuggestion = suggestion.first
-            target.add(hiraSuggestion to hiragana2katakana(hiraSuggestion, reversed = true)!!)
+        } else dictionary.findKeys(scope, key).map { suggestion ->
+            target.add(suggestion.first to hiragana2katakana(suggestion.second, reversed = true)!!)
         }
     }
 
@@ -970,25 +969,21 @@ class SKKEngine(
             // ユーザー辞書登録時はエスケープや注釈を消さない
         }
 
-        val okurigana = StringBuilder(
-            (if (kanaState === SKKHiraganaState) mOkurigana else hiragana2katakana(mOkurigana))
-                ?: ""
-        )
         if (backspace) {
-            if (okurigana.isNotEmpty()) okurigana.deleteCharAt(okurigana.lastIndex)
+            if (!mOkurigana.isNullOrEmpty()) mOkurigana = mOkurigana!!.dropLast(1)
             else candidate.deleteCharAt(candidate.lastIndex)
         }
-        val concat = candidate.toString() + okurigana.toString()
+        val concat = candidate.toString() + mOkurigana.orEmpty()
         val text = when (kanaState) {
             SKKHiraganaState -> concat
-            SKKKatakanaState -> hiragana2katakana(concat, reversed = true) ?: ""
-            SKKHanKanaState -> zenkaku2hankaku(hiragana2katakana(concat)) ?: ""
+            SKKKatakanaState -> hiragana2katakana(concat, reversed = true).orEmpty()
+            SKKHanKanaState -> zenkaku2hankaku(hiragana2katakana(concat)).orEmpty()
             else -> throw RuntimeException("kanaState: $kanaState")
         } // カナかなは互換性あるけど半角カナと全角かなは互換性ない感覚があるので reverse しない
         commitTextSKK(text)
         if (mRegistrationStack.isEmpty()) {
             mLastConversion = ConversionInfo(
-                text, candidateList, index, mKanjiKey.toString(), okurigana.toString()
+                text, candidateList, index, mKanjiKey.toString(), mOkurigana
             )
         }
 
