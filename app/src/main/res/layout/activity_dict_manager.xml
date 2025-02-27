@@ -6,12 +6,12 @@
     android:padding="2sp">
 
     <androidx.appcompat.widget.Toolbar
-        android:id="@+id/dicManagerToolbar"
+        android:id="@+id/dictManagerToolbar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/dicManagerList"
+        android:id="@+id/dictManagerList"
         android:layout_width="fill_parent"
         android:layout_height="0dp"
         android:layout_weight="1" />

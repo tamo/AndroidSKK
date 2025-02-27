@@ -36,7 +36,7 @@ private fun appendToEntry(key: String, value: String, btree: BTree<String, Strin
     }
 }
 
-internal fun isTextDicInEucJp(inputStream: InputStream): Boolean {
+internal fun isTextDictInEucJp(inputStream: InputStream): Boolean {
     val decoder = Charset.forName("EUC-JP").newDecoder()
     decoder.onMalformedInput(CodingErrorAction.REPORT)
     decoder.onUnmappableCharacter(CodingErrorAction.REPORT)
@@ -59,7 +59,7 @@ internal fun isTextDicInEucJp(inputStream: InputStream): Boolean {
 }
 
 @Throws(IOException::class)
-internal fun loadFromTextDic(
+internal fun loadFromTextDict(
     inputStream: InputStream,
     charset: String,
     isWordList: Boolean,

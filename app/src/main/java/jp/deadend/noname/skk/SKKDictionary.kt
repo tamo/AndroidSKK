@@ -38,9 +38,9 @@ class SKKDictionary private constructor(
     }
 
     companion object {
-        fun newInstance(mDicFile: String, btreeName: String): SKKDictionary? {
+        fun newInstance(mDictFile: String, btreeName: String): SKKDictionary? {
             return try {
-                val recMan = RecordManagerFactory.createRecordManager(mDicFile)
+                val recMan = RecordManagerFactory.createRecordManager(mDictFile)
                 val recID = recMan.getNamedObject(btreeName)
                 val btree = BTree<String, String>().load(recMan, recID)
 

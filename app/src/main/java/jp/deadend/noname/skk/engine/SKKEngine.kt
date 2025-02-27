@@ -91,14 +91,14 @@ class SKKEngine(
     }
 
     fun reopenDictionaries(dictList: List<SKKDictionaryInterface>) {
-        for (dic in mDictList) when (dic) {
+        for (dict in mDictList) when (dict) {
             mUserDict -> {
                 mUserDict.reopen()
                 mASCIIDict.reopen() // ASCII は mDictList に入れていない
             }
 
             mEmojiDict -> mEmojiDict.reopen()
-            else -> dic.close()
+            else -> dict.close()
         }
         mDictList = dictList
     }
@@ -647,12 +647,12 @@ class SKKEngine(
                 val set = mutableSetOf<Pair<String, String>>()
 
                 if (str.isNotEmpty())
-                    for (dic in mDictList) {
-                        addFound(this@launch, set, str, dic)
+                    for (dict in mDictList) {
+                        addFound(this@launch, set, str, dict)
                     }
                 str.replace(Regex("\\d+(\\.\\d+)?"), "#").let {
-                    if (it != str) for (dic in mDictList) {
-                        addFound(this@launch, set, it, dic)
+                    if (it != str) for (dict in mDictList) {
+                        addFound(this@launch, set, it, dict)
                     }
                 }
 
@@ -696,9 +696,9 @@ class SKKEngine(
         scope: CoroutineScope,
         target: MutableSet<Pair<String, String>>,
         key: String,
-        dic: SKKDictionaryInterface
+        dict: SKKDictionaryInterface
     ) {
-        val dictionary = when (dic) {
+        val dictionary = when (dict) {
             mUserDict -> {
                 if (key == "emoji" || state === SKKASCIIState) mASCIIDict else mUserDict
             }
@@ -712,7 +712,7 @@ class SKKEngine(
                 return
             }
 
-            else -> dic
+            else -> dict
         }
         if (mService.isHiragana) {
             target.addAll(dictionary.findKeys(scope, key))

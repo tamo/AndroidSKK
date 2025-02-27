@@ -16,7 +16,7 @@ class SKKUserDictionary private constructor(
     override var mRecID: Long?,
     override var mBTree: BTree<String, String>?,
     override val mIsASCII: Boolean,
-    private val mDicFile: String,
+    private val mDictFile: String,
     private val mBtreeName: String
 ) : SKKDictionaryInterface {
     override val mMutex = Mutex()
@@ -176,7 +176,7 @@ class SKKUserDictionary private constructor(
 
     fun reopen() {
         close()
-        openDB(mDicFile, mBtreeName).let {
+        openDB(mDictFile, mBtreeName).let {
             mRecMan = it.first
             mRecID = it.second
             mBTree = it.third
@@ -205,17 +205,17 @@ class SKKUserDictionary private constructor(
 
         fun newInstance(
             context: SKKService,
-            mDicFile: String,
+            mDictFile: String,
             btreeName: String,
             isASCII: Boolean
         ): SKKUserDictionary? {
-            val dbFile = File("$mDicFile.db")
+            val dbFile = File("$mDictFile.db")
             if (isASCII && !dbFile.exists()) {
                 context.extractDictionary(dbFile.nameWithoutExtension)
             }
             try {
-                val (recMan, recID, btree) = openDB(mDicFile, btreeName)
-                return SKKUserDictionary(recMan, recID, btree, isASCII, mDicFile, btreeName)
+                val (recMan, recID, btree) = openDB(mDictFile, btreeName)
+                return SKKUserDictionary(recMan, recID, btree, isASCII, mDictFile, btreeName)
             } catch (e: Exception) {
                 Log.e("SKK", "Error in opening the dictionary: $e")
                 return null

@@ -41,7 +41,7 @@ import kotlin.math.floor
 import kotlin.math.sqrt
 
 class SKKUserDictTool : AppCompatActivity() {
-    private lateinit var mDicName: String
+    private lateinit var mDictName: String
     private var mRecMan: RecordManager? = null
     private var mBtree: BTree<String, String>? = null
     private var mEntryList = mutableListOf<Tuple<String, String>>()
@@ -85,7 +85,7 @@ class SKKUserDictTool : AppCompatActivity() {
                         contentResolver.openInputStream(uri)!!.use { inputStream ->
                             val processedInputStream =
                                 if (isGzip) GZIPInputStream(inputStream) else inputStream
-                            isTextDicInEucJp(processedInputStream)
+                            isTextDictInEucJp(processedInputStream)
                         }
                     ) "EUC-JP"
                     else "UTF-8"
@@ -94,7 +94,7 @@ class SKKUserDictTool : AppCompatActivity() {
                     contentResolver.openInputStream(uri)?.use { inputStream ->
                         val processedInputStream =
                             if (isGzip) GZIPInputStream(inputStream) else inputStream
-                        loadFromTextDic(
+                        loadFromTextDict(
                             processedInputStream,
                             charset,
                             isWordList,
@@ -206,7 +206,7 @@ class SKKUserDictTool : AppCompatActivity() {
     public override fun onCreate(savedInstanceState: Bundle?) {
         startServiceCommand(SKKService.COMMAND_RELOAD_DICT) // commit させる
         super.onCreate(savedInstanceState)
-        mDicName = intent.dataString!!
+        mDictName = intent.dataString!!
         val binding = ActivityUserDictToolBinding.inflate(layoutInflater)
         setContentView(binding.root)
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, windowInsets ->
@@ -242,7 +242,7 @@ class SKKUserDictTool : AppCompatActivity() {
                         override fun onPositiveClick() {
                             val adapter = parent.adapter as EntryAdapter
                             val item = adapter.getItem(position)!!
-                            dLog("remove $item from $mDicName")
+                            dLog("remove $item from $mDictName")
                             try {
                                 if (openUserDict()) {
                                     mBtree?.remove(item.key)
@@ -330,7 +330,7 @@ class SKKUserDictTool : AppCompatActivity() {
 
             R.id.menu_user_dict_tool_export -> {
                 mInFileLauncher = true
-                exportFileLauncher.launch("$mDicName.txt")
+                exportFileLauncher.launch("$mDictName.txt")
                 return true
             }
 
@@ -341,7 +341,7 @@ class SKKUserDictTool : AppCompatActivity() {
                 cfDialog.setListener(
                     object : ConfirmationDialogFragment.Listener {
                         override fun onPositiveClick() {
-                            recreateUserDic(extract = false)
+                            recreateUserDict(extract = false)
                         }
 
                         override fun onNegativeClick() {}
@@ -361,16 +361,16 @@ class SKKUserDictTool : AppCompatActivity() {
 
         // FileLauncher 系統の ActivityResult の後にもここを通る
         if (!mInFileLauncher && mAdapter.count == 0) {
-            when (val commandChar = mDicName.first()) {
+            when (val commandChar = mDictName.first()) {
                 '*', '+' -> {
-                    mDicName = mDicName.drop(1)
+                    mDictName = mDictName.drop(1)
                     val cfDialog = ConfirmationDialogFragment.newInstance(
                         getString(R.string.message_tools_confirm_clear)
                     )
                     cfDialog.setListener(
                         object : ConfirmationDialogFragment.Listener {
                             override fun onPositiveClick() {
-                                recreateUserDic(commandChar == '+')
+                                recreateUserDict(commandChar == '+')
                             }
 
                             override fun onNegativeClick() {
@@ -393,19 +393,19 @@ class SKKUserDictTool : AppCompatActivity() {
         super.onPause()
     }
 
-    private fun recreateUserDic(extract: Boolean) {
+    private fun recreateUserDict(extract: Boolean) {
         mAdapter.clear()
 
         MainScope().launch(Dispatchers.IO) {
-            deleteFile("$mDicName.db")
-            deleteFile("$mDicName.lg")
+            deleteFile("$mDictName.db")
+            deleteFile("$mDictName.lg")
 
             if (extract) {
                 try {
-                    unzipFile(resources.assets.open("$mDicName.zip"), filesDir)
-                    dLog("$mDicName.zip extracted")
+                    unzipFile(resources.assets.open("$mDictName.zip"), filesDir)
+                    dLog("$mDictName.zip extracted")
                 } catch (e: IOException) {
-                    Log.e("SKK", "I/O error in extracting $mDicName.zip: $e")
+                    Log.e("SKK", "I/O error in extracting $mDictName.zip: $e")
                 }
                 withContext(Dispatchers.Main) {
                     updateListItems()
@@ -413,7 +413,7 @@ class SKKUserDictTool : AppCompatActivity() {
             } else {
                 try {
                     mRecMan =
-                        RecordManagerFactory.createRecordManager(filesDir.absolutePath + "/" + mDicName)
+                        RecordManagerFactory.createRecordManager(filesDir.absolutePath + "/" + mDictName)
                     mBtree = BTree(mRecMan, StringComparator())
                     mRecMan!!.setNamedObject(getString(R.string.btree_name), mBtree!!.recordId)
                     mRecMan!!.commit()
@@ -439,7 +439,7 @@ class SKKUserDictTool : AppCompatActivity() {
             it.setListener(
                 object : ConfirmationDialogFragment.Listener {
                     override fun onPositiveClick() {
-                        recreateUserDic(extract = false)
+                        recreateUserDict(extract = false)
                     }
 
                     override fun onNegativeClick() {
@@ -468,7 +468,7 @@ class SKKUserDictTool : AppCompatActivity() {
         val recID: Long?
         try {
             mRecMan = RecordManagerFactory.createRecordManager(
-                filesDir.absolutePath + "/" + mDicName
+                filesDir.absolutePath + "/" + mDictName
             )
             recID = mRecMan!!.getNamedObject(getString(R.string.btree_name))
         } catch (e: IOException) {
