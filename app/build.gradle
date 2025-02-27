@@ -8,8 +8,8 @@ android {
         applicationId "jp.deadend.noname.skk"
         minSdkVersion 30
         targetSdk 35
-        versionCode 57
-        versionName "3.7.8"
+        versionCode 58
+        versionName "3.7.9"
 
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
