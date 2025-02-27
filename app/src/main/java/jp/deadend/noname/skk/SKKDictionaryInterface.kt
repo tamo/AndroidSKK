@@ -153,7 +153,6 @@ internal fun loadFromTextDict(
 
 interface SKKDictionaryInterface {
     val mRecMan: RecordManager?
-    val mRecID: Long?
     val mBTree: BTree<String, String>?
     val mIsASCII: Boolean
     val mMutex: Mutex

@@ -9,7 +9,6 @@ import java.io.IOException
 
 class SKKDictionary private constructor(
     override val mRecMan: RecordManager,
-    override val mRecID: Long,
     override val mBTree: BTree<String, String>
 ) : SKKDictionaryInterface {
     override val mIsASCII = false
@@ -44,7 +43,7 @@ class SKKDictionary private constructor(
                 val recID = recMan.getNamedObject(btreeName)
                 val btree = BTree<String, String>().load(recMan, recID)
 
-                SKKDictionary(recMan, recID, btree)
+                SKKDictionary(recMan, btree)
             } catch (e: Exception) {
                 Log.e("SKK", "Error in opening the dictionary: $e")
 

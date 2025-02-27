@@ -13,7 +13,6 @@ import java.io.File
 
 class SKKUserDictionary private constructor(
     override var mRecMan: RecordManager?,
-    override var mRecID: Long?,
     override var mBTree: BTree<String, String>?,
     override val mIsASCII: Boolean,
     private val mDictFile: String,
@@ -170,7 +169,6 @@ class SKKUserDictionary private constructor(
         mOldKey = ""
         mOldValue = ""
         mRecMan = null
-        mRecID = null
         mBTree = null
     }
 
@@ -178,8 +176,7 @@ class SKKUserDictionary private constructor(
         close()
         openDB(mDictFile, mBtreeName).let {
             mRecMan = it.first
-            mRecID = it.second
-            mBTree = it.third
+            mBTree = it.second
         }
     }
 
@@ -190,7 +187,7 @@ class SKKUserDictionary private constructor(
         fun openDB(
             filename: String,
             btreeName: String
-        ): Triple<RecordManager, Long, BTree<String, String>> {
+        ): Pair<RecordManager, BTree<String, String>> {
             val recMan = RecordManagerFactory.createRecordManager(filename)
             val recID = recMan.getNamedObject(btreeName)
             if (recID == 0L) {
@@ -198,9 +195,9 @@ class SKKUserDictionary private constructor(
                 recMan.setNamedObject(btreeName, btree.recordId)
                 recMan.commit()
                 dLog("New user dictionary created")
-                return Triple(recMan, recID, btree)
+                return recMan to btree
             }
-            return Triple(recMan, recID, BTree<String, String>().load(recMan, recID))
+            return recMan to BTree<String, String>().load(recMan, recID)
         }
 
         fun newInstance(
@@ -214,8 +211,8 @@ class SKKUserDictionary private constructor(
                 context.extractDictionary(dbFile.nameWithoutExtension)
             }
             try {
-                val (recMan, recID, btree) = openDB(mDictFile, btreeName)
-                return SKKUserDictionary(recMan, recID, btree, isASCII, mDictFile, btreeName)
+                val (recMan, btree) = openDB(mDictFile, btreeName)
+                return SKKUserDictionary(recMan, btree, isASCII, mDictFile, btreeName)
             } catch (e: Exception) {
                 Log.e("SKK", "Error in opening the dictionary: $e")
                 return null
