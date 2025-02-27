@@ -126,9 +126,10 @@ object SKKKanjiState : SKKState {
                         val composing = mComposing.toString()
                         // 全角にする記号ならば全角，そうでなければローマ字変換、だめなら数字かチェック
                         val hiraganaChar = getZenkakuSeparator(composing)
-                            ?: RomajiConverter.convert(composing)
-                            ?: composing.toIntOrNull()?.toString()
-                            ?: if (composing == "#") composing else null
+                            ?: RomajiConverter.convert(composing).ifEmpty {
+                                composing.toIntOrNull()?.toString()
+                                    ?: if (composing == "#") composing else null
+                            }
 
                         if (hiraganaChar != null) {
                             mComposing.setLength(0)

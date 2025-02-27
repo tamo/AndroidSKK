@@ -29,7 +29,7 @@ object SKKOkuriganaState : SKKState {
             // l, L, q, / による暗黙の確定
             if (changeInputMode(keyCode)) return
 
-            if (mComposing.length == 1 && mOkurigana == null) {
+            if (mComposing.length == 1 && mOkurigana.isEmpty()) {
                 // 「ん」か「っ」を処理したらここで終わり
                 val hiraganaChar = RomajiConverter.checkSpecialConsonants(mComposing[0], codeLower)
                 if (hiraganaChar != null) {
@@ -46,8 +46,8 @@ object SKKOkuriganaState : SKKState {
             // 送りがなが確定すれば変換，そうでなければComposingに積む
             mComposing.append(codeLower.toChar())
             val hiraganaChar = RomajiConverter.convert(mComposing.toString())
-            if (mOkurigana != null) { //「ん」か「っ」がある場合
-                if (hiraganaChar != null) {
+            if (mOkurigana.isNotEmpty()) { //「ん」か「っ」がある場合
+                if (hiraganaChar.isNotEmpty()) {
                     mComposing.setLength(0)
                     mOkurigana += hiraganaChar
                     conversionStart(mKanjiKey)
@@ -58,7 +58,7 @@ object SKKOkuriganaState : SKKState {
                     )
                 }
             } else {
-                if (hiraganaChar != null) {
+                if (hiraganaChar.isNotEmpty()) {
                     mComposing.setLength(0)
                     mOkurigana = hiraganaChar
                     conversionStart(mKanjiKey)
@@ -82,8 +82,8 @@ object SKKOkuriganaState : SKKState {
         context.apply {
             mComposing.setLength(0) // 元から空のはず
             mKanjiKey.deleteCharAt(mKanjiKey.lastIndex)
-            if (!mOkurigana.isNullOrEmpty()) mKanjiKey.append(mOkurigana) // 「っ」とか
-            mOkurigana = null
+            if (mOkurigana.isNotEmpty()) mKanjiKey.append(mOkurigana) // 「っ」とか
+            mOkurigana = ""
             setComposingTextSKK(mKanjiKey)
             changeState(SKKKanjiState)
         }
@@ -92,7 +92,7 @@ object SKKOkuriganaState : SKKState {
     override fun handleCancel(context: SKKEngine): Boolean {
         context.apply {
             if (skkPrefs.preferFlick) mComposing.setLength(0) // Flickでアルファベットが残っても困る
-            mOkurigana = null
+            mOkurigana = ""
             if (mKanjiKey.isNotEmpty()) mKanjiKey.deleteCharAt(mKanjiKey.lastIndex) // composing と同じ子音アルファベットのはず
             changeState(SKKKanjiState)
             setComposingTextSKK("${mKanjiKey}${mComposing}")

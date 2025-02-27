@@ -15,12 +15,12 @@ class RomajiConverterTest {
 
     @Test
     fun testConvert() {
-        assertEquals(null, RomajiConverter.convert(""))
+        assertEquals("", RomajiConverter.convert(""))
         assertEquals("あ", RomajiConverter.convert("a"))
         assertEquals("か", RomajiConverter.convert("ka"))
         assertEquals("きゃ", RomajiConverter.convert("kya"))
         assertEquals("ちゃ", RomajiConverter.convert("cha"))
-        assertEquals(null, RomajiConverter.convert("n")) // 未確定
+        assertEquals("", RomajiConverter.convert("n")) // 未確定
         assertEquals("ん", RomajiConverter.convert("nn"))
         assertEquals("う゛ぁ", RomajiConverter.convert("va")) // ゔぁ ではない
         assertEquals("‥", RomajiConverter.convert("z,"))
@@ -33,8 +33,8 @@ class RomajiConverterTest {
         assertEquals("↓", RomajiConverter.convert("zj"))
         assertEquals("↑", RomajiConverter.convert("zk"))
         assertEquals("→", RomajiConverter.convert("zl"))
-        assertEquals(null, RomajiConverter.convert("an")) // a が来るわけない
-        assertEquals(null, RomajiConverter.convert("ca")) // c が残るわけない
+        assertEquals("", RomajiConverter.convert("an")) // a が来るわけない
+        assertEquals("", RomajiConverter.convert("ca")) // c が残るわけない
     }
 
     @Test

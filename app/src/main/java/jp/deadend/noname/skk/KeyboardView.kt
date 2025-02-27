@@ -339,11 +339,11 @@ open class KeyboardView @JvmOverloads constructor(
     }
 
     private fun adjustCase(
-        label: CharSequence,
-        shiftedLabel: CharSequence,
-        downLabel: CharSequence,
+        label: String,
+        shiftedLabel: String,
+        downLabel: String,
         flicked: Int
-    ): CharSequence {
+    ): String {
         return if (flicked == -1 && downLabel.isNotEmpty()) {
             downLabel
         } else if (isShifted xor (flicked == 1) && shiftedLabel.isNotEmpty()) {
@@ -416,10 +416,10 @@ open class KeyboardView @JvmOverloads constructor(
 
                 // Switch the character to uppercase if shift is pressed
                 val label = if (key.label.isEmpty()) null else {
-                    adjustCase(key.label, key.shiftedLabel, "", 0).toString()
+                    adjustCase(key.label, key.shiftedLabel, "", 0)
                 }
                 val shiftedLabel = if (key.shiftedLabel.isEmpty()) null else {
-                    adjustCase(key.shiftedLabel, key.label, "", 0).toString()
+                    adjustCase(key.shiftedLabel, key.label, "", 0)
                 }
                 val icon = key.icon
                 keyBackground?.bounds?.let {
@@ -517,7 +517,7 @@ open class KeyboardView @JvmOverloads constructor(
                         mPaint.textSize = mLabelTextSize * .5f * labelZoom
                         mPaint.typeface = Typeface.DEFAULT
                         canvas.drawText(
-                            key.downLabel.toString(),
+                            key.downLabel,
                             key.width - mPadding.right - mPaint.textSize * .4f,
                             key.height - mPadding.bottom - mPaint.textSize * .5f,
                             mPaint
@@ -591,7 +591,7 @@ open class KeyboardView @JvmOverloads constructor(
         }
     }
 
-    private fun getPreviewText(key: Keyboard.Key): CharSequence = when {
+    private fun getPreviewText(key: Keyboard.Key): String = when {
         key.codes[0] == Keyboard.KEYCODE_SHIFT -> when (isFlicked) {
             0 -> "SHIFT"
             else -> "CAPSLOCK"
@@ -747,7 +747,7 @@ open class KeyboardView @JvmOverloads constructor(
 
     protected open fun onLongPress(key: Keyboard.Key): Boolean {
         if (!skkPrefs.useMiniKey) return false
-        if (key.popupCharacters.isNullOrEmpty()) return false
+        if (key.popupCharacters.isEmpty()) return false
         val popupKeyboardId = key.popupResId
         if (popupKeyboardId != 0) {
             val cached = mMiniKeyboardCache[key]
@@ -787,7 +787,7 @@ open class KeyboardView @JvmOverloads constructor(
                 miniKeyboardView.keyboard = Keyboard(
                     context, popupKeyboardId,
                     mService.mScreenWidth, mService.mScreenHeight,
-                    key.popupCharacters!!, -1, paddingLeft + paddingRight
+                    key.popupCharacters, -1, paddingLeft + paddingRight
                 )
                 miniKeyboardView.setPopupParent(this)
                 mKeyBackground?.let { miniKeyboardView.setKeyBackground(it) } // for inset

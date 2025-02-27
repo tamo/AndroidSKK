@@ -118,7 +118,7 @@ internal fun loadFromTextDic(
         if (!isShortCut && overwrite) {
             btree.insert(key, "/$freq/$key/", true)
         } else {
-            val pairs = (btree.find(prevKey) ?: "")
+            val pairs = (btree.find(prevKey).orEmpty())
                 .split('/').asSequence().filter { it.isNotEmpty() }
                 .zipWithNext().filterIndexed { index, _ -> index % 2 == 0 }
                 .map { (f, s) ->

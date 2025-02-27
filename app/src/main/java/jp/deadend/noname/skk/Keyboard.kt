@@ -89,11 +89,11 @@ open class Keyboard {
 
     class Key(parent: Row) {
         var codes: IntArray = intArrayOf()
-        var label: CharSequence = ""
+        var label = ""
         private var shiftedCode = 0
-        var shiftedLabel: CharSequence = ""
+        var shiftedLabel = ""
         private var downCode = 0
-        var downLabel: CharSequence = ""
+        var downLabel = ""
         var icon: Drawable? = null
         private var iconPreview: Drawable? = null
         var width: Int
@@ -104,8 +104,8 @@ open class Keyboard {
         private var sticky = false
         var repeatable = false
 
-        var text: CharSequence? = null
-        var popupCharacters: CharSequence? = null
+        var text: String? = null
+        var popupCharacters = ""
         var popupResId = 0
 
         var x = 0
@@ -164,7 +164,7 @@ open class Keyboard {
             iconPreview?.let {
                 iconPreview?.setBounds(0, 0, it.intrinsicWidth, it.intrinsicHeight)
             }
-            popupCharacters = a.getText(R.styleable.Keyboard_Key_popupCharacters)
+            popupCharacters = a.getText(R.styleable.Keyboard_Key_popupCharacters)?.toString().orEmpty()
             popupResId = a.getResourceId(R.styleable.Keyboard_Key_popupKeyboard, 0)
             repeatable = a.getBoolean(R.styleable.Keyboard_Key_isRepeatable, false)
             sticky = a.getBoolean(R.styleable.Keyboard_Key_isSticky, false)
@@ -174,10 +174,10 @@ open class Keyboard {
             icon?.let {
                 it.setBounds(0, 0, it.intrinsicWidth, it.intrinsicHeight)
             }
-            label = a.getText(R.styleable.Keyboard_Key_keyLabel) ?: ""
-            shiftedLabel = a.getText(R.styleable.Keyboard_Key_shiftedLabel) ?: ""
-            downLabel = a.getText(R.styleable.Keyboard_Key_downLabel) ?: ""
-            text = a.getText(R.styleable.Keyboard_Key_keyOutputText)
+            label = a.getText(R.styleable.Keyboard_Key_keyLabel)?.toString().orEmpty()
+            shiftedLabel = a.getText(R.styleable.Keyboard_Key_shiftedLabel)?.toString().orEmpty()
+            downLabel = a.getText(R.styleable.Keyboard_Key_downLabel)?.toString().orEmpty()
+            text = a.getText(R.styleable.Keyboard_Key_keyOutputText)?.toString()
             if (codes.isEmpty() && label.isNotEmpty()) {
                 codes = intArrayOf(label[0].code)
             }
@@ -268,12 +268,12 @@ open class Keyboard {
     constructor(
         context: Context, layoutTemplateResId: Int,
         displayWidth: Int, displayHeight: Int,
-        characters: CharSequence, columns: Int, horizontalPadding: Int
+        characters: String, columns: Int, horizontalPadding: Int
     ) : this(context, layoutTemplateResId, displayWidth, displayHeight) {
         initMiniKey(characters, columns, horizontalPadding)
     }
 
-    private fun initMiniKey(characters: CharSequence, columns: Int, horizontalPadding: Int) {
+    private fun initMiniKey(characters: String, columns: Int, horizontalPadding: Int) {
         var x = 0
         var y = 0
         var column = 0

@@ -70,7 +70,7 @@ object SKKChooseState : SKKConfirmingState {
                     changeState(SKKAbbrevState)
                 } else { // 漢字変換中
                     mComposing.setLength(0) // 最初から空のはずだけど念のため
-                    mOkurigana = null // これは入っている可能性がある
+                    mOkurigana = "" // これは入っている可能性がある
                     changeState(SKKKanjiState) // Abbrevの可能性はない
                     val maybeComposing = mKanjiKey.lastOrNull() ?: 0.toChar()
                     if (isAlphabet(maybeComposing.code)) {

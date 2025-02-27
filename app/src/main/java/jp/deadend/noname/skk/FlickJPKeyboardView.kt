@@ -1065,7 +1065,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
         dialog.show()
     }
 
-    private fun extractCommon(list: ArrayList<String>): Triple<String, Array<CharSequence>, String> {
+    private fun extractCommon(list: ArrayList<String>): Triple<String, Array<String>, String> {
         var commonPrefix = list.last()
         var commonSuffix = list.last()
         list.forEach {
@@ -1077,7 +1077,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
             }
         }
 
-        val array: Array<CharSequence> = list.map {
+        val array = list.map {
             leftSymbol + it.substring(
                 commonPrefix.length,
                 it.length - commonSuffix.length

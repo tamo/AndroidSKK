@@ -176,8 +176,8 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                     val key =
                         checkNotNull(findKeyByCode(keyboard, keyCode)) { "BUG: no $keyCode key" }
                     key.label = if (isKatakana)
-                        hiragana2katakana(key.label.toString()) ?: ""
-                    else katakana2hiragana(key.label.toString()) ?: ""
+                        hiragana2katakana(key.label).orEmpty()
+                    else katakana2hiragana(key.label).orEmpty()
                 }
             }
 
@@ -757,7 +757,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                         else -> it
                     }
                 }
-                val popupText = mPopupTextView?.getOrNull(flickIndex)?.text ?: ""
+                val popupText = mPopupTextView?.getOrNull(flickIndex)?.text?.toString().orEmpty()
                 if (popupText.length == 1) {
                     val code = when (val guidedCode = popupText[0].code) {
                         in 32..126 -> guidedCode

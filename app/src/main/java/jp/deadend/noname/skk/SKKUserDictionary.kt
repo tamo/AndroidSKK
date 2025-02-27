@@ -104,7 +104,7 @@ class SKKUserDictionary private constructor(
             }
             newVal.append("/")
 
-            safeRun { mOldValue = mBTree?.find(key) ?: "" }
+            safeRun { mOldValue = mBTree?.find(key).orEmpty() }
         }
 
         safeRun {

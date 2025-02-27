@@ -188,7 +188,7 @@ class SKKService : InputMethodService() {
             notify(
                 NOTIFY_ID_DETAILS,
                 "深刻なエラー",
-                getText(R.string.error_extracting_dict_failed),
+                getText(R.string.error_extracting_dict_failed).toString(),
                 pendingIntent
             )
             return false
@@ -938,7 +938,7 @@ class SKKService : InputMethodService() {
 
     fun changeLastChar(type: String) = mEngine.changeLastChar(type)
 
-    fun commitTextSKK(text: CharSequence) = mEngine.commitTextSKK(text)
+    fun commitTextSKK(text: String) = mEngine.commitTextSKK(text)
 
     fun googleTransliterate() = mEngine.googleTransliterate()
 
@@ -948,10 +948,6 @@ class SKKService : InputMethodService() {
 
     fun pickCandidatesViewManually(index: Int, unregister: Boolean = false) =
         mEngine.pickCandidatesViewManually(index, unregister)
-
-//    fun getTextBeforeCursor(length: Int): CharSequence? {
-//        return currentInputConnection?.getTextBeforeCursor(length, 0)
-//    }
 
     fun handleBackspace(): Boolean {
         if (mStickyShift) mShiftKey.useState()
@@ -1028,8 +1024,8 @@ class SKKService : InputMethodService() {
 
     fun sendToMushroom() {
         val clip = (getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager)
-            .primaryClip?.getItemAt(0)?.coerceToText(this) ?: ""
-        val str = mEngine.prepareToMushroom(clip.toString())
+            .primaryClip?.getItemAt(0)?.coerceToText(this)?.toString().orEmpty()
+        val str = mEngine.prepareToMushroom(clip)
 
         val mushroom = Intent(this, SKKMushroom::class.java)
         mushroom.flags = Intent.FLAG_ACTIVITY_NEW_TASK
@@ -1040,14 +1036,14 @@ class SKKService : InputMethodService() {
     fun pasteClip() {
         val cm = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
         val cs = cm.primaryClip?.getItemAt(0)?.text
-        val clip = cs?.toString() ?: ""
+        val clip = cs?.toString().orEmpty()
         commitTextSKK(clip)
     }
 
     private fun notify(
         id: Int,
-        title: CharSequence,
-        text: CharSequence,
+        title: String,
+        text: String,
         intent: PendingIntent?
     ): Boolean {
         val builder = if (title.isEmpty() || text.isEmpty()) null

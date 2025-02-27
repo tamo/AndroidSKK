@@ -46,9 +46,7 @@ class SKKMushroom : AppCompatActivity() {
         setContentView(binding.root)
 
         val extras = intent.extras
-        mStr = if (extras == null) "" else {
-            extras.getString(REPLACE_KEY) ?: ""
-        }
+        mStr = extras?.getString(REPLACE_KEY).orEmpty()
         binding.listView.emptyView = binding.emptyView
         binding.listView.adapter = AppListAdapter(this, loadMushroomAppList())
         binding.listView.onItemClickListener =

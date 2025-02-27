@@ -41,7 +41,7 @@ object SKKHiraganaState : SKKState {
                 val hiraganaChar = getZenkakuSeparator(mComposing.toString())
                     ?: RomajiConverter.convert(mComposing.toString())
 
-                if (hiraganaChar != null) { // 確定できるものがあれば確定
+                if (hiraganaChar.isNotEmpty()) { // 確定できるものがあれば確定
                     commitFunc(context, hiraganaChar)
                 } else { // アルファベットならComposingに積む
                     if (isAlphabet(codeLower)) {
@@ -80,7 +80,7 @@ object SKKHiraganaState : SKKState {
                 cancelRegister()
                 return true
             } else {
-                return reConversion()
+                return reConvert()
             }
         }
     }
