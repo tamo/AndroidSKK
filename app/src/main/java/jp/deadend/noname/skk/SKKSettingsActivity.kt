@@ -115,9 +115,10 @@ class SKKSettingsActivity : AppCompatActivity() {
             startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS))
     }
 
-    override fun dispatchKeyEvent(event: KeyEvent): Boolean = keyPref?.let { pref ->
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean = keyPref.let { pref ->
+        if (pref == null) return super.dispatchKeyEvent(event)
         dLog("dispatchKeyEvent($event)")
-        when (event.keyCode) {
+        return when (event.keyCode) {
             KeyEvent.KEYCODE_BACK, KeyEvent.KEYCODE_ENTER -> false
             KeyEvent.KEYCODE_HOME -> true
             else -> if (event.action == KeyEvent.ACTION_DOWN) {
@@ -134,7 +135,7 @@ class SKKSettingsActivity : AppCompatActivity() {
                 true
             } else false
         }
-    } ?: super.dispatchKeyEvent(event)
+    }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {

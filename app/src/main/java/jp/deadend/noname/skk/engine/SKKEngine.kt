@@ -197,12 +197,13 @@ class SKKEngine(
                 changeState(kanaState)
                 return true
             }
-            mRegistrationStack.peekFirst()?.entry?.let { firstEntry ->
+            mRegistrationStack.peekFirst()?.entry.let { firstEntry ->
+                if (firstEntry == null) return state.isTransient
                 if (firstEntry.isNotEmpty()) {
                     firstEntry.deleteCharAt(firstEntry.lastIndex)
                     setComposingTextSKK("")
                 } // else 何もしない
-            } ?: return state.isTransient
+            }
         }
 
         if (mComposing.isNotEmpty()) {
@@ -226,12 +227,14 @@ class SKKEngine(
     fun commitTextSKK(text: CharSequence) {
         val ic = mService.currentInputConnection ?: return
 
-        mRegistrationStack.peekFirst()?.entry?.let { firstEntry ->
+        mRegistrationStack.peekFirst()?.entry.let { firstEntry ->
+            if (firstEntry == null) {
+                ic.commitText(text, 1)
+                mComposingText.setLength(0)
+                return
+            }
             firstEntry.append(text)
             setComposingTextSKK("")
-        } ?: {
-            ic.commitText(text, 1)
-            mComposingText.setLength(0)
         }
     }
 
@@ -586,7 +589,7 @@ class SKKEngine(
             candidates.filter { str -> /* str("漢字; 注釈も含む") */
                 str.any { ch -> hintKanjiSequence.contains(ch) } /* hintKanjiSequenceは注釈なし */
                         || str.contains(hint) /* ひらがなかカタカナでヒントを含むstrもOK */
-                        || hiragana2katakana(hint)?.let { str.contains(it) } ?: false
+                        || hiragana2katakana(hint).let { !it.isNullOrEmpty() && str.contains(it) }
             }.let { nList ->
                 if (mCandidateKanjiKey == "emoji")
                     nList.map { removeAnnotation(it) }

@@ -252,7 +252,10 @@ class SKKUserDictTool : AppCompatActivity() {
                                 }
                                 closeUserDict()
                             } catch (e: Exception) {
-                                Log.e("SKK", "UserDictTool error removing ${item.key}: ${e.message}")
+                                Log.e(
+                                    "SKK",
+                                    "UserDictTool error removing ${item.key}: ${e.message}"
+                                )
                             }
                         }
 
@@ -536,10 +539,11 @@ class SKKUserDictTool : AppCompatActivity() {
                         if (buffer.size < bufferSize) continue
                         withContext(Dispatchers.Main) {
                             mAdapter.addAll(buffer)
-                            mBtree?.let { bt ->
+                            mBtree.let { bt ->
+                                if (bt == null) throw CancellationException()
                                 mSearchView.queryHint =
                                     "読み込み中 ${100 * mAdapter.count / bt.size()}%"
-                            } ?: throw CancellationException()
+                            }
                         }
                         buffer.clear()
                         ensureActive()

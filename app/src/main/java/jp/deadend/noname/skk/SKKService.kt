@@ -215,7 +215,7 @@ class SKKService : InputMethodService() {
                     getString(R.string.dict_name_emoji) -> result.add(mEmojiDict)
                     else -> SKKDictionary.newInstance(
                         dd + "/" + vals[i], getString(R.string.btree_name)
-                    )?.let { result.add(it) } ?: dLog("failed to open ${vals[i]}")
+                    )?.also { result.add(it) } ?: dLog("failed to open ${vals[i]}")
                 }
             }
         }
