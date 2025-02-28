@@ -162,6 +162,17 @@ class SKKSettingsActivityUITest {
             assert((v as SearchView).query.contentEquals("アク"))
         }
 
+        // 「んん」に「オ」を登録
+        device.pressKeyCode(KeyEvent.KEYCODE_N, KeyEvent.META_SHIFT_LEFT_ON)
+        device.pressKeyCodes(
+            intArrayOf(KeyEvent.KEYCODE_N, KeyEvent.KEYCODE_N, KeyEvent.KEYCODE_SPACE).plus(
+                intArrayOf(KeyEvent.KEYCODE_O, KeyEvent.KEYCODE_ENTER)
+            )
+        )
+        onView(withId(R.id.userDictToolSearch)).check { v, _ ->
+            assert((v as SearchView).query.contentEquals("アクオ"))
+        }
+
         // 「んん*で」を「xで」と登録
         device.pressKeyCode(KeyEvent.KEYCODE_N, KeyEvent.META_SHIFT_LEFT_ON)
         device.pressKeyCodes(intArrayOf(KeyEvent.KEYCODE_N, KeyEvent.KEYCODE_N))
@@ -172,12 +183,14 @@ class SKKSettingsActivityUITest {
             )
         )
         onView(withId(R.id.userDictToolSearch)).check { v, _ ->
-            assert((v as SearchView).query.contentEquals("アクxデ"))
+            assert((v as SearchView).query.contentEquals("アクオxデ"))
         }
-        pressBack() // 検索キャンセル
+
+        pressBack() // IMEキャンセル
         pressBack() // 設定ルートに戻る
         onView(withText("ユーザー辞書ツール")).perform(click())
         Thread.sleep(1000)
+        onView(withText("んん /オ/")).check(matches(isDisplayed()))
         onView(withText("んんd /x/[で/x/]/")).check(matches(isDisplayed()))
         onView(withText(postText)).check(matches(isDisplayed()))
     }

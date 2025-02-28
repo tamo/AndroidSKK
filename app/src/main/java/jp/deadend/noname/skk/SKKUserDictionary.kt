@@ -56,14 +56,14 @@ class SKKUserDictionary private constructor(
     override fun getCandidates(rawKey: String): List<String>? =
         getEntry(rawKey)?.candidates?.distinct()
 
-    fun addEntry(key: String, value: String, okurigana: String?) {
+    fun addEntry(key: String, value: String, okurigana: String) {
         mOldKey = key
         val newVal = StringBuilder()
         val entry = getEntry(key)
 
         if (entry == null) {
             newVal.append("/", value, "/")
-            if (okurigana != null) newVal.append("[", okurigana, "/", value, "/]/")
+            if (okurigana.isNotEmpty()) newVal.append("[", okurigana, "/", value, "/]/")
             mOldValue = ""
         } else {
             val candidates = entry.candidates.toMutableList()
@@ -71,7 +71,7 @@ class SKKUserDictionary private constructor(
             candidates.add(0, value)
 
             val okrs = mutableListOf<Pair<String, String>>()
-            if (okurigana != null) {
+            if (okurigana.isNotEmpty()) {
                 var matched = false
                 for (pair in entry.okuriganaBlocks) {
                     if (pair.first == okurigana && pair.second == value) {
@@ -103,7 +103,7 @@ class SKKUserDictionary private constructor(
         }
     }
 
-    fun removeEntry(key: String, value: String, okurigana: String?) {
+    fun removeEntry(key: String, value: String, okurigana: String) {
         val entry = getEntry(key) ?: getEntry(
             // 「だい4かい」がなければ「だい#かい」を削除する
             key.replace(Regex("\\d+(\\.\\d+)?"), "#")
