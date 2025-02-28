@@ -7,6 +7,7 @@ import jp.deadend.noname.skk.SKKDictionaryInterface
 import jp.deadend.noname.skk.SKKService
 import jp.deadend.noname.skk.SKKUserDictionary
 import jp.deadend.noname.skk.dLog
+import jp.deadend.noname.skk.hankaku2zenkaku
 import jp.deadend.noname.skk.hiragana2katakana
 import jp.deadend.noname.skk.isAlphabet
 import jp.deadend.noname.skk.katakana2hiragana
@@ -507,9 +508,9 @@ class SKKEngine(
                     else hiragana2katakana(regInfo.key)!!
                 val okurigana =
                     if (kanaState === SKKHiraganaState) regInfo.okurigana
-                    else hiragana2katakana(regInfo.okurigana)
+                    else hiragana2katakana(regInfo.okurigana).orEmpty()
                 // 半角カナ変換はあとで
-                if (okurigana == null) {
+                if (okurigana.isEmpty()) {
                     ct.append(key)
                 } else {
                     ct.append(key.substring(0, key.length - 1))
@@ -560,9 +561,11 @@ class SKKEngine(
 
         changeState(SKKChooseState)
 
-        val list = findCandidates(str) ?: findCandidates(
-            str.replace(Regex("\\d+(\\.\\d+)?"), "#")
-        ) ?: return registerStart(str)
+        val list = findCandidates(str).ifEmpty {
+            findCandidates(str.replace(Regex("\\d+(\\.\\d+)?"), "#")).ifEmpty {
+                return registerStart(str)
+            }
+        }
 
         mCandidateList = list
         mCurrentCandidateIndex = 0
@@ -578,11 +581,9 @@ class SKKEngine(
         val candidates = SKKNarrowingState.mOriginalCandidates ?: return
 
         val narrowed = if (hint.isEmpty()) candidates else {
-            val hintKanjiSequence = findCandidates(hint)
-                ?.joinToString(
-                    separator = "",
-                    transform = { processConcatAndMore(removeAnnotation(it), "") }
-                ).orEmpty()
+            val hintKanjiSequence = findCandidates(hint).joinToString("") {
+                processConcatAndMore(removeAnnotation(it), "")
+            }
 
             // mCandidateKanjiKey("かんじ") -> candidates("漢字", "幹事", "監事", "感じ")
             // hint("おとこ") -> hintKanjiSequence("男漢♂")
@@ -906,11 +907,15 @@ class SKKEngine(
         updateSuggestions("emoji")
     }
 
-    private fun findCandidates(key: String): List<String>? {
+    private fun findCandidates(key: String): List<String> {
         val userEntry = mUserDict.getEntry(key)
+        dLog("user dictionary: $key -> ${userEntry?.candidates} with ${userEntry?.okuriganaBlocks}")
         val (userOkList, userRestList) = (userEntry?.candidates ?: listOf()).partition { s ->
-            mOkurigana.isEmpty()
-                    || userEntry!!.okuriganaBlocks.any { it.first == mOkurigana && it.second == s }
+            mOkurigana.isEmpty() || userEntry!!.okuriganaBlocks.any {
+                it.first == katakana2hiragana(hankaku2zenkaku(mOkurigana)) && it.second == s
+                // 送り仮名ブロックを直接使って変換するのではなく、この判定にだけ使っている
+                // なので、送り仮名ブロックだけで存在していても無意味である
+            }
         }
 
         val list: List<String> = mDictList.asSequence().mapNotNull { dict ->
@@ -928,11 +933,9 @@ class SKKEngine(
             .distinct()
             .toMutableList()
 
+        if (list.isEmpty()) dLog("Dictionary: Can't find Kanji for $key")
+
         return list
-            .ifEmpty {
-                dLog("Dictionary: Can't find Kanji for $key")
-                null
-            }
     }
 
     private fun getCandidate(index: Int): String? = mCandidateList?.let {

@@ -23,43 +23,34 @@ class SKKUserDictionary private constructor(
     private var mOldValue: String = ""
 
     class Entry(
-        val candidates: MutableList<String>,
-        val okuriganaBlocks: MutableList<Pair<String, String>>
+        val candidates: List<String>,
+        val okuriganaBlocks: List<Pair<String, String>>
     )
 
     fun getEntry(rawKey: String): Entry? {
         val key = katakana2hiragana(rawKey) ?: return null
-        val cd = mutableListOf<String>()
-        val okr = mutableListOf<Pair<String, String>>()
-
         val value: String = safeRun { mBTree?.find(key) } ?: return null
 
-        val valList = value.substring(1, value.length - 1).split("/")  // 先頭と最後のスラッシュをとってから分割
-        if (valList.isEmpty()) {
+        // 正規表現で "/送/" と "/[り/送/]/" を拾う
+        val (candidates, okuriganaStrings) =
+            Regex("""((?<=/)[^\[\]/;][^/]*?(?=/)(?!]/))|((?<=/\[).+?(?=/]/))""")
+                .findAll(value).map { it.value }
+                .partition { !it.contains("/") }
+
+        if (candidates.isEmpty()) {
             Log.e("SKK", "Invalid value found: Key=$key value=$value")
             return null
         }
 
-        // 送りがなブロック以外の部分を追加
-        valList.takeWhile { !it.startsWith("[") }.forEach { cd.add(it) }
-
-        if (value.contains("/[") && value.contains("/]")) {
-            // 送りがなブロック
-            val regex = """/\[.*?/]""".toRegex()
-            regex.findAll(value).forEach { result: MatchResult ->
-                result.value.substring(2, result.value.length - 2) // "/[" と "/]" をとる
-                    .split('/')
-                    .let { pair ->
-                        if (pair.size == 2) {
-                            okr.add(pair[0] to pair[1])
-                        } else {
-                            Log.e("SKK", "Invalid: Key=$key value=$value (${result.value})")
-                        }
-                    }
+        val okuriganaBlocks = okuriganaStrings.mapNotNull { block ->
+            block.split('/').let { pair ->
+                if (pair.size == 2) pair[0] to pair[1]
+                else null
+                    .also { Log.e("SKK", "Invalid: Key=$key okuriganaBlock=$block in $value") }
             }
         }
 
-        return Entry(cd, okr)
+        return Entry(candidates, okuriganaBlocks)
     }
 
     override fun getCandidates(rawKey: String): List<String>? =
@@ -75,7 +66,7 @@ class SKKUserDictionary private constructor(
             if (okurigana != null) newVal.append("[", okurigana, "/", value, "/]/")
             mOldValue = ""
         } else {
-            val candidates = entry.candidates
+            val candidates = entry.candidates.toMutableList()
             candidates.remove(value)
             candidates.add(0, value)
 
@@ -117,17 +108,14 @@ class SKKUserDictionary private constructor(
             // 「だい4かい」がなければ「だい#かい」を削除する
             key.replace(Regex("\\d+(\\.\\d+)?"), "#")
         ) ?: return
-        val candidates = entry.candidates // 送/遅/贈;ユーザー辞書にも注釈がある
-        val okuriganaBlocks = entry.okuriganaBlocks // [ら/送/]/[り/送/]/[る/送;注釈もありうる?/]
+        val candidates = entry.candidates.toMutableList() // 送/遅/贈;ユーザー辞書にも注釈がある
+        val okuriganaBlocks = entry.okuriganaBlocks.toMutableList() // [ら/送/]/[り/送/]/[る/送;注釈もありうる?/]
         val rawVal = value.takeWhile { it != ';' } // 注釈を無視して探す
 
-        if (!okuriganaBlocks.removeIf { pair ->
+        if (okuriganaBlocks.isEmpty() || !okuriganaBlocks.removeIf { pair ->
                 pair.first == okurigana && pair.second.takeWhile { it != ';' } == rawVal
-            } || okuriganaBlocks.isEmpty()) { // 送りブロックが残らない場合は丸ごと消す、でいいのか?
-            candidates.removeIf { old ->
-                old.takeWhile { it != ';' } == rawVal
-            }
-        }
+            } // 送りブロックが残らない場合は丸ごと消す
+        ) candidates.removeIf { old -> old.takeWhile { it != ';' } == rawVal }
 
         val newVal = candidates.fold("") { acc, str -> "$acc/$str" } +
                 okuriganaBlocks.fold("") { acc, pair -> "$acc/[${pair.first}/${pair.second}/]" } +

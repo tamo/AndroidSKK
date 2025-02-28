@@ -39,7 +39,9 @@ class SKKSettingsActivityUITest {
 
     private val device = UiDevice.getInstance(getInstrumentation())
     private val context: Context = ApplicationProvider.getApplicationContext()
-    private val dictText = "あu /(concat \"合\\057\");注釈/[う/合;注釈2/]/会;人と/[う/会;人と2/]/"
+    private val preText = "あk /(concat \"開\\057\");注釈/[く/開;注釈2/]/あ;ひら/[く/あ;ひら2/]/"
+    private val postText =
+        "あk /あ;ひら/(concat \"開\\057\");注釈/[く/開;注釈2/]/[く/あ;ひら2/]/[く/(concat \"開\\057\");注釈/]/[く/あ;ひら/]/"
 
     @Before
     fun testInputMethodSettings() {
@@ -72,7 +74,7 @@ class SKKSettingsActivityUITest {
     fun prepareDictFile() {
         val dictFile = File(Environment.getExternalStorageDirectory(), "Download/sample_dict.txt")
         if (!dictFile.exists()) {
-            dictFile.writeText(dictText) // なぜか知らないが新規作成はできて、その後は読むこともできない
+            dictFile.writeText(preText) // なぜか知らないが新規作成はできて、その後は読むこともできない
         }
     }
 
@@ -112,13 +114,13 @@ class SKKSettingsActivityUITest {
         onView(withText("OK")).perform(click())
 
         // 初期化された状態からハンバーガーメニュー
-        onView(withText(dictText)).check(doesNotExist())
+        onView(withText(preText)).check(doesNotExist())
         openActionBarOverflowOrOptionsMenu(context)
         onView(withText("インポート")).perform(click())
 
         // ファイル選択画面
         device.wait(Until.findObject(By.text("sample_dict.txt")), 1000).click()
-        device.wait(Until.findObject(By.text(dictText)), 3000)
+        device.wait(Until.findObject(By.text(preText)), 3000)
         // この時点では検索条件がないので辞書の内容がすべて見えている
 
         // キーボード選択の UI は Android バージョンによって異なるかも
@@ -129,24 +131,55 @@ class SKKSettingsActivityUITest {
 
         // 検索欄
         onView(withId(R.id.userDictToolSearch)).perform(click())
-        // AU で漢字変換して確定する
-        device.pressKeyCodes(
-            intArrayOf(KeyEvent.KEYCODE_A, KeyEvent.KEYCODE_U),
-            KeyEvent.META_SHIFT_LEFT_ON
-        )
+        // AkU で漢字変換して確定する
+        device.pressKeyCode(KeyEvent.KEYCODE_A, KeyEvent.META_SHIFT_LEFT_ON)
+        device.pressKeyCode(KeyEvent.KEYCODE_K)
+        device.pressKeyCode(KeyEvent.KEYCODE_U, KeyEvent.META_SHIFT_LEFT_ON)
         device.pressKeyCode(KeyEvent.KEYCODE_ENTER)
         onView(withId(R.id.userDictToolSearch)).check { v, _ ->
-            assert((v as SearchView).query.contentEquals("合/う"))
+            assert((v as SearchView).query.contentEquals("開/く"))
             // テスト前に service が動いていたら失敗する: 再テストで通るはず
         }
-        // 検索欄は「合/う」になっているので検索条件に合わなくなる
-        onView(withText(dictText)).check(doesNotExist())
+        // 検索欄は「開/く」になっているので検索条件に合わなくなる
+        onView(withText(preText)).check(doesNotExist())
 
-        // 検索条件を「合/う」から「合」にすると再び合致するようになる
+        // 検索条件を「開/く」から「開」にすると再び合致するようになる
         device.pressKeyCode(KeyEvent.KEYCODE_DEL)
-        onView(withText(dictText)).check(doesNotExist())
+        onView(withText(preText)).check(doesNotExist())
         device.pressKeyCode(KeyEvent.KEYCODE_DEL)
-        onView(withText(dictText)).check(matches(isDisplayed()))
+        onView(withText(preText)).check(matches(isDisplayed()))
+
+        // カタカナで変換を進める
+        device.pressKeyCodes(intArrayOf(KeyEvent.KEYCODE_DEL, KeyEvent.KEYCODE_Q))
+        device.pressKeyCodes(
+            intArrayOf(KeyEvent.KEYCODE_A, KeyEvent.KEYCODE_K),
+            KeyEvent.META_SHIFT_LEFT_ON
+        )
+        device.pressKeyCodes(
+            intArrayOf(KeyEvent.KEYCODE_U, KeyEvent.KEYCODE_SPACE, KeyEvent.KEYCODE_ENTER)
+        )
+        onView(withId(R.id.userDictToolSearch)).check { v, _ ->
+            assert((v as SearchView).query.contentEquals("アク"))
+        }
+
+        // 「んん*で」を「xで」と登録
+        device.pressKeyCode(KeyEvent.KEYCODE_N, KeyEvent.META_SHIFT_LEFT_ON)
+        device.pressKeyCodes(intArrayOf(KeyEvent.KEYCODE_N, KeyEvent.KEYCODE_N))
+        device.pressKeyCode(KeyEvent.KEYCODE_D, KeyEvent.META_SHIFT_LEFT_ON)
+        device.pressKeyCodes(
+            intArrayOf(
+                KeyEvent.KEYCODE_E, KeyEvent.KEYCODE_L, KeyEvent.KEYCODE_X, KeyEvent.KEYCODE_ENTER
+            )
+        )
+        onView(withId(R.id.userDictToolSearch)).check { v, _ ->
+            assert((v as SearchView).query.contentEquals("アクxデ"))
+        }
+        pressBack() // 検索キャンセル
+        pressBack() // 設定ルートに戻る
+        onView(withText("ユーザー辞書ツール")).perform(click())
+        Thread.sleep(1000)
+        onView(withText("んんd /x/[で/x/]/")).check(matches(isDisplayed()))
+        onView(withText(postText)).check(matches(isDisplayed()))
     }
 
     @Test
