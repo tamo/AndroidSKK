@@ -9,6 +9,7 @@ import jp.deadend.noname.skk.isKanaSymbol
 import jp.deadend.noname.skk.isKatakana
 import jp.deadend.noname.skk.isVowel
 import jp.deadend.noname.skk.katakana2hiragana
+import jp.deadend.noname.skk.skkPrefs
 
 object RomajiConverter {
     private val mRomajiMap = mapOf(
@@ -70,14 +71,17 @@ object RomajiConverter {
 
     private val mSmallKanaMap = mapOf(
         "あ" to "ぁ", "い" to "ぃ", "う" to "ぅ", "え" to "ぇ", "お" to "ぉ",
-        "か" to "ゕ", "け" to "ゖ",
         "や" to "ゃ", "ゆ" to "ゅ", "よ" to "ょ", "つ" to "っ", "わ" to "ゎ",
         "ア" to "ァ", "イ" to "ィ", "ウ" to "ゥ", "エ" to "ェ", "オ" to "ォ",
-        "カ" to "ヵ", "ケ" to "ヶ",
         "ヤ" to "ャ", "ユ" to "ュ", "ヨ" to "ョ", "ツ" to "ッ", "ワ" to "ヮ",
     )
+    private val mSmallKMap = mapOf(
+        "か" to "ゕ", "け" to "ゖ",
+        "カ" to "ヵ", "ケ" to "ヶ",
+    )
 
-    private val mReversedSmallKanaMap = mSmallKanaMap.entries.associate { (l, s) -> s to l }
+    private val mReversedSmallKanaMap = mSmallKanaMap.plus(mSmallKMap)
+        .entries.associate { (l, s) -> s to l }
 
     private val mDakutenMap = mapOf(
         "う" to "ゔ",
@@ -177,7 +181,8 @@ object RomajiConverter {
                 ?: mDakutenMap[mReversedHandakutenMap[kana]]            // 半濁点を濁点に
             SKKEngine.LAST_CONVERSION_HANDAKUTEN -> (mHandakutenMap + mReversedHandakutenMap)[kana]
                 ?: mHandakutenMap[mReversedDakutenMap[kana]]            // 濁点を半濁点に
-            SKKEngine.LAST_CONVERSION_TRANS -> mSmallKanaMap[kana] // 普通を小に
+            SKKEngine.LAST_CONVERSION_TRANS -> (if (skkPrefs.useSmallK) mSmallKMap[kana] else null)
+                ?: mSmallKanaMap[kana]                                  // 普通を小に
                 ?: mDakutenMap[mReversedSmallKanaMap[kana]]             // 小を濁点に
                 ?: mDakutenMap[kana]                                    // 普通を濁点に
                 ?: mHandakutenMap[mReversedDakutenMap[kana]]            // 濁点を半濁点に

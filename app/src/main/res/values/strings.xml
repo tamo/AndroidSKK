@@ -77,6 +77,7 @@
     <string name="pref_mini_keyboard" translatable="false">PrefKeyUseMiniKey</string>
     <string name="pref_use_soft_cancel_key" translatable="false">PrefKeyUseSoftCancelKey</string>
     <string name="pref_use_soft_trans_key" translatable="false">PrefKeyUseSoftTransKey</string>
+    <string name="pref_use_small_k" translatable="false">PrefKeyUseSmallK</string>
     <string name="pref_exchange_shift_kana" translatable="false">PrefKeyChangeShift</string>
     <string name="pref_key_label_zoom" translatable="false">PrefKeyKeyZoom</string>
     <string name="pref_key_height_port" translatable="false">PrefKeyKeyHeightPort</string>

@@ -80,10 +80,17 @@
                     app:title="キャンセルキーの使用" />
                 <androidx.preference.CheckBoxPreference
                     app:defaultValue="true"
+                    app:disableDependentsState="false"
                     app:dependency="@string/pref_use_soft_cancel_key"
                     app:key="@string/pref_use_soft_trans_key"
                     app:summary="小文字キーが連打で濁点や半濁点にもなります"
                     app:title="「◻゙□゚」の使用" />
+                <androidx.preference.CheckBoxPreference
+                    app:defaultValue="false"
+                    app:dependency="@string/pref_use_soft_trans_key"
+                    app:key="@string/pref_use_small_k"
+                    app:summary="「◻゙□゚」で「かけカケ」を小さくします"
+                    app:title="小書きカケの使用" />
                 <androidx.preference.CheckBoxPreference
                     app:defaultValue="true"
                     app:iconSpaceReserved="false"

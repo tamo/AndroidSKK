@@ -127,6 +127,11 @@ class SKKPrefs(context: Context) {
         set(value) = prefs.edit()
             .putBoolean(res.getString(R.string.pref_use_soft_trans_key), value).apply()
 
+    var useSmallK: Boolean
+        get() = prefs.getBoolean(res.getString(R.string.pref_use_small_k), false)
+        set(value) = prefs.edit().putBoolean(res.getString(R.string.pref_use_small_k), value)
+            .apply()
+
     var changeShift: Boolean
         get() = prefs.getBoolean(res.getString(R.string.pref_exchange_shift_kana), true)
         set(value) = prefs.edit()
@@ -180,7 +185,10 @@ class SKKPrefs(context: Context) {
             .apply()
 
     var keyPaddingBottom: Int
-        get() = prefs.getInt(res.getString(R.string.pref_key_padding_bottom), if (Build.VERSION.SDK_INT >= 35) 15 else 0)
+        get() = prefs.getInt(
+            res.getString(R.string.pref_key_padding_bottom),
+            if (Build.VERSION.SDK_INT >= 35) 15 else 0
+        )
         set(value) = prefs.edit().putInt(res.getString(R.string.pref_key_padding_bottom), value)
             .apply()
 
