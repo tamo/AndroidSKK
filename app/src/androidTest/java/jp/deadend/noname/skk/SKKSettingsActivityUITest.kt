@@ -163,35 +163,37 @@ class SKKSettingsActivityUITest {
         }
 
         // 「んん」に「オ」を登録
-        device.pressKeyCode(KeyEvent.KEYCODE_N, KeyEvent.META_SHIFT_LEFT_ON)
-        device.pressKeyCodes(
+        device.pressKeyCode(KeyEvent.KEYCODE_N, KeyEvent.META_SHIFT_LEFT_ON) // ▽n
+        device.pressKeyCodes( // 「▽ンn」でスペースでも「んん」に登録される
             intArrayOf(KeyEvent.KEYCODE_N, KeyEvent.KEYCODE_N, KeyEvent.KEYCODE_SPACE).plus(
-                intArrayOf(KeyEvent.KEYCODE_O, KeyEvent.KEYCODE_ENTER)
-            )
+                intArrayOf(KeyEvent.KEYCODE_Q, KeyEvent.KEYCODE_O, KeyEvent.KEYCODE_ENTER)
+            ) // 登録でひらがなになったが手動でカタカナにして登録
         )
         onView(withId(R.id.userDictToolSearch)).check { v, _ ->
-            assert((v as SearchView).query.contentEquals("アクオ"))
-        }
+            assert((v as SearchView).query.contentEquals("アクお"))
+        } // 登録終了でカタカナに戻り、「オ」を反転して「お」に
 
-        // 「んん*で」を「xで」と登録
-        device.pressKeyCode(KeyEvent.KEYCODE_N, KeyEvent.META_SHIFT_LEFT_ON)
-        device.pressKeyCodes(intArrayOf(KeyEvent.KEYCODE_N, KeyEvent.KEYCODE_N))
-        device.pressKeyCode(KeyEvent.KEYCODE_D, KeyEvent.META_SHIFT_LEFT_ON)
+        // 「んん*で」を「えxで」と登録
+        device.pressKeyCode(KeyEvent.KEYCODE_N, KeyEvent.META_SHIFT_LEFT_ON) // ▽n
+        device.pressKeyCodes(intArrayOf(KeyEvent.KEYCODE_N, KeyEvent.KEYCODE_N)) // ▽ン
+        device.pressKeyCode(KeyEvent.KEYCODE_D, KeyEvent.META_SHIFT_LEFT_ON) // ▽ン*d
         device.pressKeyCodes(
             intArrayOf(
-                KeyEvent.KEYCODE_E, KeyEvent.KEYCODE_L, KeyEvent.KEYCODE_X, KeyEvent.KEYCODE_ENTER
+                KeyEvent.KEYCODE_E, KeyEvent.KEYCODE_E, // 登録でひらがなになっている
+                KeyEvent.KEYCODE_L, KeyEvent.KEYCODE_X, // 本家SKKの挙動は不明
+                KeyEvent.KEYCODE_ENTER
             )
         )
         onView(withId(R.id.userDictToolSearch)).check { v, _ ->
-            assert((v as SearchView).query.contentEquals("アクオxデ"))
-        }
+            assert((v as SearchView).query.contentEquals("アクおエxデ"))
+        } // 登録終了でカタカナに戻り、「え」を反転し「エ」になる
 
         pressBack() // IMEキャンセル
         pressBack() // 設定ルートに戻る
         onView(withText("ユーザー辞書ツール")).perform(click())
         Thread.sleep(1000)
         onView(withText("んん /オ/")).check(matches(isDisplayed()))
-        onView(withText("んんd /x/[で/x/]/")).check(matches(isDisplayed()))
+        onView(withText("んんd /えx/[で/えx/]/")).check(matches(isDisplayed()))
         onView(withText(postText)).check(matches(isDisplayed()))
     }
 

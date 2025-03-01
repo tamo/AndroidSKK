@@ -69,6 +69,7 @@ class SKKEngine(
 
     // 単語登録のための情報
     private val mRegistrationStack = ArrayDeque<RegistrationInfo>()
+    private var kanaStateBeforeRegistration: SKKState = SKKHiraganaState
 
     private class RegistrationInfo(val key: String, val okurigana: String) {
         val entry = StringBuilder()
@@ -759,8 +760,8 @@ class SKKEngine(
     private fun registerStart(str: String) {
         mRegistrationStack.addFirst(RegistrationInfo(str, mOkurigana))
         reset()
-        changeState(kanaState)
-        //setComposingTextSKK("", 1);
+        kanaStateBeforeRegistration = kanaState
+        changeState(SKKHiraganaState) // 辞書にカタカナで登録してしまわないように
     }
 
     private fun registerWord() {
@@ -780,24 +781,28 @@ class SKKEngine(
             mUserDict.addEntry(
                 regInfo.key, regEntryStr, regInfo.okurigana
             )
-            // entry は生で登録するが okurigana はひらがな
-            val okurigana = regInfo.okurigana
-            commitTextSKK(
-                regInfo.entry.toString() + when (kanaState) {
-                    SKKHiraganaState -> okurigana
-                    SKKKatakanaState -> hiragana2katakana(okurigana)
-                    SKKHanKanaState -> zenkaku2hankaku(hiragana2katakana(okurigana))
-                    else -> throw RuntimeException("kanaState: $kanaState")
-                }
-            )
+            (regInfo.entry.toString() + regInfo.okurigana).let {
+                commitTextSKK(
+                    when (kanaStateBeforeRegistration) {
+                        SKKHiraganaState -> it
+                        SKKKatakanaState -> hiragana2katakana(it, reversed = true).orEmpty()
+                        SKKHanKanaState -> zenkaku2hankaku(hiragana2katakana(it)).orEmpty()
+                        // 登録した内容が半角化できる文字を含んでいる場合は、やりすぎになるが無視
+                        else -> throw RuntimeException("kanaState: $kanaStateBeforeRegistration")
+                    }
+                )
+            }
         }
         reset()
         if (mRegistrationStack.isNotEmpty()) {
             setComposingTextSKK("")
+        } else {
+            changeState(kanaStateBeforeRegistration)
         }
     }
 
     internal fun cancelRegister() {
+        changeState(kanaStateBeforeRegistration)
         val regInfo = mRegistrationStack.removeFirst()
         mKanjiKey.setLength(0)
         mKanjiKey.append(regInfo.key)
