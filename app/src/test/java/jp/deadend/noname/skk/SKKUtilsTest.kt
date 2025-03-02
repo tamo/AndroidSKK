@@ -25,6 +25,7 @@ class SKKUtilsTest {
         assertEquals("123890", zenkaku2hankaku("１２３890"))
         assertEquals("ｱｲｳあいう", zenkaku2hankaku("アイウあいう"))
         assertEquals("ｶｷｸｹｺ", zenkaku2hankaku("カキクケコ"))
+        assertEquals("ﾜｵﾝ", zenkaku2hankaku("ワオン"))
         assertEquals("ｶﾞｷﾞｸﾞｹﾞｺﾞ", zenkaku2hankaku("ガギグゲゴ"))
         assertEquals("ﾊﾟﾋﾟﾌﾟﾍﾟﾎﾟ", zenkaku2hankaku("パピプペポ"))
         assertEquals("ｳﾞ", zenkaku2hankaku("ヴ"))

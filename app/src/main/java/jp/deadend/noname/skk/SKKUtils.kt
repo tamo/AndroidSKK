@@ -404,7 +404,7 @@ private val Z2H_PAIRS =
         // 0x30F0 to 0x0FF72, // ヰ
         // 0x30F1 to 0x0FF74, // ヱ
         0x30F2 to 0x0FF65, // ヲ
-        0x30F3 to 0x0FF9C, // ン
+        0x30F3 to 0x0FF9D, // ン
         0x30F4 to 0x1FF73, // ヴ
         // 0x30F5 to 0x0FF76, // 小書きカ
         // 0x30F6 to 0x0FF79, // 小書きケ
