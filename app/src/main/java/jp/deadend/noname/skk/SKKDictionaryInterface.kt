@@ -158,26 +158,27 @@ interface SKKDictionaryInterface {
     val mMutex: Mutex
 
     suspend fun findKeys(scope: CoroutineScope, rawKey: String): List<Pair<String, String>> {
-        mMutex.withLock {
-            val key = katakana2hiragana(rawKey) ?: return listOf()
-            val list = mutableListOf<Triple<String, String, Int>>()
-            val tuple = Tuple<String, String>()
-            val browser: TupleBrowser<String, String>
-            var str: String
-            val topFreq = ArrayList<Int>()
+        val key = katakana2hiragana(rawKey) ?: return listOf()
+        val list = mutableListOf<Triple<String, String, Int>>()
+        val tuple = Tuple<String, String>()
+        val browser: TupleBrowser<String, String>
+        val topFreq = ArrayList<Int>()
 
-            try {
-                browser = mBTree?.browse(key) ?: return listOf()
+        try {
+            browser = mBTree?.browse(key) ?: return listOf()
 
-                // 絵文字は1500ほどあるし CandidatesView の行数が可変になったので多めが良さそう
-                while (list.size < if (mIsASCII) 1500 else 15) {
-                    if (!scope.isActive) {
-                        throw CancellationException()
-                    }
-                    if (!browser.getNext(tuple)) break
-                    str = tuple.key
-                    if (!str.startsWith(key)) break
-                    if (mIsASCII) {
+            // 絵文字は1500ほどあるし CandidatesView の行数が可変になったので多めが良さそう
+            while (list.size < if (mIsASCII) 1500 else 15) {
+                if (!scope.isActive) {
+                    throw CancellationException()
+                }
+
+                if (!browser.getNext(tuple)) break
+                val str = tuple.key
+                when {
+                    !str.startsWith(key) -> break
+
+                    mIsASCII -> {
                         tuple.value
                             .split('/')
                             .filter { it.isNotEmpty() }
@@ -197,21 +198,22 @@ interface SKKDictionaryInterface {
                             }
                         continue
                     }
-                    if (isAlphabet(str[str.length - 1].code) && !isAlphabet(str[0].code)) continue
-                    // 送りありエントリは飛ばす
 
-                    list.add(Triple(str, str, 0))
+                    !isAlphabet(str.first().code) && isAlphabet(str.last().code)
+                        -> continue // 送りありエントリは飛ばす
+
+                    else -> list.add(Triple(str, str, 0))
                 }
-            } catch (e: IOException) {
-                Log.e("SKK", "Error in findKeys(): $e")
-                throw RuntimeException(e)
             }
-            if (mIsASCII) {
-                list.sortByDescending { it.third }
-            }
-
-            return list.map { it.first to it.second }
+        } catch (e: IOException) {
+            Log.e("SKK", "Error in findKeys(): $e")
+            throw RuntimeException(e)
         }
+        if (mIsASCII) {
+            list.sortByDescending { it.third }
+        }
+
+        return list.map { it.first to it.second }
     }
 
     fun getCandidates(rawKey: String): List<String>? = null

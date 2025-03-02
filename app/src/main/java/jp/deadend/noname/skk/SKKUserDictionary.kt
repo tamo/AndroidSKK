@@ -29,7 +29,7 @@ class SKKUserDictionary private constructor(
 
     fun getEntry(rawKey: String): Entry? {
         val key = katakana2hiragana(rawKey) ?: return null
-        val value: String = safeRun { mBTree?.find(key) } ?: return null
+        val value: String = mBTree?.find(key) ?: return null
 
         // 正規表現で "/送/" と "/[り/送/]/" を拾う
         val (candidates, okuriganaStrings) =
@@ -94,7 +94,7 @@ class SKKUserDictionary private constructor(
             }
             newVal.append("/")
 
-            safeRun { mOldValue = mBTree?.find(key).orEmpty() }
+            mOldValue = mBTree?.find(key).orEmpty()
         }
 
         safeRun {
