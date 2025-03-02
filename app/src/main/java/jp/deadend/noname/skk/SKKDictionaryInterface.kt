@@ -187,10 +187,12 @@ interface SKKDictionaryInterface {
                             .forEach {
                                 val freq = it.first.toInt() +
                                         if (str == key) 50 else 0 // 完全一致を優先
-                                if (topFreq.size < 5 || freq >= topFreq.last()) {
-                                    topFreq.add(freq)
-                                    topFreq.sortDescending()
-                                    if (topFreq.size > 5) topFreq.removeAt(5)
+                                if (freq !in topFreq) {
+                                    topFreq.apply {
+                                        add(freq)
+                                        sortDescending()
+                                        while (size > 5) removeAt(lastIndex)
+                                    }
                                 }
                                 if (freq >= topFreq.last()) { // 頻度が5位に入らなければだめ
                                     list.add(Triple(str, it.second, freq))

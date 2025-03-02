@@ -27,9 +27,9 @@ class SKKUserDictionary private constructor(
         val okuriganaBlocks: List<Pair<String, String>>
     )
 
-    fun getEntry(rawKey: String): Entry? {
+    fun getEntry(rawKey: String, rawValue: String? = null): Entry? {
         val key = katakana2hiragana(rawKey) ?: return null
-        val value: String = mBTree?.find(key) ?: return null
+        val value: String = rawValue ?: mBTree?.find(key) ?: return null
 
         // 正規表現で "/送/" と "/[り/送/]/" を拾う
         val (candidates, okuriganaStrings) =
@@ -57,48 +57,34 @@ class SKKUserDictionary private constructor(
         getEntry(rawKey)?.candidates?.distinct()
 
     fun addEntry(key: String, value: String, okurigana: String) {
-        mOldKey = key
-        val newVal = StringBuilder()
-        val entry = getEntry(key)
+        val oldVal = mBTree.let { if (it == null) return else it.find(key) }
 
-        if (entry == null) {
-            newVal.append("/", value, "/")
-            if (okurigana.isNotEmpty()) newVal.append("[", okurigana, "/", value, "/]/")
-            mOldValue = ""
-        } else {
-            val candidates = entry.candidates.toMutableList()
-            candidates.remove(value)
-            candidates.add(0, value)
+        val newVal = oldVal?.let { getEntry(key, it) }.let { entry ->
+            if (entry == null) return@let "/$value/" +
+                    if (okurigana.isNotEmpty()) "[$okurigana/$value/]/" else ""
 
-            val okrs = mutableListOf<Pair<String, String>>()
-            if (okurigana.isNotEmpty()) {
-                var matched = false
-                for (pair in entry.okuriganaBlocks) {
-                    if (pair.first == okurigana && pair.second == value) {
-                        okrs.add(0, pair)
-                        matched = true
-                    } else {
-                        okrs.add(pair)
+            val candidates =
+                listOf(value)
+                    .plus(entry.candidates)
+                    .distinctBy { candidate ->
+                        candidate.takeWhile { it != ';' } // 注釈は無視して一致判定する
                     }
-                }
-                if (!matched) {
-                    okrs.add(Pair(okurigana, value))
-                }
-            }
 
-            for (str in candidates) {
-                newVal.append("/", str)
-            }
-            for (pair in okrs) {
-                newVal.append("/[", pair.first, "/", pair.second, "/]")
-            }
-            newVal.append("/")
+            val okuriganaBlocks =
+                (if (okurigana.isEmpty()) listOf() else listOf(okurigana to value))
+                    .plus(entry.okuriganaBlocks)
+                    .distinctBy { pair ->
+                        pair.first to pair.second.takeWhile { it != ';' }
+                    }
 
-            mOldValue = mBTree?.find(key).orEmpty()
+            candidates.fold("/") { acc, str -> "$acc$str/" } +
+                    okuriganaBlocks.fold("") { acc, pair -> "$acc[${pair.first}/${pair.second}/]/" }
         }
 
         safeRun {
-            mBTree?.insert(key, newVal.toString(), true)
+            mOldKey = key
+            mOldValue = oldVal.orEmpty()
+            mBTree?.insert(key, newVal, true)
             mRecMan?.commit()
         }
     }
@@ -117,9 +103,8 @@ class SKKUserDictionary private constructor(
             } // 送りブロックが残らない場合は丸ごと消す
         ) candidates.removeIf { old -> old.takeWhile { it != ';' } == rawVal }
 
-        val newVal = candidates.fold("") { acc, str -> "$acc/$str" } +
-                okuriganaBlocks.fold("") { acc, pair -> "$acc/[${pair.first}/${pair.second}/]" } +
-                "/"
+        val newVal = candidates.fold("/") { acc, str -> "$acc$str/" } +
+                okuriganaBlocks.fold("") { acc, pair -> "$acc[${pair.first}/${pair.second}/]/" }
         replaceEntry(key, newVal)
     }
 

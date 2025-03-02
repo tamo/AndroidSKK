@@ -41,7 +41,7 @@ class SKKSettingsActivityUITest {
     private val context: Context = ApplicationProvider.getApplicationContext()
     private val preText = "あk /(concat \"開\\057\");注釈/[く/開;注釈2/]/あ;ひら/[く/あ;ひら2/]/"
     private val postText =
-        "あk /あ;ひら/(concat \"開\\057\");注釈/[く/開;注釈2/]/[く/あ;ひら2/]/[く/(concat \"開\\057\");注釈/]/[く/あ;ひら/]/"
+        "あk /あ;ひら/(concat \"開\\057\");注釈/[く/あ;ひら/]/[く/(concat \"開\\057\");注釈/]/[く/開;注釈2/]/"
 
     @Before
     fun testInputMethodSettings() {
