@@ -923,7 +923,7 @@ class SKKEngine(
             }
         }
 
-        val list: List<String> = mDictList.asSequence().mapNotNull { dict ->
+        val rawList: List<String> = mDictList.asSequence().mapNotNull { dict ->
             when (dict) {
                 mUserDict -> userOkList
 
@@ -935,8 +935,21 @@ class SKKEngine(
             }
         }.fold(listOf<String>()) { acc, list -> acc + list }
             .plus(userRestList) //送りがなブロックにマッチしない場合も、無ければ最後に追加
-            .distinct()
-            .toMutableList()
+
+        // 注釈をマージする
+        val shortList = rawList.distinctBy { removeAnnotation(it) }
+        val dupList = rawList.subtract(shortList.toSet()).filter { it.contains(';') }
+        val list = shortList.map { candidate ->
+            val oldAnnotations = candidate.split(';').drop(1).toMutableSet()
+            val newAnnotations = dupList.mapNotNull {
+                if (removeAnnotation(it) == removeAnnotation(candidate)) {
+                    val newSet = it.split(';').drop(1).subtract(oldAnnotations)
+                    oldAnnotations.addAll(newSet)
+                    newSet.joinToString(";")
+                } else null
+            }.joinToString(";")
+            candidate + if (newAnnotations.isNotEmpty()) ";$newAnnotations" else ""
+        }.toMutableList()
 
         if (list.isEmpty()) dLog("Dictionary: Can't find Kanji for $key")
 

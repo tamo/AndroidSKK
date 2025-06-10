@@ -65,8 +65,10 @@ class SKKDictManager : AppCompatActivity() {
             Tuple("ユーザー辞書", getString(R.string.dict_name_user)),
             Tuple("絵文字辞書", getString(R.string.dict_name_emoji))
         ) + listOf(
-            "lisplike", "S", "M", "ML", "L", "L.unannotated",
+            "lisplike", "L+", "L", "L.unannotated", "S",
             "jinmei", "geo", "station", "propernoun",
+            "itaiji", "fullname", "emoji",
+            "assoc", "edict2", "okinawa", "JIS2"
         ).map { type -> Tuple("SKK $type 辞書", "/skk_dict_${type}") }
     }
 
@@ -277,15 +279,18 @@ class SKKDictManager : AppCompatActivity() {
                         }
                         progressJob.start()
                         URL(
-                            if (type == "lisplike") {
-                                "https://raw.githubusercontent.com/tamo/AndroidSKK/refs/heads/master/SKK-JISYO.${type}.gz"
-                            } else "https://skk-dev.github.io/dict/SKK-JISYO.${type}.gz"
-                        )
-                            .openStream().use { us ->
-                                FileOutputStream(path).use { fs ->
-                                    us.copyTo(fs)
-                                }
+                            when (type) {
+                                "lisplike" ->
+                                    "https://raw.githubusercontent.com/tamo/AndroidSKK/refs/heads/master/SKK-JISYO.${type}.gz"
+
+                                else ->
+                                    "https://tamo.github.io/dict/SKK-JISYO.${type}.gz"
                             }
+                        ).openStream().use { us ->
+                            FileOutputStream(path).use { fs ->
+                                us.copyTo(fs)
+                            }
+                        }
                         progressJob.let {
                             it.cancelAndJoin()
                             withContext(Dispatchers.Main) {
