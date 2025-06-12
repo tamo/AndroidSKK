@@ -23,6 +23,8 @@ import android.view.ViewConfiguration
 import android.widget.PopupWindow
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.graphics.createBitmap
+import androidx.core.graphics.withSave
 import jp.deadend.noname.skk.engine.SKKState
 import kotlin.math.abs
 import kotlin.math.ceil
@@ -380,175 +382,175 @@ open class KeyboardView @JvmOverloads constructor(
                 // Make sure our bitmap is at least 1x1
                 val w = width.coerceAtLeast(1)
                 val h = height.coerceAtLeast(1)
-                mBuffer = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+                mBuffer = createBitmap(w, h)
                 mCanvas = Canvas(mBuffer!!)
             }
             invalidateAllKeys()
             mKeyboardChanged = false
         }
 
-        mCanvas?.save()
-        mCanvas?.let { canvas ->
-            canvas.clipRect(mDirtyRect)
-            val keyBackground = mKeyBackground
-            val kbdPaddingLeft = paddingLeft
-            val kbdPaddingTop = paddingTop
-            val invalidKey = mInvalidatedKey
-            mPaint.color = mKeyTextColor
-            val drawSingleKey = (
-                    invalidKey != null
-                            && canvas.getClipBounds(mClipRegion)
-                            // Is clipRegion completely contained within the invalidated key?
-                            && invalidKey.x + kbdPaddingLeft - 1 <= mClipRegion.left
-                            && invalidKey.y + kbdPaddingTop - 1 <= mClipRegion.top
-                            && invalidKey.x + invalidKey.width + kbdPaddingLeft + 1 >= mClipRegion.right
-                            && invalidKey.y + invalidKey.height + kbdPaddingTop + 1 >= mClipRegion.bottom
+        mCanvas?.withSave {
+            this.let { canvas ->
+                canvas.clipRect(mDirtyRect)
+                val keyBackground = mKeyBackground
+                val kbdPaddingLeft = paddingLeft
+                val kbdPaddingTop = paddingTop
+                val invalidKey = mInvalidatedKey
+                mPaint.color = mKeyTextColor
+                val drawSingleKey = (
+                        invalidKey != null
+                                && canvas.getClipBounds(mClipRegion)
+                                // Is clipRegion completely contained within the invalidated key?
+                                && invalidKey.x + kbdPaddingLeft - 1 <= mClipRegion.left
+                                && invalidKey.y + kbdPaddingTop - 1 <= mClipRegion.top
+                                && invalidKey.x + invalidKey.width + kbdPaddingLeft + 1 >= mClipRegion.right
+                                && invalidKey.y + invalidKey.height + kbdPaddingTop + 1 >= mClipRegion.bottom
+                        )
+                keyBackground?.alpha = backgroundAlpha
+                canvas.drawColor(0x00000000, PorterDuff.Mode.CLEAR)
+                val labelZoom = skkPrefs.keyLabelZoom / 100f
+
+                for (key in mKeyboard.keys) {
+                    if (drawSingleKey && invalidKey !== key) {
+                        continue
+                    }
+                    keyBackground?.state = key.currentDrawableState
+
+                    // Switch the character to uppercase if shift is pressed
+                    val label = if (key.label.isEmpty()) null else {
+                        adjustCase(key.label, key.shiftedLabel, "", 0)
+                    }
+                    val shiftedLabel = if (key.shiftedLabel.isEmpty()) null else {
+                        adjustCase(key.shiftedLabel, key.label, "", 0)
+                    }
+                    val icon = key.icon
+                    keyBackground?.bounds?.let {
+                        if (key.width != it.right || key.height != it.bottom) {
+                            keyBackground.setBounds(0, 0, key.width, key.height)
+                        }
+                    }
+                    canvas.translate(
+                        (key.x + kbdPaddingLeft).toFloat(),
+                        (key.y + kbdPaddingTop).toFloat()
                     )
-            keyBackground?.alpha = backgroundAlpha
-            canvas.drawColor(0x00000000, PorterDuff.Mode.CLEAR)
-            val labelZoom = skkPrefs.keyLabelZoom / 100f
+                    keyBackground?.draw(canvas)
+                    if (label != null) {
+                        // For characters, use large font. For labels like "Done", use small font.
+                        if (label.length > 1 && !label.contains('\n') && key.codes.size < 2) {
+                            mPaint.textSize = mLabelTextSize.toFloat()
+                            mPaint.textScaleX = 1.0f
+                        } else {
+                            mPaint.textSize = mKeyTextSize.toFloat()
+                            mPaint.textScaleX = if (isZenkaku) 1.4f else 1.0f
+                        }
+                        val lines = label.split("\n")
+                        val numLines = lines.size
+                        val isGodanKey = numLines == 3 &&
+                                lines[1].length > 2
+                        val sizeFactors = when (numLines) {
+                            3 -> listOf(.27f, .7f, .27f) // Godan以外でも中央の行を大きくする (「わ」「abc」等)
+                            1 -> listOf(1f)
+                            else -> throw IndexOutOfBoundsException("key label has $numLines lines")
+                        }.map { it * labelZoom }
+                        val sizeDefault = mPaint.textSize
+                        val lineScale = 1.05f // 行間
+                        lines.forEachIndexed { i, line ->
+                            fun drawText(t: String, descent: Float) {
+                                canvas.drawText(
+                                    t,
+                                    (key.width + mPadding.left - mPadding.right) / 2f,
+                                    (key.height + mPadding.top - mPadding.bottom) / 2f + lineScale * (
+                                            ((0..<numLines).fold(0f) { s, j ->
+                                                s + sizeDefault * sizeFactors[j]
+                                            } - descent) / 2f -
+                                                    (0..<numLines - 1 - i).fold(0f) { s, j ->
+                                                        s + sizeDefault * sizeFactors[j]
+                                                    }
+                                            ),
+                                    mPaint
+                                )
+                            }
 
-            for (key in mKeyboard.keys) {
-                if (drawSingleKey && invalidKey !== key) {
-                    continue
-                }
-                keyBackground?.state = key.currentDrawableState
+                            mPaint.textSize = sizeDefault * sizeFactors[i]
+                            mPaint.typeface = if (i.toFloat() == (numLines - 1) / 2f) {
+                                Typeface.DEFAULT_BOLD // 中央の行 (1行だけならその行)
+                            } else {
+                                Typeface.DEFAULT
+                            }
 
-                // Switch the character to uppercase if shift is pressed
-                val label = if (key.label.isEmpty()) null else {
-                    adjustCase(key.label, key.shiftedLabel, "", 0)
-                }
-                val shiftedLabel = if (key.shiftedLabel.isEmpty()) null else {
-                    adjustCase(key.shiftedLabel, key.label, "", 0)
-                }
-                val icon = key.icon
-                keyBackground?.bounds?.let {
-                    if (key.width != it.right || key.height != it.bottom) {
-                        keyBackground.setBounds(0, 0, key.width, key.height)
-                    }
-                }
-                canvas.translate(
-                    (key.x + kbdPaddingLeft).toFloat(),
-                    (key.y + kbdPaddingTop).toFloat()
-                )
-                keyBackground?.draw(canvas)
-                if (label != null) {
-                    // For characters, use large font. For labels like "Done", use small font.
-                    if (label.length > 1 && !label.contains('\n') && key.codes.size < 2) {
-                        mPaint.textSize = mLabelTextSize.toFloat()
-                        mPaint.textScaleX = 1.0f
-                    } else {
-                        mPaint.textSize = mKeyTextSize.toFloat()
-                        mPaint.textScaleX = if (isZenkaku) 1.4f else 1.0f
-                    }
-                    val lines = label.split("\n")
-                    val numLines = lines.size
-                    val isGodanKey = numLines == 3 &&
-                            lines[1].length > 2
-                    val sizeFactors = when (numLines) {
-                        3 -> listOf(.27f, .7f, .27f) // Godan以外でも中央の行を大きくする (「わ」「abc」等)
-                        1 -> listOf(1f)
-                        else -> throw IndexOutOfBoundsException("key label has $numLines lines")
-                    }.map { it * labelZoom }
-                    val sizeDefault = mPaint.textSize
-                    val lineScale = 1.05f // 行間
-                    lines.forEachIndexed { i, line ->
-                        fun drawText(t: String, descent: Float) {
+                            if (isGodanKey && i == 1) {
+                                val descent = mPaint.descent()
+                                val centerText = line.drop(1).dropLast(1)
+                                drawText(centerText, descent)
+
+                                // 左右フリックのキー
+                                mPaint.typeface = Typeface.DEFAULT
+                                mPaint.textSize *= .6f
+                                drawText(
+                                    "${line.first()}${
+                                        centerText.filter { it.code < 0x7F }.length.let { ascii ->
+                                            "　".repeat(1 + ceil(centerText.length - ascii * 0.5).toInt())
+                                        }
+                                    }${line.last()}", descent
+                                )
+                            } else {
+                                drawText(line, mPaint.descent())
+                            }
+                        }
+
+                        // 英数キーボードの上下フリックやシフトを上下に小さく表示
+                        val savedAlign = mPaint.textAlign
+                        if (!shiftedLabel.isNullOrEmpty()
+                            && shiftedLabel != label.uppercase()
+                            && shiftedLabel != label.lowercase()
+                        ) {
+                            mPaint.textAlign = Align.LEFT
+                            mPaint.textSize = mLabelTextSize * .5f * labelZoom
+                            mPaint.typeface = Typeface.DEFAULT
                             canvas.drawText(
-                                t,
-                                (key.width + mPadding.left - mPadding.right) / 2f,
-                                (key.height + mPadding.top - mPadding.bottom) / 2f + lineScale * (
-                                        ((0..<numLines).fold(0f) { s, j ->
-                                            s + sizeDefault * sizeFactors[j]
-                                        } - descent) / 2f -
-                                                (0..<numLines - 1 - i).fold(0f) { s, j ->
-                                                    s + sizeDefault * sizeFactors[j]
-                                                }
-                                        ),
+                                shiftedLabel,
+                                mPadding.left + mPaint.textSize * .4f,
+                                mPadding.top + mPaint.textSize * 1.5f,
                                 mPaint
                             )
                         }
-
-                        mPaint.textSize = sizeDefault * sizeFactors[i]
-                        mPaint.typeface = if (i.toFloat() == (numLines - 1) / 2f) {
-                            Typeface.DEFAULT_BOLD // 中央の行 (1行だけならその行)
-                        } else {
-                            Typeface.DEFAULT
-                        }
-
-                        if (isGodanKey && i == 1) {
-                            val descent = mPaint.descent()
-                            val centerText = line.drop(1).dropLast(1)
-                            drawText(centerText, descent)
-
-                            // 左右フリックのキー
+                        if (key.downLabel.isNotEmpty()) {
+                            mPaint.textAlign = Align.RIGHT
+                            mPaint.textSize = mLabelTextSize * .5f * labelZoom
                             mPaint.typeface = Typeface.DEFAULT
-                            mPaint.textSize *= .6f
-                            drawText(
-                                "${line.first()}${
-                                    centerText.filter { it.code < 0x7F }.length.let { ascii ->
-                                        "　".repeat(1 + ceil(centerText.length - ascii * 0.5).toInt())
-                                    }
-                                }${line.last()}", descent
+                            canvas.drawText(
+                                key.downLabel,
+                                key.width - mPadding.right - mPaint.textSize * .4f,
+                                key.height - mPadding.bottom - mPaint.textSize * .5f,
+                                mPaint
                             )
-                        } else {
-                            drawText(line, mPaint.descent())
                         }
+                        mPaint.textAlign = savedAlign
+                    } else if (icon != null) {
+                        val w = (icon.intrinsicWidth * labelZoom).toInt()
+                        val h = (icon.intrinsicHeight * labelZoom).toInt()
+                        val drawableX =
+                            (key.width - mPadding.left - mPadding.right - w) / 2 + mPadding.left
+                        val drawableY =
+                            (key.height - mPadding.top - mPadding.bottom - h) / 2 + mPadding.top
+                        canvas.translate(drawableX.toFloat(), drawableY.toFloat())
+                        icon.setBounds(0, 0, w, h)
+                        icon.draw(canvas)
+                        canvas.translate(-drawableX.toFloat(), -drawableY.toFloat())
                     }
-
-                    // 英数キーボードの上下フリックやシフトを上下に小さく表示
-                    val savedAlign = mPaint.textAlign
-                    if (!shiftedLabel.isNullOrEmpty()
-                        && shiftedLabel != label.uppercase()
-                        && shiftedLabel != label.lowercase()
-                    ) {
-                        mPaint.textAlign = Align.LEFT
-                        mPaint.textSize = mLabelTextSize * .5f * labelZoom
-                        mPaint.typeface = Typeface.DEFAULT
-                        canvas.drawText(
-                            shiftedLabel,
-                            mPadding.left + mPaint.textSize * .4f,
-                            mPadding.top + mPaint.textSize * 1.5f,
-                            mPaint
-                        )
-                    }
-                    if (key.downLabel.isNotEmpty()) {
-                        mPaint.textAlign = Align.RIGHT
-                        mPaint.textSize = mLabelTextSize * .5f * labelZoom
-                        mPaint.typeface = Typeface.DEFAULT
-                        canvas.drawText(
-                            key.downLabel,
-                            key.width - mPadding.right - mPaint.textSize * .4f,
-                            key.height - mPadding.bottom - mPaint.textSize * .5f,
-                            mPaint
-                        )
-                    }
-                    mPaint.textAlign = savedAlign
-                } else if (icon != null) {
-                    val w = (icon.intrinsicWidth * labelZoom).toInt()
-                    val h = (icon.intrinsicHeight * labelZoom).toInt()
-                    val drawableX =
-                        (key.width - mPadding.left - mPadding.right - w) / 2 + mPadding.left
-                    val drawableY =
-                        (key.height - mPadding.top - mPadding.bottom - h) / 2 + mPadding.top
-                    canvas.translate(drawableX.toFloat(), drawableY.toFloat())
-                    icon.setBounds(0, 0, w, h)
-                    icon.draw(canvas)
-                    canvas.translate(-drawableX.toFloat(), -drawableY.toFloat())
+                    canvas.translate(
+                        (-key.x - kbdPaddingLeft).toFloat(),
+                        (-key.y - kbdPaddingTop).toFloat()
+                    )
                 }
-                canvas.translate(
-                    (-key.x - kbdPaddingLeft).toFloat(),
-                    (-key.y - kbdPaddingTop).toFloat()
-                )
-            }
-            mInvalidatedKey = null
-            // Overlay a dark rectangle to dim the keyboard
-            if (mMiniKeyboardOnScreen) {
-                mPaint.color = (BACKGROUND_DIM_AMOUNT * 0xFF).toInt() shl 24
-                canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), mPaint)
-            }
+                mInvalidatedKey = null
+                // Overlay a dark rectangle to dim the keyboard
+                if (mMiniKeyboardOnScreen) {
+                    mPaint.color = (BACKGROUND_DIM_AMOUNT * 0xFF).toInt() shl 24
+                    canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), mPaint)
+                }
 
-            mCanvas?.restore()
+            }
             mDrawPending = false
             mDirtyRect.setEmpty()
         }

@@ -22,6 +22,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import androidx.core.content.edit
 
 
 class SKKSettingsActivity : AppCompatActivity() {
@@ -125,8 +126,9 @@ class SKKSettingsActivity : AppCompatActivity() {
                 val key = encodeKey(event)
                 val name = getKeyName(key)
                 if (name.isEmpty()) return false
-                PreferenceManager.getDefaultSharedPreferences(applicationContext).edit()
-                    .putInt(pref.key, key).apply()
+                PreferenceManager.getDefaultSharedPreferences(applicationContext).edit {
+                    putInt(pref.key, key)
+                }
                 pref.setSummary(name)
                 MainScope().launch(Dispatchers.Default) {
                     delay(500) // UP で何か実行されてしまわないように少し待つ
