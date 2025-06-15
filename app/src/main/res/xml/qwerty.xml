@@ -167,6 +167,7 @@
             app:keyIcon="@drawable/ic_keyboard_space_bar"
             app:keyWidth="30%p" />
         <Key
+            app:downLabel="/"
             app:keyLabel="."
             app:keyWidth="15%p"
             app:popupCharacters=",:>/L…"
