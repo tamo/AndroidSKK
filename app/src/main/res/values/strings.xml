@@ -71,6 +71,7 @@
     <string name="pref_use_flick" translatable="false">PrefKeyPreferFlick</string>
     <string name="pref_use_godan" translatable="false">PrefKeyPreferGodan</string>
     <string name="pref_godan_simple" translatable="false">PrefKeyGodanSimple</string>
+    <string name="pref_godan_qwerty" translatable="false">PrefKeyGodanQwerty</string>
     <string name="pref_godan_swap_qc" translatable="false">PrefKeyGodanSwapQC</string>
     <string name="pref_use_popup" translatable="false">PrefKeyUsePopup</string>
     <string name="pref_fixed_popup" translatable="false">PrefKeyFixedPopup</string>

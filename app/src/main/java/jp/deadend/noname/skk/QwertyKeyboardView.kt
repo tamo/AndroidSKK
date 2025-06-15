@@ -235,8 +235,9 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
     override fun setKeyState(state: SKKState): QwertyKeyboardView {
         val kanaKey = findKeyByCode(KEYCODE_QWERTY_TO_JP)
         val kanaLabel = if (state.isTransient) "確定" else "かな"
-        kanaKey?.label = if (skkPrefs.preferFlick) "Flick" else kanaLabel
-        kanaKey?.downLabel = if (skkPrefs.preferFlick) kanaLabel else "Flick"
+        val flickLabel = if (skkPrefs.preferGodan) "Godan" else "Flick"
+        kanaKey?.label = if (skkPrefs.preferFlick) flickLabel else kanaLabel
+        kanaKey?.downLabel = if (skkPrefs.preferFlick) kanaLabel else flickLabel
         kanaKey?.on = state === SKKHiraganaState // Kanji とか Choose とかで消えるのがイヤなら以下にする
         // kanaKey?.on = (state !in listOf(SKKASCIIState, SKKZenkakuState) && mService.isHiragana)
 

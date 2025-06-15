@@ -142,6 +142,7 @@ class SKKService : InputMethodService() {
             }
 
             COMMAND_READ_PREFS -> {
+                mInputView = null // 以前のviewは新しい設定と矛盾が出るかもしれないので無効化
                 onConfigurationChanged(Configuration(resources.configuration))
                 onInitializeInterface()
             }
@@ -507,20 +508,22 @@ class SKKService : InputMethodService() {
         dLog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
         setCandidatesView(onCreateCandidatesView())
 
-        val wasGodan =
-            if (mInputView == null) skkPrefs.preferGodan
-            else (mInputView == mGodanInputView)
-        val wasFlick =
-            if (mInputView == null) skkPrefs.preferFlick
-            else (mInputView == mFlickJPInputView)
+        val wasGodan = mInputView == mGodanInputView
+        val wasFlick = mInputView == mFlickJPInputView
         createInputView()
 
-        return if (wasGodan) mGodanInputView?.setKeyState(engineState) else when (engineState) {
-            SKKASCIIState, SKKZenkakuState -> mQwertyInputView?.setKeyState(engineState)
-            SKKAbbrevState -> mAbbrevKeyboardView?.setKeyState(engineState)
-            else -> if (wasFlick) mFlickJPInputView?.setKeyState(engineState)
-            else mQwertyInputView?.setKeyState(engineState)
-        }
+        return if (
+            wasGodan || (skkPrefs.preferFlick && skkPrefs.preferGodan && !skkPrefs.godanQwerty)
+        ) mGodanInputView?.setKeyState(engineState)
+        else when (engineState) {
+            SKKASCIIState, SKKZenkakuState -> mQwertyInputView
+            SKKAbbrevState -> mAbbrevKeyboardView
+            else -> when {
+                wasFlick -> mFlickJPInputView
+                skkPrefs.preferGodan -> mGodanInputView
+                else -> mFlickJPInputView
+            }
+        }?.setKeyState(engineState)
     }
 
     /**
@@ -565,13 +568,13 @@ class SKKService : InputMethodService() {
             InputType.TYPE_CLASS_TEXT -> {
                 val variation = attribute.inputType and InputType.TYPE_MASK_VARIATION
                 when (variation) {
-                    InputType.TYPE_TEXT_VARIATION_URI -> skkPrefs.typeURI
+                    InputType.TYPE_TEXT_VARIATION_URI,
+                    InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS,
+                    InputType.TYPE_TEXT_VARIATION_WEB_EMAIL_ADDRESS -> skkPrefs.typeURI
+
                     InputType.TYPE_TEXT_VARIATION_PASSWORD,
                     InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD,
                     InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD -> skkPrefs.typePassword
-
-                    InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS,
-                    InputType.TYPE_TEXT_VARIATION_WEB_EMAIL_ADDRESS -> "qwerty"
 
                     else -> skkPrefs.typeText
                 }
@@ -582,15 +585,13 @@ class SKKService : InputMethodService() {
         when (keyboardType) {
             "flick-jp" -> {
                 mEngine.resetOnStartInput()
-                if (mEngine.state === SKKASCIIState) handleKanaKey()
-                if (mFlickJPInputView?.keyboard !== mFlickJPInputView?.mJPKeyboard) {
-                    mFlickJPInputView?.keyboard = mFlickJPInputView!!.mJPKeyboard
-                }
+                handleKanaKey()
+                changeSoftKeyboard(SKKHiraganaState)
             }
 
             "flick-num" -> {
                 mEngine.resetOnStartInput()
-                if (mEngine.state === SKKASCIIState) handleKanaKey()
+                setInputView(mFlickJPInputView)
                 if (mFlickJPInputView?.keyboard !== mFlickJPInputView?.mNumKeyboard) {
                     mFlickJPInputView?.keyboard = mFlickJPInputView!!.mNumKeyboard
                 }
@@ -599,6 +600,7 @@ class SKKService : InputMethodService() {
             "qwerty" -> {
                 mEngine.resetOnStartInput()
                 if (mEngine.state !== SKKASCIIState) mEngine.processKey('l'.code)
+                setInputView(mQwertyInputView)
                 if (mQwertyInputView?.keyboard !== mQwertyInputView?.mLatinKeyboard) {
                     mQwertyInputView?.keyboard = mQwertyInputView!!.mLatinKeyboard
                 }
@@ -607,6 +609,7 @@ class SKKService : InputMethodService() {
             "symbols" -> {
                 mEngine.resetOnStartInput()
                 if (mEngine.state !== SKKASCIIState) mEngine.processKey('l'.code)
+                setInputView(mQwertyInputView)
                 if (mQwertyInputView?.keyboard !== mQwertyInputView!!.mSymbolsKeyboard) {
                     mQwertyInputView?.keyboard = mQwertyInputView!!.mSymbolsKeyboard
                 }
@@ -671,19 +674,6 @@ class SKKService : InputMethodService() {
 
     override fun onStartInputView(editorInfo: EditorInfo?, restarting: Boolean) {
         dLog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
-        // 設定を変更した場合に反映する
-        when {
-            skkPrefs.preferGodan && mInputView != mGodanInputView ->
-                setInputView(mGodanInputView)
-
-            !skkPrefs.preferGodan && mInputView == mGodanInputView ->
-                setInputView(
-                    if (skkPrefs.preferFlick && engineState !in listOf(
-                            SKKAbbrevState, SKKASCIIState, SKKZenkakuState
-                        )
-                    ) mFlickJPInputView else mQwertyInputView
-                )
-        }
         super.onStartInputView(editorInfo, restarting)
 
         // シフト等の状態を同期
@@ -1178,18 +1168,24 @@ class SKKService : InputMethodService() {
         }
 
         setInputView(
-            if (skkPrefs.preferGodan) {
+            if (skkPrefs.preferFlick && skkPrefs.preferGodan && !skkPrefs.godanQwerty) {
+                // SKKASCIIState で Qwerty にならない唯一のケース
                 mGodanInputView?.setKeyState(state)
             } else when (state) {
-                // state==ASCII は Qwerty にしたがっているだけの場合があるので引数を使わない
+                // state==ASCII は Qwerty にするためだけの場合があるので引数を使わない
                 // 他の場合は基本的に state==engineState のはずなので、どちらでも構わない
                 SKKASCIIState -> mQwertyInputView?.setKeyState(engineState)
-                SKKKanjiState -> mFlickJPInputView?.setKeyState(state)
-                SKKHiraganaState, SKKKatakanaState, SKKHanKanaState
-                    -> mFlickJPInputView?.setKeyState(state)
+
+                SKKKanjiState, SKKHiraganaState, SKKKatakanaState, SKKHanKanaState -> when {
+                    !skkPrefs.preferFlick -> mQwertyInputView
+                    skkPrefs.preferGodan -> mGodanInputView
+                    else -> mFlickJPInputView
+                }?.setKeyState(state)
 
                 SKKAbbrevState -> mAbbrevKeyboardView?.setKeyState(state)
+
                 SKKZenkakuState -> mQwertyInputView?.setKeyState(state)
+
                 else -> throw Exception("invalid state: $state")
             } ?: return
         )
@@ -1197,7 +1193,8 @@ class SKKService : InputMethodService() {
 
     fun changeToFlick() {
         if (!engineState.changeToFlick(mEngine)) {
-            setInputView(mFlickJPInputView?.setKeyState(engineState))
+            val flick = if (skkPrefs.preferGodan) mGodanInputView else mFlickJPInputView
+            setInputView(flick?.setKeyState(engineState))
         }
     }
 

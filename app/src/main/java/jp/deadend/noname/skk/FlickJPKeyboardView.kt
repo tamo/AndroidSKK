@@ -985,6 +985,9 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
 
             KEYCODE_FLICK_JP_TO_KANA -> if (keyboard !== mJPKeyboard) {
                 keyboard = mJPKeyboard
+
+                // Godan使用中に入力欄の関係でテンキーになった場合などの復帰
+                if (skkPrefs.preferGodan) mService.changeSoftKeyboard(SKKHiraganaState)
             }
 
             KEYCODE_FLICK_JP_TO_QWERTY -> when (mFlickState) {

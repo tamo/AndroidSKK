@@ -116,6 +116,12 @@ class SKKPrefs(context: Context) {
             putBoolean(res.getString(R.string.pref_godan_simple), value)
         }
 
+    var godanQwerty: Boolean
+        get() = prefs.getBoolean(res.getString(R.string.pref_godan_qwerty), false)
+        set(value) = prefs.edit {
+            putBoolean(res.getString(R.string.pref_godan_qwerty), value)
+        }
+
     var swapQCxl: Boolean
         get() = prefs.getBoolean(res.getString(R.string.pref_godan_swap_qc), true)
         set(value) = prefs.edit {
