@@ -249,7 +249,7 @@ class SKKService : InputMethodService() {
         val channel =
             NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_DEFAULT)
         val notificationManager: NotificationManager =
-            getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.createNotificationChannel(channel)
         // 事前に権限を持っていないと、onCreate 内では権限要求を出せないみたいなので注意！
 
@@ -333,7 +333,7 @@ class SKKService : InputMethodService() {
                 restoreState()
             }
         })
-        mAudioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        mAudioManager = getSystemService(AUDIO_SERVICE) as AudioManager
 
         mOrientation = resources.configuration.orientation
         mScreenWidth = if (Build.VERSION.SDK_INT >= 35) {
@@ -1013,7 +1013,7 @@ class SKKService : InputMethodService() {
     }
 
     fun sendToMushroom() {
-        val clip = (getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager)
+        val clip = (getSystemService(CLIPBOARD_SERVICE) as ClipboardManager)
             .primaryClip?.getItemAt(0)?.coerceToText(this)?.toString().orEmpty()
         val str = mEngine.prepareToMushroom(clip)
 
@@ -1158,7 +1158,7 @@ class SKKService : InputMethodService() {
     fun changeSoftKeyboard(state: SKKState) {
         dLog("changeSoftKeyboard($state)")
         // 長押しリピートの message が残っている可能性があるので止める
-        for (kv in arrayOf(
+        for (kv in listOf(
             mAbbrevKeyboardView,
             mFlickJPInputView,
             mGodanInputView,
@@ -1268,8 +1268,10 @@ class SKKService : InputMethodService() {
         private var instance: SKKService? = null
         internal fun isRunning(): Boolean {
             return try {
+                // たぶん quick-fix すると変になると思う
+                @Suppress("NullableBooleanElvis")
                 instance?.ping() ?: false
-            } catch (e: NullPointerException) {
+            } catch (_: NullPointerException) {
                 false
             }
         }

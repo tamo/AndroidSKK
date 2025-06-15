@@ -1,6 +1,5 @@
 package jp.deadend.noname.skk
 
-import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.graphics.drawable.Drawable
@@ -28,7 +27,7 @@ class SKKMushroom : AppCompatActivity() {
 
     private val callMushroom =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
-            if (result.resultCode == Activity.RESULT_OK) {
+            if (result.resultCode == RESULT_OK) {
                 val extras = result.data?.extras
                 val s = if (extras == null) "" else extras.getString(REPLACE_KEY)
 

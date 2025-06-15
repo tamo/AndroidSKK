@@ -1033,7 +1033,7 @@ class SKKEngine(
         val rawSuggestion = mCandidateList?.get(index) ?: return
         val s = rawSuggestion.map { ch ->
             if (ch != '#' || number == null) ch.toString() else {
-                number!!.let {
+                number.let {
                     number = it.next()
                     it.value
                 }

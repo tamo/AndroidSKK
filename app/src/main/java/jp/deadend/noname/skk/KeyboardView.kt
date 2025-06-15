@@ -258,6 +258,7 @@ open class KeyboardView @JvmOverloads constructor(
 
         isHapticFeedbackEnabled = true
 
+        @Suppress("UsePropertyAccessSyntax")
         mGestureDetector.setIsLongpressEnabled(false)
 
         resetMultiTap()
