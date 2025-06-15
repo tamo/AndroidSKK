@@ -1011,14 +1011,14 @@ class SKKService : InputMethodService() {
         val ic = currentInputConnection ?: return
         val editorInfo = currentInputEditorInfo
 
-        when (editorInfo.imeOptions and
-                (EditorInfo.IME_MASK_ACTION or EditorInfo.IME_FLAG_NO_ENTER_ACTION)) {
-            EditorInfo.IME_ACTION_DONE -> ic.performEditorAction(EditorInfo.IME_ACTION_DONE)
-            EditorInfo.IME_ACTION_GO -> ic.performEditorAction(EditorInfo.IME_ACTION_GO)
-            EditorInfo.IME_ACTION_NEXT -> ic.performEditorAction(EditorInfo.IME_ACTION_NEXT)
-            EditorInfo.IME_ACTION_SEARCH -> ic.performEditorAction(EditorInfo.IME_ACTION_SEARCH)
-            EditorInfo.IME_ACTION_SEND -> ic.performEditorAction(EditorInfo.IME_ACTION_SEND)
-            else -> keyDownUp(KeyEvent.KEYCODE_ENTER)
+        dLog("pressEnter(): NO_ENTER=${0 != (editorInfo.imeOptions and EditorInfo.IME_FLAG_NO_ENTER_ACTION)} label=${editorInfo.actionLabel} action=${editorInfo.imeOptions and EditorInfo.IME_MASK_ACTION}")
+        when {
+            editorInfo.imeOptions and EditorInfo.IME_FLAG_NO_ENTER_ACTION != 0 ->
+                ic.commitText("\n", 1) // 古いAndroidでは keyDownUp(KeyEvent.KEYCODE_ENTER)
+            editorInfo.actionLabel != null ->
+                ic.performEditorAction(editorInfo.actionId) // よく知らない
+            else ->
+                ic.performEditorAction(editorInfo.imeOptions and EditorInfo.IME_MASK_ACTION)
         }
     }
 
