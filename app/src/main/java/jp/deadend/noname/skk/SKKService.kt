@@ -508,10 +508,11 @@ class SKKService : InputMethodService() {
         dLog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
         setCandidatesView(onCreateCandidatesView())
 
-        val wasGodan = mInputView == mGodanInputView
-        val wasFlick = mInputView == mFlickJPInputView
+        val wasGodan = mInputView?.equals(mGodanInputView) == true
+        val wasFlick = mInputView?.equals(mFlickJPInputView) == true
         createInputView()
 
+        dLog("onCreateInputView: wasFlick=$wasFlick wasGodan=$wasGodan engineState=$engineState")
         return if (
             wasGodan || (skkPrefs.preferFlick && skkPrefs.preferGodan && !skkPrefs.godanQwerty)
         ) mGodanInputView?.setKeyState(engineState)
@@ -519,6 +520,7 @@ class SKKService : InputMethodService() {
             SKKASCIIState, SKKZenkakuState -> mQwertyInputView
             SKKAbbrevState -> mAbbrevKeyboardView
             else -> when {
+                !skkPrefs.preferFlick -> mQwertyInputView
                 wasFlick -> mFlickJPInputView
                 skkPrefs.preferGodan -> mGodanInputView
                 else -> mFlickJPInputView
