@@ -98,6 +98,12 @@ class SKKPrefs(context: Context) {
         get() = prefs.getInt(res.getString(R.string.pref_haptic), 1)
         set(value) = prefs.edit { putInt(res.getString(R.string.pref_haptic), value) }
 
+    var moveOverEdge: Boolean
+        get() = prefs.getBoolean(res.getString(R.string.pref_over_edge), false)
+        set(value) = prefs.edit {
+            putBoolean(res.getString(R.string.pref_over_edge), value)
+        }
+
     var preferFlick: Boolean
         get() = prefs.getBoolean(res.getString(R.string.pref_use_flick), true)
         set(value) = prefs.edit {

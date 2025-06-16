@@ -68,6 +68,7 @@
     <string name="pref_use_soft_key" translatable="false">PrefKeyUseSoftKey</string>
     <string name="pref_show_status_icon" translatable="false">PrefKeyShowStatusIcon</string>
     <string name="pref_haptic" translatable="false">PrefKeyHaptic</string>
+    <string name="pref_over_edge" translatable="false">PrefKeyOverEdge</string>
     <string name="pref_use_flick" translatable="false">PrefKeyPreferFlick</string>
     <string name="pref_use_godan" translatable="false">PrefKeyPreferGodan</string>
     <string name="pref_godan_simple" translatable="false">PrefKeyGodanSimple</string>

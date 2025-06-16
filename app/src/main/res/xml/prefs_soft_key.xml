@@ -30,6 +30,12 @@
                 app:showSeekBarValue="true"
                 app:summary="-1 でオフになり 4 や 27 が弱いです"
                 app:title="触感フィードバック種類" />
+            <androidx.preference.CheckBoxPreference
+                app:defaultValue="false"
+                app:iconSpaceReserved="false"
+                app:key="PrefKeyOverEdge"
+                app:summary="オフだと無駄なカーソル移動は無効化します"
+                app:title="端を越えた左右移動の試行" />
             <androidx.preference.PreferenceCategory
                 app:iconSpaceReserved="false"
                 app:title="日本語キーボード">
