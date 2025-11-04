@@ -1271,8 +1271,6 @@ class SKKService : InputMethodService() {
         private var instance: SKKService? = null
         internal fun isRunning(): Boolean {
             return try {
-                // たぶん quick-fix すると変になると思う
-                @Suppress("NullableBooleanElvis")
                 instance?.ping() ?: false
             } catch (_: NullPointerException) {
                 false
