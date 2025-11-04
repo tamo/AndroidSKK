@@ -264,7 +264,7 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
                     if (semicolon == -1) {
                         processConcatAndMore(str, kanjiKey)
                     } else {
-                        processConcatAndMore(str.substring(0, semicolon), kanjiKey) +
+                        processConcatAndMore(str.take(semicolon), kanjiKey) +
                                 ";" +
                                 processConcatAndMore(str.substring(semicolon + 1, str.length), "#")
                     }.let {

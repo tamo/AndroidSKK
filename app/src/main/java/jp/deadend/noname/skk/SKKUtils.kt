@@ -129,7 +129,7 @@ fun isVowel(code: Int) =
 
 fun removeAnnotation(str: String): String {
     val i = str.indexOf(';') // セミコロンで解説が始まる
-    return if (i == -1) str else str.substring(0, i)
+    return if (i == -1) str else str.take(i)
 }
 
 private fun processNumber(str: String, numberList: List<String>): String {

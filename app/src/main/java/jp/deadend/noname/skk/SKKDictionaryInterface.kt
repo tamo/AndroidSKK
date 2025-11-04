@@ -49,7 +49,7 @@ internal fun isTextDictInEucJp(inputStream: InputStream): Boolean {
                 prevLine = "${++count}: $line"
                 // if (count > 1000) { return@forEachLine }
             }
-        } catch (e: CharacterCodingException) {
+        } catch (_: CharacterCodingException) {
             dLog("euc checker: failed after $prevLine")
             failed = true
         }
@@ -75,7 +75,7 @@ internal fun loadFromTextDict(
     val loadSKKLine = fun(line: String) {
         val idx = line.indexOf(' ')
         if (idx != -1 && !line.startsWith(";;")) {
-            val key = line.substring(0, idx)
+            val key = line.take(idx)
             val value = line.substring(idx + 1, line.length)
             if (overwrite) {
                 btree.insert(key, value, true)
@@ -95,10 +95,11 @@ internal fun loadFromTextDict(
         val freq = if (csv[0] == " word" && csv[2] == "f") {
             val f = try {
                 csv[3].toInt()
-            } catch (e: NumberFormatException) {
+            } catch (_: NumberFormatException) {
                 0
             }
             prevKey = key
+            @Suppress("AssignedValueIsNeverRead")
             prevFreq = f
             isShortCut = false
             if ("not_a_word" in csv) {
@@ -110,7 +111,7 @@ internal fun loadFromTextDict(
             isShortCut = true
             try {
                 csv[3].toInt()
-            } catch (e: NumberFormatException) {
+            } catch (_: NumberFormatException) {
                 prevFreq
             }
         } else return
@@ -124,7 +125,7 @@ internal fun loadFromTextDict(
                 .map { (f, s) ->
                     s to try {
                         f.toInt()
-                    } catch (e: NumberFormatException) {
+                    } catch (_: NumberFormatException) {
                         0
                     }
                 }

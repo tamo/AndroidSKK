@@ -376,7 +376,7 @@ class SKKDictManager : AppCompatActivity() {
         }
 
         val isGzip = name.endsWith(".gz")
-        val nameWithoutGZ = if (isGzip) name.substring(0, name.length - 3) else name
+        val nameWithoutGZ = if (isGzip) name.dropLast(3) else name
 
         val dictFileBaseName = if (common && name.startsWith("SKK-JISYO.")) {
             "skk_dict_" + nameWithoutGZ.substring("SKK-JISYO.".length)

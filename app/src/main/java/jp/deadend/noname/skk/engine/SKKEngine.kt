@@ -514,7 +514,7 @@ class SKKEngine(
                 if (okurigana.isEmpty()) {
                     ct.append(key)
                 } else {
-                    ct.append(key.substring(0, key.length - 1))
+                    ct.append(key.dropLast(1))
                     ct.append("*")
                     ct.append(okurigana)
                 }
@@ -1056,7 +1056,7 @@ class SKKEngine(
                 val last = hira.codePointAt(li)
                 if (isAlphabet(last)) {
                     mKanjiKey.setLength(0)
-                    mKanjiKey.append(hira.substring(0, li))
+                    mKanjiKey.append(hira.take(li))
                     mComposing.setLength(0)
                     processKey(Character.toUpperCase(last))
                 } else {
