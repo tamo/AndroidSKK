@@ -1,5 +1,7 @@
-apply plugin: 'com.android.application'
-apply plugin: 'kotlin-android'
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+}
 
 android {
     compileSdk = 36
@@ -7,7 +9,7 @@ android {
     defaultConfig {
         applicationId "jp.deadend.noname.skk"
         minSdkVersion 30
-        targetSdk 36
+        targetSdk { 36 }
         versionCode 63
         versionName "3.7.14"
 
@@ -29,13 +31,12 @@ android {
     }
     namespace 'jp.deadend.noname.skk'
 
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
+    java {
+        toolchain {
+            languageVersion.set(JavaLanguageVersion.of(21))
+        }
     }
-    kotlinOptions {
-        jvmTarget = '17'
-    }
+
     testOptions {
         unitTests.returnDefaultValues true
     }
