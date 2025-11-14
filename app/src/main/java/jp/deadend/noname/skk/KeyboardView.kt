@@ -73,6 +73,7 @@ open class KeyboardView @JvmOverloads constructor(
     var isPreviewEnabled = true
     var backgroundAlpha = 255
     var isZenkaku = false
+    var isHankaku = false
 
     private val mPaint = Paint()
     private val mPadding = Rect(0, 0, 0, 0)
@@ -436,16 +437,20 @@ open class KeyboardView @JvmOverloads constructor(
                     )
                     keyBackground?.draw(canvas)
                     if (label != null) {
+                        val lines = label.split("\n")
+                        val numLines = lines.size
                         // For characters, use large font. For labels like "Done", use small font.
-                        if (label.length > 1 && !label.contains('\n') && key.codes.size < 2) {
+                        if (label.length > 1 && numLines == 1 && key.codes.size < 2) {
                             mPaint.textSize = mLabelTextSize.toFloat()
                             mPaint.textScaleX = 1.0f
                         } else {
                             mPaint.textSize = mKeyTextSize.toFloat()
-                            mPaint.textScaleX = if (isZenkaku) 1.4f else 1.0f
+                            mPaint.textScaleX = when {
+                                isZenkaku -> 1.4f
+                                isHankaku && (numLines <= 1 || lines[0].length == 1) -> 0.7f
+                                else -> 1.0f
+                            }
                         }
-                        val lines = label.split("\n")
-                        val numLines = lines.size
                         val isGodanKey = numLines == 3 &&
                                 lines[1].length > 2
                         val sizeFactors = when (numLines) {

@@ -66,7 +66,12 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
         checkNotNull(findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_SPACE)) { "BUG: no space key" }
     }
     private val mQwertyKey: Keyboard.Key by lazy {
-        checkNotNull(findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_TO_QWERTY)) { "BUG: no qwerty key" }
+        checkNotNull(
+            findKeyByCode(
+                mJPKeyboard,
+                KEYCODE_FLICK_JP_TO_QWERTY
+            )
+        ) { "BUG: no qwerty key" }
     }
     private val mShiftKeyJP: Keyboard.Key by lazy { mJPKeyboard.keys[0] }
     private val mShiftKeyNum: Keyboard.Key by lazy { mNumKeyboard.keys[0] }
@@ -160,7 +165,6 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
             kanaKey.icon = null
         }
         kanaKeys[0].codes[0] = KEYCODE_FLICK_JP_MOJI
-        kanaKeys[0].label = if (mService.isHiragana) "10\n：カナ>\n声" else "10\n：かな＞\n声"
 
         for (keyboard in arrayOf(mJPKeyboard, mNumKeyboard, mVoiceKeyboard)) {
             keyboard.reloadShiftKeys()
@@ -168,40 +172,29 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
     }
 
     override fun setKeyState(state: SKKState): FlickJPKeyboardView {
-        when (state) {
-            SKKHiraganaState, SKKKatakanaState, SKKHanKanaState -> mService.kanaState = state
+        isHankaku = when (state) {
+            SKKHiraganaState, SKKKatakanaState -> false
+            SKKHanKanaState -> true
             else -> return this
         }
+        mService.kanaState = state
         for (key in keyboard.keys) {
-            if (state === SKKHiraganaState) {
-                when (key.codes[0]) {
-                    KEYCODE_FLICK_JP_CHAR_A -> key.label = "あ"
-                    KEYCODE_FLICK_JP_CHAR_KA -> key.label = "か"
-                    KEYCODE_FLICK_JP_CHAR_SA -> key.label = "さ"
-                    KEYCODE_FLICK_JP_CHAR_TA -> key.label = "た"
-                    KEYCODE_FLICK_JP_CHAR_NA -> key.label = "な"
-                    KEYCODE_FLICK_JP_CHAR_HA -> key.label = "は"
-                    KEYCODE_FLICK_JP_CHAR_MA -> key.label = "ま"
-                    KEYCODE_FLICK_JP_CHAR_YA -> key.label = "や"
-                    KEYCODE_FLICK_JP_CHAR_RA -> key.label = "ら"
-                    KEYCODE_FLICK_JP_CHAR_WA -> key.label = "ん\nをわー\n〜"
-                    KEYCODE_FLICK_JP_MOJI -> key.label = "10\n：カナ>\n声"
-                }
-            } else {
-                when (key.codes[0]) {
-                    KEYCODE_FLICK_JP_CHAR_A -> key.label = "ア"
-                    KEYCODE_FLICK_JP_CHAR_KA -> key.label = "カ"
-                    KEYCODE_FLICK_JP_CHAR_SA -> key.label = "サ"
-                    KEYCODE_FLICK_JP_CHAR_TA -> key.label = "タ"
-                    KEYCODE_FLICK_JP_CHAR_NA -> key.label = "ナ"
-                    KEYCODE_FLICK_JP_CHAR_HA -> key.label = "ハ"
-                    KEYCODE_FLICK_JP_CHAR_MA -> key.label = "マ"
-                    KEYCODE_FLICK_JP_CHAR_YA -> key.label = "ヤ"
-                    KEYCODE_FLICK_JP_CHAR_RA -> key.label = "ラ"
-                    KEYCODE_FLICK_JP_CHAR_WA -> key.label = "ン\nヲワー\n〜"
-                    KEYCODE_FLICK_JP_MOJI -> key.label = "10\n：かな>\n声"
-                }
+            val label = when (key.codes[0]) {
+                KEYCODE_FLICK_JP_CHAR_A -> "あ"
+                KEYCODE_FLICK_JP_CHAR_KA -> "か"
+                KEYCODE_FLICK_JP_CHAR_SA -> "さ"
+                KEYCODE_FLICK_JP_CHAR_TA -> "た"
+                KEYCODE_FLICK_JP_CHAR_NA -> "な"
+                KEYCODE_FLICK_JP_CHAR_HA -> "は"
+                KEYCODE_FLICK_JP_CHAR_MA -> "ま"
+                KEYCODE_FLICK_JP_CHAR_YA -> "や"
+                KEYCODE_FLICK_JP_CHAR_RA -> "ら"
+                KEYCODE_FLICK_JP_CHAR_WA -> "ん\nをわー\n〜"
+                else -> continue
             }
+            key.label = if (state !== SKKHiraganaState) {
+                hiragana2katakana(label)!!
+            } else label
         }
         invalidateAllKeys()
         return this
@@ -217,8 +210,14 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
             mSpaceKey.label = "設定"
             mQwertyKey.label = "全角ａ\n☻略記\nqwerty"
 
+            var key = findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_MOJI)
+            if (key != null) {
+                key.label =
+                    if (mService.kanaState === SKKHanKanaState) "10\n：カナ>\n声" else "10\n：ｶﾅ>\n声"
+            }
+
             // ＜＞を変更
-            var key = findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_LEFT)
+            key = findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_LEFT)
             if (key != null) {
                 key.codes[0] = KEYCODE_FLICK_JP_PASTE
                 key.label = "貼付"
@@ -234,8 +233,14 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
             mSpaceKey.label = ""
             mQwertyKey.label = "全角ａ\n☻abc記\nqwerty" // 変更したら voice.xml も更新すること
 
+            var key = findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_MOJI)
+            if (key != null) {
+                key.label =
+                    if (mService.kanaState === SKKHiraganaState) "10\n：カナ>\n声" else "10\n：かな>\n声"
+            }
+
             // ＜＞を復元
-            var key = findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_PASTE)
+            key = findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_PASTE)
             if (key != null) {
                 key.codes[0] = KEYCODE_FLICK_JP_LEFT
                 key.label = ""
@@ -971,20 +976,23 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
             }
 
             KEYCODE_FLICK_JP_MOJI -> when (mFlickState) {
-                EnumSet.of(FlickState.NONE) -> mService.processKey('q'.code)
+                EnumSet.of(FlickState.NONE) -> mService.processKey(if (isShifted) 17 else 'q'.code)
                 EnumSet.of(FlickState.LEFT) -> mService.processKey(':'.code)
                 EnumSet.of(FlickState.UP) -> if (keyboard !== mNumKeyboard) {
                     keyboard = mNumKeyboard
+                    isHankaku = false
                 }
 
                 EnumSet.of(FlickState.RIGHT) -> mService.processKey('>'.code)
                 EnumSet.of(FlickState.DOWN) -> if (keyboard !== mVoiceKeyboard) {
                     keyboard = mVoiceKeyboard
+                    isHankaku = false
                 }
             }
 
             KEYCODE_FLICK_JP_TO_KANA -> if (keyboard !== mJPKeyboard) {
                 keyboard = mJPKeyboard
+                isHankaku = mService.kanaState == SKKHanKanaState
 
                 // Godan使用中に入力欄の関係でテンキーになった場合などの復帰
                 if (skkPrefs.preferGodan) mService.changeSoftKeyboard(SKKHiraganaState)
