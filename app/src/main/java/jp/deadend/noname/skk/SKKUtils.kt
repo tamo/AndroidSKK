@@ -333,31 +333,33 @@ fun getFileNameFromUri(context: Context, uri: Uri): String? {
 
 @Throws(IOException::class)
 internal fun unzipFile(input: InputStream, outDir: File) {
-    val zis = ZipInputStream(BufferedInputStream(input))
-    var ze: ZipEntry
-    while (zis.nextEntry.also { ze = it } != null) {
-        val f = File(outDir, ze.name)
-        if (!f.canonicalPath.startsWith(outDir.canonicalPath)) {
-            throw IOException("zip path traversal")
-        }
-        if (f.isDirectory) {
-            f.mkdirs()
-        } else {
-            f.parentFile?.mkdirs()
-            val bos = BufferedOutputStream(FileOutputStream(f))
-            val buf = ByteArray(1024)
-
-            var size = zis.read(buf, 0, buf.size)
-            while (size > -1) {
-                bos.write(buf, 0, size)
-                size = zis.read(buf, 0, buf.size)
+    ZipInputStream(BufferedInputStream(input)).use { zis ->
+        var ze: ZipEntry? // ここの「?」を消してもビルドが通るのはバグだと思う
+        do {
+            ze = zis.nextEntry
+        } while (null != ze?.also
+            {
+                val f = File(outDir, ze.name)
+                if (!f.canonicalPath.startsWith(outDir.canonicalPath)) {
+                    throw IOException("zip path traversal")
+                }
+                if (f.isDirectory) {
+                    f.mkdirs()
+                } else {
+                    f.parentFile?.mkdirs()
+                    BufferedOutputStream(FileOutputStream(f)).use { bos ->
+                        val buf = ByteArray(1024)
+                        var size = zis.read(buf, 0, buf.size)
+                        while (size > -1) {
+                            bos.write(buf, 0, size)
+                            size = zis.read(buf, 0, buf.size)
+                        }
+                    }
+                }
+                zis.closeEntry()
             }
-
-            bos.close()
-        }
-        zis.closeEntry()
+        )
     }
-    zis.close()
 }
 
 private val Z2H_PAIRS =
