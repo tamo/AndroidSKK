@@ -13,6 +13,7 @@
     <string name="label_dict_tool_recreate">ユーザー辞書の初期化</string>
     <string name="label_ascii_tool_recreate">ASCII 辞書の初期化</string>
     <string name="label_emoji_tool_recreate">絵文字辞書の初期化</string>
+    <string name="label_log_viewer">クラッシュログの表示</string>
 
     <string name="label_dict_manager_optional_dict">SKK 追加辞書</string>
     <string name="label_dict_manager_add">辞書を追加</string>
@@ -99,6 +100,7 @@
     <string name="pref_sticky_meta" translatable="false">PrefKeyStickyMeta</string>
     <string name="pref_sands" translatable="false">PrefKeySandS</string>
     <string name="pref_dict_order" translatable="false">PrefKeyDicsOrder</string>
+    <string name="pref_log_viewer" translatable="false">PrefLogViewer</string>
 
     <string name="btree_name" translatable="false">skk_dict</string>
     <string name="dict_name_user" translatable="false">skk_userdict</string>

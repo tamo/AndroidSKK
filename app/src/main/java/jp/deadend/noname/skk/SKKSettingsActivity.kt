@@ -1,6 +1,8 @@
 package jp.deadend.noname.skk
 
 import android.Manifest
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -11,6 +13,7 @@ import android.view.MenuItem
 import android.view.inputmethod.InputMethodManager
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import androidx.core.content.edit
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
@@ -22,7 +25,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import androidx.core.content.edit
 
 
 class SKKSettingsActivity : AppCompatActivity() {
@@ -32,6 +34,24 @@ class SKKSettingsActivity : AppCompatActivity() {
     class SettingsMainFragment : PreferenceFragmentCompat() {
         override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
             setPreferencesFromResource(R.xml.prefs_main, rootKey)
+
+            findPreference<Preference>(getString(R.string.pref_log_viewer))?.apply {
+                setOnPreferenceClickListener {
+                    val latest = context.getExternalFilesDir(null)
+                        ?.listFiles { _, name -> name.startsWith("SKK_strace_") }
+                        ?.maxByOrNull { file -> file.lastModified() }
+                        ?: return@setOnPreferenceClickListener false
+                    isIconSpaceReserved = false
+                    isSingleLineTitle = false
+                    title = latest.readText()
+                    setOnPreferenceClickListener {
+                        val cm = context.getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
+                        cm.setPrimaryClip(ClipData.newPlainText("SKK crash log", title))
+                        true
+                    }
+                    true
+                }
+            }
         }
     }
 
@@ -76,6 +96,7 @@ class SKKSettingsActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Thread.setDefaultUncaughtExceptionHandler(MyUncaughtExceptionHandler(applicationContext))
 
         binding = ActivitySettingsBinding.inflate(layoutInflater)
         setContentView(binding.root)

@@ -99,4 +99,9 @@
                 android:targetPackage="jp.deadend.noname.skk" />
         </androidx.preference.Preference>
     </androidx.preference.PreferenceCategory>
+    <androidx.preference.PreferenceCategory>
+        <androidx.preference.Preference
+            app:key="@string/pref_log_viewer"
+            app:title="@string/label_log_viewer" />
+    </androidx.preference.PreferenceCategory>
 </androidx.preference.PreferenceScreen>
