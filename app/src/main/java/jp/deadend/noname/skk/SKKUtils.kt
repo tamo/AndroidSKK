@@ -141,70 +141,73 @@ private fun processNumber(str: String, numberList: List<String>): String {
 private fun processSingleNumber(str: String, number: String): String {
     return when (val target = Regex("#[0-3]?").find(str)?.value) {
         "#0", "#" -> str.replaceFirst(target, number)
-        "#1" -> str.replaceFirst(target, number // 全角
-            .map { char ->
-                when (char.code) {
-                    in '0'.code..'9'.code -> (char.code + '０'.code - '0'.code).toChar()
-                    '.'.code -> '．' // もしかして「・」の方がいい?
-                    else -> char
-                }
-            }
-            .joinToString("")
-        )
-
-        "#2" -> str.replaceFirst(target, number // 単純漢数字
-            .map { char ->
-                when (char.code) {
-                    in '0'.code..'9'.code -> "〇一二三四五六七八九"[char.code - '0'.code]
-                    '.'.code -> '．' // もしかして「・」の方がいい?
-                    else -> char
-                }
-            }
-            .joinToString("")
-        )
-
-        "#3" -> str.replaceFirst(target, number // 位取りのある漢数字 (たぶんバグがある)
-            .takeWhile { it != '.' } // 整数部のみ
-            .reversed()
-            .mapIndexed { index, char ->
-                val sb = StringBuilder()
-                sb.append(
+        "#1" -> str.replaceFirst(
+            target, number // 全角
+                .map { char ->
                     when (char.code) {
-                        '1'.code -> if (index == 0) "一" else ""
-                        in '2'.code..'9'.code -> "二三四五六七八九"[char.code - '2'.code]
-                        else -> ""
-                    }
-                )
-                if (char != '0') sb.append(
-                    when (index % 4) {
-                        1 -> "十"
-                        2 -> "百"
-                        3 -> "千"
-                        else -> ""
-                    }
-                )
-                if (index in 4..20 && index % 4 == 0) {
-                    if ((number.substring( // 4桁まるごと0000かどうか
-                            max(number.length - index - 4, 0),
-                            number.length - index
-                        ).toIntOrNull() ?: 0) > 0
-                    ) {
-                        sb.append("一万億兆京垓"[index / 4])
+                        in '0'.code..'9'.code -> (char.code + '０'.code - '0'.code).toChar()
+                        '.'.code -> '．' // もしかして「・」の方がいい?
+                        else -> char
                     }
                 }
-                sb.toString()
-            }
-            .reversed()
-            .joinToString("")
-                + number.dropWhile { it != '.' } // 小数点以下は位がないので別扱いにする
-            .map { char ->
-                when (char.code) {
-                    in '0'.code..'9'.code -> "〇一二三四五六七八九"[char.code - '0'.code]
-                    '.'.code -> '．' // もしかして「・」の方がいい?
-                    else -> char
+                .joinToString("")
+        )
+
+        "#2" -> str.replaceFirst(
+            target, number // 単純漢数字
+                .map { char ->
+                    when (char.code) {
+                        in '0'.code..'9'.code -> "〇一二三四五六七八九"[char.code - '0'.code]
+                        '.'.code -> '．' // もしかして「・」の方がいい?
+                        else -> char
+                    }
                 }
-            }
-            .joinToString("")
+                .joinToString("")
+        )
+
+        "#3" -> str.replaceFirst(
+            target, number // 位取りのある漢数字 (たぶんバグがある)
+                .takeWhile { it != '.' } // 整数部のみ
+                .reversed()
+                .mapIndexed { index, char ->
+                    val sb = StringBuilder()
+                    sb.append(
+                        when (char.code) {
+                            '1'.code -> if (index == 0) "一" else ""
+                            in '2'.code..'9'.code -> "二三四五六七八九"[char.code - '2'.code]
+                            else -> ""
+                        }
+                    )
+                    if (char != '0') sb.append(
+                        when (index % 4) {
+                            1 -> "十"
+                            2 -> "百"
+                            3 -> "千"
+                            else -> ""
+                        }
+                    )
+                    if (index in 4..20 && index % 4 == 0) {
+                        if ((number.substring( // 4桁まるごと0000かどうか
+                                max(number.length - index - 4, 0),
+                                number.length - index
+                            ).toIntOrNull() ?: 0) > 0
+                        ) {
+                            sb.append("一万億兆京垓"[index / 4])
+                        }
+                    }
+                    sb.toString()
+                }
+                .reversed()
+                .joinToString("")
+                    + number.dropWhile { it != '.' } // 小数点以下は位がないので別扱いにする
+                .map { char ->
+                    when (char.code) {
+                        in '0'.code..'9'.code -> "〇一二三四五六七八九"[char.code - '0'.code]
+                        '.'.code -> '．' // もしかして「・」の方がいい?
+                        else -> char
+                    }
+                }
+                .joinToString("")
         )
 
         else -> str

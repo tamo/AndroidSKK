@@ -164,7 +164,8 @@ open class Keyboard {
             iconPreview?.let {
                 iconPreview?.setBounds(0, 0, it.intrinsicWidth, it.intrinsicHeight)
             }
-            popupCharacters = a.getText(R.styleable.Keyboard_Key_popupCharacters)?.toString().orEmpty()
+            popupCharacters =
+                a.getText(R.styleable.Keyboard_Key_popupCharacters)?.toString().orEmpty()
             popupResId = a.getResourceId(R.styleable.Keyboard_Key_popupKeyboard, 0)
             repeatable = a.getBoolean(R.styleable.Keyboard_Key_isRepeatable, false)
             sticky = a.getBoolean(R.styleable.Keyboard_Key_isSticky, false)

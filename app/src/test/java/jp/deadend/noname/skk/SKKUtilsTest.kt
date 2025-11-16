@@ -75,11 +75,23 @@ class SKKUtilsTest {
 
     @Test
     fun testProcessConcatAndMore() {
-        assertEquals("第123回45/", processConcatAndMore("(concat \"第#0回#0\\057\")", "だい123かい45すらっしゅ"))
-        assertEquals("第１２３回45;", processConcatAndMore("(concat \"第#1回#0\\073\")", "だい123かい45せみころん"))
+        assertEquals(
+            "第123回45/",
+            processConcatAndMore("(concat \"第#0回#0\\057\")", "だい123かい45すらっしゅ")
+        )
+        assertEquals(
+            "第１２３回45;",
+            processConcatAndMore("(concat \"第#1回#0\\073\")", "だい123かい45せみころん")
+        )
         assertEquals("第一二三回#", processConcatAndMore("第#2回#0", "だい123かい"))
         assertEquals("第百二十三回", processConcatAndMore("第#3回", "だい123かい"))
-        assertEquals("第123回45", processConcatAndMore("(concat \"第#回\" \"#0\")", "だい123かい45"))
-        assertEquals("0/0/0/0", processConcatAndMore("(concat \"0\\0570\\0570\\0570\")", "1みりもかんけいないけど"))
+        assertEquals(
+            "第123回45",
+            processConcatAndMore("(concat \"第#回\" \"#0\")", "だい123かい45")
+        )
+        assertEquals(
+            "0/0/0/0",
+            processConcatAndMore("(concat \"0\\0570\\0570\\0570\")", "1みりもかんけいないけど")
+        )
     }
 }
