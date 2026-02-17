@@ -122,14 +122,13 @@ internal fun loadFromTextDict(
             val pairs = (btree.find(prevKey).orEmpty())
                 .split('/').asSequence().filter { it.isNotEmpty() }
                 .zipWithNext().filterIndexed { index, _ -> index % 2 == 0 }
-                .map { (f, s) ->
+                .associate { (f, s) ->
                     s to try {
                         f.toInt()
                     } catch (_: NumberFormatException) {
                         0
                     }
-                }
-                .toMap().toMutableMap()
+                }.toMutableMap()
             val oldFreq = pairs[key] ?: 0
             pairs[key] = max(freq, oldFreq)
             pairs.flatMap { (k, v) -> listOf(v.toString(), k) }

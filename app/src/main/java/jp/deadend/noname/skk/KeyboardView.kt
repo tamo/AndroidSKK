@@ -1195,6 +1195,7 @@ open class KeyboardView @JvmOverloads constructor(
                 if (pastTime[num] == 0L) break
                 num++
             }
+            @Suppress("EmptyRange")
             for (i in 1 until num) {
                 val dur = (pastTime[i] - oldestTime).toInt()
                 if (dur == 0) continue

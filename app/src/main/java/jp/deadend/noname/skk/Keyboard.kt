@@ -403,6 +403,7 @@ open class Keyboard {
         if (mGridNeighbors[0] == null) {
             computeNearestNeighbors()
         }
+        @Suppress("EmptyRange")
         if (x in 0 until width && y in 0 until height * (100 - bottom) / 100) {
             val index = (y / mCellHeight) * GRID_WIDTH + x / mCellWidth
             if (index < GRID_SIZE) {

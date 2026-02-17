@@ -532,7 +532,7 @@ class SKKService : InputMethodService() {
      * This is the main point where we do our initialization of the
      * input method to begin operating on an application. At this
      * point we have been bound to the client, and are now receiving
-     * all of the detailed information about the target of our edits.
+     * all the detailed information about the target of our edits.
      */
     override fun onStartInput(attribute: EditorInfo, restarting: Boolean) {
         dLog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")

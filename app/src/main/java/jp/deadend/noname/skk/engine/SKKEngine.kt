@@ -721,7 +721,7 @@ class SKKEngine(
         }
         if (mService.isHiragana) {
             target.addAll(dictionary.findKeys(scope, key))
-        } else dictionary.findKeys(scope, key).map { suggestion ->
+        } else dictionary.findKeys(scope, key).forEach { suggestion ->
             target.add(suggestion.first to hiragana2katakana(suggestion.second, reversed = true)!!)
         }
     }

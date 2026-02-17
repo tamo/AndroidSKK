@@ -215,8 +215,7 @@ private fun processSingleNumber(str: String, number: String): String {
 }
 
 private fun unquote(str: String): String = PAT_QUOTED.findAll(str)
-    .map { it.groupValues[1] }
-    .joinToString("")
+    .joinToString("") { it.groupValues[1] }
 
 private fun unescapeOctal(str: String): String = PAT_ESCAPE_NUM.replace(str) {
     it.value.substring(1).toInt(8).toChar().toString()

@@ -27,6 +27,7 @@
         <attr name="shadowColor" format="color" />
         <attr name="shadowRadius" format="float" />
     </declare-styleable>
+    <!--suppress GrazieInspection -->
     <declare-styleable name="KeyboardViewPreviewState">
         <!-- State for {@link android.inputmethodservice.KeyboardView KeyboardView}
                 key preview background -->
@@ -55,7 +56,7 @@
         <attr name="keyboardMode" format="reference" />
     </declare-styleable>
     <declare-styleable name="Keyboard_Key">
-        <!-- The unicode value or comma-separated values that this key outputs -->
+        <!-- The Unicode value or comma-separated values that this key outputs -->
         <attr name="codes" format="integer|string" />
         <!-- 上フリックで出るコード -->
         <attr name="shiftedCode" format="integer" />
