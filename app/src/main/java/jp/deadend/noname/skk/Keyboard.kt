@@ -449,7 +449,7 @@ open class Keyboard {
                                 currentRow?.let { crow ->
                                     inKey = true
                                     key = createKeyFromXml(res, crow, x, y, parser)
-                                    key?.let {
+                                    key.let {
                                         keys.add(it)
                                         when (it.codes[0]) {
                                             KEYCODE_SHIFT -> {

@@ -287,7 +287,7 @@ class SKKUserDictTool : AppCompatActivity() {
                 val regex: Regex? by lazy {
                     try {
                         Regex(newText)
-                    } catch (e: Exception) {
+                    } catch (_: Exception) {
                         null
                     }
                 }

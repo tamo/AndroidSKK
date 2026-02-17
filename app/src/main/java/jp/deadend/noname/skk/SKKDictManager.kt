@@ -226,7 +226,7 @@ class SKKDictManager : AppCompatActivity() {
                                         getString(R.string.dict_name_emoji) + ".zip"
                                     ), filesDir
                                 )
-                            } catch (e: IOException) {
+                            } catch (_: IOException) {
                                 SimpleMessageDialogFragment.newInstance(
                                     getString(R.string.error_extracting_dict_failed)
                                 ).show(supportFragmentManager, "dialog")
