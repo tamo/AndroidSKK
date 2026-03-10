@@ -30,8 +30,10 @@ class CandidatesViewContainer(screen: Context, attrs: AttributeSet) : LinearLayo
     internal lateinit var binding: ViewCandidatesBinding
     internal var lines = 0
         set(value) {
-            field = value
-            setSize(-1)
+            if (field != value) {
+                field = value
+                if (value > 0) setSize(-1)
+            }
         }
     private lateinit var mService: SKKService
 
@@ -170,9 +172,14 @@ class CandidatesViewContainer(screen: Context, attrs: AttributeSet) : LinearLayo
         val buttonSize = resources.getDimensionPixelSize(R.dimen.candidates_scroll_button_width)
         val width = mService.inputViewWidth - buttonSize * 2
         val height = if (lines > 0) (px * lines * LINE_SCALE).toInt() else buttonSize
-        binding.frame.layoutParams = LayoutParams(width, height)
-        binding.candidates.layoutParams = FrameLayout.LayoutParams(width, height)
-        requestLayout()
+        val newLayoutParams = LayoutParams(width, height)
+        if (binding.frame.layoutParams.width != newLayoutParams.width ||
+            binding.frame.layoutParams.height != newLayoutParams.height
+        ) {
+            binding.frame.layoutParams = newLayoutParams
+            binding.candidates.layoutParams = FrameLayout.LayoutParams(width, height)
+            requestLayout()
+        }
     }
 }
 
