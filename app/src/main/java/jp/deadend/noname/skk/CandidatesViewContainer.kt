@@ -32,7 +32,7 @@ class CandidatesViewContainer(screen: Context, attrs: AttributeSet) : LinearLayo
         set(value) {
             if (field != value) {
                 field = value
-                if (value > 0) setSize(-1)
+                setSize(-1)
             }
         }
     private lateinit var mService: SKKService
