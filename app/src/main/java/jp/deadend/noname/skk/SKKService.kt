@@ -75,6 +75,48 @@ class SKKService : InputMethodService() {
             }
         }
 
+    // テンキー強制などから復元するための各種状態
+    // 生で保持すると createInputView を通過できないので enum で保持
+    private var mPrevStates: PrevStates? = null
+
+    private class PrevStates(
+        val context: SKKService,
+        originalView: KeyboardView?,
+        val state: SKKState
+    ) {
+        val keyboardType: KeyboardType? = when (originalView?.keyboard) {
+            null -> null
+            context.mFlickJPInputView?.mJPKeyboard -> KeyboardType.FlickJPJP
+            context.mFlickJPInputView?.mNumKeyboard -> KeyboardType.FlickJPNum
+            context.mGodanInputView?.keyboard -> KeyboardType.Godan
+            context.mQwertyInputView?.mLatinKeyboard -> KeyboardType.QwertyLatin
+            context.mQwertyInputView?.mSymbolsKeyboard -> KeyboardType.QwertySymbols
+            context.mAbbrevKeyboardView?.keyboard -> KeyboardType.Abbrev
+            else -> null // ないはず
+        }
+
+        val inputView: KeyboardView?
+            get() = when (keyboardType) {
+                KeyboardType.FlickJPJP, KeyboardType.FlickJPNum -> context.mFlickJPInputView
+                KeyboardType.Godan -> context.mGodanInputView
+                KeyboardType.QwertyLatin, KeyboardType.QwertySymbols -> context.mQwertyInputView
+                KeyboardType.Abbrev -> context.mAbbrevKeyboardView
+                null -> null
+            }
+        val keyboard: Keyboard?
+            get() = when (keyboardType) {
+                KeyboardType.FlickJPJP -> context.mFlickJPInputView?.mJPKeyboard
+                KeyboardType.FlickJPNum -> context.mFlickJPInputView?.mNumKeyboard
+                KeyboardType.QwertyLatin -> context.mQwertyInputView?.mLatinKeyboard
+                KeyboardType.QwertySymbols -> context.mQwertyInputView?.mSymbolsKeyboard
+                else -> null
+            }
+
+        private enum class KeyboardType {
+            FlickJPJP, FlickJPNum, Godan, QwertyLatin, QwertySymbols, Abbrev
+        }
+    }
+
     // 幅の確認
     internal val isFlickWidth: Boolean
         get() = (mInputView != mQwertyInputView && mInputView != mAbbrevKeyboardView)
@@ -584,58 +626,111 @@ class SKKService : InputMethodService() {
             // InputType.TYPE_CLASS_DATETIME -> "ignore" // ウェブブラウザが使ってないタイプなので無視
             else -> "ignore"
         }
-        when (keyboardType) {
-            "flick-jp" -> {
-                mEngine.resetOnStartInput()
-                handleKanaKey()
-                changeSoftKeyboard(SKKHiraganaState)
-            }
 
-            "flick-num" -> {
-                mEngine.resetOnStartInput()
-                setInputView(mFlickJPInputView)
-                if (mFlickJPInputView?.keyboard !== mFlickJPInputView?.mNumKeyboard) {
-                    mFlickJPInputView?.keyboard = mFlickJPInputView!!.mNumKeyboard
-                }
-            }
-
-            "qwerty" -> {
-                mEngine.resetOnStartInput()
-                if (mEngine.state !== SKKASCIIState) mEngine.processKey('l'.code)
-                setInputView(mQwertyInputView)
-                if (mQwertyInputView?.keyboard !== mQwertyInputView?.mLatinKeyboard) {
-                    mQwertyInputView?.keyboard = mQwertyInputView!!.mLatinKeyboard
-                }
-            }
-
-            "symbols" -> {
-                mEngine.resetOnStartInput()
-                if (mEngine.state !== SKKASCIIState) mEngine.processKey('l'.code)
-                setInputView(mQwertyInputView)
-                if (mQwertyInputView?.keyboard !== mQwertyInputView!!.mSymbolsKeyboard) {
-                    mQwertyInputView?.keyboard = mQwertyInputView!!.mSymbolsKeyboard
-                }
-            }
-
-            else ->
-                if (restarting) {
-                    if (mEngine.mComposingText.isNotEmpty()) {
-                        val composingText = mEngine.mComposingText.toString()
-                        dLog("restarting: setComposingText(${mEngine.mComposingText})")
-                        currentInputConnection.apply {
-                            getTextBeforeCursor(composingText.length, 0).let {
-                                if (it == composingText) {
-                                    deleteSurroundingText(it.length, 0)
-                                } // 回転などでテキストが確定されていることがあるので消す
-                            }
-                            setComposingText(mEngine.mComposingText, 1)
-                            // candidatesView も復元したいけど無理っぽい
+        if (keyboardType == "ignore") {
+            if (restarting) {
+                if (mEngine.mComposingText.isNotEmpty()) {
+                    val composingText = mEngine.mComposingText.toString()
+                    dLog("restarting: setComposingText(${mEngine.mComposingText})")
+                    currentInputConnection.apply {
+                        getTextBeforeCursor(composingText.length, 0).let {
+                            if (it == composingText) {
+                                deleteSurroundingText(it.length, 0)
+                            } // 回転などでテキストが確定されていることがあるので消す
                         }
+                        setComposingText(mEngine.mComposingText, 1)
+                        // candidatesView も復元したいけど無理っぽい
                     }
-                } else {
-                    mEngine.resetOnStartInput()
                 }
+            } else {
+                mEngine.resetOnStartInput()
+            }
+
+            restorePrevStates()
+        } else {
+            // keyboardType で強制された状態を一時的なものとして扱うため以前の状態を覚えておく
+            if (mPrevStates == null) {
+                mPrevStates = PrevStates(this, mInputView, engineState)
+            } else {
+                // 未使用の prev を上書きせず保持するが、keyboard だけは戻しておく
+                mPrevStates!!.let { prev ->
+                    prev.keyboard?.let { kb ->
+                        prev.inputView?.keyboard = kb
+                    }
+                }
+            }
+
+            mEngine.resetOnStartInput()
+
+            when (keyboardType) {
+                // 日本語にする
+                "flick-jp" -> {
+                    if (
+                        engineState in listOf(SKKAbbrevState, SKKASCIIState, SKKZenkakuState)
+                        || mInputView !in listOf(mFlickJPInputView, mGodanInputView)
+                        || (mInputView?.equals(mFlickJPInputView) == true
+                                && mInputView!!.keyboard !== mFlickJPInputView!!.mJPKeyboard)
+                    ) {
+                        mEngine.changeState(SKKHiraganaState)
+                    }
+                }
+
+                // テンキーにする
+                "flick-num" -> {
+                    mEngine.changeInputMode('l'.code)
+                    mFlickJPInputView?.let {
+                        setInputView(it) // Godan ユーザにも FlickJP のテンキーを強制
+                        it.keyboard = it.mNumKeyboard
+                    }
+                }
+
+                // 英字にする
+                "qwerty" -> {
+                    mEngine.changeInputMode('l'.code)
+                    if (mInputView?.equals(mQwertyInputView) == true) {
+                        mQwertyInputView!!.keyboard = mQwertyInputView!!.mLatinKeyboard
+                    }
+                }
+
+                // 英数記号にする
+                "symbols" -> {
+                    mEngine.changeInputMode('l'.code)
+                    if (mInputView?.equals(mQwertyInputView) == true) {
+                        mQwertyInputView!!.keyboard = mQwertyInputView!!.mSymbolsKeyboard
+                    }
+                }
+
+                else -> throw Exception("invalid keyboardType: $keyboardType")
+            }
+
+            // 変更していないように見える場合は prev を保持しない
+            mPrevStates?.let { prev ->
+                if (
+                    prev.inputView?.equals(mInputView) == true // null 不可
+                    && prev.keyboard?.equals(mInputView!!.keyboard) != false // null 可
+                    && prev.state == engineState
+                ) {
+                    mPrevStates = null
+                }
+            }
         }
+    }
+
+    internal fun restorePrevStates() {
+        mPrevStates?.let { prev ->
+            if (prev.state != engineState) {
+                mEngine.changeState(prev.state)
+            }
+            prev.inputView?.let {
+                prev.keyboard?.let { kb ->
+                    it.keyboard = kb
+                }
+                if (it != mInputView) {
+                    setInputView(it)
+                }
+            }
+        }
+        mPrevStates = null
     }
 
     /**
@@ -700,6 +795,7 @@ class SKKService : InputMethodService() {
     override fun onFinishInput() {
         dLog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
         mEngine.commitComposing()
+        restorePrevStates()
         super.onFinishInput()
         hideStatusIcon()
         clearCandidatesView()
