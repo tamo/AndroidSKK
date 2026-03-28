@@ -1086,21 +1086,25 @@ class SKKService : InputMethodService() {
      */
     fun keyDownUp(keyEventCode: Int) {
         val ic = currentInputConnection ?: return
-        when (keyEventCode) {
-            KeyEvent.KEYCODE_DEL -> ic.deleteSurroundingText(1, 0)
-
-            KeyEvent.KEYCODE_SEARCH -> ic.performEditorAction(EditorInfo.IME_ACTION_SEARCH)
-
-            else -> {
-                if (!skkPrefs.moveOverEdge) when (keyEventCode) {
-                    // 端でカーソル移動しようとすると閉じてしまうので回避
-                    KeyEvent.KEYCODE_DPAD_LEFT -> if (ic.getTextBeforeCursor(1, 0).isNullOrEmpty()) return
-                    KeyEvent.KEYCODE_DPAD_RIGHT -> if (ic.getTextAfterCursor(1, 0).isNullOrEmpty()) return
-                }
-                ic.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, keyEventCode))
-                ic.sendKeyEvent(KeyEvent(KeyEvent.ACTION_UP, keyEventCode))
-            }
+        if (!skkPrefs.moveOverEdge) when (keyEventCode) {
+            // 端でカーソル移動しようとすると閉じてしまうので回避
+            KeyEvent.KEYCODE_DPAD_LEFT -> if (ic.getTextBeforeCursor(1, 0).isNullOrEmpty()) return
+            KeyEvent.KEYCODE_DPAD_RIGHT -> if (ic.getTextAfterCursor(1, 0).isNullOrEmpty()) return
         }
+        ic.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, keyEventCode))
+        ic.sendKeyEvent(KeyEvent(KeyEvent.ACTION_UP, keyEventCode))
+        updateSuggestionsASCII()
+    }
+
+    fun pressDel() {
+        val ic = currentInputConnection ?: return
+        ic.deleteSurroundingText(1, 0)
+        updateSuggestionsASCII()
+    }
+
+    fun pressSearch() {
+        val ic = currentInputConnection ?: return
+        ic.performEditorAction(EditorInfo.IME_ACTION_SEARCH)
         updateSuggestionsASCII()
     }
 
