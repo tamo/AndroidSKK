@@ -843,7 +843,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
     override fun onLongPress(key: Keyboard.Key): Boolean {
         val code = key.codes[0]
         if (code == KEYCODE_FLICK_JP_ENTER) {
-            mService.keyDownUp(KeyEvent.KEYCODE_SEARCH)
+            mService.pressSearch()
             return true
         }
 
@@ -911,7 +911,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
         when (primaryCode) {
             // repeatable
             Keyboard.KEYCODE_DELETE -> if (!mService.handleBackspace()) {
-                mService.keyDownUp(KeyEvent.KEYCODE_DEL)
+                mService.pressDel()
             }
 
             KEYCODE_FLICK_JP_LEFT -> if (!mArrowFlicked && !mService.handleDpad(KeyEvent.KEYCODE_DPAD_LEFT)) {

@@ -556,7 +556,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
     override fun onLongPress(key: Keyboard.Key): Boolean {
         val code = key.codes[0]
         if (code == KEYCODE_GODAN_ENTER) {
-            mService.keyDownUp(KeyEvent.KEYCODE_SEARCH)
+            mService.pressSearch()
             return true
         }
 
@@ -625,7 +625,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
             // repeatable
             Keyboard.KEYCODE_DELETE -> if (!mService.handleBackspace()) {
                 if (!isCapsLocked) isShifted = false
-                mService.keyDownUp(KeyEvent.KEYCODE_DEL)
+                mService.pressDel()
             }
 
             KEYCODE_GODAN_LEFT -> if (!mArrowFlicked && !mService.handleDpad(KeyEvent.KEYCODE_DPAD_LEFT)) {

@@ -1096,6 +1096,18 @@ class SKKService : InputMethodService() {
         updateSuggestionsASCII()
     }
 
+    fun pressDel() {
+        val ic = currentInputConnection ?: return
+        ic.deleteSurroundingText(1, 0)
+        updateSuggestionsASCII()
+    }
+
+    fun pressSearch() {
+        val ic = currentInputConnection ?: return
+        ic.performEditorAction(EditorInfo.IME_ACTION_SEARCH)
+        updateSuggestionsASCII()
+    }
+
     fun pressEnter() {
         val ic = currentInputConnection ?: return
         val editorInfo = currentInputEditorInfo

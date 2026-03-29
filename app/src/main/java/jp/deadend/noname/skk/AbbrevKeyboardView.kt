@@ -81,7 +81,7 @@ class AbbrevKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
             // repeatable
             Keyboard.KEYCODE_DELETE -> {
                 if (!isCapsLocked) isShifted = false
-                if (!mService.handleBackspace()) mService.keyDownUp(KeyEvent.KEYCODE_DEL)
+                if (!mService.handleBackspace()) mService.pressDel()
             }
             // codes[0] 以外
             Keyboard.KEYCODE_CAPSLOCK -> {
