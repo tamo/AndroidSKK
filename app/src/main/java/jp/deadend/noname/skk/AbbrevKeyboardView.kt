@@ -2,7 +2,6 @@ package jp.deadend.noname.skk
 
 import android.content.Context
 import android.util.AttributeSet
-import android.view.KeyEvent
 import android.view.MotionEvent
 import jp.deadend.noname.skk.engine.SKKAbbrevState
 import jp.deadend.noname.skk.engine.SKKState
