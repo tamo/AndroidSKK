@@ -52,6 +52,7 @@
     <string name="error_text_dict_coding">UTF-8のファイルではないようです</string>
     <string name="error_dict_exists">この辞書はすでに存在します: %1$s\n削除しますか？</string>
     <string name="error_extracting_dict_failed">辞書の解凍に失敗しました。一旦アンインストールしてみてください</string>
+    <string name="error_pasting_forbidden">貼り付け機能はソフトウェアキーボードの設定で無効化されています</string>
 
     <string name="pref_kutouten_type" translatable="false">PrefKeyKutoutenType</string>
     <string name="pref_prefix_mark" translatable="false">PrefKeyPrefixMark</string>
@@ -71,6 +72,7 @@
     <string name="pref_show_status_icon" translatable="false">PrefKeyShowStatusIcon</string>
     <string name="pref_haptic" translatable="false">PrefKeyHaptic</string>
     <string name="pref_over_edge" translatable="false">PrefKeyOverEdge</string>
+    <string name="pref_forbid_paste" translatable="false">PrefKeyForbidPaste</string>
     <string name="pref_use_flick" translatable="false">PrefKeyPreferFlick</string>
     <string name="pref_use_godan" translatable="false">PrefKeyPreferGodan</string>
     <string name="pref_godan_simple" translatable="false">PrefKeyGodanSimple</string>

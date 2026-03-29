@@ -109,6 +109,12 @@ class SKKPrefs(context: Context) {
             putBoolean(res.getString(R.string.pref_over_edge), value)
         }
 
+    var forbidPaste: Boolean
+        get() = prefs.getBoolean(res.getString(R.string.pref_forbid_paste), false)
+        set(value) = prefs.edit {
+            putBoolean(res.getString(R.string.pref_forbid_paste), value)
+        }
+
     var preferFlick: Boolean
         get() = prefs.getBoolean(res.getString(R.string.pref_use_flick), true)
         set(value) = prefs.edit {

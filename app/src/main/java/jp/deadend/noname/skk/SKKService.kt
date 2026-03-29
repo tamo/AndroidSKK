@@ -1135,6 +1135,20 @@ class SKKService : InputMethodService() {
     }
 
     fun pasteClip() {
+        if (skkPrefs.forbidPaste) {
+            val intent = Intent(applicationContext, SKKSettingsActivity::class.java)
+                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            val pendingIntent = PendingIntent.getActivity(
+                applicationContext, 0, intent, PendingIntent.FLAG_IMMUTABLE
+            )
+            notify(
+                NOTIFY_ID_DETAILS,
+                "貼り付け禁止",
+                getText(R.string.error_pasting_forbidden).toString(),
+                pendingIntent
+            )
+            return
+        }
         val cm = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
         val cs = cm.primaryClip?.getItemAt(0)?.text
         val clip = cs?.toString().orEmpty()
