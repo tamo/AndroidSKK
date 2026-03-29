@@ -1239,7 +1239,7 @@ class SKKService : InputMethodService() {
         mCandidatesViewContainer?.apply {
             if (list.isNullOrEmpty()) {
                 setAlpha(skkPrefs.inactiveAlpha)
-                lines = 0
+                lines = if (skkPrefs.candidatesReserveLines) viewLines else 0
             } else {
                 setAlpha(skkPrefs.activeAlpha)
                 lines = viewLines
@@ -1250,7 +1250,9 @@ class SKKService : InputMethodService() {
 
     fun requestChooseCandidate(index: Int) = mCandidatesView?.choose(index)
 
-    fun clearCandidatesView() = setCandidates(null, "", 0)
+    fun clearCandidatesView() = mCandidatesViewContainer?.let {
+        setCandidates(null, "", if (skkPrefs.candidatesReserveLines) it.lines else 0)
+    }
 
     // カーソル直前に引数と同じ文字列があるなら，それを消してtrue なければfalse
     fun prepareReConversion(candidate: String): Boolean {

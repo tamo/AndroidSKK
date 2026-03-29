@@ -29,6 +29,12 @@ class SKKPrefs(context: Context) {
             putInt(res.getString(R.string.pref_candidates_size), value)
         }
 
+    var candidatesReserveLines: Boolean
+        get() = prefs.getBoolean(res.getString(R.string.pref_candidates_reserve_lines), false)
+        set(value) = prefs.edit {
+            putBoolean(res.getString(R.string.pref_candidates_reserve_lines), value)
+        }
+
     var candidatesNormalLines: Int
         get() = prefs.getInt(res.getString(R.string.pref_candidates_normal_lines), 2)
         set(value) = prefs.edit {

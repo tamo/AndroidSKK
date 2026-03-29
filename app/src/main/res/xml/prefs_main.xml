@@ -25,6 +25,12 @@
         app:min="12"
         app:showSeekBarValue="true"
         app:title="候補表示の文字サイズ" />
+    <androidx.preference.CheckBoxPreference
+        app:defaultValue="false"
+        app:iconSpaceReserved="false"
+        app:key="@string/pref_candidates_reserve_lines"
+        app:summary="画面のちらつきを減らせる可能性があります"
+        app:title="候補表示を閉じない" />
     <androidx.preference.SeekBarPreference
         android:max="10"
         app:defaultValue="2"

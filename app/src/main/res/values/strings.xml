@@ -59,6 +59,7 @@
     <string name="pref_toggle_kana_key" translatable="false">PrefKeyToggleKanaKey</string>
     <string name="pref_cancel_key" translatable="false">PrefKeyCancelKey</string>
     <string name="pref_candidates_size" translatable="false">PrefKeyCandidatesSize</string>
+    <string name="pref_candidates_reserve_lines" translatable="false">PrefKeyCandidatesReserveLines</string>
     <string name="pref_candidates_normal_lines" translatable="false">PrefKeyCandidatesNormalLines</string>
     <string name="pref_candidates_emoji_lines" translatable="false">PrefKeyCandidatesEmojiLines</string>
     <string name="pref_use_candidates_view" translatable="false">PrefKeyUseCandidatesView</string>
