@@ -1097,8 +1097,15 @@ class SKKService : InputMethodService() {
     }
 
     fun pressDel() {
+        if (skkPrefs.useDel) return keyDownUp(KeyEvent.KEYCODE_DEL)
+
         val ic = currentInputConnection ?: return
-        ic.deleteSurroundingText(1, 0)
+        if (ic.getSelectedText(0).isNullOrEmpty()) {
+            if (ic.getTextBeforeCursor(1, 0).isNullOrEmpty()) return
+            ic.deleteSurroundingTextInCodePoints(1, 0)
+        } else {
+            ic.commitText("", 1)
+        }
         updateSuggestionsASCII()
     }
 

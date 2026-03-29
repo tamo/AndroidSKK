@@ -42,6 +42,12 @@
                 app:key="PrefKeyForbidPaste"
                 app:summary="誤操作を防ぐため貼り付け動作を無効化します"
                 app:title="貼り付けの禁止" />
+            <androidx.preference.CheckBoxPreference
+                app:defaultValue="true"
+                app:iconSpaceReserved="false"
+                app:key="PrefKeyUseDel"
+                app:summary="オフだと自前で直前の1文字を消します"
+                app:title="キー操作として削除" />
             <androidx.preference.PreferenceCategory
                 app:iconSpaceReserved="false"
                 app:title="日本語キーボード">
