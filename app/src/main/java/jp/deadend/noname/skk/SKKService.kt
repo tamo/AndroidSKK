@@ -1098,6 +1098,8 @@ class SKKService : InputMethodService() {
     fun pressDel() {
         if (skkPrefs.useDel) return keyDownUp(KeyEvent.KEYCODE_DEL)
 
+        // 一部環境では KeyEvent.KEYCODE_DEL がブロックされるので回避
+        // 可能ならキーをエミュレートした方が諸々の面倒を見てくれるのでラク
         val ic = currentInputConnection ?: return
         if (ic.getSelectedText(0).isNullOrEmpty()) {
             if (ic.getTextBeforeCursor(1, 0).isNullOrEmpty()) return

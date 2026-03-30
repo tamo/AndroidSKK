@@ -29,7 +29,7 @@ class AbbrevKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
 
 //    override fun onLongPress(key: Keyboard.Key): Boolean {
 //        if (key.codes[0] == KEYCODE_ABBREV_ENTER) {
-//            mService.keyDownUp(KeyEvent.KEYCODE_SEARCH)
+//            mService.pressSearch()
 //            return true
 //        }
 //
