@@ -534,7 +534,6 @@ class SKKEngine(
      * @param text
      */
     internal fun setComposingTextSKK(text: CharSequence) {
-        val ic = mService.currentInputConnection ?: return
         val ct = mComposingText
         ct.setLength(0)
 
@@ -586,6 +585,8 @@ class SKKEngine(
             ct.append(" hint: ", SKKNarrowingState.mHint, mComposing)
         }
 
+        // 問題になったことはないが、念のため直前で参照する
+        val ic = mService.currentInputConnection ?: return
         ic.setComposingText(ct, 1)
     }
 
@@ -617,6 +618,7 @@ class SKKEngine(
     }
 
     internal fun narrowCandidates(hint: String) {
+        dLog("narrowCandidates: hint: $hint")
         if (SKKNarrowingState.mOriginalCandidates == null) {
             SKKNarrowingState.mOriginalCandidates = mCandidateList
         }
@@ -651,6 +653,7 @@ class SKKEngine(
                 else skkPrefs.candidatesNormalLines
             )
         }
+        dLog("narrowCandidates: setCurrentCandidateToComposing: $mCandidateList")
         setCurrentCandidateToComposing()
     }
 
