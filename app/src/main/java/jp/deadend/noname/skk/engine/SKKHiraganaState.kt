@@ -16,7 +16,7 @@ object SKKHiraganaState : SKKState {
 
     internal fun processKana(
         context: SKKEngine,
-        keyCode: Int, commitFunc:
+        keyCode: Int, commitAlphabet: Boolean = true, commitFunc:
             (SKKEngine, String) -> Unit
     ) {
         // シフトキーの状態をチェック
@@ -48,12 +48,13 @@ object SKKHiraganaState : SKKState {
                         if (!RomajiConverter.isIntermediateRomaji(mComposing.toString())) {
                             mComposing.setLength(0) // これまでの composing は typo とみなす
                             if (canRetry) return processKana(
-                                context,
-                                keyCode,
-                                commitFunc
+                                context, keyCode, commitAlphabet, commitFunc
                             ) // 「ca」などもあるので再突入
                         }
-                        setComposingTextSKK(mComposing)
+                        // NarrowingState からだとバグるので回避
+                        if (commitAlphabet) {
+                            setComposingTextSKK(mComposing)
+                        }
                     } else {
                         commitFunc(context, codeLower.toChar().toString())
                     }
