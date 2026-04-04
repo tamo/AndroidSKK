@@ -37,7 +37,11 @@ object SKKNarrowingState : SKKConfirmingState {
                     chooseAdjacentCandidate(false)
                 } else {
                     SKKHiraganaState
-                        .processKana(this, Character.toLowerCase(keyCode)) { _, hiraganaChar ->
+                        .processKana(
+                            this,
+                            Character.toLowerCase(keyCode),
+                            false
+                        ) { _, hiraganaChar ->
                             mHint.append(hiraganaChar)
                             mComposing.setLength(0)
                             narrowCandidates(mHint.toString())
