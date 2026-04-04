@@ -291,15 +291,10 @@ class SKKEngine(
         }
 
         // 最初の候補より戻ると変換に戻る 最後の候補より進むと登録
-        if (mCurrentCandidateIndex > candidateList.size - 1) when (state) {
-            SKKChooseState -> {
-                registerStart(mKanjiKey.toString())
-                return
-            }
-
-            SKKNarrowingState -> {
-                mCurrentCandidateIndex = 0
-            }
+        // 以前は NarrowingState で最後より進むと最初に戻っていたが ChooseState 同様にした
+        if (mCurrentCandidateIndex > candidateList.size - 1) {
+            registerStart(mKanjiKey.toString())
+            return
         } else if (mCurrentCandidateIndex < 0) when (state) {
             SKKChooseState -> {
                 if (mComposing.isEmpty()) {
