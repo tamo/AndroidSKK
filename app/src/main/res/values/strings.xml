@@ -72,6 +72,10 @@
     <string name="pref_nav_line_end_key" translatable="false">PrefKeyNavLineEndKey</string>
     <string name="pref_nav_forward_key" translatable="false">PrefKeyNavForwardKey</string>
     <string name="pref_nav_backward_key" translatable="false">PrefKeyNavBackwardKey</string>
+    <string name="pref_katakana_key" translatable="false">PrefKeyKatakanaKey</string>
+    <string name="pref_ascii_key" translatable="false">PrefKeyASCIIKey</string>
+    <string name="pref_zenkaku_key" translatable="false">PrefKeyZenkakuKey</string>
+    <string name="pref_abbrev_key" translatable="false">PrefKeyAbbrevKey</string>
     <string name="pref_candidates_size" translatable="false">PrefKeyCandidatesSize</string>
     <string name="pref_candidates_reserve_lines" translatable="false">PrefKeyCandidatesReserveLines</string>
     <string name="pref_candidates_normal_lines" translatable="false">PrefKeyCandidatesNormalLines</string>
