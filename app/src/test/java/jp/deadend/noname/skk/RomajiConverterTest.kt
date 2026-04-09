@@ -9,9 +9,15 @@ import jp.deadend.noname.skk.engine.SKKEngine.Companion.LAST_CONVERSION_TRANS
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.After
 import org.junit.Test
 
 class RomajiConverterTest {
+
+    @After
+    fun tearDown() {
+        RomajiConverter.clearCustomRules()
+    }
 
     @Test
     fun testConvert() {
@@ -222,5 +228,77 @@ class RomajiConverterTest {
         assertFalse(RomajiConverter.isIntermediateRomaji("q")) // SKK では使用しない
         assertFalse(RomajiConverter.isIntermediateRomaji("l")) // SKK では使用しない
         assertFalse(RomajiConverter.isIntermediateRomaji("invalid"))
+    }
+
+    @Test
+    fun testCustomRules_overrideAndExtend() {
+        // AZIK like rules
+        val customRules = mapOf(
+            "q" to "い",
+            ";" to "ー",
+            "bn" to "びん",
+            "a" to "カスタムあ" // Should override base map
+        )
+        RomajiConverter.loadCustomRules(customRules)
+
+        assertEquals("カスタムあ", RomajiConverter.convert("a"))
+        assertEquals("い", RomajiConverter.convert("q"))
+        assertEquals("ー", RomajiConverter.convert(";"))
+        assertEquals("びん", RomajiConverter.convert("bn"))
+
+        // Unchanged rules still work
+        assertEquals("か", RomajiConverter.convert("ka"))
+    }
+
+    @Test
+    fun testClearCustomRules_revertsToBase() {
+        RomajiConverter.loadCustomRules(mapOf("a" to "カスタムあ"))
+        assertEquals("カスタムあ", RomajiConverter.convert("a"))
+
+        RomajiConverter.clearCustomRules()
+        assertEquals("あ", RomajiConverter.convert("a"))
+    }
+
+    @Test
+    fun testCustomIntermediateRomaji() {
+        // "b" is intermediate by default because of ba, bi, etc.
+        assertTrue(RomajiConverter.isIntermediateRomaji("b"))
+
+        // Add a rule starting with "q" that is multi-character
+        assertFalse(RomajiConverter.isIntermediateRomaji("q"))
+        
+        RomajiConverter.loadCustomRules(mapOf("qn" to "ん"))
+        assertTrue(RomajiConverter.isIntermediateRomaji("q"))
+        
+        RomajiConverter.clearCustomRules()
+        assertFalse(RomajiConverter.isIntermediateRomaji("q"))
+    }
+
+    @Test
+    fun testGetVowel_customRules() {
+        RomajiConverter.loadCustomRules(mapOf("q" to "い"))
+        assertEquals('q', RomajiConverter.getVowel("い"))
+
+        RomajiConverter.clearCustomRules()
+        assertEquals('i', RomajiConverter.getVowel("い"))
+    }
+
+    @Test
+    fun testLoadCustomRules_secondCallReplacesPrevious() {
+        RomajiConverter.loadCustomRules(mapOf("q" to "い"))
+        RomajiConverter.loadCustomRules(mapOf(";" to "ー"))
+
+        assertEquals("", RomajiConverter.convert("q"))   // 前回のルールは消えてる
+        assertEquals("ー", RomajiConverter.convert(";"))
+    }
+
+    @Test
+    fun testCheckSpecialConsonants_withCustomIntermediate() {
+        // qn→ん を追加すると q が中間ローマ字になり、qq で っ が生成されるべき
+        RomajiConverter.loadCustomRules(mapOf("qn" to "ん"))
+        assertEquals("っ", RomajiConverter.checkSpecialConsonants('q', 'q'.code))
+
+        RomajiConverter.clearCustomRules()
+        assertEquals(null, RomajiConverter.checkSpecialConsonants('q', 'q'.code))
     }
 }
