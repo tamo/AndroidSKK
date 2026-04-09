@@ -201,17 +201,62 @@ class SKKSettingsActivityUITest {
     fun testHardKeyFragment() {
         assert(skkPrefs.kanaKey == KeyEvent.KEYCODE_J shl 4 or /* CTRL_PRESSED */ 4)
         onView(withText("ハードウェアキーボードの設定")).perform(click())
+
+        // かなキー (CTRL+J -> TAB)
         onView(withText("かなキー"))
             .check(matches(hasSibling(withText("CTRL+J"))))
             .perform(click())
             .check(matches(hasSibling(withText("Push any key..."))))
-        repeat(3) { // ときどき key up しか発行されないことがある?
+        repeat(3) {
             Thread.sleep(1000)
             onView(withText("かなキー")).perform(pressKey(KeyEvent.KEYCODE_TAB))
         }
-        onView(withText("かなキー"))
-            .check(matches(hasSibling(withText("TAB"))))
+        onView(withText("かなキー")).check(matches(hasSibling(withText("TAB"))))
         assert(skkPrefs.kanaKey == KeyEvent.KEYCODE_TAB shl 4)
+
+        // カタカナキー (Q -> T)
+        onView(withText("カタカナキー"))
+            .check(matches(hasSibling(withText("Q"))))
+            .perform(click())
+        repeat(3) {
+            Thread.sleep(1000)
+            onView(withText("カタカナキー")).perform(pressKey(KeyEvent.KEYCODE_T))
+        }
+        onView(withText("カタカナキー")).check(matches(hasSibling(withText("T"))))
+        assert(skkPrefs.katakanaKey == KeyEvent.KEYCODE_T shl 4)
+
+        // ASCIIキー (L -> A)
+        onView(withText("ASCIIキー"))
+            .check(matches(hasSibling(withText("L"))))
+            .perform(click())
+        repeat(3) {
+            Thread.sleep(1000)
+            onView(withText("ASCIIキー")).perform(pressKey(KeyEvent.KEYCODE_A))
+        }
+        onView(withText("ASCIIキー")).check(matches(hasSibling(withText("A"))))
+        assert(skkPrefs.asciiKey == KeyEvent.KEYCODE_A shl 4)
+
+        // 全角英数キー (SHIFT+L -> SHIFT+Z)
+        onView(withText("全角英数キー"))
+            .check(matches(hasSibling(withText("SHIFT+L"))))
+            .perform(click())
+        repeat(3) {
+            Thread.sleep(1000)
+            onView(withText("全角英数キー")).perform(pressKey(KeyEvent.KEYCODE_Z, KeyEvent.META_SHIFT_LEFT_ON))
+        }
+        onView(withText("全角英数キー")).check(matches(hasSibling(withText("SHIFT+Z"))))
+        assert(skkPrefs.zenkakuKey == (KeyEvent.KEYCODE_Z shl 4 or 1))
+
+        // Abbrevキー (SLASH -> PERIOD)
+        onView(withText("Abbrevキー"))
+            .check(matches(hasSibling(withText("SLASH"))))
+            .perform(click())
+        repeat(3) {
+            Thread.sleep(1000)
+            onView(withText("Abbrevキー")).perform(pressKey(KeyEvent.KEYCODE_PERIOD))
+        }
+        onView(withText("Abbrevキー")).check(matches(hasSibling(withText("PERIOD"))))
+        assert(skkPrefs.abbrevKey == (KeyEvent.KEYCODE_PERIOD shl 4))
     }
 
     @Test
