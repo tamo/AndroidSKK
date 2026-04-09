@@ -40,27 +40,6 @@ object SKKKanjiState : SKKState {
             }
 
             when (codeLower) {
-                'l'.code -> changeInputMode(keyCode)
-
-                '/'.code -> changeInputMode(keyCode)
-                // abbrevはtransientなのでchangeInputModeで自動確定されない
-                // ▽の状態で英数(abbrev)と仮名(kanji)を行き来するには kanaKey(-1010) と / を使うことにする
-                // 一般的なキーコードが分かれば対応するが、emacsではabbrevから普通の▽(kanji)に行けないと思う
-
-                'q'.code -> {
-                    // カタカナ変換
-                    if (mKanjiKey.isNotEmpty()) {
-                        val str = if (kanaState == SKKHiraganaState) {
-                            hiragana2katakana(mKanjiKey.toString())
-                        } else {
-                            mKanjiKey.toString() // すでにひらがななのでそのまま
-                        }
-                        if (str != null) commitTextSKK(str)
-                        mKanjiKey.setLength(0)
-                    }
-                    changeState(kanaState)
-                }
-
                 17 /* Ctrl-Q */ -> {
                     if (mKanjiKey.isNotEmpty()) {
                         val zenkakuKatakana = hiragana2katakana(mKanjiKey.toString())

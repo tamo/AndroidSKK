@@ -677,7 +677,7 @@ class SKKService : InputMethodService() {
 
                 // テンキーにする
                 "flick-num" -> {
-                    mEngine.changeInputMode('l'.code)
+                    mEngine.handleASCIIKey()
                     mFlickJPInputView?.let {
                         setInputView(it) // Godan ユーザにも FlickJP のテンキーを強制
                         it.keyboard = it.mNumKeyboard
@@ -686,7 +686,7 @@ class SKKService : InputMethodService() {
 
                 // 英字にする
                 "qwerty" -> {
-                    mEngine.changeInputMode('l'.code)
+                    mEngine.handleASCIIKey()
                     if (mInputView?.equals(mQwertyInputView) == true) {
                         mQwertyInputView!!.keyboard = mQwertyInputView!!.mLatinKeyboard
                     }
@@ -694,7 +694,7 @@ class SKKService : InputMethodService() {
 
                 // 英数記号にする
                 "symbols" -> {
-                    mEngine.changeInputMode('l'.code)
+                    mEngine.handleASCIIKey()
                     if (mInputView?.equals(mQwertyInputView) == true) {
                         mQwertyInputView!!.keyboard = mQwertyInputView!!.mSymbolsKeyboard
                     }
@@ -916,6 +916,11 @@ class SKKService : InputMethodService() {
             return true
         }
 
+        if (encodedKey == skkPrefs.katakanaKey) {
+            mEngine.handleKatakanaKey()
+            return true
+        }
+
         if (engineState === SKKASCIIState && !mEngine.isRegistering) {
             val result = super.onKeyDown(keyCode, event)
             updateSuggestionsASCII()
@@ -924,6 +929,20 @@ class SKKService : InputMethodService() {
 
         if (encodedKey == skkPrefs.cancelKey) {
             if (handleCancel()) return true
+        }
+
+        if (encodedKey == skkPrefs.asciiKey) {
+            mEngine.handleASCIIKey()
+            return true
+        }
+
+        if (encodedKey == skkPrefs.zenkakuKey) {
+            mEngine.handleZenkakuKey()
+            return true
+        }
+
+        if (encodedKey == skkPrefs.abbrevKey) {
+            if (mEngine.tryStartAbbrev()) return true
         }
 
         if (encodedKey == 724) { // Ctrl-Q
