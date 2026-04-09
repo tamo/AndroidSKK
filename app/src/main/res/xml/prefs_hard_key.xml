@@ -17,6 +17,22 @@
             app:iconSpaceReserved="false"
             app:key="@string/pref_cancel_key"
             app:title="キャンセルキー" />
+        <androidx.preference.Preference
+            app:iconSpaceReserved="false"
+            app:key="@string/pref_katakana_key"
+            app:title="カタカナキー" />
+        <androidx.preference.Preference
+            app:iconSpaceReserved="false"
+            app:key="@string/pref_ascii_key"
+            app:title="直接入力キー" />
+        <androidx.preference.Preference
+            app:iconSpaceReserved="false"
+            app:key="@string/pref_zenkaku_key"
+            app:title="全角英数キー" />
+        <androidx.preference.Preference
+            app:iconSpaceReserved="false"
+            app:key="@string/pref_abbrev_key"
+            app:title="Abbrevキー" />
         <androidx.preference.CheckBoxPreference
             app:defaultValue="true"
             app:iconSpaceReserved="false"
