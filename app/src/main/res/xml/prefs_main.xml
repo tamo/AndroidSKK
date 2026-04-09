@@ -53,6 +53,12 @@
             android:targetClass="jp.deadend.noname.skk.SKKDictManager"
             android:targetPackage="jp.deadend.noname.skk" />
     </androidx.preference.Preference>
+    <androidx.preference.Preference app:title="@string/label_kana_rule_manager_activity">
+        <intent
+            android:action="android.intent.action.MAIN"
+            android:targetClass="jp.deadend.noname.skk.SKKKanaRuleManager"
+            android:targetPackage="jp.deadend.noname.skk" />
+    </androidx.preference.Preference>
     <androidx.preference.Preference app:title="@string/label_dict_tool_activity">
         <intent
             android:action="android.intent.action.MAIN"
