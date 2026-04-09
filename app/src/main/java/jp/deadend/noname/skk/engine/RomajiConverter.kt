@@ -71,7 +71,7 @@ object RomajiConverter {
     private val mReversedHandakutenMap = mHandakutenMap.entries.associate { (h, p) -> p to h } +
             mapOf("゜" to "", "゚" to "") // 半濁点も2種類 309A, 309C
 
-    fun convert(romaji: String) = mRomajiMap[romaji].orEmpty()
+    fun convert(romaji: String) = mEffectiveMap[romaji].orEmpty()
     fun getConsonantForVoiced(kana: String): String {
         val hiragana = katakana2hiragana(hankaku2zenkaku(kana)) ?: return ""
         return if (hiragana.isEmpty()) "" else when (val c = hiragana[0].code) {
