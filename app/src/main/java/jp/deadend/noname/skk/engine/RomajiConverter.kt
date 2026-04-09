@@ -9,10 +9,10 @@ import jp.deadend.noname.skk.isKanaSymbol
 import jp.deadend.noname.skk.isKatakana
 import jp.deadend.noname.skk.isVowel
 import jp.deadend.noname.skk.katakana2hiragana
-import jp.deadend.noname.skk.skkPrefs
+import jp.deadend.noname.skk.SKKApplication
 
 object RomajiConverter {
-    private val mRomajiMap = mapOf(
+    private val mBaseRomajiMap = mapOf(
         "a" to "あ", "i" to "い", "u" to "う", "e" to "え", "o" to "お",
         "ka" to "か", "ki" to "き", "ku" to "く", "ke" to "け", "ko" to "こ",
         "sa" to "さ", "si" to "し", "su" to "す", "se" to "せ", "so" to "そ",
@@ -44,7 +44,6 @@ object RomajiConverter {
         "ja" to "じゃ", "ji" to "じ", "ju" to "じゅ", "je" to "じぇ", "jo" to "じょ",
         "jya" to "じゃ", "jyi" to "じぃ", "jyu" to "じゅ", "jye" to "じぇ", "jyo" to "じょ",
         "zya" to "じゃ", "zyi" to "じぃ", "zyu" to "じゅ", "zye" to "じぇ", "zyo" to "じょ",
-        "cha" to "ちゃ", "chi" to "ち", "chu" to "ちゅ", "che" to "ちぇ", "cho" to "ちょ",
         "tya" to "ちゃ", "tyi" to "ちぃ", "tyu" to "ちゅ", "tye" to "ちぇ", "tyo" to "ちょ",
         "tha" to "てゃ", "thi" to "てぃ", "thu" to "てゅ", "the" to "てぇ", "tho" to "てょ",
         "dha" to "でゃ", "dhi" to "でぃ", "dhu" to "でゅ", "dhe" to "でぇ", "dho" to "でょ",
@@ -59,7 +58,25 @@ object RomajiConverter {
         "z]" to "』", "zh" to "←", "zj" to "↓", "zk" to "↑", "zl" to "→",
     )
 
-    private val mIntermediateRomajiSet = shortenRomajiSet(mRomajiMap.keys)
+    private var mCustomRules: Map<String, String> = emptyMap()
+    private var mEffectiveMap: Map<String, String> = mBaseRomajiMap
+    private var mIntermediateRomajiSet: Set<String> = shortenRomajiSet(mBaseRomajiMap.keys)
+    private var mVowelMap: Map<String, Char> = createVowelMap(mBaseRomajiMap)
+
+    fun loadCustomRules(rules: Map<String, String>) {
+        mCustomRules = rules
+        mEffectiveMap = mBaseRomajiMap + mCustomRules
+        mIntermediateRomajiSet = shortenRomajiSet(mEffectiveMap.keys)
+        mVowelMap = createVowelMap(mEffectiveMap)
+    }
+
+    fun clearCustomRules() {
+        mCustomRules = emptyMap()
+        mEffectiveMap = mBaseRomajiMap
+        mIntermediateRomajiSet = shortenRomajiSet(mBaseRomajiMap.keys)
+        mVowelMap = createVowelMap(mBaseRomajiMap)
+    }
+
     private fun shortenRomajiSet(set: Set<String>): Set<String> {
         val shorter = set
             .filter { it.length > 1 }
@@ -109,7 +126,7 @@ object RomajiConverter {
     private val mReversedHandakutenMap = mHandakutenMap.entries.associate { (h, p) -> p to h } +
             mapOf("゜" to "", "゚" to "") // 半濁点も2種類 309A, 309C
 
-    fun convert(romaji: String) = mRomajiMap[romaji].orEmpty()
+    fun convert(romaji: String) = mEffectiveMap[romaji].orEmpty()
     fun getConsonantForVoiced(kana: String): String {
         val hiragana = katakana2hiragana(hankaku2zenkaku(kana)) ?: return ""
         return if (hiragana.isEmpty()) "" else when (val c = hiragana[0].code) {
@@ -143,9 +160,10 @@ object RomajiConverter {
     }
 
     fun getVowel(kana: String): Char? =
-        mRomajiMap.entries.associate { (r, k) ->
-            k to r.last()
-        }[katakana2hiragana(hankaku2zenkaku(kana))]
+        mVowelMap[katakana2hiragana(hankaku2zenkaku(kana))]
+
+    private fun createVowelMap(map: Map<String, String>): Map<String, Char> =
+        map.entries.associate { (r, k) -> k to r.last() }
 
     fun convertLastChar(str: String, type: String): Pair<String, String> {
         dLog("convertLastChar(str=$str, type=$type)")
@@ -176,12 +194,12 @@ object RomajiConverter {
         dLog("first=$first (last=$last), kana=$kana")
 
         return first to (when (type) {
-            SKKEngine.LAST_CONVERSION_SMALL -> (mSmallKanaMap + mReversedSmallKanaMap)[kana]
+            SKKEngine.LAST_CONVERSION_SMALL -> (mSmallKanaMap + mSmallKMap + mReversedSmallKanaMap)[kana]
             SKKEngine.LAST_CONVERSION_DAKUTEN -> (mDakutenMap + mReversedDakutenMap)[kana]
                 ?: mDakutenMap[mReversedHandakutenMap[kana]]            // 半濁点を濁点に
             SKKEngine.LAST_CONVERSION_HANDAKUTEN -> (mHandakutenMap + mReversedHandakutenMap)[kana]
                 ?: mHandakutenMap[mReversedDakutenMap[kana]]            // 濁点を半濁点に
-            SKKEngine.LAST_CONVERSION_TRANS -> (if (skkPrefs.useSmallK) mSmallKMap[kana] else null)
+            SKKEngine.LAST_CONVERSION_TRANS -> (if (SKKApplication.prefs?.useSmallK != false) mSmallKMap[kana] else null)
                 ?: mSmallKanaMap[kana]                                  // 普通を小に
                 ?: mDakutenMap[mReversedSmallKanaMap[kana]]             // 小を濁点に
                 ?: mDakutenMap[kana]                                    // 普通を濁点に
