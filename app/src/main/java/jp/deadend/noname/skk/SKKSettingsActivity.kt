@@ -74,19 +74,19 @@ class SKKSettingsActivity : AppCompatActivity() {
         override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
             setPreferencesFromResource(R.xml.prefs_hard_key, rootKey)
 
-            findPreference<Preference>(getString(R.string.pref_kana_key))?.apply {
-                setSummary(getKeyName(skkPrefs.kanaKey))
-                setOnPreferenceClickListener {
-                    setSummary("Push any key...")
-                    (requireActivity() as SKKSettingsActivity).keyPref = this
-                    true
-                }
-            }
+            registerKeyPref(R.string.pref_kana_key, skkPrefs.kanaKey)
+            registerKeyPref(R.string.pref_cancel_key, skkPrefs.cancelKey)
+            registerKeyPref(R.string.pref_katakana_key, skkPrefs.katakanaKey)
+            registerKeyPref(R.string.pref_ascii_key, skkPrefs.asciiKey)
+            registerKeyPref(R.string.pref_zenkaku_key, skkPrefs.zenkakuKey)
+            registerKeyPref(R.string.pref_abbrev_key, skkPrefs.abbrevKey)
+        }
 
-            findPreference<Preference>(getString(R.string.pref_cancel_key))?.apply {
-                setSummary(getKeyName(skkPrefs.cancelKey))
+        private fun registerKeyPref(prefKeyResId: Int, currentValue: Int) {
+            findPreference<Preference>(getString(prefKeyResId))?.apply {
+                summary = getKeyName(currentValue)
                 setOnPreferenceClickListener {
-                    setSummary("Push any key...")
+                    summary = "Push any key..."
                     (requireActivity() as SKKSettingsActivity).keyPref = this
                     true
                 }
