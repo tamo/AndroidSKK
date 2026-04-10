@@ -91,6 +91,42 @@ class SKKSettingsActivity : AppCompatActivity() {
                     true
                 }
             }
+
+            findPreference<Preference>(getString(R.string.pref_nav_line_start_key))?.apply {
+                setSummary(getKeyName(skkPrefs.navLineStartKey))
+                setOnPreferenceClickListener {
+                    setSummary("Push any key...")
+                    (requireActivity() as SKKSettingsActivity).keyPref = this
+                    true
+                }
+            }
+
+            findPreference<Preference>(getString(R.string.pref_nav_line_end_key))?.apply {
+                setSummary(getKeyName(skkPrefs.navLineEndKey))
+                setOnPreferenceClickListener {
+                    setSummary("Push any key...")
+                    (requireActivity() as SKKSettingsActivity).keyPref = this
+                    true
+                }
+            }
+
+            findPreference<Preference>(getString(R.string.pref_nav_forward_key))?.apply {
+                setSummary(getKeyName(skkPrefs.navForwardKey))
+                setOnPreferenceClickListener {
+                    setSummary("Push any key...")
+                    (requireActivity() as SKKSettingsActivity).keyPref = this
+                    true
+                }
+            }
+
+            findPreference<Preference>(getString(R.string.pref_nav_backward_key))?.apply {
+                setSummary(getKeyName(skkPrefs.navBackwardKey))
+                setOnPreferenceClickListener {
+                    setSummary("Push any key...")
+                    (requireActivity() as SKKSettingsActivity).keyPref = this
+                    true
+                }
+            }
         }
     }
 
