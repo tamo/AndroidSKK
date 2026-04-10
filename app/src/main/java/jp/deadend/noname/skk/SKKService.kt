@@ -910,12 +910,12 @@ class SKKService : InputMethodService() {
         val engineState = mEngine.state
         val encodedKey = encodeKey(event)
 
-        // Emacs 風ナビゲーションキー
+        // Emacs 風ナビゲーションキー（NAV_KEY_DISABLED=0 のキーはスキップ）
         val navKey = when (encodedKey) {
-            skkPrefs.navLineStartKey -> KeyEvent.KEYCODE_MOVE_HOME
-            skkPrefs.navLineEndKey   -> KeyEvent.KEYCODE_MOVE_END
-            skkPrefs.navForwardKey   -> KeyEvent.KEYCODE_DPAD_RIGHT
-            skkPrefs.navBackwardKey  -> KeyEvent.KEYCODE_DPAD_LEFT
+            skkPrefs.navLineStartKey.takeIf { it != NAV_KEY_DISABLED } -> KeyEvent.KEYCODE_MOVE_HOME
+            skkPrefs.navLineEndKey.takeIf   { it != NAV_KEY_DISABLED } -> KeyEvent.KEYCODE_MOVE_END
+            skkPrefs.navForwardKey.takeIf   { it != NAV_KEY_DISABLED } -> KeyEvent.KEYCODE_DPAD_RIGHT
+            skkPrefs.navBackwardKey.takeIf  { it != NAV_KEY_DISABLED } -> KeyEvent.KEYCODE_DPAD_LEFT
             else -> null
         }
         if (navKey != null) {

@@ -5,6 +5,23 @@ import org.junit.Test
 
 class EmacsNavKeysTest {
 
+    // --- 無効値の検証 ---
+
+    @Test
+    fun testNavKeyDisabled_isZero() {
+        // 0 = KEYCODE_UNKNOWN shl 4, 実際には押せないので番兵値として安全
+        assertEquals(0, NAV_KEY_DISABLED)
+    }
+
+    @Test
+    fun testNavKeyDisabled_doesNotEqualAnyDefaultKey() {
+        // デフォルトキーはすべて 0 より大きいこと（無効値と衝突しない）
+        assert(NAV_LINE_START_KEY_DEFAULT != NAV_KEY_DISABLED)
+        assert(NAV_LINE_END_KEY_DEFAULT   != NAV_KEY_DISABLED)
+        assert(NAV_FORWARD_KEY_DEFAULT    != NAV_KEY_DISABLED)
+        assert(NAV_BACKWARD_KEY_DEFAULT   != NAV_KEY_DISABLED)
+    }
+
     // --- デフォルトキーエンコード値の検証 ---
     // エンコード値 = keyCode shl 4 or modifierBits (CTRL = 4)
 

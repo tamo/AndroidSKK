@@ -1,5 +1,8 @@
 package jp.deadend.noname.skk
 
+// 0 = 未設定（無効）。KEYCODE_UNKNOWN(0) shl 4 = 0 は実際には押せないキーなので安全な番兵値
+const val NAV_KEY_DISABLED = 0
+
 // デフォルトエンコード値: keyCode shl 4 or modifierBits (CTRL = 4)
 const val NAV_LINE_START_KEY_DEFAULT = 468  // Ctrl+A: KEYCODE_A(29) shl 4 or 4
 const val NAV_LINE_END_KEY_DEFAULT   = 532  // Ctrl+E: KEYCODE_E(33) shl 4 or 4
