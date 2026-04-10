@@ -20,6 +20,28 @@
         <androidx.preference.CheckBoxPreference
             app:defaultValue="true"
             app:iconSpaceReserved="false"
+            app:key="@string/pref_emacs_nav_in_ascii"
+            app:summary="オフにすると ASCII モードではアプリ側にキーを渡します"
+            app:title="ASCII モードでもナビキーを有効にする" />
+        <androidx.preference.Preference
+            app:iconSpaceReserved="false"
+            app:key="@string/pref_nav_line_start_key"
+            app:title="行頭キー" />
+        <androidx.preference.Preference
+            app:iconSpaceReserved="false"
+            app:key="@string/pref_nav_line_end_key"
+            app:title="行末キー" />
+        <androidx.preference.Preference
+            app:iconSpaceReserved="false"
+            app:key="@string/pref_nav_forward_key"
+            app:title="一文字進むキー" />
+        <androidx.preference.Preference
+            app:iconSpaceReserved="false"
+            app:key="@string/pref_nav_backward_key"
+            app:title="一文字戻るキー" />
+        <androidx.preference.CheckBoxPreference
+            app:defaultValue="true"
+            app:iconSpaceReserved="false"
             app:key="@string/pref_use_candidates_view"
             app:summary="補完候補や変換候補を一覧表示します"
             app:title="補完・候補の一覧表示" />
