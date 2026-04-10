@@ -910,6 +910,22 @@ class SKKService : InputMethodService() {
         val engineState = mEngine.state
         val encodedKey = encodeKey(event)
 
+        // Emacs 風ナビゲーションキー
+        val navKey = when (encodedKey) {
+            skkPrefs.navLineStartKey -> KeyEvent.KEYCODE_MOVE_HOME
+            skkPrefs.navLineEndKey   -> KeyEvent.KEYCODE_MOVE_END
+            skkPrefs.navForwardKey   -> KeyEvent.KEYCODE_DPAD_RIGHT
+            skkPrefs.navBackwardKey  -> KeyEvent.KEYCODE_DPAD_LEFT
+            else -> null
+        }
+        if (navKey != null) {
+            return when (resolveEmacsNavAction(engineState.isTransient, engineState === SKKASCIIState, skkPrefs.emacsNavInAscii)) {
+                EmacsNavAction.NAVIGATE     -> { sendDownUpKeyEvents(navKey); true }
+                EmacsNavAction.CONSUME      -> true
+                EmacsNavAction.PASS_THROUGH -> super.onKeyDown(keyCode, event)
+            }
+        }
+
         // Process special keys
         if (encodedKey == skkPrefs.kanaKey) {
             mEngine.handleKanaKey()
