@@ -108,6 +108,7 @@
     <string name="pref_background_alpha" translatable="false">PrefKeyBackgroundAlpha</string>
     <string name="pref_sticky_meta" translatable="false">PrefKeyStickyMeta</string>
     <string name="pref_sands" translatable="false">PrefKeySandS</string>
+    <string name="pref_sands_in_ascii" translatable="false">PrefKeySandSInAscii</string>
     <string name="pref_dict_order" translatable="false">PrefKeyDicsOrder</string>
     <string name="pref_log_viewer" translatable="false">PrefLogViewer</string>
 

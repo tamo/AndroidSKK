@@ -71,7 +71,7 @@ class SKKPrefs(context: Context) {
         set(value) = prefs.edit { putInt(res.getString(R.string.pref_cancel_key), value) }
 
     var emacsNavInAscii: Boolean
-        get() = prefs.getBoolean(res.getString(R.string.pref_emacs_nav_in_ascii), true)
+        get() = prefs.getBoolean(res.getString(R.string.pref_emacs_nav_in_ascii), false)
         set(value) = prefs.edit { putBoolean(res.getString(R.string.pref_emacs_nav_in_ascii), value) }
 
     var navLineStartKey: Int
@@ -105,6 +105,10 @@ class SKKPrefs(context: Context) {
     var useSandS: Boolean
         get() = prefs.getBoolean(res.getString(R.string.pref_sands), false)
         set(value) = prefs.edit { putBoolean(res.getString(R.string.pref_sands), value) }
+
+    var sandSInAscii: Boolean
+        get() = prefs.getBoolean(res.getString(R.string.pref_sands_in_ascii), false)
+        set(value) = prefs.edit { putBoolean(res.getString(R.string.pref_sands_in_ascii), value) }
 
     // prefs_soft_key
     var useSoftKey: String

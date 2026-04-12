@@ -864,6 +864,13 @@ class SKKService : InputMethodService() {
      */
     override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean {
         if (mEngine.state === SKKASCIIState) {
+            // SandS: ASCII モードでのスペースアップ処理
+            if (mSandS && skkPrefs.sandSInAscii && keyCode == KeyEvent.KEYCODE_SPACE) {
+                mSpacePressed = false
+                if (!mSandSUsed) currentInputConnection?.commitText(" ", 1)
+                mSandSUsed = false
+                return true
+            }
             return super.onKeyUp(keyCode, event)
         }
 
@@ -930,6 +937,28 @@ class SKKService : InputMethodService() {
         if (encodedKey == skkPrefs.kanaKey) {
             mEngine.handleKanaKey()
             return true
+        }
+
+        // SandS: ASCII モードでのスペース＆修飾処理（早期リターンより前に置く）
+        if (mSandS && skkPrefs.sandSInAscii && engineState === SKKASCIIState && !mEngine.isRegistering) {
+            when (keyCode) {
+                KeyEvent.KEYCODE_SPACE -> {
+                    mSpacePressed = true
+                    return true
+                }
+                else -> if (mSpacePressed) {
+                    val shiftedEvent = KeyEvent(
+                        event.downTime, event.eventTime, event.action,
+                        event.keyCode, event.repeatCount,
+                        event.metaState or KeyEvent.META_SHIFT_ON,
+                        event.deviceId, event.scanCode, event.flags, event.source
+                    )
+                    mSandSUsed = true
+                    val result = super.onKeyDown(keyCode, shiftedEvent)
+                    updateSuggestionsASCII()
+                    return result
+                }
+            }
         }
 
         if (engineState === SKKASCIIState && !mEngine.isRegistering) {

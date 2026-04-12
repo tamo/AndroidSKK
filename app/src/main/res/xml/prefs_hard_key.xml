@@ -20,6 +20,30 @@
         <androidx.preference.CheckBoxPreference
             app:defaultValue="true"
             app:iconSpaceReserved="false"
+            app:key="@string/pref_use_candidates_view"
+            app:summary="補完候補や変換候補を一覧表示します"
+            app:title="補完・候補の一覧表示" />
+        <androidx.preference.CheckBoxPreference
+            app:defaultValue="false"
+            app:iconSpaceReserved="false"
+            app:key="@string/pref_sticky_meta"
+            app:summary="shiftを同時押しでなくても効くようにします"
+            app:title="Sticky shift" />
+        <androidx.preference.CheckBoxPreference
+            app:defaultValue="false"
+            app:iconSpaceReserved="false"
+            app:key="@string/pref_sands"
+            app:summary="スペースキーをshiftとして使います"
+            app:title="SandS" />
+        <androidx.preference.CheckBoxPreference
+            app:defaultValue="false"
+            app:iconSpaceReserved="false"
+            app:key="@string/pref_sands_in_ascii"
+            app:summary="オフにすると ASCII モードではアプリ側にキーを渡します"
+            app:title="ASCII モードでも SandS を有効にする" />
+        <androidx.preference.CheckBoxPreference
+            app:defaultValue="false"
+            app:iconSpaceReserved="false"
             app:key="@string/pref_emacs_nav_in_ascii"
             app:summary="オフにすると ASCII モードではアプリ側にキーを渡します"
             app:title="ASCII モードでもナビキーを有効にする" />
@@ -39,23 +63,5 @@
             app:iconSpaceReserved="false"
             app:key="@string/pref_nav_backward_key"
             app:title="一文字戻るキー" />
-        <androidx.preference.CheckBoxPreference
-            app:defaultValue="true"
-            app:iconSpaceReserved="false"
-            app:key="@string/pref_use_candidates_view"
-            app:summary="補完候補や変換候補を一覧表示します"
-            app:title="補完・候補の一覧表示" />
-        <androidx.preference.CheckBoxPreference
-            app:defaultValue="false"
-            app:iconSpaceReserved="false"
-            app:key="@string/pref_sticky_meta"
-            app:summary="shiftを同時押しでなくても効くようにします"
-            app:title="Sticky shift" />
-        <androidx.preference.CheckBoxPreference
-            app:defaultValue="false"
-            app:iconSpaceReserved="false"
-            app:key="@string/pref_sands"
-            app:summary="スペースキーをshiftとして使います"
-            app:title="SandS" />
     </androidx.preference.PreferenceCategory>
 </androidx.preference.PreferenceScreen>
