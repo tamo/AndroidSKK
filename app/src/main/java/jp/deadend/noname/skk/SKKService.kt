@@ -50,6 +50,7 @@ import jp.deadend.noname.skk.engine.SKKKanjiState
 import jp.deadend.noname.skk.engine.SKKKatakanaState
 import jp.deadend.noname.skk.engine.SKKState
 import jp.deadend.noname.skk.engine.SKKZenkakuState
+import jp.deadend.noname.skk.engine.RomajiConverter
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 import java.io.IOException
@@ -399,6 +400,13 @@ class SKKService : InputMethodService() {
         mStickyShift = skkPrefs.useStickyMeta
         mSandS = skkPrefs.useSandS
         mEngine.setZenkakuPunctuationMarks(skkPrefs.kutoutenType)
+
+        val kanaRules = SKKKanaRule.loadFromInternalStorage(context)
+        if (kanaRules != null) {
+            RomajiConverter.loadCustomRules(kanaRules)
+        } else {
+            RomajiConverter.clearCustomRules()
+        }
 
         updateInputViewShown()
 

@@ -4,6 +4,11 @@
 
     <string name="label_pref_activity">SKK for Androidの設定</string>
     <string name="label_dict_manager_activity">SKK 辞書管理</string>
+    <string name="label_kana_rule_manager_activity">SKK ローマ字かな変換ルール</string>
+    <string name="label_kana_rule_select">ファイルを選択</string>
+    <string name="label_kana_rule_clear">クリア</string>
+    <string name="label_kana_rule_not_set">未設定</string>
+    <string name="label_kana_rule_current">設定中: %1$s</string>
     <string name="label_dict_tool_activity">ユーザー辞書ツール</string>
     <string name="label_ascii_tool_activity">ASCII 辞書ツール</string>
     <string name="label_emoji_tool_activity">絵文字辞書ツール</string>
@@ -35,6 +40,7 @@
     <string name="message_tools_confirm_clear">現在のユーザー辞書の内容はすべて消去されます。よろしいですか？</string>
     <string name="message_tools_written_to_external_storage">ユーザー辞書をテキスト形式で保存しました: %1$s</string>
 
+    <string name="message_confirm_clear_kana_rule">ローマ字かな変換ルールをクリアして、デフォルトの変換ルールに戻しますか？</string>
     <string name="message_dict_manager_confirm_clear">現在の変換辞書をすべて削除します。よろしいですか？</string>
     <string name="message_dict_manager_confirm_remove_dict">この辞書を削除しますか？</string>
     <string name="message_dict_manager_confirm_download_dict">SKK %s 辞書をダウンロードしますか？</string>
@@ -42,6 +48,7 @@
     <string name="message_extracting_dict">辞書を解凍しています…</string>
     <string name="message_dict_extracted">辞書を解凍しました</string>
 
+    <string name="error_kana_rule_load">ファイルを読み込めませんでした</string>
     <string name="error_access_failed">アクセスできません: %1$s</string>
     <string name="error_open_dict">辞書ファイルを開けません</string>
     <string name="error_open_user_dict">辞書 %1$s が開けません。設定画面から初期化してみてください</string>
