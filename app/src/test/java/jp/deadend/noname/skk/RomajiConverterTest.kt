@@ -1,22 +1,33 @@
 package jp.deadend.noname.skk
 
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
+import jp.deadend.noname.skk.SKKKanaRule.DEFAULT_RULE_FILE
 import jp.deadend.noname.skk.engine.RomajiConverter
 import jp.deadend.noname.skk.engine.SKKEngine.Companion.LAST_CONVERSION_DAKUTEN
 import jp.deadend.noname.skk.engine.SKKEngine.Companion.LAST_CONVERSION_HANDAKUTEN
 import jp.deadend.noname.skk.engine.SKKEngine.Companion.LAST_CONVERSION_SHIFT
 import jp.deadend.noname.skk.engine.SKKEngine.Companion.LAST_CONVERSION_SMALL
 import jp.deadend.noname.skk.engine.SKKEngine.Companion.LAST_CONVERSION_TRANS
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
-import org.junit.After
+import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
+@RunWith(RobolectricTestRunner::class)
 class RomajiConverterTest {
 
+    @Before
     @After
     fun tearDown() {
-        RomajiConverter.clearCustomRules()
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val defaultRule = context.resources.assets.open(DEFAULT_RULE_FILE)
+            .bufferedReader().use { it.readText() }
+        RomajiConverter.loadRules(SKKKanaRule.parse(defaultRule))
     }
 
     @Test
@@ -148,10 +159,12 @@ class RomajiConverterTest {
         assertEquals("" to "び", RomajiConverter.convertLastChar("ひ", LAST_CONVERSION_TRANS))
         assertEquals("" to "ぴ", RomajiConverter.convertLastChar("び", LAST_CONVERSION_TRANS))
         assertEquals("" to "ひ", RomajiConverter.convertLastChar("ぴ", LAST_CONVERSION_TRANS))
-        assertEquals("" to "ヵ", RomajiConverter.convertLastChar("カ", LAST_CONVERSION_TRANS))
+        // useSmallK は既定で false
+        assertEquals("" to "ガ", RomajiConverter.convertLastChar("カ", LAST_CONVERSION_TRANS))
         assertEquals("" to "ガ", RomajiConverter.convertLastChar("ヵ", LAST_CONVERSION_TRANS))
         assertEquals("" to "カ", RomajiConverter.convertLastChar("ガ", LAST_CONVERSION_TRANS))
-        assertEquals("" to "ヵ", RomajiConverter.convertLastChar("ｶ", LAST_CONVERSION_TRANS))
+        // useSmallK は既定で false
+        assertEquals("" to "ガ", RomajiConverter.convertLastChar("ｶ", LAST_CONVERSION_TRANS))
         assertEquals("" to "カ", RomajiConverter.convertLastChar("ｶﾞ", LAST_CONVERSION_TRANS))
 
         // LAST_CONVERSION_SHIFT
@@ -239,23 +252,23 @@ class RomajiConverterTest {
             "bn" to "びん",
             "a" to "カスタムあ" // Should override base map
         )
-        RomajiConverter.loadCustomRules(customRules)
+        RomajiConverter.loadRules(customRules)
 
         assertEquals("カスタムあ", RomajiConverter.convert("a"))
         assertEquals("い", RomajiConverter.convert("q"))
         assertEquals("ー", RomajiConverter.convert(";"))
         assertEquals("びん", RomajiConverter.convert("bn"))
 
-        // Unchanged rules still work
-        assertEquals("か", RomajiConverter.convert("ka"))
+        // No default rules
+        assertEquals("", RomajiConverter.convert("ka"))
     }
 
     @Test
     fun testClearCustomRules_revertsToBase() {
-        RomajiConverter.loadCustomRules(mapOf("a" to "カスタムあ"))
+        RomajiConverter.loadRules(mapOf("a" to "カスタムあ"))
         assertEquals("カスタムあ", RomajiConverter.convert("a"))
 
-        RomajiConverter.clearCustomRules()
+        tearDown()
         assertEquals("あ", RomajiConverter.convert("a"))
     }
 
@@ -266,27 +279,27 @@ class RomajiConverterTest {
 
         // Add a rule starting with "q" that is multi-character
         assertFalse(RomajiConverter.isIntermediateRomaji("q"))
-        
-        RomajiConverter.loadCustomRules(mapOf("qn" to "ん"))
+
+        RomajiConverter.loadRules(mapOf("qn" to "ん"))
         assertTrue(RomajiConverter.isIntermediateRomaji("q"))
-        
-        RomajiConverter.clearCustomRules()
+
+        tearDown()
         assertFalse(RomajiConverter.isIntermediateRomaji("q"))
     }
 
     @Test
     fun testGetVowel_customRules() {
-        RomajiConverter.loadCustomRules(mapOf("q" to "い"))
+        RomajiConverter.loadRules(mapOf("q" to "い"))
         assertEquals('q', RomajiConverter.getVowel("い"))
 
-        RomajiConverter.clearCustomRules()
+        tearDown()
         assertEquals('i', RomajiConverter.getVowel("い"))
     }
 
     @Test
-    fun testLoadCustomRules_secondCallReplacesPrevious() {
-        RomajiConverter.loadCustomRules(mapOf("q" to "い"))
-        RomajiConverter.loadCustomRules(mapOf(";" to "ー"))
+    fun testLoadRules_secondCallReplacesPrevious() {
+        RomajiConverter.loadRules(mapOf("q" to "い"))
+        RomajiConverter.loadRules(mapOf(";" to "ー"))
 
         assertEquals("", RomajiConverter.convert("q"))   // 前回のルールは消えてる
         assertEquals("ー", RomajiConverter.convert(";"))
@@ -295,10 +308,10 @@ class RomajiConverterTest {
     @Test
     fun testCheckSpecialConsonants_withCustomIntermediate() {
         // qn→ん を追加すると q が中間ローマ字になり、qq で っ が生成されるべき
-        RomajiConverter.loadCustomRules(mapOf("qn" to "ん"))
+        RomajiConverter.loadRules(mapOf("qn" to "ん"))
         assertEquals("っ", RomajiConverter.checkSpecialConsonants('q', 'q'.code))
 
-        RomajiConverter.clearCustomRules()
+        tearDown()
         assertEquals(null, RomajiConverter.checkSpecialConsonants('q', 'q'.code))
     }
 }

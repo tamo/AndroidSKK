@@ -8,18 +8,19 @@ import java.io.IOException
 
 object SKKKanaRule {
     internal const val INTERNAL_FILE_NAME = "kana-rule.conf"
+    internal const val DEFAULT_RULE_FILE = "skk-kana-rule.conf"
     private const val MAX_FILE_SIZE = 1 * 1024 * 1024 // 1MB
 
-    fun exists(context: Context): Boolean =
-        getInternalFile(context).exists()
-
-    private fun getInternalFile(context: Context): File =
-        File(context.filesDir, INTERNAL_FILE_NAME)
+    fun getInternalFile(context: Context): File {
+        val file = File(context.filesDir, INTERNAL_FILE_NAME)
+        if (!file.exists()) clear(context)
+        return file
+    }
 
     /**
      * kana-rule.conf テキストをパースして Map<入力列, ひらがな> を返す。
-     * フォーマット: 入力,ひらがな[,カタカナ]
-     * # で始まる行と空行は無視する。
+     * フォーマット: 入力,ひらがな
+     * (# で始まる行と空行は無視する。)
      */
     fun parse(text: String): Map<String, String> {
         val result = mutableMapOf<String, String>()
@@ -29,6 +30,8 @@ object SKKKanaRule {
             val fields = trimmed.split(",")
             if (fields.size < 2) continue
             val input = fields[0].trim()
+                .replace("&sharp;", "#", ignoreCase = true)
+                .replace("&comma;", ",", ignoreCase = true)
             val hiragana = fields[1].trim()
             if (input.isNotEmpty() && hiragana.isNotEmpty()) {
                 result[input] = hiragana
@@ -43,7 +46,6 @@ object SKKKanaRule {
      */
     fun loadFromInternalStorage(context: Context): Map<String, String>? {
         val file = getInternalFile(context)
-        if (!file.exists()) return null
         if (file.length() > MAX_FILE_SIZE) {
             Log.e("SKK", "SKKKanaRule#loadFromInternalStorage() Error: File is too large")
             return null
@@ -68,7 +70,10 @@ object SKKKanaRule {
                 if (sizeIndex != -1 && cursor.moveToFirst()) {
                     val size = cursor.getLong(sizeIndex)
                     if (size > MAX_FILE_SIZE) {
-                        Log.e("SKK", "SKKKanaRule#saveFromUri() Error: File is too large ($size bytes)")
+                        Log.e(
+                            "SKK",
+                            "SKKKanaRule#saveFromUri() Error: File is too large ($size bytes)"
+                        )
                         return false
                     }
                 }
@@ -93,9 +98,12 @@ object SKKKanaRule {
     }
 
     /**
-     * 内部ストレージの kana-rule.conf を削除する。
+     * 内部ストレージの kana-rule.conf を初期化する。
      */
     fun clear(context: Context) {
-        getInternalFile(context).delete()
+        val file = File(context.filesDir, INTERNAL_FILE_NAME)
+        val defaultRule = context.resources.assets.open(DEFAULT_RULE_FILE)
+            .bufferedReader().use { it.readText() }
+        file.writeText(defaultRule)
     }
 }

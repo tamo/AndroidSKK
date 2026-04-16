@@ -1,8 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.preference.PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
+<androidx.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
     <androidx.preference.PreferenceCategory
         app:iconSpaceReserved="false"
         app:title="@string/label_pref_hard_keyboard">
+        <androidx.preference.Preference
+            app:iconSpaceReserved="false"
+            app:summary="変更すると，ソフトウェアキーボードが正常に動作しない場合があります"
+            app:title="@string/label_kana_rule_manager_activity">
+            <intent
+                android:action="android.intent.action.MAIN"
+                android:targetClass="jp.deadend.noname.skk.SKKKanaRuleManager"
+                android:targetPackage="jp.deadend.noname.skk" />
+        </androidx.preference.Preference>
         <androidx.preference.Preference
             app:iconSpaceReserved="false"
             app:key="@string/pref_kana_key"

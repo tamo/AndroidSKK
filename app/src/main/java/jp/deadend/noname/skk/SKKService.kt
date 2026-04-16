@@ -39,6 +39,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.preference.PreferenceManager
+import jp.deadend.noname.skk.engine.RomajiConverter
 import jp.deadend.noname.skk.engine.SKKASCIIState
 import jp.deadend.noname.skk.engine.SKKAbbrevState
 import jp.deadend.noname.skk.engine.SKKChooseState
@@ -50,7 +51,6 @@ import jp.deadend.noname.skk.engine.SKKKanjiState
 import jp.deadend.noname.skk.engine.SKKKatakanaState
 import jp.deadend.noname.skk.engine.SKKState
 import jp.deadend.noname.skk.engine.SKKZenkakuState
-import jp.deadend.noname.skk.engine.RomajiConverter
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 import java.io.IOException
@@ -402,11 +402,7 @@ class SKKService : InputMethodService() {
         mEngine.setZenkakuPunctuationMarks(skkPrefs.kutoutenType)
 
         val kanaRules = SKKKanaRule.loadFromInternalStorage(context)
-        if (kanaRules != null) {
-            RomajiConverter.loadCustomRules(kanaRules)
-        } else {
-            RomajiConverter.clearCustomRules()
-        }
+        RomajiConverter.loadRules(kanaRules)
 
         updateInputViewShown()
 
