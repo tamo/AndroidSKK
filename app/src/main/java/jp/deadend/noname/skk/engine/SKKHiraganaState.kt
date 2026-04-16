@@ -19,10 +19,16 @@ object SKKHiraganaState : SKKState {
         keyCode: Int, commitAlphabet: Boolean = true, commitFunc:
             (SKKEngine, String) -> Unit
     ) {
+        val converted = RomajiConverter.convert(Character.toString(keyCode))
+        val isShift = converted.startsWith("<shift>")
         // シフトキーの状態をチェック
-        val isUpper = Character.isUpperCase(keyCode)
+        val isUpper = isShift || Character.isUpperCase(keyCode)
         // 大文字なら，ローマ字変換のために小文字に戻す
-        val codeLower = if (isUpper) Character.toLowerCase(keyCode) else keyCode
+        val codeLower = when {
+            isShift -> converted.removePrefix("<shift>").first().code
+            isUpper -> Character.toLowerCase(keyCode)
+            else -> keyCode
+        }
 
         context.apply {
             val canRetry = mComposing.isNotEmpty() // 無限ループ防止

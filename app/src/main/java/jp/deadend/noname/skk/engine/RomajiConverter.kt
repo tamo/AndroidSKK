@@ -1,5 +1,6 @@
 package jp.deadend.noname.skk.engine
 
+import jp.deadend.noname.skk.SKKApplication
 import jp.deadend.noname.skk.dLog
 import jp.deadend.noname.skk.hankaku2zenkaku
 import jp.deadend.noname.skk.isAlNum
@@ -9,72 +10,16 @@ import jp.deadend.noname.skk.isKanaSymbol
 import jp.deadend.noname.skk.isKatakana
 import jp.deadend.noname.skk.isVowel
 import jp.deadend.noname.skk.katakana2hiragana
-import jp.deadend.noname.skk.SKKApplication
 
 object RomajiConverter {
-    private val mBaseRomajiMap = mapOf(
-        "a" to "あ", "i" to "い", "u" to "う", "e" to "え", "o" to "お",
-        "ka" to "か", "ki" to "き", "ku" to "く", "ke" to "け", "ko" to "こ",
-        "sa" to "さ", "si" to "し", "su" to "す", "se" to "せ", "so" to "そ",
-        "ta" to "た", "ti" to "ち", "tu" to "つ", "te" to "て", "to" to "と",
-        "na" to "な", "ni" to "に", "nu" to "ぬ", "ne" to "ね", "no" to "の",
-        "ha" to "は", "hi" to "ひ", "hu" to "ふ", "he" to "へ", "ho" to "ほ",
-        "ma" to "ま", "mi" to "み", "mu" to "む", "me" to "め", "mo" to "も",
-        "ya" to "や", "yi" to "い", "yu" to "ゆ", "ye" to "いぇ", "yo" to "よ",
-        "ra" to "ら", "ri" to "り", "ru" to "る", "re" to "れ", "ro" to "ろ",
-        "wa" to "わ", "wi" to "うぃ", "we" to "うぇ", "wo" to "を", "nn" to "ん",
-        "ga" to "が", "gi" to "ぎ", "gu" to "ぐ", "ge" to "げ", "go" to "ご",
-        "za" to "ざ", "zi" to "じ", "zu" to "ず", "ze" to "ぜ", "zo" to "ぞ",
-        "da" to "だ", "di" to "ぢ", "du" to "づ", "de" to "で", "do" to "ど",
-        "ba" to "ば", "bi" to "び", "bu" to "ぶ", "be" to "べ", "bo" to "ぼ",
-        "pa" to "ぱ", "pi" to "ぴ", "pu" to "ぷ", "pe" to "ぺ", "po" to "ぽ",
-        "va" to "う゛ぁ", "vi" to "う゛ぃ", "vu" to "う゛", "ve" to "う゛ぇ", "vo" to "う゛ぉ",
+    private var mRomajiMap: Map<String, String> = emptyMap()
+    private var mIntermediateRomajiSet: Set<String> = emptySet()
+    private var mVowelMap: Map<String, Char> = emptyMap()
 
-        "xa" to "ぁ", "xi" to "ぃ", "xu" to "ぅ", "xe" to "ぇ", "xo" to "ぉ",
-        "xtu" to "っ", "xke" to "ヶ",
-        "cha" to "ちゃ", "chi" to "ち", "chu" to "ちゅ", "che" to "ちぇ", "cho" to "ちょ",
-        "fa" to "ふぁ", "fi" to "ふぃ", "fu" to "ふ", "fe" to "ふぇ", "fo" to "ふぉ",
-        "fya" to "ふゃ", "fyi" to "ふぃ", "fyu" to "ふゅ", "fye" to "ふぇ", "fyo" to "ふょ",
-
-        "xya" to "ゃ", "xyu" to "ゅ", "xyo" to "ょ", "xwa" to "ゎ",
-        "kya" to "きゃ", "kyi" to "きぃ", "kyu" to "きゅ", "kye" to "きぇ", "kyo" to "きょ",
-        "gya" to "ぎゃ", "gyi" to "ぎぃ", "gyu" to "ぎゅ", "gye" to "ぎぇ", "gyo" to "ぎょ",
-        "sya" to "しゃ", "syi" to "しぃ", "syu" to "しゅ", "sye" to "しぇ", "syo" to "しょ",
-        "sha" to "しゃ", "shi" to "し", "shu" to "しゅ", "she" to "しぇ", "sho" to "しょ",
-        "ja" to "じゃ", "ji" to "じ", "ju" to "じゅ", "je" to "じぇ", "jo" to "じょ",
-        "jya" to "じゃ", "jyi" to "じぃ", "jyu" to "じゅ", "jye" to "じぇ", "jyo" to "じょ",
-        "zya" to "じゃ", "zyi" to "じぃ", "zyu" to "じゅ", "zye" to "じぇ", "zyo" to "じょ",
-        "tya" to "ちゃ", "tyi" to "ちぃ", "tyu" to "ちゅ", "tye" to "ちぇ", "tyo" to "ちょ",
-        "tha" to "てゃ", "thi" to "てぃ", "thu" to "てゅ", "the" to "てぇ", "tho" to "てょ",
-        "dha" to "でゃ", "dhi" to "でぃ", "dhu" to "でゅ", "dhe" to "でぇ", "dho" to "でょ",
-        "dya" to "ぢゃ", "dyi" to "ぢぃ", "dyu" to "ぢゅ", "dye" to "ぢぇ", "dyo" to "ぢょ",
-        "nya" to "にゃ", "nyi" to "にぃ", "nyu" to "にゅ", "nye" to "にぇ", "nyo" to "にょ",
-        "hya" to "ひゃ", "hyi" to "ひぃ", "hyu" to "ひゅ", "hye" to "ひぇ", "hyo" to "ひょ",
-        "pya" to "ぴゃ", "pyi" to "ぴぃ", "pyu" to "ぴゅ", "pye" to "ぴぇ", "pyo" to "ぴょ",
-        "bya" to "びゃ", "byi" to "びぃ", "byu" to "びゅ", "bye" to "びぇ", "byo" to "びょ",
-        "mya" to "みゃ", "myi" to "みぃ", "myu" to "みゅ", "mye" to "みぇ", "myo" to "みょ",
-        "rya" to "りゃ", "ryi" to "りぃ", "ryu" to "りゅ", "rye" to "りぇ", "ryo" to "りょ",
-        "z," to "‥", "z-" to "〜", "z." to "…", "z/" to "・", "z[" to "『",
-        "z]" to "』", "zh" to "←", "zj" to "↓", "zk" to "↑", "zl" to "→",
-    )
-
-    private var mCustomRules: Map<String, String> = emptyMap()
-    private var mEffectiveMap: Map<String, String> = mBaseRomajiMap
-    private var mIntermediateRomajiSet: Set<String> = shortenRomajiSet(mBaseRomajiMap.keys)
-    private var mVowelMap: Map<String, Char> = createVowelMap(mBaseRomajiMap)
-
-    fun loadCustomRules(rules: Map<String, String>) {
-        mCustomRules = rules
-        mEffectiveMap = mBaseRomajiMap + mCustomRules
-        mIntermediateRomajiSet = shortenRomajiSet(mEffectiveMap.keys)
-        mVowelMap = createVowelMap(mEffectiveMap)
-    }
-
-    fun clearCustomRules() {
-        mCustomRules = emptyMap()
-        mEffectiveMap = mBaseRomajiMap
-        mIntermediateRomajiSet = shortenRomajiSet(mBaseRomajiMap.keys)
-        mVowelMap = createVowelMap(mBaseRomajiMap)
+    fun loadRules(rules: Map<String, String>?) {
+        mRomajiMap = rules ?: emptyMap()
+        mIntermediateRomajiSet = shortenRomajiSet(mRomajiMap.keys)
+        mVowelMap = createVowelMap(mRomajiMap)
     }
 
     private fun shortenRomajiSet(set: Set<String>): Set<String> {
@@ -126,7 +71,7 @@ object RomajiConverter {
     private val mReversedHandakutenMap = mHandakutenMap.entries.associate { (h, p) -> p to h } +
             mapOf("゜" to "", "゚" to "") // 半濁点も2種類 309A, 309C
 
-    fun convert(romaji: String) = mEffectiveMap[romaji].orEmpty()
+    fun convert(romaji: String) = mRomajiMap[romaji].orEmpty()
     fun getConsonantForVoiced(kana: String): String {
         val hiragana = katakana2hiragana(hankaku2zenkaku(kana)) ?: return ""
         return if (hiragana.isEmpty()) "" else when (val c = hiragana[0].code) {
@@ -199,7 +144,8 @@ object RomajiConverter {
                 ?: mDakutenMap[mReversedHandakutenMap[kana]]            // 半濁点を濁点に
             SKKEngine.LAST_CONVERSION_HANDAKUTEN -> (mHandakutenMap + mReversedHandakutenMap)[kana]
                 ?: mHandakutenMap[mReversedDakutenMap[kana]]            // 濁点を半濁点に
-            SKKEngine.LAST_CONVERSION_TRANS -> (if (SKKApplication.prefs?.useSmallK != false) mSmallKMap[kana] else null)
+            // useSmallK は既定で false
+            SKKEngine.LAST_CONVERSION_TRANS -> (if (SKKApplication.prefs?.useSmallK == true) mSmallKMap[kana] else null)
                 ?: mSmallKanaMap[kana]                                  // 普通を小に
                 ?: mDakutenMap[mReversedSmallKanaMap[kana]]             // 小を濁点に
                 ?: mDakutenMap[kana]                                    // 普通を濁点に

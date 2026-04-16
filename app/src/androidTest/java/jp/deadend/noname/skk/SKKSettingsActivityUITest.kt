@@ -217,6 +217,8 @@ class SKKSettingsActivityUITest {
     @Test
     fun testSoftKeyFragment() {
         assert(skkPrefs.useSoftKey == "auto")
+        // 下の方が見えないのでスワイプアップしておく
+        onView(isRoot()).perform(swipeUp())
         onView(withText("ソフトウェアキーボードの設定")).perform(click())
         onView(withText("ソフトウェアキーボードの表示"))
             .check(matches(hasSibling(withText("自動"))))
