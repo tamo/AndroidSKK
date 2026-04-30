@@ -91,19 +91,31 @@ class SKKPrefs(context: Context) {
         set(value) = prefs.edit { putInt(res.getString(R.string.pref_nav_backward_key), value) }
 
     var katakanaKey: Int
-        get() = prefs.getInt(res.getString(R.string.pref_katakana_key), 720) // 720はq (KEYCODE_Q=45, shl 4)
+        get() = prefs.getInt(
+            res.getString(R.string.pref_katakana_key),
+            720
+        ) // 720はq (KEYCODE_Q=45, shl 4)
         set(value) = prefs.edit { putInt(res.getString(R.string.pref_katakana_key), value) }
 
     var asciiKey: Int
-        get() = prefs.getInt(res.getString(R.string.pref_ascii_key), 640) // 640はl (KEYCODE_L=40, shl 4)
+        get() = prefs.getInt(
+            res.getString(R.string.pref_ascii_key),
+            640
+        ) // 640はl (KEYCODE_L=40, shl 4)
         set(value) = prefs.edit { putInt(res.getString(R.string.pref_ascii_key), value) }
 
     var zenkakuKey: Int
-        get() = prefs.getInt(res.getString(R.string.pref_zenkaku_key), 641) // 641はShift+L (40 shl 4 | 1)
+        get() = prefs.getInt(
+            res.getString(R.string.pref_zenkaku_key),
+            641
+        ) // 641はShift+L (40 shl 4 | 1)
         set(value) = prefs.edit { putInt(res.getString(R.string.pref_zenkaku_key), value) }
 
     var abbrevKey: Int
-        get() = prefs.getInt(res.getString(R.string.pref_abbrev_key), 1216) // 1216はSlash (KEYCODE_SLASH=76, shl 4)
+        get() = prefs.getInt(
+            res.getString(R.string.pref_abbrev_key),
+            1216
+        ) // 1216はSlash (KEYCODE_SLASH=76, shl 4)
         set(value) = prefs.edit { putInt(res.getString(R.string.pref_abbrev_key), value) }
 
     var useCandidatesView: Boolean

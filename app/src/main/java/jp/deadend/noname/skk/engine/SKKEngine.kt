@@ -138,7 +138,7 @@ class SKKEngine(
     fun processKey(keyCode: Int) = state.processKey(this, keyCode)
 
     fun handleKanaKey() = state.handleKanaKey(this)
- 
+
     fun handleKatakanaKey() {
         when (state) {
             SKKHiraganaState -> changeState(SKKKatakanaState)
