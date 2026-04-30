@@ -12,6 +12,7 @@ import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.Espresso.openActionBarOverflowOrOptionsMenu
 import androidx.test.espresso.Espresso.pressBack
 import androidx.test.espresso.NoMatchingViewException
+import androidx.test.espresso.action.EspressoKey
 import androidx.test.espresso.action.ViewActions.click
 import androidx.test.espresso.action.ViewActions.pressKey
 import androidx.test.espresso.action.ViewActions.swipeUp
@@ -242,7 +243,14 @@ class SKKSettingsActivityUITest {
             .perform(click())
         repeat(3) {
             Thread.sleep(1000)
-            onView(withText("全角英数キー")).perform(pressKey(KeyEvent.KEYCODE_Z, KeyEvent.META_SHIFT_LEFT_ON))
+            onView(withText("全角英数キー")).perform(
+                pressKey(
+                    EspressoKey.Builder()
+                        .withKeyCode(KeyEvent.KEYCODE_Z)
+                        .withShiftPressed(true)
+                        .build()
+                )
+            )
         }
         onView(withText("全角英数キー")).check(matches(hasSibling(withText("SHIFT+Z"))))
         assert(skkPrefs.zenkakuKey == (KeyEvent.KEYCODE_Z shl 4 or 1))
@@ -257,6 +265,12 @@ class SKKSettingsActivityUITest {
         }
         onView(withText("Abbrevキー")).check(matches(hasSibling(withText("PERIOD"))))
         assert(skkPrefs.abbrevKey == (KeyEvent.KEYCODE_PERIOD shl 4))
+
+        // Revert them all
+        skkPrefs.kanaKey = KeyEvent.KEYCODE_J shl 4 or /* CTRL_PRESSED */ 4
+        skkPrefs.katakanaKey = KeyEvent.KEYCODE_Q shl 4
+        skkPrefs.asciiKey = KeyEvent.KEYCODE_L shl 4
+        skkPrefs.zenkakuKey = KeyEvent.KEYCODE_L shl 4 or 1
     }
 
     @Test

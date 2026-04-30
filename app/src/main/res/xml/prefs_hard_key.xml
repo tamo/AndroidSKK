@@ -34,7 +34,7 @@
         <androidx.preference.Preference
             app:iconSpaceReserved="false"
             app:key="@string/pref_ascii_key"
-            app:title="直接入力キー" />
+            app:title="ASCIIキー" />
         <androidx.preference.Preference
             app:iconSpaceReserved="false"
             app:key="@string/pref_zenkaku_key"
