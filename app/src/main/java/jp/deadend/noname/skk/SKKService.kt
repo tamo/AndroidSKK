@@ -924,15 +924,22 @@ class SKKService : InputMethodService() {
         // Emacs 風ナビゲーションキー（NAV_KEY_DISABLED=0 のキーはスキップ）
         val navKey = when (encodedKey) {
             skkPrefs.navLineStartKey.takeIf { it != NAV_KEY_DISABLED } -> KeyEvent.KEYCODE_MOVE_HOME
-            skkPrefs.navLineEndKey.takeIf   { it != NAV_KEY_DISABLED } -> KeyEvent.KEYCODE_MOVE_END
-            skkPrefs.navForwardKey.takeIf   { it != NAV_KEY_DISABLED } -> KeyEvent.KEYCODE_DPAD_RIGHT
-            skkPrefs.navBackwardKey.takeIf  { it != NAV_KEY_DISABLED } -> KeyEvent.KEYCODE_DPAD_LEFT
+            skkPrefs.navLineEndKey.takeIf { it != NAV_KEY_DISABLED } -> KeyEvent.KEYCODE_MOVE_END
+            skkPrefs.navForwardKey.takeIf { it != NAV_KEY_DISABLED } -> KeyEvent.KEYCODE_DPAD_RIGHT
+            skkPrefs.navBackwardKey.takeIf { it != NAV_KEY_DISABLED } -> KeyEvent.KEYCODE_DPAD_LEFT
             else -> null
         }
         if (navKey != null) {
-            return when (resolveEmacsNavAction(engineState.isTransient, engineState === SKKASCIIState, skkPrefs.emacsNavInAscii)) {
-                EmacsNavAction.NAVIGATE     -> { sendDownUpKeyEvents(navKey); true }
-                EmacsNavAction.CONSUME      -> true
+            return when (resolveEmacsNavAction(
+                engineState.isTransient,
+                engineState === SKKASCIIState,
+                skkPrefs.emacsNavInAscii
+            )) {
+                EmacsNavAction.NAVIGATE -> {
+                    sendDownUpKeyEvents(navKey); true
+                }
+
+                EmacsNavAction.CONSUME -> true
                 EmacsNavAction.PASS_THROUGH -> super.onKeyDown(keyCode, event)
             }
         }
@@ -950,6 +957,7 @@ class SKKService : InputMethodService() {
                     mSpacePressed = true
                     return true
                 }
+
                 else -> if (mSpacePressed) {
                     val shiftedEvent = KeyEvent(
                         event.downTime, event.eventTime, event.action,

@@ -190,6 +190,7 @@ class SKKSettingsActivity : AppCompatActivity() {
                 }
                 true
             } else false
+
             else -> if (event.action == KeyEvent.ACTION_DOWN) {
                 val key = encodeKey(event)
                 val name = getKeyName(key)

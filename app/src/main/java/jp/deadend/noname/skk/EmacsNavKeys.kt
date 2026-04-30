@@ -5,9 +5,9 @@ const val NAV_KEY_DISABLED = 0
 
 // デフォルトエンコード値: keyCode shl 4 or modifierBits (CTRL = 4)
 const val NAV_LINE_START_KEY_DEFAULT = 468  // Ctrl+A: KEYCODE_A(29) shl 4 or 4
-const val NAV_LINE_END_KEY_DEFAULT   = 532  // Ctrl+E: KEYCODE_E(33) shl 4 or 4
-const val NAV_FORWARD_KEY_DEFAULT    = 548  // Ctrl+F: KEYCODE_F(34) shl 4 or 4
-const val NAV_BACKWARD_KEY_DEFAULT   = 484  // Ctrl+B: KEYCODE_B(30) shl 4 or 4
+const val NAV_LINE_END_KEY_DEFAULT = 532  // Ctrl+E: KEYCODE_E(33) shl 4 or 4
+const val NAV_FORWARD_KEY_DEFAULT = 548  // Ctrl+F: KEYCODE_F(34) shl 4 or 4
+const val NAV_BACKWARD_KEY_DEFAULT = 484  // Ctrl+B: KEYCODE_B(30) shl 4 or 4
 
 enum class EmacsNavAction { NAVIGATE, CONSUME, PASS_THROUGH }
 
@@ -23,7 +23,7 @@ fun resolveEmacsNavAction(
     isAsciiState: Boolean,
     emacsNavInAscii: Boolean
 ): EmacsNavAction = when {
-    isTransient                      -> EmacsNavAction.CONSUME
+    isTransient -> EmacsNavAction.CONSUME
     isAsciiState && !emacsNavInAscii -> EmacsNavAction.PASS_THROUGH
-    else                             -> EmacsNavAction.NAVIGATE
+    else -> EmacsNavAction.NAVIGATE
 }
