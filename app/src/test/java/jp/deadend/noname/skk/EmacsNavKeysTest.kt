@@ -1,6 +1,7 @@
 package jp.deadend.noname.skk
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Test
 
 class EmacsNavKeysTest {
@@ -13,14 +14,13 @@ class EmacsNavKeysTest {
         assertEquals(0, NAV_KEY_DISABLED)
     }
 
-    @Suppress("SimplifyBooleanWithConstants")
     @Test
     fun testNavKeyDisabled_doesNotEqualAnyDefaultKey() {
         // デフォルトキーはすべて 0 より大きいこと（無効値と衝突しない）
-        assert(NAV_LINE_START_KEY_DEFAULT != NAV_KEY_DISABLED)
-        assert(NAV_LINE_END_KEY_DEFAULT != NAV_KEY_DISABLED)
-        assert(NAV_FORWARD_KEY_DEFAULT != NAV_KEY_DISABLED)
-        assert(NAV_BACKWARD_KEY_DEFAULT != NAV_KEY_DISABLED)
+        assertNotEquals(NAV_KEY_DISABLED, NAV_LINE_START_KEY_DEFAULT)
+        assertNotEquals(NAV_KEY_DISABLED, NAV_LINE_END_KEY_DEFAULT)
+        assertNotEquals(NAV_KEY_DISABLED, NAV_FORWARD_KEY_DEFAULT)
+        assertNotEquals(NAV_KEY_DISABLED, NAV_BACKWARD_KEY_DEFAULT)
     }
 
     // --- デフォルトキーエンコード値の検証 ---
