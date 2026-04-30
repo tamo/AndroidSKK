@@ -315,3 +315,4 @@ class RomajiConverterTest {
         assertEquals(null, RomajiConverter.checkSpecialConsonants('q', 'q'.code))
     }
 }
+

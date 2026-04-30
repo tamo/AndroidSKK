@@ -138,6 +138,52 @@ class SKKEngine(
     fun processKey(keyCode: Int) = state.processKey(this, keyCode)
 
     fun handleKanaKey() = state.handleKanaKey(this)
+ 
+    fun handleKatakanaKey() {
+        when (state) {
+            SKKHiraganaState -> changeState(SKKKatakanaState)
+            SKKKatakanaState -> changeState(SKKHiraganaState)
+            SKKKanjiState -> {
+                // ▽モードでカタカナ変換（従来の q 動作を引き継ぐ）
+                if (mKanjiKey.isNotEmpty()) {
+                    val str = if (kanaState == SKKHiraganaState) {
+                        hiragana2katakana(mKanjiKey.toString())
+                    } else {
+                        mKanjiKey.toString()
+                    }
+                    if (str != null) commitTextSKK(str)
+                    mKanjiKey.setLength(0)
+                }
+                changeState(kanaState)
+            }
+
+            else -> {}
+        }
+    }
+
+    fun handleASCIIKey() {
+        if (mComposing.length != 1 || mComposing[0] != 'z') {
+            // ▽モード(KanjiState)では l で Abbrev モードに遷移（SKK 原本の動作）
+            if (state === SKKKanjiState) {
+                changeState(SKKAbbrevState)
+            } else {
+                changeState(SKKASCIIState, true)
+            }
+        }
+        // 「→」を入力するための z+l 例外はそのまま維持
+    }
+
+    fun handleZenkakuKey() {
+        changeState(SKKZenkakuState)
+    }
+
+    fun tryStartAbbrev(): Boolean {
+        if (mComposing.isEmpty()) {
+            changeState(SKKAbbrevState)
+            return true
+        }
+        return false
+    }
 
     fun handleBackKey(): Boolean {
         if (!mRegistrationStack.isEmpty()) {
@@ -1151,34 +1197,11 @@ class SKKEngine(
 
     internal fun changeInputMode(keyCode: Int): Boolean {
         // 入力モード変更操作．変更したらtrue
+        // 他のケースは SKKService.onKeyDown に集約済み。
+        // 現在は Ctrl-Q (全角カナ/半角カナ切り替え) のみここで行う。
         when (keyCode) {
-            'q'.code -> {
-                changeState(if (kanaState === SKKHiraganaState) SKKKatakanaState else SKKHiraganaState)
-                return true
-            }
-
             17 /* Ctrl-Q */ -> {
                 changeState(SKKHanKanaState)
-                return true
-            }
-
-            'l'.code -> {
-                if (mComposing.length != 1 || mComposing[0] != 'z') {
-                    if (state === SKKKanjiState) {
-                        changeState(SKKAbbrevState)
-                    } else {
-                        changeState(SKKASCIIState, true)
-                    }
-                    return true
-                }
-            } // 「→」を入力するための例外
-            'L'.code -> {
-                changeState(SKKZenkakuState)
-                return true
-            }
-
-            '/'.code -> if (mComposing.isEmpty()) {
-                changeState(SKKAbbrevState)
                 return true
             }
         }
