@@ -67,6 +67,11 @@
     <string name="pref_kana_key" translatable="false">PrefKeyKanaKey</string>
     <string name="pref_toggle_kana_key" translatable="false">PrefKeyToggleKanaKey</string>
     <string name="pref_cancel_key" translatable="false">PrefKeyCancelKey</string>
+    <string name="pref_emacs_nav_in_ascii" translatable="false">PrefKeyEmacsNavInAscii</string>
+    <string name="pref_nav_line_start_key" translatable="false">PrefKeyNavLineStartKey</string>
+    <string name="pref_nav_line_end_key" translatable="false">PrefKeyNavLineEndKey</string>
+    <string name="pref_nav_forward_key" translatable="false">PrefKeyNavForwardKey</string>
+    <string name="pref_nav_backward_key" translatable="false">PrefKeyNavBackwardKey</string>
     <string name="pref_katakana_key" translatable="false">PrefKeyKatakanaKey</string>
     <string name="pref_ascii_key" translatable="false">PrefKeyASCIIKey</string>
     <string name="pref_zenkaku_key" translatable="false">PrefKeyZenkakuKey</string>
@@ -115,6 +120,7 @@
     <string name="pref_background_alpha" translatable="false">PrefKeyBackgroundAlpha</string>
     <string name="pref_sticky_meta" translatable="false">PrefKeyStickyMeta</string>
     <string name="pref_sands" translatable="false">PrefKeySandS</string>
+    <string name="pref_sands_in_ascii" translatable="false">PrefKeySandSInAscii</string>
     <string name="pref_dict_order" translatable="false">PrefKeyDicsOrder</string>
     <string name="pref_log_viewer" translatable="false">PrefLogViewer</string>
 

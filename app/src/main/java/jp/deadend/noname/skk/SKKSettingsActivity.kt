@@ -91,6 +91,42 @@ class SKKSettingsActivity : AppCompatActivity() {
                     true
                 }
             }
+
+            findPreference<Preference>(getString(R.string.pref_nav_line_start_key))?.apply {
+                setSummary(navKeySummary(skkPrefs.navLineStartKey))
+                setOnPreferenceClickListener {
+                    setSummary("Push any key... (Esc to disable)")
+                    (requireActivity() as SKKSettingsActivity).keyPref = this
+                    true
+                }
+            }
+
+            findPreference<Preference>(getString(R.string.pref_nav_line_end_key))?.apply {
+                setSummary(navKeySummary(skkPrefs.navLineEndKey))
+                setOnPreferenceClickListener {
+                    setSummary("Push any key... (Esc to disable)")
+                    (requireActivity() as SKKSettingsActivity).keyPref = this
+                    true
+                }
+            }
+
+            findPreference<Preference>(getString(R.string.pref_nav_forward_key))?.apply {
+                setSummary(navKeySummary(skkPrefs.navForwardKey))
+                setOnPreferenceClickListener {
+                    setSummary("Push any key... (Esc to disable)")
+                    (requireActivity() as SKKSettingsActivity).keyPref = this
+                    true
+                }
+            }
+
+            findPreference<Preference>(getString(R.string.pref_nav_backward_key))?.apply {
+                setSummary(navKeySummary(skkPrefs.navBackwardKey))
+                setOnPreferenceClickListener {
+                    setSummary("Push any key... (Esc to disable)")
+                    (requireActivity() as SKKSettingsActivity).keyPref = this
+                    true
+                }
+            }
         }
     }
 
@@ -143,6 +179,17 @@ class SKKSettingsActivity : AppCompatActivity() {
         return when (event.keyCode) {
             KeyEvent.KEYCODE_BACK, KeyEvent.KEYCODE_ENTER -> false
             KeyEvent.KEYCODE_HOME -> true
+            KeyEvent.KEYCODE_ESCAPE -> if (event.action == KeyEvent.ACTION_DOWN) {
+                PreferenceManager.getDefaultSharedPreferences(applicationContext).edit {
+                    putInt(pref.key, NAV_KEY_DISABLED)
+                }
+                pref.setSummary(navKeySummary(NAV_KEY_DISABLED))
+                MainScope().launch(Dispatchers.Default) {
+                    delay(500)
+                    keyPref = null
+                }
+                true
+            } else false
             else -> if (event.action == KeyEvent.ACTION_DOWN) {
                 val key = encodeKey(event)
                 val name = getKeyName(key)
@@ -182,3 +229,6 @@ class SKKSettingsActivity : AppCompatActivity() {
         }
     }
 }
+
+private fun navKeySummary(key: Int): String =
+    if (key == NAV_KEY_DISABLED) "（未設定）" else getKeyName(key)

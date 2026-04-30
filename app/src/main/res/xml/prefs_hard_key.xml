@@ -61,5 +61,33 @@
             app:key="@string/pref_sands"
             app:summary="スペースキーをshiftとして使います"
             app:title="SandS" />
+        <androidx.preference.CheckBoxPreference
+            app:defaultValue="false"
+            app:iconSpaceReserved="false"
+            app:key="@string/pref_sands_in_ascii"
+            app:summary="オフにすると ASCII モードではアプリ側にキーを渡します"
+            app:title="ASCII モードでも SandS を有効にする" />
+        <androidx.preference.CheckBoxPreference
+            app:defaultValue="false"
+            app:iconSpaceReserved="false"
+            app:key="@string/pref_emacs_nav_in_ascii"
+            app:summary="オフにすると ASCII モードではアプリ側にキーを渡します"
+            app:title="ASCII モードでもナビキーを有効にする" />
+        <androidx.preference.Preference
+            app:iconSpaceReserved="false"
+            app:key="@string/pref_nav_line_start_key"
+            app:title="行頭キー" />
+        <androidx.preference.Preference
+            app:iconSpaceReserved="false"
+            app:key="@string/pref_nav_line_end_key"
+            app:title="行末キー" />
+        <androidx.preference.Preference
+            app:iconSpaceReserved="false"
+            app:key="@string/pref_nav_forward_key"
+            app:title="一文字進むキー" />
+        <androidx.preference.Preference
+            app:iconSpaceReserved="false"
+            app:key="@string/pref_nav_backward_key"
+            app:title="一文字戻るキー" />
     </androidx.preference.PreferenceCategory>
 </androidx.preference.PreferenceScreen>
