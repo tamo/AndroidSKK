@@ -80,6 +80,7 @@ class SKKSettingsActivity : AppCompatActivity() {
             registerKeyPref(R.string.pref_ascii_key, skkPrefs.asciiKey)
             registerKeyPref(R.string.pref_zenkaku_key, skkPrefs.zenkakuKey)
             registerKeyPref(R.string.pref_abbrev_key, skkPrefs.abbrevKey)
+            registerKeyPref(R.string.pref_hankaku_kana_key, skkPrefs.hankakuKanaKey)
             registerKeyPref(R.string.pref_nav_line_start_key, skkPrefs.navLineStartKey, true)
             registerKeyPref(R.string.pref_nav_line_end_key, skkPrefs.navLineEndKey, true)
             registerKeyPref(R.string.pref_nav_forward_key, skkPrefs.navForwardKey, true)
@@ -94,7 +95,9 @@ class SKKSettingsActivity : AppCompatActivity() {
             findPreference<Preference>(getString(prefKeyResId))?.apply {
                 summary = if (nav) navKeySummary(currentValue) else getKeyName(currentValue)
                 setOnPreferenceClickListener {
-                    summary = "Push any key..." + if (nav) " (Esc to disable)" else ""
+                    summary = getString(
+                        if (nav) R.string.label_push_any_nav else R.string.label_push_any
+                    )
                     (requireActivity() as SKKSettingsActivity).keyPref = this
                     true
                 }

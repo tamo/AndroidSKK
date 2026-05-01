@@ -43,6 +43,10 @@
             app:iconSpaceReserved="false"
             app:key="@string/pref_abbrev_key"
             app:title="Abbrevキー" />
+        <androidx.preference.Preference
+            app:iconSpaceReserved="false"
+            app:key="@string/pref_hankaku_kana_key"
+            app:title="半角カナキー" />
         <androidx.preference.CheckBoxPreference
             app:defaultValue="true"
             app:iconSpaceReserved="false"

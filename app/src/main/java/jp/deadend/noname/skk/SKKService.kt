@@ -867,6 +867,11 @@ class SKKService : InputMethodService() {
      * them or let them continue to the app.
      */
     override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean {
+        // ハードウェアキー設定と重複しないように
+        if (currentInputEditorInfo?.packageName == packageName &&
+            currentInputEditorInfo?.inputType == 0
+        ) return false
+
         if (mEngine.state === SKKASCIIState) {
             // SandS: ASCII モードでのスペースアップ処理
             if (mSandS && skkPrefs.sandSInAscii && keyCode == KeyEvent.KEYCODE_SPACE) {
@@ -918,6 +923,11 @@ class SKKService : InputMethodService() {
      * them or let them continue to the app.
      */
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
+        // ハードウェアキー設定と重複しないように
+        if (currentInputEditorInfo?.packageName == packageName &&
+            currentInputEditorInfo?.inputType == 0
+        ) return false
+
         val engineState = mEngine.state
         val encodedKey = encodeKey(event)
 
@@ -1048,16 +1058,17 @@ class SKKService : InputMethodService() {
      * on an InputConnection.
      */
     private fun translateKeyDown(event: KeyEvent): Boolean {
-        // processKeyはctrlやaltを認識しないので変換が必要
-        val modded = if (event.isMetaPressed || event.isCtrlPressed || event.isAltPressed) {
-            when (encodeKey(event)) {
-                skkPrefs.katakanaKey -> ModeKey.KATAKANA.code
-                skkPrefs.asciiKey -> ModeKey.ASCII.code
-                skkPrefs.zenkakuKey -> ModeKey.ZENKAKU.code
-                skkPrefs.abbrevKey -> ModeKey.ABBREV.code
-                skkPrefs.hankakuKanaKey -> ModeKey.HANKAKU_KANA.code
-                else -> 0
-            }
+        // processKeyは非文字キーやctrlやaltを認識しないので変換が必要
+        val modded = if (
+            event.unicodeChar == 0 || event.isMetaPressed ||
+            event.isCtrlPressed || event.isAltPressed
+        ) when (encodeKey(event)) {
+            skkPrefs.katakanaKey -> ModeKey.KATAKANA.code
+            skkPrefs.asciiKey -> ModeKey.ASCII.code
+            skkPrefs.zenkakuKey -> ModeKey.ZENKAKU.code
+            skkPrefs.abbrevKey -> ModeKey.ABBREV.code
+            skkPrefs.hankakuKanaKey -> ModeKey.HANKAKU_KANA.code
+            else -> 0
         } else 0
 
         val c = when {

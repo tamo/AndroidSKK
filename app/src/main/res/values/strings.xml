@@ -27,6 +27,8 @@
     <string name="label_kana_rule_manager_activity">SKK ローマ字かな変換ルール</string>
     <string name="label_kana_rule_select">ファイルを選択</string>
     <string name="label_kana_rule_clear">初期化</string>
+    <string name="label_push_any">キーを押してください</string>
+    <string name="label_push_any_nav">キーを押してください (Esc で無効化)</string>
 
     <string name="label_mushroom">マッシュルーム</string>
 
@@ -76,6 +78,7 @@
     <string name="pref_ascii_key" translatable="false">PrefKeyASCIIKey</string>
     <string name="pref_zenkaku_key" translatable="false">PrefKeyZenkakuKey</string>
     <string name="pref_abbrev_key" translatable="false">PrefKeyAbbrevKey</string>
+    <string name="pref_hankaku_kana_key" translatable="false">PrefKeyHankakuKanaKey</string>
     <string name="pref_candidates_size" translatable="false">PrefKeyCandidatesSize</string>
     <string name="pref_candidates_reserve_lines" translatable="false">PrefKeyCandidatesReserveLines</string>
     <string name="pref_candidates_normal_lines" translatable="false">PrefKeyCandidatesNormalLines</string>
