@@ -1,5 +1,6 @@
 package jp.deadend.noname.skk.engine
 
+import jp.deadend.noname.skk.ModeKey
 import jp.deadend.noname.skk.createTrimmedBuilder
 import jp.deadend.noname.skk.hiragana2katakana
 import jp.deadend.noname.skk.isVowel
@@ -40,7 +41,27 @@ object SKKKanjiState : SKKState {
             }
 
             when (codeLower) {
-                17 /* Ctrl-Q */ -> {
+                skkPrefs.asciiKey, ModeKey.ASCII.code,
+                skkPrefs.abbrevKey, ModeKey.ABBREV.code -> changeInputMode(keyCode)
+                // abbrevはtransientなのでchangeInputModeで自動確定されない
+                // ▽の状態で英数(abbrev)と仮名(kanji)を行き来するには ModeKey.KANA と ABBREV を使うことにする
+                // 一般的なキーコードが分かれば対応するが、emacsではabbrevから普通の▽(kanji)に行けないと思う
+
+                skkPrefs.katakanaKey, ModeKey.KATAKANA.code -> {
+                    // カタカナ変換
+                    if (mKanjiKey.isNotEmpty()) {
+                        val str = if (kanaState == SKKHiraganaState) {
+                            hiragana2katakana(mKanjiKey.toString())
+                        } else {
+                            mKanjiKey.toString() // すでにひらがななのでそのまま
+                        }
+                        if (str != null) commitTextSKK(str)
+                        mKanjiKey.setLength(0)
+                    }
+                    changeState(kanaState)
+                }
+
+                skkPrefs.hankakuKanaKey, ModeKey.HANKAKU_KANA.code -> {
                     if (mKanjiKey.isNotEmpty()) {
                         val zenkakuKatakana = hiragana2katakana(mKanjiKey.toString())
                         val str = if (kanaState === SKKHanKanaState) {
@@ -51,6 +72,7 @@ object SKKKanjiState : SKKState {
                         if (str != null) commitTextSKK(str)
                         mKanjiKey.setLength(0)
                     }
+                    changeState(kanaState)
                 }
 
                 ' '.code, '>'.code -> {

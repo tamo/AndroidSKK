@@ -722,9 +722,9 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
             KEYCODE_GODAN_GOOGLE -> mService.googleTransliterate()
             KEYCODE_GODAN_CHAR_L -> {
                 when (mService.engineState) {
-                    SKKAbbrevState -> mService.processKey(-1010) // かな入力(KanjiState)
+                    SKKAbbrevState -> mService.processKey(ModeKey.KANA.code) // かな入力(KanjiState)
                     SKKASCIIState, SKKZenkakuState -> mService.handleKanaKey()
-                    else -> mService.processKey(if (isShifted) 'L'.code else 'l'.code)
+                    else -> mService.processKey(if (isShifted) ModeKey.ZENKAKU.code else ModeKey.ASCII.code)
                 }
             }
 
@@ -831,7 +831,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                     "^J" -> mService.handleKanaKey()
                     "ｶﾅ" -> {
                         if (mIsASCII) mService.handleKanaKey() // ひらがなを経由
-                        mService.processKey(17)
+                        mService.processKey(ModeKey.HANKAKU_KANA.code)
                     }
 
                     "記号" -> mService.symbolCandidates(isShifted)

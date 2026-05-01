@@ -3,10 +3,12 @@ package jp.deadend.noname.skk.engine
 import android.text.SpannableString
 import com.android.volley.toolbox.JsonArrayRequest
 import com.android.volley.toolbox.Volley
+import jp.deadend.noname.skk.ModeKey
 import jp.deadend.noname.skk.SKKDictionaryInterface
 import jp.deadend.noname.skk.SKKService
 import jp.deadend.noname.skk.SKKUserDictionary
 import jp.deadend.noname.skk.dLog
+import jp.deadend.noname.skk.encodeKey
 import jp.deadend.noname.skk.hankaku2zenkaku
 import jp.deadend.noname.skk.hiragana2katakana
 import jp.deadend.noname.skk.isAlphabet
@@ -139,29 +141,11 @@ class SKKEngine(
 
     fun handleKanaKey() = state.handleKanaKey(this)
 
-    fun handleKatakanaKey() {
-        when (state) {
-            SKKHiraganaState -> changeState(SKKKatakanaState)
-            SKKKatakanaState -> changeState(SKKHiraganaState)
-            SKKKanjiState -> {
-                // ▽モードでカタカナ変換（従来の q 動作を引き継ぐ）
-                if (mKanjiKey.isNotEmpty()) {
-                    val str = if (kanaState == SKKHiraganaState) {
-                        hiragana2katakana(mKanjiKey.toString())
-                    } else {
-                        mKanjiKey.toString()
-                    }
-                    if (str != null) commitTextSKK(str)
-                    mKanjiKey.setLength(0)
-                }
-                changeState(kanaState)
-            }
-
-            else -> {}
-        }
+    fun handleKatakanaKey(): Boolean = true.also {
+        changeState(if (kanaState === SKKHiraganaState) SKKKatakanaState else SKKHiraganaState)
     }
 
-    fun handleASCIIKey() {
+    fun handleASCIIKey(): Boolean {
         if (mComposing.length != 1 || mComposing[0] != 'z') {
             // ▽モード(KanjiState)では l で Abbrev モードに遷移（SKK 原本の動作）
             if (state === SKKKanjiState) {
@@ -169,13 +153,13 @@ class SKKEngine(
             } else {
                 changeState(SKKASCIIState, true)
             }
+            return true
         }
         // 「→」を入力するための z+l 例外はそのまま維持
+        return false
     }
 
-    fun handleZenkakuKey() {
-        changeState(SKKZenkakuState)
-    }
+    fun handleZenkakuKey(): Boolean = true.also { changeState(SKKZenkakuState) }
 
     fun tryStartAbbrev(): Boolean {
         if (mComposing.isEmpty()) {
@@ -184,6 +168,8 @@ class SKKEngine(
         }
         return false
     }
+
+    fun handleCtrlQ(): Boolean = true.also { changeState(SKKHanKanaState) }
 
     fun handleBackKey(): Boolean {
         if (!mRegistrationStack.isEmpty()) {
@@ -1195,18 +1181,14 @@ class SKKEngine(
         mComposingText.setLength(0)
     }
 
-    internal fun changeInputMode(keyCode: Int): Boolean {
-        // 入力モード変更操作．変更したらtrue
-        // 他のケースは SKKService.onKeyDown に集約済み。
-        // 現在は Ctrl-Q (全角カナ/半角カナ切り替え) のみここで行う。
-        when (keyCode) {
-            17 /* Ctrl-Q */ -> {
-                changeState(SKKHanKanaState)
-                return true
-            }
-        }
-
-        return false
+    // 入力モード変更操作．変更したらtrue
+    internal fun changeInputMode(keyCode: Int): Boolean = when (encodeKey(keyCode)) {
+        skkPrefs.katakanaKey, ModeKey.KATAKANA.code -> handleKatakanaKey()
+        skkPrefs.hankakuKanaKey, ModeKey.HANKAKU_KANA.code -> handleCtrlQ()
+        skkPrefs.asciiKey, ModeKey.ASCII.code -> handleASCIIKey()
+        skkPrefs.zenkakuKey, ModeKey.ZENKAKU.code -> handleZenkakuKey()
+        skkPrefs.abbrevKey, ModeKey.ABBREV.code -> tryStartAbbrev()
+        else -> false
     }
 
     internal fun commitComposing() {

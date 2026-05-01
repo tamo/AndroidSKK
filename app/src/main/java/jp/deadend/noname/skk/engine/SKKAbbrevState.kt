@@ -1,7 +1,9 @@
 package jp.deadend.noname.skk.engine
 
+import jp.deadend.noname.skk.ModeKey
 import jp.deadend.noname.skk.R
 import jp.deadend.noname.skk.hankaku2zenkaku
+import jp.deadend.noname.skk.skkPrefs
 
 // Abbrevモード(▽モード)
 object SKKAbbrevState : SKKState {
@@ -18,7 +20,7 @@ object SKKAbbrevState : SKKState {
             // スペースで変換するかそのままComposingに積む
             when (keyCode) {
                 ' '.code -> if (mKanjiKey.isNotEmpty()) conversionStart(mKanjiKey)
-                17 -> {
+                skkPrefs.hankakuKanaKey, ModeKey.HANKAKU_KANA.code -> {
                     // 全角変換
                     hankaku2zenkaku(mKanjiKey.toString())?.let { zen ->
                         commitTextSKK(zen)
@@ -26,7 +28,7 @@ object SKKAbbrevState : SKKState {
                     handleKanaKey(context)
                 }
 
-                -1010 -> {
+                skkPrefs.kanaKey, ModeKey.KANA.code -> {
                     changeState(SKKKanjiState)
                 }
 

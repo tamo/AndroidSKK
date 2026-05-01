@@ -976,14 +976,19 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
             }
 
             KEYCODE_FLICK_JP_MOJI -> when (mFlickState) {
-                EnumSet.of(FlickState.NONE) -> mService.processKey(if (isShifted) 17 else 'q'.code)
+                EnumSet.of(FlickState.NONE) -> mService.processKey(
+                    if (isShifted) ModeKey.HANKAKU_KANA.code else ModeKey.KATAKANA.code
+                )
+
                 EnumSet.of(FlickState.LEFT) -> mService.processKey(':'.code)
+
                 EnumSet.of(FlickState.UP) -> if (keyboard !== mNumKeyboard) {
                     keyboard = mNumKeyboard
                     isHankaku = false
                 }
 
                 EnumSet.of(FlickState.RIGHT) -> mService.processKey('>'.code)
+
                 EnumSet.of(FlickState.DOWN) -> if (keyboard !== mVoiceKeyboard) {
                     keyboard = mVoiceKeyboard
                     isHankaku = false
@@ -999,9 +1004,12 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
             }
 
             KEYCODE_FLICK_JP_TO_QWERTY -> when (mFlickState) {
-                EnumSet.of(FlickState.NONE) -> mService.processKey((if (isShifted) '/' else 'l').code)
+                EnumSet.of(FlickState.NONE) -> mService.processKey(
+                    if (isShifted) ModeKey.ABBREV.code else ModeKey.ASCII.code
+                )
+
                 EnumSet.of(FlickState.LEFT) -> mService.emojiCandidates(isShifted)
-                EnumSet.of(FlickState.UP) -> mService.processKey('L'.code)
+                EnumSet.of(FlickState.UP) -> mService.processKey(ModeKey.ZENKAKU.code)
                 EnumSet.of(FlickState.RIGHT) -> mService.symbolCandidates(isShifted)
                 EnumSet.of(FlickState.DOWN) -> mService.changeSoftKeyboard(SKKASCIIState)
             }

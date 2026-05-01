@@ -132,6 +132,8 @@ class SKKPrefs(context: Context) {
         ) // 1216はSlash (KEYCODE_SLASH=76, shl 4)
         set(value) = prefs.edit { putInt(res.getString(R.string.pref_abbrev_key), value) }
 
+    val hankakuKanaKey = 724 // Ctrl-Q
+
     var useCandidatesView: Boolean
         get() = prefs.getBoolean(res.getString(R.string.pref_use_candidates_view), true)
         set(value) = prefs.edit {

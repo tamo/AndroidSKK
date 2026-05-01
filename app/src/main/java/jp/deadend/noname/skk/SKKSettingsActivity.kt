@@ -80,49 +80,21 @@ class SKKSettingsActivity : AppCompatActivity() {
             registerKeyPref(R.string.pref_ascii_key, skkPrefs.asciiKey)
             registerKeyPref(R.string.pref_zenkaku_key, skkPrefs.zenkakuKey)
             registerKeyPref(R.string.pref_abbrev_key, skkPrefs.abbrevKey)
+            registerKeyPref(R.string.pref_nav_line_start_key, skkPrefs.navLineStartKey, true)
+            registerKeyPref(R.string.pref_nav_line_end_key, skkPrefs.navLineEndKey, true)
+            registerKeyPref(R.string.pref_nav_forward_key, skkPrefs.navForwardKey, true)
+            registerKeyPref(R.string.pref_nav_backward_key, skkPrefs.navBackwardKey, true)
         }
 
-        private fun registerKeyPref(prefKeyResId: Int, currentValue: Int) {
+        private fun registerKeyPref(
+            prefKeyResId: Int,
+            currentValue: Int,
+            nav: Boolean = false
+        ) {
             findPreference<Preference>(getString(prefKeyResId))?.apply {
-                summary = getKeyName(currentValue)
+                summary = if (nav) navKeySummary(currentValue) else getKeyName(currentValue)
                 setOnPreferenceClickListener {
-                    summary = "Push any key..."
-                    (requireActivity() as SKKSettingsActivity).keyPref = this
-                    true
-                }
-            }
-
-            findPreference<Preference>(getString(R.string.pref_nav_line_start_key))?.apply {
-                setSummary(navKeySummary(skkPrefs.navLineStartKey))
-                setOnPreferenceClickListener {
-                    setSummary("Push any key... (Esc to disable)")
-                    (requireActivity() as SKKSettingsActivity).keyPref = this
-                    true
-                }
-            }
-
-            findPreference<Preference>(getString(R.string.pref_nav_line_end_key))?.apply {
-                setSummary(navKeySummary(skkPrefs.navLineEndKey))
-                setOnPreferenceClickListener {
-                    setSummary("Push any key... (Esc to disable)")
-                    (requireActivity() as SKKSettingsActivity).keyPref = this
-                    true
-                }
-            }
-
-            findPreference<Preference>(getString(R.string.pref_nav_forward_key))?.apply {
-                setSummary(navKeySummary(skkPrefs.navForwardKey))
-                setOnPreferenceClickListener {
-                    setSummary("Push any key... (Esc to disable)")
-                    (requireActivity() as SKKSettingsActivity).keyPref = this
-                    true
-                }
-            }
-
-            findPreference<Preference>(getString(R.string.pref_nav_backward_key))?.apply {
-                setSummary(navKeySummary(skkPrefs.navBackwardKey))
-                setOnPreferenceClickListener {
-                    setSummary("Push any key... (Esc to disable)")
+                    summary = "Push any key..." + if (nav) " (Esc to disable)" else ""
                     (requireActivity() as SKKSettingsActivity).keyPref = this
                     true
                 }

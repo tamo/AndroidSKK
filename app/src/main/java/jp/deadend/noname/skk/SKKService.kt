@@ -973,11 +973,6 @@ class SKKService : InputMethodService() {
             }
         }
 
-        if (encodedKey == skkPrefs.katakanaKey) {
-            mEngine.handleKatakanaKey()
-            return true
-        }
-
         if (engineState === SKKASCIIState && !mEngine.isRegistering) {
             val result = super.onKeyDown(keyCode, event)
             updateSuggestionsASCII()
@@ -986,25 +981,6 @@ class SKKService : InputMethodService() {
 
         if (encodedKey == skkPrefs.cancelKey) {
             if (handleCancel()) return true
-        }
-
-        if (encodedKey == skkPrefs.asciiKey) {
-            mEngine.handleASCIIKey()
-            return true
-        }
-
-        if (encodedKey == skkPrefs.zenkakuKey) {
-            mEngine.handleZenkakuKey()
-            return true
-        }
-
-        if (encodedKey == skkPrefs.abbrevKey) {
-            if (mEngine.tryStartAbbrev()) return true
-        }
-
-        if (encodedKey == 724) { // Ctrl-Q
-            processKey(17) // 基本的には半角カナだがAbbrevでは全角への変換となる
-            return true
         }
 
         if (keyCode == KeyEvent.KEYCODE_TAB) {
@@ -1072,16 +1048,25 @@ class SKKService : InputMethodService() {
      * on an InputConnection.
      */
     private fun translateKeyDown(event: KeyEvent): Boolean {
-        val c: Int
-        if (mStickyShift) {
-            c = event.getUnicodeChar(mShiftKey.useState())
-        } else {
-            if (mSandS && mSpacePressed) {
-                c = event.getUnicodeChar(KeyEvent.META_SHIFT_ON)
-                mSandSUsed = true
-            } else {
-                c = event.unicodeChar
+        // processKeyはctrlやaltを認識しないので変換が必要
+        val modded = if (event.isMetaPressed || event.isCtrlPressed || event.isAltPressed) {
+            when (encodeKey(event)) {
+                skkPrefs.katakanaKey -> ModeKey.KATAKANA.code
+                skkPrefs.asciiKey -> ModeKey.ASCII.code
+                skkPrefs.zenkakuKey -> ModeKey.ZENKAKU.code
+                skkPrefs.abbrevKey -> ModeKey.ABBREV.code
+                skkPrefs.hankakuKanaKey -> ModeKey.HANKAKU_KANA.code
+                else -> 0
             }
+        } else 0
+
+        val c = when {
+            modded < 0 -> modded
+            mStickyShift -> event.getUnicodeChar(mShiftKey.useState())
+            mSandS && mSpacePressed -> event.getUnicodeChar(KeyEvent.META_SHIFT_ON)
+                .also { mSandSUsed = true }
+
+            else -> event.unicodeChar
         }
 
         val ic = currentInputConnection

@@ -1,5 +1,8 @@
 package jp.deadend.noname.skk.engine
 
+import jp.deadend.noname.skk.ModeKey
+import jp.deadend.noname.skk.skkPrefs
+
 object SKKNarrowingState : SKKConfirmingState {
     var isSequential = false
     override val isTransient = true
@@ -25,7 +28,9 @@ object SKKNarrowingState : SKKConfirmingState {
                     chooseAdjacentCandidate(true)
                 }
 
-                'l'.code, 'L'.code, '/'.code -> {
+                skkPrefs.asciiKey, ModeKey.ASCII.code,
+                skkPrefs.zenkakuKey, ModeKey.ZENKAKU.code,
+                skkPrefs.abbrevKey, ModeKey.ABBREV.code -> {
                     // 暗黙の確定
                     pickCurrentCandidate()
                     changeInputMode(keyCode)

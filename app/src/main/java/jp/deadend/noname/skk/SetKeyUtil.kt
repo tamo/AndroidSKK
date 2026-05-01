@@ -28,6 +28,14 @@ fun encodeKey(event: KeyEvent): Int {
     return keycode shl 4 or meta
 }
 
+fun encodeKey(keyCode: Int): Int {
+    if (keyCode < 0) return keyCode // special cases
+
+    val meta = if (Character.isUpperCase(keyCode)) SHIFT_PRESSED else 0
+    val codeLower = if (meta and SHIFT_PRESSED != 0) Character.toLowerCase(keyCode) else keyCode
+    return (codeLower - 68) shl 4 or meta
+}
+
 fun getKeyName(key: Int): String {
     val rawKeyCode = key ushr 4
     if (KeyEvent.isModifierKey(rawKeyCode)) return ""
@@ -45,4 +53,13 @@ fun getKeyName(key: Int): String {
     )
 
     return result.toString()
+}
+
+enum class ModeKey(val code: Int) {
+    KATAKANA(-1),
+    ASCII(-2),
+    ZENKAKU(-3),
+    ABBREV(-4),
+    HANKAKU_KANA(-5),
+    KANA(-10);
 }

@@ -1,5 +1,6 @@
 package jp.deadend.noname.skk.engine
 
+import jp.deadend.noname.skk.ModeKey
 import jp.deadend.noname.skk.isAlphabet
 import jp.deadend.noname.skk.skkPrefs
 
@@ -37,7 +38,9 @@ object SKKChooseState : SKKConfirmingState {
                     setComposingTextSKK(mKanjiKey)
                 }
 
-                'l'.code, 'L'.code, '/'.code -> {
+                skkPrefs.asciiKey, ModeKey.ASCII.code,
+                skkPrefs.zenkakuKey, ModeKey.ZENKAKU.code,
+                skkPrefs.abbrevKey, ModeKey.ABBREV.code -> {
                     // 暗黙の確定
                     pickCurrentCandidate()
                     changeInputMode(keyCode)
