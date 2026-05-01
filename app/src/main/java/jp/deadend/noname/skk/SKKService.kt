@@ -990,7 +990,8 @@ class SKKService : InputMethodService() {
         }
 
         if (encodedKey == skkPrefs.cancelKey) {
-            if (handleCancel()) return true
+            // ここで return しないと Ctrl-G が G として処理される
+            return handleCancel()
         }
 
         if (keyCode == KeyEvent.KEYCODE_TAB) {
@@ -1068,10 +1069,13 @@ class SKKService : InputMethodService() {
                 }
             )
         }
+        val k = encodeKey(newEvent)
+        val (c, _) = decodeKey(k)
 
-        if (currentInputConnection == null) return false
+        val ic = currentInputConnection
+        if (c == 0 || ic == null) return false
 
-        processKey(encodeKey(newEvent))
+        processKey(k)
 
         return true
     }
