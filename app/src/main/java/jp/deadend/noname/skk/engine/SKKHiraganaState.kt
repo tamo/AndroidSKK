@@ -1,6 +1,7 @@
 package jp.deadend.noname.skk.engine
 
 import jp.deadend.noname.skk.R
+import jp.deadend.noname.skk.decodeKey
 import jp.deadend.noname.skk.isAlphabet
 import jp.deadend.noname.skk.skkPrefs
 
@@ -19,15 +20,17 @@ object SKKHiraganaState : SKKState {
         keyCode: Int, commitAlphabet: Boolean = true, commitFunc:
             (SKKEngine, String) -> Unit
     ) {
-        val converted = RomajiConverter.convert(Character.toString(keyCode))
+        val (lower, shifted) = decodeKey(keyCode)
+        val charCode = if (shifted) Character.toUpperCase(lower) else lower
+        val converted = RomajiConverter.convert(Character.toString(charCode))
         val isShift = converted.startsWith("<shift>")
         // シフトキーの状態をチェック
-        val isUpper = isShift || Character.isUpperCase(keyCode)
+        val isUpper = isShift || Character.isUpperCase(charCode)
         // 大文字なら，ローマ字変換のために小文字に戻す
         val codeLower = when {
             isShift -> converted.removePrefix("<shift>").first().code
-            isUpper -> Character.toLowerCase(keyCode)
-            else -> keyCode
+            isUpper -> Character.toLowerCase(charCode)
+            else -> charCode
         }
 
         context.apply {

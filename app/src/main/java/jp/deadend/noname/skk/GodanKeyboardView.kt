@@ -641,7 +641,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                     .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 context.startActivity(intent)
             } else if (mFlickState == EnumSet.of(FlickState.NONE)) {
-                mService.processKey(' '.code)
+                mService.processKey(' ')
             }
             // 不明: release で処理してもいいのか?
             33, 40, 41, 44, 46, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 63, 91, 93 -> {
@@ -684,9 +684,9 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
             KEYCODE_GODAN_CANCEL -> {
                 when (mFlickState) {
                     EnumSet.of(FlickState.NONE) -> mService.handleCancel()
-                    EnumSet.of(FlickState.LEFT) -> mService.processKey(':'.code)
+                    EnumSet.of(FlickState.LEFT) -> mService.processKey(':')
                     EnumSet.of(FlickState.UP) -> mService.pasteClip()
-                    EnumSet.of(FlickState.RIGHT) -> mService.processKey('>'.code)
+                    EnumSet.of(FlickState.RIGHT) -> mService.processKey('>')
                     EnumSet.of(FlickState.DOWN) -> mService.googleTransliterate()
                 }
             }
@@ -722,9 +722,9 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
             KEYCODE_GODAN_GOOGLE -> mService.googleTransliterate()
             KEYCODE_GODAN_CHAR_L -> {
                 when (mService.engineState) {
-                    SKKAbbrevState -> mService.processKey(ModeKey.KANA.code) // かな入力(KanjiState)
+                    SKKAbbrevState -> mService.processKey(skkPrefs.kanaKey) // かな入力(KanjiState)
                     SKKASCIIState, SKKZenkakuState -> mService.handleKanaKey()
-                    else -> mService.processKey(if (isShifted) ModeKey.ZENKAKU.code else ModeKey.ASCII.code)
+                    else -> mService.processKey(if (isShifted) skkPrefs.zenkakuKey else skkPrefs.asciiKey)
                 }
             }
 
@@ -763,7 +763,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                         in 32..126 -> guidedCode
                         in (32 - 0x20 + 0xFF00)..(126 - 0x20 + 0xFF00) -> guidedCode - 0xFF00 + 0x20
                         '…'.code -> {
-                            mService.processKey('z'.code)
+                            mService.processKey('z')
                             '.'.code
                         }
 
@@ -771,19 +771,19 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                         'ー'.code -> '-'.code
                         '〜'.code -> '~'.code
                         '『'.code -> {
-                            mService.processKey('z'.code)
+                            mService.processKey('z')
                             '['.code
                         }
 
                         '』'.code -> {
-                            mService.processKey('z'.code)
+                            mService.processKey('z')
                             ']'.code
                         }
 
                         '、'.code -> ','.code
                         '。'.code -> '.'.code
                         '←'.code, '↑'.code, '→'.code, '↓'.code -> {
-                            mService.processKey('z'.code)
+                            mService.processKey('z')
                             when (Char(guidedCode)) {
                                 '←' -> 'h'.code
                                 '↑' -> 'k'.code
@@ -810,12 +810,12 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
 
                         'ゃ'.code, 'ぃ'.code, 'ゅ'.code, 'ぇ'.code, 'ょ'.code,
                         'ャ'.code, 'ィ'.code, 'ュ'.code, 'ェ'.code, 'ョ'.code -> {
-                            mService.processKey('y'.code)
+                            mService.processKey('y')
                             getVowel(Char(guidedCode).toString())?.code ?: 0
                         }
 
                         'ん'.code, 'ン'.code -> {
-                            if (!mService.isComposingN) mService.processKey('n'.code)
+                            if (!mService.isComposingN) mService.processKey('n')
                             'n'.code
                         }
 
@@ -825,13 +825,13 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                         }
                     }
                     if (code != 0) {
-                        mService.processKey(if (!isShifted) Character.toLowerCase(code) else code)
+                        mService.processKey(encodeKey(if (!isShifted) Character.toLowerCase(code) else code))
                     }
                 } else when (popupText) {
                     "^J" -> mService.handleKanaKey()
                     "ｶﾅ" -> {
                         if (mIsASCII) mService.handleKanaKey() // ひらがなを経由
-                        mService.processKey(ModeKey.HANKAKU_KANA.code)
+                        mService.processKey(skkPrefs.hankakuKanaKey)
                     }
 
                     "記号" -> mService.symbolCandidates(isShifted)
@@ -846,29 +846,23 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                         mPopupTextView?.getOrNull(0)?.text?.let { vowelStr ->
                             when (val vowel = vowelStr.first()) {
                                 'A', 'I', 'U', 'E', 'O' -> {
+                                    val c = if (!isShifted) Character.toLowerCase(vowel.code)
+                                    else vowel.code
                                     mService.suspendSuggestions()
-                                    mService.processKey(
-                                        if (!isShifted) {
-                                            Character.toLowerCase(vowel.code)
-                                        } else {
-                                            vowel.code
-                                        }
-                                    )
+                                    mService.processKey(encodeKey(c))
                                     mService.resumeSuggestions()
                                     // 前の processKey で▼モードになっていたら次で確定してしまうので止まる
                                     if (mService.engineState !== SKKChooseState) when (popupText[1]) {
                                         'っ', 'ッ' -> "xtu"
                                         'ん', 'ン' -> "nn"
                                         else -> throw RuntimeException("mPopupTextView is $mPopupTextView")
-                                    }.forEach {
-                                        mService.processKey(it.code)
-                                    }
+                                    }.forEach { mService.processKey(it) }
                                 }
                             }
                         }
                     } else {
                         // 00
-                        popupText.forEach { mService.processKey(it.code) }
+                        popupText.forEach { mService.processKey(it) }
                     }
                 }
             }

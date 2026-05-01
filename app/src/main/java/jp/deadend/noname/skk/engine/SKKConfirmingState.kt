@@ -1,5 +1,7 @@
 package jp.deadend.noname.skk.engine
 
+import jp.deadend.noname.skk.decodeKey
+
 interface SKKConfirmingState : SKKState {
     var pendingLambda: (() -> Unit)?
     var oldComposingText: String
@@ -9,17 +11,14 @@ interface SKKConfirmingState : SKKState {
     }
 
     fun beforeProcessKey(context: SKKEngine, keyCode: Int): Boolean {
+        val (lowerCode, _) = decodeKey(keyCode)
         pendingLambda?.let {
             context.setComposingTextSKK(oldComposingText)
-            when (keyCode) {
-                'y'.code, 'Y'.code -> {
-                    pendingLambda!!.invoke()
-                    pendingLambda = null
-                    return true
-                }
-
-                else -> pendingLambda = null
-            }
+            if (lowerCode == 'y'.code) {
+                pendingLambda!!.invoke()
+                pendingLambda = null
+                return true
+            } else pendingLambda = null
         }
         return false
     }

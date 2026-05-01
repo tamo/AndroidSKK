@@ -1,7 +1,7 @@
 package jp.deadend.noname.skk.engine
 
-import jp.deadend.noname.skk.ModeKey
 import jp.deadend.noname.skk.R
+import jp.deadend.noname.skk.decodeKey
 import jp.deadend.noname.skk.hankaku2zenkaku
 import jp.deadend.noname.skk.skkPrefs
 
@@ -16,21 +16,28 @@ object SKKAbbrevState : SKKState {
     }
 
     override fun processKey(context: SKKEngine, keyCode: Int) {
+        val (lower, shifted) = decodeKey(keyCode)
+        val charCode = if (shifted) Character.toUpperCase(lower) else lower
         context.apply {
-            // スペースで変換するかそのままComposingに積む
             when (keyCode) {
-                ' '.code -> if (mKanjiKey.isNotEmpty()) conversionStart(mKanjiKey)
-                skkPrefs.hankakuKanaKey, ModeKey.HANKAKU_KANA.code -> {
+                skkPrefs.hankakuKanaKey -> {
                     // 全角変換
                     hankaku2zenkaku(mKanjiKey.toString())?.let { zen ->
                         commitTextSKK(zen)
                     }
                     handleKanaKey(context)
+                    return
                 }
 
-                skkPrefs.kanaKey, ModeKey.KANA.code -> {
+                skkPrefs.kanaKey -> {
                     changeState(SKKKanjiState)
+                    return
                 }
+            }
+
+            // スペースで変換するかそのままComposingに積む
+            when (charCode) {
+                ' '.code -> if (mKanjiKey.isNotEmpty()) conversionStart(mKanjiKey)
 
                 else -> {
                     mKanjiKey.append(keyCode.toChar())

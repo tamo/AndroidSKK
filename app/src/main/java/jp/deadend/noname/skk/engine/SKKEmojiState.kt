@@ -1,5 +1,7 @@
 package jp.deadend.noname.skk.engine
 
+import jp.deadend.noname.skk.decodeKey
+
 object SKKEmojiState : SKKConfirmingState {
     var isSequential = false
     override val isTransient = false
@@ -14,7 +16,9 @@ object SKKEmojiState : SKKConfirmingState {
 
     override fun processKey(context: SKKEngine, keyCode: Int) {
         if (super.beforeProcessKey(context, keyCode)) return
-        when (keyCode) {
+        val (lower, shifted) = decodeKey(keyCode)
+        val charCode = if (shifted) Character.toUpperCase(lower) else lower
+        when (charCode) {
             ' '.code -> context.chooseAdjacentSuggestion(true)
             'x'.code -> context.chooseAdjacentSuggestion(false)
             'X'.code -> context.pickCurrentCandidate(unregister = true)

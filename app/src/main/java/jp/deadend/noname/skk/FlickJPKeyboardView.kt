@@ -675,17 +675,17 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
                     if (mService.engineState === SKKChooseState) {
                         mService.handleEnter() // x の前に確定しておく
                     }
-                    mService.processKey('x'.code)
+                    mService.processKey('x')
                     mService.processKey(vowel)
                 } else if (!mService.isHiragana && flick == EnumSet.of(
                         FlickState.UP,
                         FlickState.CURVE_RIGHT
                     )
                 ) {
-                    mService.processKey('v'.code)
-                    mService.processKey('u'.code)
+                    mService.processKey('v')
+                    mService.processKey('u')
                 } else if (isShifted) {
-                    mService.processKey(Character.toUpperCase(vowel))
+                    mService.processKey(encodeKey(Character.toUpperCase(vowel)))
                 } else {
                     mService.processKey(vowel)
                 }
@@ -719,9 +719,9 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
                 }
                 if (yaSymbol != 'y') {
                     if (isRightCurve(flick)) {
-                        mService.processKey('z'.code)
+                        mService.processKey('z')
                     }
-                    mService.processKey(yaSymbol.code)
+                    mService.processKey(yaSymbol)
                     return
                 }
                 'y'
@@ -732,52 +732,52 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
                 when (flick) {
                     EnumSet.of(FlickState.NONE) -> {
                         if (isShifted) {
-                            mService.processKey('W'.code)
+                            mService.processKey('W')
                         } else {
-                            mService.processKey('w'.code)
+                            mService.processKey('w')
                         }
-                        mService.processKey('a'.code)
+                        mService.processKey('a')
                     }
 
                     EnumSet.of(FlickState.NONE, FlickState.CURVE_LEFT) -> {
                         if (isShifted) {
-                            mService.processKey('X'.code)
+                            mService.processKey('X')
                         } else {
-                            mService.processKey('x'.code)
+                            mService.processKey('x')
                         }
-                        mService.processKey('w'.code)
-                        mService.processKey('a'.code)
+                        mService.processKey('w')
+                        mService.processKey('a')
                     }
 
                     EnumSet.of(FlickState.LEFT) -> {
-                        mService.processKey('w'.code)
-                        mService.processKey('o'.code)
+                        mService.processKey('w')
+                        mService.processKey('o')
                     }
 
                     EnumSet.of(FlickState.UP) -> {
                         if (isShifted) {
-                            mService.processKey('N'.code)
+                            mService.processKey('N')
                         } else {
-                            mService.processKey('n'.code)
+                            mService.processKey('n')
                         }
-                        mService.processKey('n'.code)
+                        mService.processKey('n')
                     }
 
-                    EnumSet.of(FlickState.RIGHT) -> mService.processKey('-'.code)
-                    EnumSet.of(FlickState.DOWN) -> mService.processKey('~'.code)
+                    EnumSet.of(FlickState.RIGHT) -> mService.processKey('-')
+                    EnumSet.of(FlickState.DOWN) -> mService.processKey('~')
                 }
                 return
             }
 
             KEYCODE_FLICK_JP_CHAR_TEN -> {
                 when (flick) {
-                    EnumSet.of(FlickState.NONE) -> mService.processKey(','.code)
-                    EnumSet.of(FlickState.LEFT) -> mService.processKey('.'.code)
-                    EnumSet.of(FlickState.UP) -> mService.processKey('?'.code)
-                    EnumSet.of(FlickState.RIGHT) -> mService.processKey('!'.code)
+                    EnumSet.of(FlickState.NONE) -> mService.processKey(',')
+                    EnumSet.of(FlickState.LEFT) -> mService.processKey('.')
+                    EnumSet.of(FlickState.UP) -> mService.processKey('?')
+                    EnumSet.of(FlickState.RIGHT) -> mService.processKey('!')
                     EnumSet.of(FlickState.DOWN) -> {
-                        mService.processKey('z'.code)
-                        mService.processKey('.'.code)
+                        mService.processKey('z')
+                        mService.processKey('.')
                     }
                 }
                 return
@@ -785,11 +785,11 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
 
             KEYCODE_FLICK_JP_CHAR_TEN_SHIFTED -> {
                 when (flick) {
-                    EnumSet.of(FlickState.NONE) -> mService.processKeyIn(SKKZenkakuState, ' '.code)
-                    EnumSet.of(FlickState.LEFT) -> mService.processKey('('.code)
-                    EnumSet.of(FlickState.UP) -> mService.processKey('['.code)
-                    EnumSet.of(FlickState.RIGHT) -> mService.processKey(')'.code)
-                    EnumSet.of(FlickState.DOWN) -> mService.processKey(']'.code)
+                    EnumSet.of(FlickState.NONE) -> mService.processKeyIn(SKKZenkakuState, ' ')
+                    EnumSet.of(FlickState.LEFT) -> mService.processKey('(')
+                    EnumSet.of(FlickState.UP) -> mService.processKey('[')
+                    EnumSet.of(FlickState.RIGHT) -> mService.processKey(')')
+                    EnumSet.of(FlickState.DOWN) -> mService.processKey(']')
                 }
                 return
             }
@@ -821,7 +821,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
 
         mService.suspendSuggestions()
         if (isShifted) {
-            mService.processKey(Character.toUpperCase(consonant))
+            mService.processKey(encodeKey(Character.toUpperCase(consonant)))
         } else {
             mService.processKey(consonant)
         }
@@ -927,7 +927,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
                     .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 context.startActivity(intent)
             } else if (mFlickState == EnumSet.of(FlickState.NONE)) {
-                mService.processKey(' '.code)
+                mService.processKey(' ')
             }
             // 不明: release で処理してもいいのか?
             33, 40, 41, 44, 46, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 63, 91, 93 ->
@@ -977,17 +977,17 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
 
             KEYCODE_FLICK_JP_MOJI -> when (mFlickState) {
                 EnumSet.of(FlickState.NONE) -> mService.processKey(
-                    if (isShifted) ModeKey.HANKAKU_KANA.code else ModeKey.KATAKANA.code
+                    if (isShifted) skkPrefs.hankakuKanaKey else skkPrefs.katakanaKey
                 )
 
-                EnumSet.of(FlickState.LEFT) -> mService.processKey(':'.code)
+                EnumSet.of(FlickState.LEFT) -> mService.processKey(':')
 
                 EnumSet.of(FlickState.UP) -> if (keyboard !== mNumKeyboard) {
                     keyboard = mNumKeyboard
                     isHankaku = false
                 }
 
-                EnumSet.of(FlickState.RIGHT) -> mService.processKey('>'.code)
+                EnumSet.of(FlickState.RIGHT) -> mService.processKey('>')
 
                 EnumSet.of(FlickState.DOWN) -> if (keyboard !== mVoiceKeyboard) {
                     keyboard = mVoiceKeyboard
@@ -1005,11 +1005,11 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
 
             KEYCODE_FLICK_JP_TO_QWERTY -> when (mFlickState) {
                 EnumSet.of(FlickState.NONE) -> mService.processKey(
-                    if (isShifted) ModeKey.ABBREV.code else ModeKey.ASCII.code
+                    if (isShifted) skkPrefs.abbrevKey else skkPrefs.asciiKey
                 )
 
                 EnumSet.of(FlickState.LEFT) -> mService.emojiCandidates(isShifted)
-                EnumSet.of(FlickState.UP) -> mService.processKey(ModeKey.ZENKAKU.code)
+                EnumSet.of(FlickState.UP) -> mService.processKey(skkPrefs.zenkakuKey)
                 EnumSet.of(FlickState.RIGHT) -> mService.symbolCandidates(isShifted)
                 EnumSet.of(FlickState.DOWN) -> mService.changeSoftKeyboard(SKKASCIIState)
             }

@@ -1,13 +1,13 @@
 package jp.deadend.noname.skk
 
-// 0 = 未設定（無効）。KEYCODE_UNKNOWN(0) shl 4 = 0 は実際には押せないキーなので安全な番兵値
+// 0 = 未設定（無効）。KEYCODE_UNKNOWN(0) は実際には押せないキーなので安全な番兵値
 const val NAV_KEY_DISABLED = 0
 
-// デフォルトエンコード値: keyCode shl 4 or modifierBits (CTRL = 4)
-const val NAV_LINE_START_KEY_DEFAULT = 468  // Ctrl+A: KEYCODE_A(29) shl 4 or 4
-const val NAV_LINE_END_KEY_DEFAULT = 532  // Ctrl+E: KEYCODE_E(33) shl 4 or 4
-const val NAV_FORWARD_KEY_DEFAULT = 548  // Ctrl+F: KEYCODE_F(34) shl 4 or 4
-const val NAV_BACKWARD_KEY_DEFAULT = 484  // Ctrl+B: KEYCODE_B(30) shl 4 or 4
+// デフォルトエンコード値: modifierBits (CTRL = 4) shl 28 or charCode
+const val NAV_LINE_START_KEY_DEFAULT = 4 shl 28 or 'a'.code // Ctrl+A
+const val NAV_LINE_END_KEY_DEFAULT = 4 shl 28 or 'e'.code // Ctrl+E
+const val NAV_FORWARD_KEY_DEFAULT = 4 shl 28 or 'f'.code // Ctrl+F
+const val NAV_BACKWARD_KEY_DEFAULT = 4 shl 28 or 'b'.code // Ctrl+B
 
 enum class EmacsNavAction { NAVIGATE, CONSUME, PASS_THROUGH }
 

@@ -1,7 +1,7 @@
 package jp.deadend.noname.skk.engine
 
-import jp.deadend.noname.skk.ModeKey
 import jp.deadend.noname.skk.createTrimmedBuilder
+import jp.deadend.noname.skk.decodeKey
 import jp.deadend.noname.skk.hiragana2katakana
 import jp.deadend.noname.skk.isVowel
 import jp.deadend.noname.skk.katakana2hiragana
@@ -24,10 +24,7 @@ object SKKKanjiState : SKKState {
     }
 
     override fun processKey(context: SKKEngine, keyCode: Int) {
-        // シフトキーの状態をチェック
-        val isUpper = Character.isUpperCase(keyCode)
-        // 大文字なら，ローマ字変換のために小文字に戻す
-        val codeLower = if (isUpper) Character.toLowerCase(keyCode) else keyCode
+        val (codeLower, isUpper) = decodeKey(keyCode)
 
         context.apply {
             val canRetry = mComposing.isNotEmpty() // 無限ループ防止
@@ -40,14 +37,16 @@ object SKKKanjiState : SKKState {
                 }
             }
 
-            when (codeLower) {
-                skkPrefs.asciiKey, ModeKey.ASCII.code,
-                skkPrefs.abbrevKey, ModeKey.ABBREV.code -> changeInputMode(keyCode)
+            when (keyCode) {
+                skkPrefs.asciiKey, skkPrefs.abbrevKey -> {
+                    changeInputMode(keyCode)
+                    return
+                }
                 // abbrevはtransientなのでchangeInputModeで自動確定されない
                 // ▽の状態で英数(abbrev)と仮名(kanji)を行き来するには ModeKey.KANA と ABBREV を使うことにする
                 // 一般的なキーコードが分かれば対応するが、emacsではabbrevから普通の▽(kanji)に行けないと思う
 
-                skkPrefs.katakanaKey, ModeKey.KATAKANA.code -> {
+                skkPrefs.katakanaKey -> {
                     // カタカナ変換
                     if (mKanjiKey.isNotEmpty()) {
                         val str = if (kanaState == SKKHiraganaState) {
@@ -59,9 +58,10 @@ object SKKKanjiState : SKKState {
                         mKanjiKey.setLength(0)
                     }
                     changeState(kanaState)
+                    return
                 }
 
-                skkPrefs.hankakuKanaKey, ModeKey.HANKAKU_KANA.code -> {
+                skkPrefs.hankakuKanaKey -> {
                     if (mKanjiKey.isNotEmpty()) {
                         val zenkakuKatakana = hiragana2katakana(mKanjiKey.toString())
                         val str = if (kanaState === SKKHanKanaState) {
@@ -73,8 +73,11 @@ object SKKKanjiState : SKKState {
                         mKanjiKey.setLength(0)
                     }
                     changeState(kanaState)
+                    return
                 }
+            }
 
+            when (codeLower) {
                 ' '.code, '>'.code -> {
                     // 変換開始
                     // 最後に単体の'n'で終わっている場合、'ん'に変換

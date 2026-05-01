@@ -1,6 +1,6 @@
 package jp.deadend.noname.skk.engine
 
-import jp.deadend.noname.skk.ModeKey
+import jp.deadend.noname.skk.decodeKey
 import jp.deadend.noname.skk.skkPrefs
 
 object SKKNarrowingState : SKKConfirmingState {
@@ -21,19 +21,21 @@ object SKKNarrowingState : SKKConfirmingState {
 
     override fun processKey(context: SKKEngine, keyCode: Int) {
         if (super.beforeProcessKey(context, keyCode)) return
+        val (lower, shifted) = decodeKey(keyCode)
+        val charCode = if (shifted) Character.toUpperCase(lower) else lower
         context.apply {
             when (keyCode) {
-                ' '.code -> {
-                    mSpaceUsed = true
-                    chooseAdjacentCandidate(true)
-                }
-
-                skkPrefs.asciiKey, ModeKey.ASCII.code,
-                skkPrefs.zenkakuKey, ModeKey.ZENKAKU.code,
-                skkPrefs.abbrevKey, ModeKey.ABBREV.code -> {
+                skkPrefs.asciiKey, skkPrefs.zenkakuKey, skkPrefs.abbrevKey -> {
                     // 暗黙の確定
                     pickCurrentCandidate()
                     changeInputMode(keyCode)
+                    return
+                }
+            }
+            when (charCode) {
+                ' '.code -> {
+                    mSpaceUsed = true
+                    chooseAdjacentCandidate(true)
                 }
 
                 'X'.code -> pickCurrentCandidate(unregister = true)

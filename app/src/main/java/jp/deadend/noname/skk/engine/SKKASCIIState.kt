@@ -1,5 +1,7 @@
 package jp.deadend.noname.skk.engine
 
+import jp.deadend.noname.skk.decodeKey
+
 // ASCIIモード
 object SKKASCIIState : SKKState {
     override val isTransient = false
@@ -10,7 +12,9 @@ object SKKASCIIState : SKKState {
     }
 
     override fun processKey(context: SKKEngine, keyCode: Int) {
-        context.commitTextSKK(keyCode.toChar().toString())
+        val (lower, shifted) = decodeKey(keyCode)
+        val c = if (shifted) Character.toUpperCase(lower) else lower
+        context.commitTextSKK(c.toChar().toString())
         context.updateSuggestionsASCII()
     }
 

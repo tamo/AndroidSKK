@@ -3,7 +3,6 @@ package jp.deadend.noname.skk.engine
 import android.text.SpannableString
 import com.android.volley.toolbox.JsonArrayRequest
 import com.android.volley.toolbox.Volley
-import jp.deadend.noname.skk.ModeKey
 import jp.deadend.noname.skk.SKKDictionaryInterface
 import jp.deadend.noname.skk.SKKService
 import jp.deadend.noname.skk.SKKUserDictionary
@@ -1088,7 +1087,7 @@ class SKKEngine(
                     mKanjiKey.setLength(0)
                     mKanjiKey.append(hira.take(li))
                     mComposing.setLength(0)
-                    processKey(Character.toUpperCase(last))
+                    processKey(encodeKey(Character.toUpperCase(last)))
                 } else {
                     mKanjiKey.setLength(0)
                     mKanjiKey.append(hira)
@@ -1182,12 +1181,12 @@ class SKKEngine(
     }
 
     // 入力モード変更操作．変更したらtrue
-    internal fun changeInputMode(keyCode: Int): Boolean = when (encodeKey(keyCode)) {
-        skkPrefs.katakanaKey, ModeKey.KATAKANA.code -> handleKatakanaKey()
-        skkPrefs.hankakuKanaKey, ModeKey.HANKAKU_KANA.code -> handleCtrlQ()
-        skkPrefs.asciiKey, ModeKey.ASCII.code -> handleASCIIKey()
-        skkPrefs.zenkakuKey, ModeKey.ZENKAKU.code -> handleZenkakuKey()
-        skkPrefs.abbrevKey, ModeKey.ABBREV.code -> tryStartAbbrev()
+    internal fun changeInputMode(keyCode: Int): Boolean = when (keyCode) {
+        skkPrefs.katakanaKey -> handleKatakanaKey()
+        skkPrefs.hankakuKanaKey -> handleCtrlQ()
+        skkPrefs.asciiKey -> handleASCIIKey()
+        skkPrefs.zenkakuKey -> handleZenkakuKey()
+        skkPrefs.abbrevKey -> tryStartAbbrev()
         else -> false
     }
 

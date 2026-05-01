@@ -218,7 +218,7 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
 
                     else -> primaryCode
                 }
-                mService.processKey(code)
+                mService.processKey(encodeKey(code))
             }
         }
         when (primaryCode) {

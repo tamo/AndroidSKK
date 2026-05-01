@@ -1,6 +1,7 @@
 package jp.deadend.noname.skk.engine
 
 import jp.deadend.noname.skk.R
+import jp.deadend.noname.skk.decodeKey
 import jp.deadend.noname.skk.hankaku2zenkaku
 
 // 全角英数モード
@@ -14,7 +15,9 @@ object SKKZenkakuState : SKKState {
     }
 
     override fun processKey(context: SKKEngine, keyCode: Int) {
-        hankaku2zenkaku(Char(keyCode).toString())?.let {
+        val (lower, shifted) = decodeKey(keyCode)
+        val charCode = if (shifted) Character.toUpperCase(lower) else lower
+        hankaku2zenkaku(Char(charCode).toString())?.let {
             context.commitTextSKK(it)
         }
     }

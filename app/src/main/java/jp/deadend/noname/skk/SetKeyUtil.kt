@@ -1,18 +1,24 @@
 package jp.deadend.noname.skk
 
+import android.view.KeyCharacterMap
 import android.view.KeyEvent
 
-//const val DEFAULT_VALUE = KeyEvent.KEYCODE_UNKNOWN shl 4
+//const val DEFAULT_VALUE = KeyEvent.KEYCODE_UNKNOWN
 
 private const val SHIFT_PRESSED = 1
 private const val ALT_PRESSED = 2
 private const val CTRL_PRESSED = 4
 private const val META_PRESSED = 8
 
+private val charMap: KeyCharacterMap by lazy {
+    KeyCharacterMap.load(KeyCharacterMap.VIRTUAL_KEYBOARD)
+}
+
 fun encodeKey(event: KeyEvent): Int {
-    val keycode = event.keyCode
+    val uc = event.getUnicodeChar(event.metaState and KeyEvent.META_SHIFT_MASK)
+    val lower = Character.toLowerCase(uc)
     var meta = 0
-    if (event.metaState and KeyEvent.META_SHIFT_MASK != 0) {
+    if (uc != 0 && uc != lower) {
         meta = meta or SHIFT_PRESSED
     }
     if (event.metaState and KeyEvent.META_ALT_MASK != 0) {
@@ -25,41 +31,34 @@ fun encodeKey(event: KeyEvent): Int {
         meta = meta or META_PRESSED
     }
 
-    return keycode shl 4 or meta
+    return meta shl 28 or if (lower != 0) lower else charMap.get(event.keyCode, 0)
 }
 
-fun encodeKey(keyCode: Int): Int {
-    if (keyCode < 0) return keyCode // special cases
+fun encodeKey(charCode: Int): Int {
+    val meta = if (Character.isUpperCase(charCode)) SHIFT_PRESSED else 0
+    val codeLower = if (meta and SHIFT_PRESSED != 0) Character.toLowerCase(charCode) else charCode
+    return meta shl 28 or codeLower
+}
 
-    val meta = if (Character.isUpperCase(keyCode)) SHIFT_PRESSED else 0
-    val codeLower = if (meta and SHIFT_PRESSED != 0) Character.toLowerCase(keyCode) else keyCode
-    return (codeLower - 68) shl 4 or meta
+// returns Pair<lowerCharCode, isShifted>
+fun decodeKey(keyCode: Int): Pair<Int, Boolean> {
+    return keyCode and 0xFFFFFFF to ((keyCode shr 28 and SHIFT_PRESSED) != 0)
 }
 
 fun getKeyName(key: Int): String {
-    val rawKeyCode = key ushr 4
-    if (KeyEvent.isModifierKey(rawKeyCode)) return ""
+    val charCode = key and 0xFFFFFFF
+    if (charCode == 0) return ""
 
     val result = StringBuilder()
-    if (key and META_PRESSED != 0) result.append("META+")
-    if (key and CTRL_PRESSED != 0) result.append("CTRL+")
-    if (key and ALT_PRESSED != 0) result.append("ALT+")
-    if (key and SHIFT_PRESSED != 0) result.append("SHIFT+")
+    val meta = key shr 28
+    if (meta and META_PRESSED != 0) result.append("META+")
+    if (meta and CTRL_PRESSED != 0) result.append("CTRL+")
+    if (meta and ALT_PRESSED != 0) result.append("ALT+")
+    if (meta and SHIFT_PRESSED != 0) result.append("SHIFT+")
 
-    // extract the keycode
-    result.append(
-        KeyEvent.keyCodeToString(rawKeyCode)
-            .removePrefix("KEYCODE_")
-    )
+    val ev = charMap.getEvents(charArrayOf(Char(charCode)))?.get(0) ?: return ""
+    val kc = KeyEvent.keyCodeToString(ev.keyCode).removePrefix("KEYCODE_")
+    result.append(kc)
 
     return result.toString()
-}
-
-enum class ModeKey(val code: Int) {
-    KATAKANA(-1),
-    ASCII(-2),
-    ZENKAKU(-3),
-    ABBREV(-4),
-    HANKAKU_KANA(-5),
-    KANA(-10);
 }

@@ -112,12 +112,12 @@ class AbbrevKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
             KEYCODE_ABBREV_ENTER -> if (!mService.handleEnter()) mService.pressEnter()
             KEYCODE_ABBREV_TO_JP -> when (isFlicked) {
                 if (skkPrefs.preferFlick) FLICK_NONE else FLICK_DOWN -> mService.handleKanaKey()
-                if (skkPrefs.preferFlick) FLICK_DOWN else FLICK_NONE -> mService.processKey(ModeKey.KANA.code)
+                if (skkPrefs.preferFlick) FLICK_DOWN else FLICK_NONE -> mService.processKey(skkPrefs.kanaKey)
             }
 
             KEYCODE_ABBREV_ZENKAKU -> {
                 when (isFlicked) {
-                    FLICK_NONE -> mService.processKey(ModeKey.HANKAKU_KANA.code)
+                    FLICK_NONE -> mService.processKey(skkPrefs.hankakuKanaKey)
                     FLICK_DOWN -> mService.handleCancel()
                 }
             }
@@ -134,7 +134,7 @@ class AbbrevKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
 
                     else -> primaryCode
                 }
-                mService.processKey(code)
+                mService.processKey(encodeKey(code))
             }
         }
         if (primaryCode != Keyboard.KEYCODE_SHIFT) {

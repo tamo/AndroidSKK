@@ -57,7 +57,7 @@ class SKKPrefs(context: Context) {
 
     // prefs_hard_key
     var kanaKey: Int
-        get() = prefs.getInt(res.getString(R.string.pref_kana_key), 612) // 612はCtrl+j
+        get() = prefs.getInt(res.getString(R.string.pref_kana_key), 4 shl 28 or 'j'.code)
         set(value) = prefs.edit { putInt(res.getString(R.string.pref_kana_key), value) }
 
     var toggleKanaKey: Boolean
@@ -67,30 +67,23 @@ class SKKPrefs(context: Context) {
         }
 
     var cancelKey: Int
-        get() = prefs.getInt(res.getString(R.string.pref_cancel_key), 564) // 564はCtrl+g
+        get() = prefs.getInt(res.getString(R.string.pref_cancel_key), 4 shl 28 or 'g'.code)
         set(value) = prefs.edit { putInt(res.getString(R.string.pref_cancel_key), value) }
 
     var emacsNavInAscii: Boolean
         get() = prefs.getBoolean(res.getString(R.string.pref_emacs_nav_in_ascii), false)
-        set(value) = prefs.edit {
-            putBoolean(
-                res.getString(R.string.pref_emacs_nav_in_ascii),
-                value
-            )
-        }
+        set(value) =
+            prefs.edit { putBoolean(res.getString(R.string.pref_emacs_nav_in_ascii), value) }
 
     var navLineStartKey: Int
         get() = prefs.getInt(
-            res.getString(R.string.pref_nav_line_start_key),
-            NAV_LINE_START_KEY_DEFAULT
+            res.getString(R.string.pref_nav_line_start_key), NAV_LINE_START_KEY_DEFAULT
         )
         set(value) = prefs.edit { putInt(res.getString(R.string.pref_nav_line_start_key), value) }
 
     var navLineEndKey: Int
-        get() = prefs.getInt(
-            res.getString(R.string.pref_nav_line_end_key),
-            NAV_LINE_END_KEY_DEFAULT
-        )
+        get() =
+            prefs.getInt(res.getString(R.string.pref_nav_line_end_key), NAV_LINE_END_KEY_DEFAULT)
         set(value) = prefs.edit { putInt(res.getString(R.string.pref_nav_line_end_key), value) }
 
     var navForwardKey: Int
@@ -98,35 +91,28 @@ class SKKPrefs(context: Context) {
         set(value) = prefs.edit { putInt(res.getString(R.string.pref_nav_forward_key), value) }
 
     var navBackwardKey: Int
-        get() = prefs.getInt(
-            res.getString(R.string.pref_nav_backward_key),
-            NAV_BACKWARD_KEY_DEFAULT
-        )
+        get() =
+            prefs.getInt(res.getString(R.string.pref_nav_backward_key), NAV_BACKWARD_KEY_DEFAULT)
         set(value) = prefs.edit { putInt(res.getString(R.string.pref_nav_backward_key), value) }
 
     var katakanaKey: Int
-        get() = prefs.getInt(res.getString(R.string.pref_katakana_key), 720)
-        // 720はq (KEYCODE_Q=45, shl 4)
+        get() = prefs.getInt(res.getString(R.string.pref_katakana_key), 'q'.code)
         set(value) = prefs.edit { putInt(res.getString(R.string.pref_katakana_key), value) }
 
     var asciiKey: Int
-        get() = prefs.getInt(res.getString(R.string.pref_ascii_key), 640)
-        // 640はl (KEYCODE_L=40, shl 4)
+        get() = prefs.getInt(res.getString(R.string.pref_ascii_key), 'l'.code)
         set(value) = prefs.edit { putInt(res.getString(R.string.pref_ascii_key), value) }
 
     var zenkakuKey: Int
-        get() = prefs.getInt(res.getString(R.string.pref_zenkaku_key), 641)
-        // 641はShift+L (40 shl 4 | 1)
+        get() = prefs.getInt(res.getString(R.string.pref_zenkaku_key), 1 shl 28 or 'l'.code)
         set(value) = prefs.edit { putInt(res.getString(R.string.pref_zenkaku_key), value) }
 
     var abbrevKey: Int
-        get() = prefs.getInt(res.getString(R.string.pref_abbrev_key), 1216)
-        // 1216はSlash (KEYCODE_SLASH=76, shl 4)
+        get() = prefs.getInt(res.getString(R.string.pref_abbrev_key), '/'.code)
         set(value) = prefs.edit { putInt(res.getString(R.string.pref_abbrev_key), value) }
 
     var hankakuKanaKey: Int
-        get() = prefs.getInt(res.getString(R.string.pref_hankaku_kana_key), 724)
-        // Ctrl-Q (45 shl 4 or 4)
+        get() = prefs.getInt(res.getString(R.string.pref_hankaku_kana_key), 4 shl 28 or 'q'.code)
         set(value) = prefs.edit { putInt(res.getString(R.string.pref_hankaku_kana_key), value) }
 
     var useCandidatesView: Boolean
@@ -137,9 +123,7 @@ class SKKPrefs(context: Context) {
 
     var useStickyMeta: Boolean
         get() = prefs.getBoolean(res.getString(R.string.pref_sticky_meta), false)
-        set(value) = prefs.edit {
-            putBoolean(res.getString(R.string.pref_sticky_meta), value)
-        }
+        set(value) = prefs.edit { putBoolean(res.getString(R.string.pref_sticky_meta), value) }
 
     var useSandS: Boolean
         get() = prefs.getBoolean(res.getString(R.string.pref_sands), false)
@@ -152,15 +136,11 @@ class SKKPrefs(context: Context) {
     // prefs_soft_key
     var useSoftKey: String
         get() = prefs.getString(res.getString(R.string.pref_use_soft_key), null) ?: "auto"
-        set(value) = prefs.edit {
-            putString(res.getString(R.string.pref_use_soft_key), value)
-        }
+        set(value) = prefs.edit { putString(res.getString(R.string.pref_use_soft_key), value) }
 
     var showStatusIcon: Boolean
         get() = prefs.getBoolean(res.getString(R.string.pref_show_status_icon), true)
-        set(value) = prefs.edit {
-            putBoolean(res.getString(R.string.pref_show_status_icon), value)
-        }
+        set(value) = prefs.edit { putBoolean(res.getString(R.string.pref_show_status_icon), value) }
 
     var haptic: Int
         get() = prefs.getInt(res.getString(R.string.pref_haptic), 1)
@@ -168,63 +148,43 @@ class SKKPrefs(context: Context) {
 
     var moveOverEdge: Boolean
         get() = prefs.getBoolean(res.getString(R.string.pref_over_edge), false)
-        set(value) = prefs.edit {
-            putBoolean(res.getString(R.string.pref_over_edge), value)
-        }
+        set(value) = prefs.edit { putBoolean(res.getString(R.string.pref_over_edge), value) }
 
     var forbidPaste: Boolean
         get() = prefs.getBoolean(res.getString(R.string.pref_forbid_paste), false)
-        set(value) = prefs.edit {
-            putBoolean(res.getString(R.string.pref_forbid_paste), value)
-        }
+        set(value) = prefs.edit { putBoolean(res.getString(R.string.pref_forbid_paste), value) }
 
     var useDel: Boolean
         get() = prefs.getBoolean(res.getString(R.string.pref_use_del), true)
-        set(value) = prefs.edit {
-            putBoolean(res.getString(R.string.pref_use_del), value)
-        }
+        set(value) = prefs.edit { putBoolean(res.getString(R.string.pref_use_del), value) }
 
     var preferFlick: Boolean
         get() = prefs.getBoolean(res.getString(R.string.pref_use_flick), true)
-        set(value) = prefs.edit {
-            putBoolean(res.getString(R.string.pref_use_flick), value)
-        }
+        set(value) = prefs.edit { putBoolean(res.getString(R.string.pref_use_flick), value) }
 
     var preferGodan: Boolean
         get() = prefs.getBoolean(res.getString(R.string.pref_use_godan), false)
-        set(value) = prefs.edit {
-            putBoolean(res.getString(R.string.pref_use_godan), value)
-        }
+        set(value) = prefs.edit { putBoolean(res.getString(R.string.pref_use_godan), value) }
 
     var simpleGodan: Boolean
         get() = prefs.getBoolean(res.getString(R.string.pref_godan_simple), true)
-        set(value) = prefs.edit {
-            putBoolean(res.getString(R.string.pref_godan_simple), value)
-        }
+        set(value) = prefs.edit { putBoolean(res.getString(R.string.pref_godan_simple), value) }
 
     var godanQwerty: Boolean
         get() = prefs.getBoolean(res.getString(R.string.pref_godan_qwerty), false)
-        set(value) = prefs.edit {
-            putBoolean(res.getString(R.string.pref_godan_qwerty), value)
-        }
+        set(value) = prefs.edit { putBoolean(res.getString(R.string.pref_godan_qwerty), value) }
 
     var swapQCxl: Boolean
         get() = prefs.getBoolean(res.getString(R.string.pref_godan_swap_qc), true)
-        set(value) = prefs.edit {
-            putBoolean(res.getString(R.string.pref_godan_swap_qc), value)
-        }
+        set(value) = prefs.edit { putBoolean(res.getString(R.string.pref_godan_swap_qc), value) }
 
     var usePopup: Boolean
         get() = prefs.getBoolean(res.getString(R.string.pref_use_popup), true)
-        set(value) = prefs.edit {
-            putBoolean(res.getString(R.string.pref_use_popup), value)
-        }
+        set(value) = prefs.edit { putBoolean(res.getString(R.string.pref_use_popup), value) }
 
     var useFixedPopup: Boolean
         get() = prefs.getBoolean(res.getString(R.string.pref_fixed_popup), true)
-        set(value) = prefs.edit {
-            putBoolean(res.getString(R.string.pref_fixed_popup), value)
-        }
+        set(value) = prefs.edit { putBoolean(res.getString(R.string.pref_fixed_popup), value) }
 
     var useSoftCancelKey: Boolean
         get() = prefs.getBoolean(res.getString(R.string.pref_use_soft_cancel_key), false)
@@ -240,9 +200,7 @@ class SKKPrefs(context: Context) {
 
     var useSmallK: Boolean
         get() = prefs.getBoolean(res.getString(R.string.pref_use_small_k), false)
-        set(value) = prefs.edit {
-            putBoolean(res.getString(R.string.pref_use_small_k), value)
-        }
+        set(value) = prefs.edit { putBoolean(res.getString(R.string.pref_use_small_k), value) }
 
     var changeShift: Boolean
         get() = prefs.getBoolean(res.getString(R.string.pref_exchange_shift_kana), true)
@@ -252,9 +210,7 @@ class SKKPrefs(context: Context) {
 
     var flickSensitivity: Int
         get() = prefs.getInt(res.getString(R.string.pref_flick_sensitivity), 24)
-        set(value) = prefs.edit {
-            putInt(res.getString(R.string.pref_flick_sensitivity), value)
-        }
+        set(value) = prefs.edit { putInt(res.getString(R.string.pref_flick_sensitivity), value) }
 
     var useMiniKey: Boolean
         get() = prefs.getBoolean(res.getString(R.string.pref_mini_keyboard), true)

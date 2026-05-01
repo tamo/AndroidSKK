@@ -894,7 +894,7 @@ class SKKService : InputMethodService() {
             KeyEvent.KEYCODE_SPACE -> {
                 if (mSandS) {
                     mSpacePressed = false
-                    if (!mSandSUsed) processKey(' '.code)
+                    if (!mSandSUsed) processKey(' ')
                     mSandSUsed = false
                     return true
                 }
@@ -1033,7 +1033,7 @@ class SKKService : InputMethodService() {
                 if (mSandS) {
                     mSpacePressed = true
                 } else {
-                    processKey(' '.code)
+                    processKey(' ')
                 }
                 return true
             }
@@ -1058,39 +1058,28 @@ class SKKService : InputMethodService() {
      * on an InputConnection.
      */
     private fun translateKeyDown(event: KeyEvent): Boolean {
-        // processKeyは非文字キーやctrlやaltを認識しないので変換が必要
-        val modded = if (
-            event.unicodeChar == 0 || event.isMetaPressed ||
-            event.isCtrlPressed || event.isAltPressed
-        ) when (encodeKey(event)) {
-            skkPrefs.katakanaKey -> ModeKey.KATAKANA.code
-            skkPrefs.asciiKey -> ModeKey.ASCII.code
-            skkPrefs.zenkakuKey -> ModeKey.ZENKAKU.code
-            skkPrefs.abbrevKey -> ModeKey.ABBREV.code
-            skkPrefs.hankakuKanaKey -> ModeKey.HANKAKU_KANA.code
-            else -> 0
-        } else 0
-
-        val c = when {
-            modded < 0 -> modded
-            mStickyShift -> event.getUnicodeChar(mShiftKey.useState())
-            mSandS && mSpacePressed -> event.getUnicodeChar(KeyEvent.META_SHIFT_ON)
-                .also { mSandSUsed = true }
-
-            else -> event.unicodeChar
+        val newEvent = event.run {
+            KeyEvent(
+                downTime, eventTime, action, keyCode, repeatCount,
+                metaState or when {
+                    mStickyShift -> mShiftKey.useState()
+                    mSandS && mSpacePressed -> KeyEvent.META_SHIFT_ON.also { mSandSUsed = true }
+                    else -> 0
+                }
+            )
         }
 
-        val ic = currentInputConnection
-        if (c == 0 || ic == null) return false
+        if (currentInputConnection == null) return false
 
-        processKey(c)
+        processKey(encodeKey(newEvent))
 
         return true
     }
 
     fun processKey(code: Int) = mEngine.processKey(code)
+    fun processKey(char: Char) = mEngine.processKey(encodeKey(char.code))
 
-    fun processKeyIn(state: SKKState, code: Int) = state.processKey(mEngine, code)
+    fun processKeyIn(state: SKKState, char: Char) = state.processKey(mEngine, encodeKey(char.code))
 
     fun handleKanaKey() = mEngine.handleKanaKey()
 

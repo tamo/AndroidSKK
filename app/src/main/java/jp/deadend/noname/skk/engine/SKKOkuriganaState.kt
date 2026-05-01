@@ -1,6 +1,8 @@
 package jp.deadend.noname.skk.engine
 
 import jp.deadend.noname.skk.createTrimmedBuilder
+import jp.deadend.noname.skk.decodeKey
+import jp.deadend.noname.skk.encodeKey
 import jp.deadend.noname.skk.skkPrefs
 
 // 送り仮名入力中(▽モード，*つき)
@@ -20,10 +22,7 @@ object SKKOkuriganaState : SKKState {
     }
 
     override fun processKey(context: SKKEngine, keyCode: Int) {
-        // シフトキーの状態をチェック
-        val isUpper = Character.isUpperCase(keyCode)
-        // 大文字なら，ローマ字変換のために小文字に戻す
-        val codeLower = if (isUpper) Character.toLowerCase(keyCode) else keyCode
+        val (codeLower, _) = decodeKey(keyCode)
 
         context.apply {
             // l, L, q, / による暗黙の確定
@@ -67,7 +66,7 @@ object SKKOkuriganaState : SKKState {
                         mComposing.setLength(0) // これまでの composing は typo とみなしてやり直す
                         mKanjiKey.deleteCharAt(mKanjiKey.lastIndex)
                         changeState(SKKKanjiState)
-                        SKKKanjiState.processKey(context, Character.toUpperCase(keyCode))
+                        SKKKanjiState.processKey(context, encodeKey(Character.toUpperCase(keyCode)))
                         return
                     }
                     setComposingTextSKK(

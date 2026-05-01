@@ -10,7 +10,7 @@ class EmacsNavKeysTest {
 
     @Test
     fun testNavKeyDisabled_isZero() {
-        // 0 = KEYCODE_UNKNOWN shl 4, 実際には押せないので番兵値として安全
+        // 0 = KEYCODE_UNKNOWN, 実際には押せないので番兵値として安全
         assertEquals(0, NAV_KEY_DISABLED)
     }
 
@@ -24,30 +24,26 @@ class EmacsNavKeysTest {
     }
 
     // --- デフォルトキーエンコード値の検証 ---
-    // エンコード値 = keyCode shl 4 or modifierBits (CTRL = 4)
+    // エンコード値 = modifierBits (CTRL = 4) shl 28 or keyCode
 
     @Test
     fun testDefaultKeyEncoding_navLineStart_isCtrlA() {
-        // KEYCODE_A = 29: 29 shl 4 or 4 = 464 + 4 = 468
-        assertEquals(NAV_LINE_START_KEY_DEFAULT, 29 shl 4 or 4)
+        assertEquals(NAV_LINE_START_KEY_DEFAULT, 4 shl 28 or 'a'.code)
     }
 
     @Test
     fun testDefaultKeyEncoding_navLineEnd_isCtrlE() {
-        // KEYCODE_E = 33: 33 shl 4 or 4 = 528 + 4 = 532
-        assertEquals(NAV_LINE_END_KEY_DEFAULT, 33 shl 4 or 4)
+        assertEquals(NAV_LINE_END_KEY_DEFAULT, 4 shl 28 or 'e'.code)
     }
 
     @Test
     fun testDefaultKeyEncoding_navForward_isCtrlF() {
-        // KEYCODE_F = 34: 34 shl 4 or 4 = 544 + 4 = 548
-        assertEquals(NAV_FORWARD_KEY_DEFAULT, 34 shl 4 or 4)
+        assertEquals(NAV_FORWARD_KEY_DEFAULT, 'f'.code or (4 shl 28))
     }
 
     @Test
     fun testDefaultKeyEncoding_navBackward_isCtrlB() {
-        // KEYCODE_B = 30: 30 shl 4 or 4 = 480 + 4 = 484
-        assertEquals(NAV_BACKWARD_KEY_DEFAULT, 30 shl 4 or 4)
+        assertEquals(NAV_BACKWARD_KEY_DEFAULT, 'b'.code or (4 shl 28))
     }
 
     // --- resolveEmacsNavAction() のロジック検証 ---
