@@ -14,7 +14,7 @@ object SKKASCIIState : SKKState {
     override fun processKey(context: SKKEngine, keyCode: Int) {
         val (lower, shifted) = decodeKey(keyCode)
         val c = if (shifted) Character.toUpperCase(lower) else lower
-        context.commitTextSKK(c.toChar().toString())
+        context.commitTextSKK(Char(c).toString())
         context.updateSuggestionsASCII()
     }
 

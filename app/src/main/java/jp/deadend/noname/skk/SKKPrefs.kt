@@ -57,7 +57,7 @@ class SKKPrefs(context: Context) {
 
     // prefs_hard_key
     var kanaKey: Int
-        get() = prefs.getInt(res.getString(R.string.pref_kana_key), 4 shl 28 or 'j'.code)
+        get() = prefs.getInt(res.getString(R.string.pref_kana_key), CTRL_PRESSED or 'j'.code)
         set(value) = prefs.edit { putInt(res.getString(R.string.pref_kana_key), value) }
 
     var toggleKanaKey: Boolean
@@ -67,7 +67,7 @@ class SKKPrefs(context: Context) {
         }
 
     var cancelKey: Int
-        get() = prefs.getInt(res.getString(R.string.pref_cancel_key), 4 shl 28 or 'g'.code)
+        get() = prefs.getInt(res.getString(R.string.pref_cancel_key), CTRL_PRESSED or 'g'.code)
         set(value) = prefs.edit { putInt(res.getString(R.string.pref_cancel_key), value) }
 
     var emacsNavInAscii: Boolean
@@ -104,7 +104,7 @@ class SKKPrefs(context: Context) {
         set(value) = prefs.edit { putInt(res.getString(R.string.pref_ascii_key), value) }
 
     var zenkakuKey: Int
-        get() = prefs.getInt(res.getString(R.string.pref_zenkaku_key), 1 shl 28 or 'l'.code)
+        get() = prefs.getInt(res.getString(R.string.pref_zenkaku_key), SHIFT_PRESSED or 'l'.code)
         set(value) = prefs.edit { putInt(res.getString(R.string.pref_zenkaku_key), value) }
 
     var abbrevKey: Int
@@ -112,8 +112,12 @@ class SKKPrefs(context: Context) {
         set(value) = prefs.edit { putInt(res.getString(R.string.pref_abbrev_key), value) }
 
     var hankakuKanaKey: Int
-        get() = prefs.getInt(res.getString(R.string.pref_hankaku_kana_key), 4 shl 28 or 'q'.code)
+        get() =
+            prefs.getInt(res.getString(R.string.pref_hankaku_kana_key), CTRL_PRESSED or 'q'.code)
         set(value) = prefs.edit { putInt(res.getString(R.string.pref_hankaku_kana_key), value) }
+
+    fun isModeKey(keyCode: Int): Boolean =
+        keyCode in listOf(katakanaKey, asciiKey, zenkakuKey, abbrevKey, hankakuKanaKey)
 
     var useCandidatesView: Boolean
         get() = prefs.getBoolean(res.getString(R.string.pref_use_candidates_view), true)

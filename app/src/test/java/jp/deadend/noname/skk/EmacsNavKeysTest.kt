@@ -24,26 +24,25 @@ class EmacsNavKeysTest {
     }
 
     // --- デフォルトキーエンコード値の検証 ---
-    // エンコード値 = modifierBits (CTRL = 4) shl 28 or keyCode
 
     @Test
     fun testDefaultKeyEncoding_navLineStart_isCtrlA() {
-        assertEquals(NAV_LINE_START_KEY_DEFAULT, 4 shl 28 or 'a'.code)
+        assertEquals(NAV_LINE_START_KEY_DEFAULT, CTRL_PRESSED or 'a'.code)
     }
 
     @Test
     fun testDefaultKeyEncoding_navLineEnd_isCtrlE() {
-        assertEquals(NAV_LINE_END_KEY_DEFAULT, 4 shl 28 or 'e'.code)
+        assertEquals(NAV_LINE_END_KEY_DEFAULT, CTRL_PRESSED or 'e'.code)
     }
 
     @Test
     fun testDefaultKeyEncoding_navForward_isCtrlF() {
-        assertEquals(NAV_FORWARD_KEY_DEFAULT, 'f'.code or (4 shl 28))
+        assertEquals(NAV_FORWARD_KEY_DEFAULT, CTRL_PRESSED or 'f'.code)
     }
 
     @Test
     fun testDefaultKeyEncoding_navBackward_isCtrlB() {
-        assertEquals(NAV_BACKWARD_KEY_DEFAULT, 'b'.code or (4 shl 28))
+        assertEquals(NAV_BACKWARD_KEY_DEFAULT, CTRL_PRESSED or 'b'.code)
     }
 
     // --- resolveEmacsNavAction() のロジック検証 ---

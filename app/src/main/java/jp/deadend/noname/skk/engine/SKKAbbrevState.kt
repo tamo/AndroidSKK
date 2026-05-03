@@ -40,7 +40,7 @@ object SKKAbbrevState : SKKState {
                 ' '.code -> if (mKanjiKey.isNotEmpty()) conversionStart(mKanjiKey)
 
                 else -> {
-                    mKanjiKey.append(keyCode.toChar())
+                    mKanjiKey.append(Char(keyCode))
                     setComposingTextSKK(mKanjiKey)
                     updateSuggestions(mKanjiKey.toString())
                 }

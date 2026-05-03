@@ -200,7 +200,7 @@ class SKKSettingsActivityUITest {
 
     @Test
     fun testHardKeyFragment() {
-        assert(skkPrefs.kanaKey == 4 shl 28 /* CTRL */ or 'j'.code)
+        assert(skkPrefs.kanaKey == CTRL_PRESSED or 'j'.code)
         onView(withText("ハードウェアキーボードの設定")).perform(click())
 
         // かなキー (CTRL+J -> TAB)
@@ -253,7 +253,7 @@ class SKKSettingsActivityUITest {
             )
         }
         onView(withText("全角英数キー")).check(matches(hasSibling(withText("SHIFT+Z"))))
-        assert(skkPrefs.zenkakuKey == 1 shl 28 /* SHIFT */ or 'z'.code)
+        assert(skkPrefs.zenkakuKey == SHIFT_PRESSED or 'z'.code)
 
         // Abbrevキー (SLASH -> PERIOD)
         onView(withText("Abbrevキー"))
@@ -267,10 +267,10 @@ class SKKSettingsActivityUITest {
         assert(skkPrefs.abbrevKey == '.'.code)
 
         // Revert them all
-        skkPrefs.kanaKey = 4 shl 28 /* CTRL */ or 'j'.code
+        skkPrefs.kanaKey = CTRL_PRESSED or 'j'.code
         skkPrefs.katakanaKey = 'q'.code
         skkPrefs.asciiKey = 'l'.code
-        skkPrefs.zenkakuKey = 1 shl 28 /* SHIFT */ or 'l'.code
+        skkPrefs.zenkakuKey = SHIFT_PRESSED or 'l'.code
     }
 
     @Test

@@ -35,15 +35,15 @@ object SKKOkuriganaState : SKKState {
                     mOkurigana = hiraganaChar
                     setComposingTextSKK(
                         createTrimmedBuilder(mKanjiKey)
-                            .append('*').append(hiraganaChar).append(codeLower.toChar())
+                            .append('*').append(hiraganaChar).append(Char(codeLower))
                     )
                     mComposing.setLength(0)
-                    mComposing.append(codeLower.toChar())
+                    mComposing.append(Char(codeLower))
                     return
                 }
             }
             // 送りがなが確定すれば変換，そうでなければComposingに積む
-            mComposing.append(codeLower.toChar())
+            mComposing.append(Char(codeLower))
             val hiraganaChar = RomajiConverter.convert(mComposing.toString())
             if (mOkurigana.isNotEmpty()) { //「ん」か「っ」がある場合
                 if (hiraganaChar.isNotEmpty()) {

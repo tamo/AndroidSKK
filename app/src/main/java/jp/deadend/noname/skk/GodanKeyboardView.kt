@@ -790,11 +790,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                                 '→' -> 'l'.code
                                 '↓' -> 'j'.code
                                 else -> throw IllegalArgumentException(
-                                    "Char($guidedCode) is not an arrow: ${
-                                        Char(
-                                            guidedCode
-                                        )
-                                    }"
+                                    "$guidedCode is not an arrow: ${Char(guidedCode)}"
                                 )
                             }
                         }

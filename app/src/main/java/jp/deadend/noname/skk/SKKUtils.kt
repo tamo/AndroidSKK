@@ -145,7 +145,7 @@ private fun processSingleNumber(str: String, number: String): String {
             target, number // 全角
                 .map { char ->
                     when (char.code) {
-                        in '0'.code..'9'.code -> (char.code + '０'.code - '0'.code).toChar()
+                        in '0'.code..'9'.code -> Char(char.code + '０'.code - '0'.code)
                         '.'.code -> '．' // もしかして「・」の方がいい?
                         else -> char
                     }
@@ -218,7 +218,7 @@ private fun unquote(str: String): String = PAT_QUOTED.findAll(str)
     .joinToString("") { it.groupValues[1] }
 
 private fun unescapeOctal(str: String): String = PAT_ESCAPE_NUM.replace(str) {
-    it.value.substring(1).toInt(8).toChar().toString()
+    Char(it.value.substring(1).toInt(8)).toString()
 } // emacs-lispのリテラルは8進数
 
 fun processConcatAndMore(rawStr: String, kanjiKey: String): String {

@@ -45,7 +45,7 @@ object SKKHiraganaState : SKKState {
                 changeState(SKKKanjiState)
                 SKKKanjiState.processKey(context, codeLower)
             } else {
-                mComposing.append(codeLower.toChar())
+                mComposing.append(Char(codeLower))
                 // 全角にする記号ならば全角，そうでなければローマ字変換
                 val hiraganaChar = getZenkakuSeparator(mComposing.toString())
                     ?: RomajiConverter.convert(mComposing.toString())
@@ -65,7 +65,7 @@ object SKKHiraganaState : SKKState {
                             setComposingTextSKK(mComposing)
                         }
                     } else {
-                        commitFunc(context, codeLower.toChar().toString())
+                        commitFunc(context, Char(codeLower).toString())
                     }
                 }
             }

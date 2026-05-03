@@ -187,7 +187,7 @@ class RomajiConverterTest {
         assertEquals("っ", RomajiConverter.checkSpecialConsonants('y', 'y'.code))
         assertEquals(null, RomajiConverter.checkSpecialConsonants('z', 'n'.code))
         // 以下は "っ" にならない
-        assertEquals(null, RomajiConverter.checkSpecialConsonants(0.toChar(), 0))
+        assertEquals(null, RomajiConverter.checkSpecialConsonants(Char(0), 0))
         assertEquals(null, RomajiConverter.checkSpecialConsonants('あ', 'あ'.code))
     }
 

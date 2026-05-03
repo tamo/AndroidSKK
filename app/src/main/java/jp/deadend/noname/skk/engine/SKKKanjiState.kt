@@ -97,27 +97,27 @@ object SKKKanjiState : SKKState {
                         // め、kanjiKeyの長さをチェックkanjiKeyの長さが0の時はシフトが
                         // 押されていなかったことにして下方へ継続させる
                         if (isVowel(codeLower)) { // 母音なら送り仮名決定，変換
-                            mComposing.append(codeLower.toChar()) // 「OkurI」の composing を ri に
+                            mComposing.append(Char(codeLower)) // 「OkurI」の composing を ri に
                             mOkurigana = RomajiConverter.convert(mComposing.toString())
                             mKanjiKey.append(mComposing[0]) //送りありの場合子音文字追加
                             mComposing.setLength(0) // 送りがなに消費されたはず
                             conversionStart(mKanjiKey)
                         } else { // それ以外は送り仮名モード
                             if (!RomajiConverter.isIntermediateRomaji(
-                                    "${mComposing}${codeLower.toChar()}"
+                                    "${mComposing}${Char(codeLower)}"
                                 )
                             ) {
                                 if (mComposing.isNotEmpty()) {
                                     mComposing.setLength(0) // 「OkukR」のcomposingはrに (kはtypoとみなす)
                                 }
                                 if (!RomajiConverter.isIntermediateRomaji(
-                                        codeLower.toChar().toString()
+                                        Char(codeLower).toString()
                                     )
                                 ) {
                                     return // 今回の code 自体が typo なので無視
                                 }
                             }
-                            mComposing.append(codeLower.toChar()) // ty や ch のように 2 文字の場合あり
+                            mComposing.append(Char(codeLower)) // ty や ch のように 2 文字の場合あり
                             mKanjiKey.append(mComposing[0]) //送りありの場合子音文字追加
                             setComposingTextSKK(
                                 createTrimmedBuilder(mKanjiKey).append('*').append(mComposing)
@@ -126,7 +126,7 @@ object SKKKanjiState : SKKState {
                         }
                     } else {
                         // 未確定
-                        mComposing.append(codeLower.toChar())
+                        mComposing.append(Char(codeLower))
                         val composing = mComposing.toString()
                         // 全角にする記号ならば全角，そうでなければローマ字変換、だめなら数字かチェック
                         val hiraganaChar = getZenkakuSeparator(composing)

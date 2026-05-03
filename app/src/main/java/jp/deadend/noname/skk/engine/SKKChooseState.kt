@@ -78,7 +78,7 @@ object SKKChooseState : SKKConfirmingState {
                     mComposing.setLength(0) // 最初から空のはずだけど念のため
                     mOkurigana = "" // これは入っている可能性がある
                     changeState(SKKKanjiState) // Abbrevの可能性はない
-                    val maybeComposing = mKanjiKey.lastOrNull() ?: 0.toChar()
+                    val maybeComposing = mKanjiKey.lastOrNull() ?: Char(0)
                     if (isAlphabet(maybeComposing.code)) {
                         mKanjiKey.deleteCharAt(mKanjiKey.lastIndex) // 送りがなのアルファベットを削除
                         if (!skkPrefs.preferFlick) { // Flickではアルファベットが残ると困る

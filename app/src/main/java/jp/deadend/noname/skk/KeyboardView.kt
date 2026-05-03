@@ -605,7 +605,7 @@ open class KeyboardView @JvmOverloads constructor(
             else -> "CAPSLOCK"
         }
 //        mInMultiTap -> {
-//            key.codes[mTapCount.coerceAtLeast(0)].toChar().toString()
+//            Char(key.codes[mTapCount.coerceAtLeast(0)]).toString()
 //            // シフト時の toUpper とか必要ならするけど今はアルファベットの multiTap がない
 //        }
         else -> {

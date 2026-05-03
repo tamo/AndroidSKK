@@ -1059,6 +1059,8 @@ class SKKService : InputMethodService() {
      * on an InputConnection.
      */
     private fun translateKeyDown(event: KeyEvent): Boolean {
+        if (KeyEvent.isModifierKey(event.keyCode)) return false
+
         val newEvent = event.run {
             KeyEvent(
                 downTime, eventTime, action, keyCode, repeatCount,
@@ -1066,14 +1068,14 @@ class SKKService : InputMethodService() {
                     mStickyShift -> mShiftKey.useState()
                     mSandS && mSpacePressed -> KeyEvent.META_SHIFT_ON.also { mSandSUsed = true }
                     else -> 0
-                }
+                }, deviceId, scanCode
             )
         }
         val k = encodeKey(newEvent)
         val (c, _) = decodeKey(k)
-
-        val ic = currentInputConnection
-        if (c == 0 || ic == null) return false
+        if (c == 0) return false
+        if (k and RAW_KEYCODE != 0 && !skkPrefs.isModeKey(k)) return false
+        if (currentInputConnection == null) return false
 
         processKey(k)
 
