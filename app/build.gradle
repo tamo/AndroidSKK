@@ -3,6 +3,7 @@ plugins {
 }
 
 android {
+    // warning が出ても、robolectric が対応してるか確認してから上げること!
     compileSdk = 36
 
     defaultConfig {
