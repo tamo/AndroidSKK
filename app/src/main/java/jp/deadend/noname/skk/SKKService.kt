@@ -961,25 +961,25 @@ class SKKService : InputMethodService() {
         }
 
         // SandS: ASCII モードでのスペース＆修飾処理（早期リターンより前に置く）
-        if (mSandS && skkPrefs.sandSInAscii && engineState === SKKASCIIState && !mEngine.isRegistering) {
-            when (keyCode) {
-                KeyEvent.KEYCODE_SPACE -> {
-                    mSpacePressed = true
-                    return true
-                }
+        if (mSandS && skkPrefs.sandSInAscii &&
+            engineState === SKKASCIIState && !mEngine.isRegistering
+        ) {
+            if (keyCode == KeyEvent.KEYCODE_SPACE) {
+                mSpacePressed = true
+                return true
+            }
 
-                else -> if (mSpacePressed) {
-                    val shiftedEvent = KeyEvent(
-                        event.downTime, event.eventTime, event.action,
-                        event.keyCode, event.repeatCount,
-                        event.metaState or KeyEvent.META_SHIFT_ON,
-                        event.deviceId, event.scanCode, event.flags, event.source
+            if (mSpacePressed) {
+                val shiftedEvent = event.run {
+                    KeyEvent(
+                        downTime, eventTime, action, event.keyCode, repeatCount,
+                        metaState or KeyEvent.META_SHIFT_ON, deviceId, scanCode, flags, source
                     )
-                    mSandSUsed = true
-                    val result = super.onKeyDown(keyCode, shiftedEvent)
-                    updateSuggestionsASCII()
-                    return result
                 }
+                mSandSUsed = true
+                val result = super.onKeyDown(keyCode, shiftedEvent)
+                updateSuggestionsASCII()
+                return result
             }
         }
 
@@ -994,26 +994,16 @@ class SKKService : InputMethodService() {
             return handleCancel()
         }
 
-        if (keyCode == KeyEvent.KEYCODE_TAB) {
-            if (engineState === SKKKanjiState || engineState === SKKAbbrevState) {
-                var isShifted = false
-                if (mStickyShift) {
-                    if (mShiftKey.useState() and KeyEvent.META_SHIFT_ON != 0) {
-                        isShifted = true
-                    }
-                } else if (mSandS) {
-                    if (mSpacePressed) {
-                        isShifted = true
-                        mSandSUsed = true
-                    }
-                } else {
-                    if (event.metaState and KeyEvent.META_SHIFT_ON != 0) {
-                        isShifted = true
-                    }
-                }
-                mEngine.chooseAdjacentSuggestion(!isShifted)
-                return true
+        if (keyCode == KeyEvent.KEYCODE_TAB &&
+            engineState in listOf(SKKKanjiState, SKKAbbrevState)
+        ) {
+            val isShifted = when {
+                mStickyShift -> mShiftKey.useState() != 0
+                mSandS && mSpacePressed -> true.also { mSandSUsed = true }
+                else -> event.isShiftPressed
             }
+            mEngine.chooseAdjacentSuggestion(!isShifted)
+            return true
         }
 
         when (keyCode) {
@@ -1068,13 +1058,20 @@ class SKKService : InputMethodService() {
                     mStickyShift -> mShiftKey.useState()
                     mSandS && mSpacePressed -> KeyEvent.META_SHIFT_ON.also { mSandSUsed = true }
                     else -> 0
-                }, deviceId, scanCode
+                }, deviceId, scanCode, flags, source
             )
         }
         val k = encodeKey(newEvent)
-        val (c, _) = decodeKey(k)
-        if (c == 0) return false
-        if (k and RAW_KEYCODE != 0 && !skkPrefs.isModeKey(k)) return false
+
+        // 割り当てのない特殊キーは無視 (rules で指定できる場合は別途考える必要があるか)
+        if (k and (RAW_KEYCODE or META_PRESSED or CTRL_PRESSED or ALT_PRESSED) != 0
+            && !skkPrefs.isModeKey(k)
+        ) return false
+
+        // shift 単体なら無視 (sticky-shift は keyup で見る)
+        // meta/ctrl/alt 単体は、モード変更に割り当てられないのでここを通らないはず
+        if (decodeKey(k).first == 0) return false
+
         if (currentInputConnection == null) return false
 
         processKey(k)
