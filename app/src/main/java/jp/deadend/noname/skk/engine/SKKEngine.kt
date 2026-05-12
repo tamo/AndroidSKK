@@ -808,7 +808,7 @@ class SKKEngine(
             mUserDict.addEntry(
                 regInfo.key, regEntryStr, regInfo.okurigana
             )
-            (regInfo.entry.toString() + regInfo.okurigana).let {
+            (processConcatAndMore(regInfo.entry.toString(), regInfo.key) + regInfo.okurigana).let {
                 commitTextSKK(
                     when (kanaStateBeforeRegistration) {
                         SKKHiraganaState -> it
