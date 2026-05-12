@@ -12,6 +12,7 @@ import jp.deadend.noname.skk.zenkaku2hankaku
 object SKKKanjiState : SKKState {
     override val isTransient = true
     override val icon = 0
+    override val prefix = "▽"
 
     override fun handleKanaKey(context: SKKEngine) {
         context.apply {

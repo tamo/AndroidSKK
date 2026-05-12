@@ -8,8 +8,8 @@ import jp.deadend.noname.skk.skkPrefs
 // Abbrevモード(▽モード)
 object SKKAbbrevState : SKKState {
     override val isTransient = true
-    override val icon =
-        R.drawable.ic_abbrev
+    override val icon = R.drawable.ic_abbrev
+    override val prefix = "▽"
 
     override fun handleKanaKey(context: SKKEngine) {
         context.changeState(SKKHiraganaState)

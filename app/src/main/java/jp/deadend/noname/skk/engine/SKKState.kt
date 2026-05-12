@@ -1,8 +1,10 @@
 package jp.deadend.noname.skk.engine
 
+@Suppress("SameReturnValue")
 interface SKKState {
     val isTransient: Boolean
     val icon: Int
+    val prefix: String? get() = null
     fun handleKanaKey(context: SKKEngine)
     fun processKey(context: SKKEngine, keyCode: Int)
     fun afterBackspace(context: SKKEngine)

@@ -7,6 +7,7 @@ object SKKNarrowingState : SKKConfirmingState {
     var isSequential = false
     override val isTransient = true
     override val icon = 0
+    override val prefix = "▼"
     override var pendingLambda: (() -> Unit)? = null
     override var oldComposingText = ""
 

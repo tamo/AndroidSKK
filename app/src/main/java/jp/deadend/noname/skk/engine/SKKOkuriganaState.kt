@@ -9,6 +9,7 @@ import jp.deadend.noname.skk.skkPrefs
 object SKKOkuriganaState : SKKState {
     override val isTransient = true
     override val icon = 0
+    override val prefix = "▽"
 
     override fun handleKanaKey(context: SKKEngine) {
         context.apply {

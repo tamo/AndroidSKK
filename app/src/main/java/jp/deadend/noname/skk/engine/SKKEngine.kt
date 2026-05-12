@@ -548,17 +548,15 @@ class SKKEngine(
             }
         }
 
-        if (skkPrefs.prefixMark) {
-            if (!isPersonalizedLearning) {
-                ct.append("㊙")
+        state.prefix?.let { prefix ->
+            if (skkPrefs.prefixMark) {
+                if (!isPersonalizedLearning) {
+                    ct.append("㊙")
+                }
+                ct.append(prefix)
+            } else if (text.isEmpty()) {
+                ct.append(" ")
             }
-            if (state === SKKAbbrevState || state === SKKKanjiState || state === SKKOkuriganaState) {
-                ct.append("▽")
-            } else if (state === SKKChooseState || state === SKKNarrowingState) {
-                ct.append("▼")
-            }
-        } else if (text.isEmpty()) {
-            ct.append(" ")
         }
         ct.append(
             if (mService.isHiragana) text else hiragana2katakana(
