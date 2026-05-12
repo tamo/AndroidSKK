@@ -39,7 +39,9 @@ class SKKKanaRuleManager : AppCompatActivity() {
         setContentView(binding.root)
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, windowInsets ->
             val bars = windowInsets.getInsets(
-                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout(),
+                WindowInsetsCompat.Type.systemBars() or
+                        WindowInsetsCompat.Type.displayCutout() or
+                        WindowInsetsCompat.Type.ime()
             )
             view.updatePadding(
                 left = bars.left,
