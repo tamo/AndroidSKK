@@ -1,5 +1,6 @@
 package jp.deadend.noname.skk
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.graphics.Rect
@@ -61,6 +62,11 @@ class SKKKanaRuleManager : AppCompatActivity() {
 
         updateStatusView()
         binding.kanaRuleEditor.addTextChangedListener(afterTextChanged = { isModified = true })
+        @SuppressLint("ClickableViewAccessibility")
+        binding.kanaRuleEditor.setOnTouchListener { _, _ ->
+            binding.kanaRuleScrollView.isIgnoring = true
+            false
+        }
     }
 
     override fun onPause() {
@@ -120,7 +126,12 @@ class SKKKanaRuleManager : AppCompatActivity() {
 
 class StableScrollView @JvmOverloads constructor(c: Context, a: AttributeSet? = null, d: Int = 0) :
     ScrollView(c, a, d) {
+    var isIgnoring = false
     override fun requestChildRectangleOnScreen(c: View, r: Rect, i: Boolean): Boolean {
-        return false
+        if (isIgnoring) {
+            isIgnoring = false
+            return false
+        }
+        return super.requestChildRectangleOnScreen(c, r, i)
     }
 }
