@@ -841,17 +841,16 @@ class SKKService : InputMethodService() {
         //dLog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
         super.onComputeInsets(outInsets)
         if (outInsets == null || mInputView == null || mCandidatesViewContainer == null) return
+        val height = mInputView!!.height + mCandidatesViewContainer!!.height // paddingBottom は除外
         outInsets.apply {
-            if (isFloating()) {
-                val height = mInputView!!.height + mCandidatesViewContainer!!.height
-                contentTopInsets = height
-                touchableInsets = Insets.TOUCHABLE_INSETS_REGION
-                touchableRegion.set(leftOffset, 0, leftOffset + mInputView!!.keyboard.width, height)
-            } else {
-                contentTopInsets = visibleTopInsets
-                // CandidatesViewに対して強制的にActivityをリサイズさせるためのhack
-                touchableInsets = Insets.TOUCHABLE_INSETS_VISIBLE
+            contentTopInsets = when {
+                isFloating() -> height // 高さをすべて無効にして floating を実現
+                skkPrefs.candidatesMinHeight -> contentTopInsets -
+                        mCandidatesViewContainer!!.minHeight // 常時表示される分だけを確保し固定
+                else -> visibleTopInsets // 変動する CandidatesView の高さも確保
             }
+            touchableInsets = Insets.TOUCHABLE_INSETS_REGION
+            touchableRegion.set(leftOffset, 0, leftOffset + mInputView!!.keyboard.width, height)
         }
     }
 
@@ -1325,7 +1324,7 @@ class SKKService : InputMethodService() {
         mCandidatesViewContainer?.apply {
             if (list.isNullOrEmpty()) {
                 setAlpha(skkPrefs.inactiveAlpha)
-                lines = if (skkPrefs.candidatesReserveLines) viewLines else 0
+                lines = 0
             } else {
                 setAlpha(skkPrefs.activeAlpha)
                 lines = viewLines
@@ -1336,9 +1335,7 @@ class SKKService : InputMethodService() {
 
     fun requestChooseCandidate(index: Int) = mCandidatesView?.choose(index)
 
-    fun clearCandidatesView() = mCandidatesViewContainer?.let {
-        setCandidates(null, "", if (skkPrefs.candidatesReserveLines) it.lines else 0)
-    }
+    fun clearCandidatesView() = setCandidates(null, "", 0)
 
     // カーソル直前に引数と同じ文字列があるなら，それを消してtrue なければfalse
     fun prepareReConversion(candidate: String): Boolean {

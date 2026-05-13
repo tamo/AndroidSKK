@@ -29,10 +29,10 @@ class SKKPrefs(context: Context) {
             putInt(res.getString(R.string.pref_candidates_size), value)
         }
 
-    var candidatesReserveLines: Boolean
-        get() = prefs.getBoolean(res.getString(R.string.pref_candidates_reserve_lines), false)
+    var candidatesMinHeight: Boolean
+        get() = prefs.getBoolean(res.getString(R.string.pref_candidates_min_height), true)
         set(value) = prefs.edit {
-            putBoolean(res.getString(R.string.pref_candidates_reserve_lines), value)
+            putBoolean(res.getString(R.string.pref_candidates_min_height), value)
         }
 
     var candidatesNormalLines: Int

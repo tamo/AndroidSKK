@@ -35,6 +35,7 @@ class CandidatesViewContainer(screen: Context, attrs: AttributeSet) : LinearLayo
                 setSize(-1)
             }
         }
+    internal val minHeight = resources.getDimensionPixelSize(R.dimen.candidates_scroll_button_width)
     private lateinit var mService: SKKService
 
     private val mActivePointers = mutableListOf<Pair<Int, Float>>()
@@ -169,9 +170,8 @@ class CandidatesViewContainer(screen: Context, attrs: AttributeSet) : LinearLayo
         if (px > 0) {
             binding.candidates.setTextSize(px)
         }
-        val buttonSize = resources.getDimensionPixelSize(R.dimen.candidates_scroll_button_width)
-        val width = mService.inputViewWidth - buttonSize * 2
-        val height = if (lines > 0) (px * lines * LINE_SCALE).toInt() else buttonSize
+        val width = mService.inputViewWidth - minHeight * 2 // minHeight == size of square button
+        val height = if (lines > 0) (px * lines * LINE_SCALE).toInt() else minHeight
         val newLayoutParams = LayoutParams(width, height)
         if (binding.frame.layoutParams.width != newLayoutParams.width ||
             binding.frame.layoutParams.height != newLayoutParams.height
