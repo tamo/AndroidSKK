@@ -60,6 +60,7 @@
         <activity
             android:name=".SKKKanaRuleManager"
             android:label="@string/label_kana_rule_manager_activity"
+            android:launchMode="singleInstance"
             android:theme="@style/Theme.AppCompat.DayNight.NoActionBar" />
         <activity
             android:name=".SKKMushroom"
