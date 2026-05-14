@@ -7,6 +7,7 @@ import android.view.MenuItem
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 import androidx.core.widget.addTextChangedListener
@@ -25,7 +26,7 @@ class SKKKanaRuleManager : AppCompatActivity() {
             val success = SKKKanaRule.saveFromUri(this, uri)
             if (success) {
                 isModified = true
-                updateStatusView()
+                updateEditorText()
             } else {
                 SimpleMessageDialogFragment.newInstance(getString(R.string.error_kana_rule_load))
                     .show(supportFragmentManager, "dialog")
@@ -49,13 +50,20 @@ class SKKKanaRuleManager : AppCompatActivity() {
                 right = bars.right,
                 bottom = bars.bottom,
             )
+            binding.kanaRuleEditor.let { editor ->
+                // 常にカーソルが表示されていることを保証
+                editor.bringPointIntoView(editor.selectionEnd)
+            }
             WindowInsetsCompat.CONSUMED
         }
         setSupportActionBar(binding.kanaRuleManagerToolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
-        updateStatusView()
-        binding.kanaRuleEditor.addTextChangedListener(afterTextChanged = { isModified = true })
+        updateEditorText()
+        binding.kanaRuleEditor.let { editor ->
+            editor.setSelection(0) // カーソルを末尾ではなく先頭に置く
+            editor.addTextChangedListener(afterTextChanged = { isModified = true })
+        }
     }
 
     override fun onPause() {
@@ -92,7 +100,7 @@ class SKKKanaRuleManager : AppCompatActivity() {
                     override fun onPositiveClick() {
                         SKKKanaRule.clear(this@SKKKanaRuleManager)
                         isModified = true
-                        updateStatusView()
+                        updateEditorText()
                     }
 
                     override fun onNegativeClick() {}
@@ -105,7 +113,7 @@ class SKKKanaRuleManager : AppCompatActivity() {
         return true
     }
 
-    private fun updateStatusView() {
+    private fun updateEditorText() {
         binding.kanaRuleEditor.text.apply {
             clear()
             append(SKKKanaRule.getInternalFile(this@SKKKanaRuleManager).readText())
