@@ -20,6 +20,6 @@
             android:layout_height="wrap_content"
             android:autofillHints="romaji"
             android:hint="@string/hint_kana_rule_editor"
-            android:inputType="textMultiLine" />
+            android:inputType="textMultiLine|textNoSuggestions" />
     </ScrollView>
 </LinearLayout>
