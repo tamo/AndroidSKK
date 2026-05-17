@@ -4,11 +4,15 @@ import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
 import android.text.format.DateFormat
-import java.io.*
+import java.io.BufferedInputStream
+import java.io.BufferedOutputStream
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
+import java.io.InputStream
 import java.util.Calendar
 import java.util.Locale
 import java.util.TimeZone
-import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import kotlin.math.max
 
@@ -336,31 +340,22 @@ fun getFileNameFromUri(context: Context, uri: Uri): String? {
 @Throws(IOException::class)
 internal fun unzipFile(input: InputStream, outDir: File) {
     ZipInputStream(BufferedInputStream(input)).use { zis ->
-        var ze: ZipEntry? // ここの「?」を消してもビルドが通るのはバグだと思う
-        do {
-            ze = zis.nextEntry
-        } while (null != ze?.also
-            {
-                val f = File(outDir, ze.name)
-                if (!f.canonicalPath.startsWith(outDir.canonicalPath)) {
-                    throw IOException("zip path traversal")
-                }
-                if (f.isDirectory) {
-                    f.mkdirs()
-                } else {
-                    f.parentFile?.mkdirs()
-                    BufferedOutputStream(FileOutputStream(f)).use { bos ->
-                        val buf = ByteArray(1024)
-                        var size = zis.read(buf, 0, buf.size)
-                        while (size > -1) {
-                            bos.write(buf, 0, size)
-                            size = zis.read(buf, 0, buf.size)
-                        }
-                    }
-                }
-                zis.closeEntry()
+        while (true) {
+            val ze = zis.nextEntry ?: break
+            val f = File(outDir, ze.name)
+            if (!f.canonicalPath.startsWith(outDir.canonicalPath)) {
+                throw IOException("zip path traversal")
             }
-        )
+            if (ze.isDirectory) {
+                f.mkdirs()
+            } else {
+                f.parentFile?.mkdirs()
+                BufferedOutputStream(FileOutputStream(f)).use { bos ->
+                    zis.copyTo(bos)
+                }
+            }
+            zis.closeEntry()
+        }
     }
 }
 
