@@ -26,7 +26,7 @@
         app:showSeekBarValue="true"
         app:title="候補表示の文字サイズ" />
     <androidx.preference.CheckBoxPreference
-        app:defaultValue="true"
+        app:defaultValue="false"
         app:iconSpaceReserved="false"
         app:key="@string/pref_candidates_min_height"
         app:summary="変換中にリサイズで画面がちらつかず安定します"

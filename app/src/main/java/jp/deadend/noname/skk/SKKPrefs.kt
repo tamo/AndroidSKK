@@ -30,7 +30,7 @@ class SKKPrefs(context: Context) {
         }
 
     var candidatesMinHeight: Boolean
-        get() = prefs.getBoolean(res.getString(R.string.pref_candidates_min_height), true)
+        get() = prefs.getBoolean(res.getString(R.string.pref_candidates_min_height), false)
         set(value) = prefs.edit {
             putBoolean(res.getString(R.string.pref_candidates_min_height), value)
         }
