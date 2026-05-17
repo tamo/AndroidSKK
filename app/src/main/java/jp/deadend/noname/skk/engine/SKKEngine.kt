@@ -21,6 +21,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
@@ -693,6 +694,9 @@ class SKKEngine(
                         mCompletionList = uniqueSet.map { it.first }
                         mCandidateList = uniqueSet.map { it.second }
                     }
+
+                delay(150) // 実測では50もあれば十分と思われる
+                ensureActive() // 短時間に連続で実行されないよう最新のみ有効に
 
                 mCandidateKanjiKey = str
                 mCurrentCandidateIndex = 0
