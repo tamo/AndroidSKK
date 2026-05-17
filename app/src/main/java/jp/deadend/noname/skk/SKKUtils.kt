@@ -83,28 +83,26 @@ fun hiragana2katakana(str: String?, reversed: Boolean = false): String? {
     if (str == null) return null
 
     var skipNext = false // 「う゛」を「ヴ」にして文字数が減るときのフラグ
-    val str2 = str.mapIndexedNotNull { index, it ->
+    return str.mapIndexedNotNull { index, it ->
         if (skipNext) {
             skipNext = false
             null
         } else when (it) {
             in 'ぁ'..'ゔ' -> {
-                if (it == 'う' && str.length > index + 1 && str[index + 1] == '゛') {
+                if (it == 'う' && str.length > index + 1 && isDakuten(str[index + 1].code)) {
                     skipNext = true
                     'ヴ'
-                } else it.plus(0x60)
+                } else it + 0x60
             }
 
             in 'ァ'..'ヴ' -> {
-                if (reversed) it.minus(0x60)
+                if (reversed) it - 0x60
                 else it
             }
 
             else -> it
         }
     }.joinToString("")
-
-    return str2
 }
 
 fun katakana2hiragana(str: String?): String? {
