@@ -845,6 +845,7 @@ class SKKService : InputMethodService() {
         super.onComputeInsets(outInsets)
         if (outInsets == null || mInputView == null || mCandidatesViewContainer == null) return
         val height = mInputView!!.height + mCandidatesViewContainer!!.height // paddingBottom は除外
+        if (height == 0) return // このチェックをしない限り LINE で初回起動すると candidates だけ消える
         outInsets.apply {
             contentTopInsets = when {
                 isFloating() -> height // 高さをすべて無効にして floating を実現
