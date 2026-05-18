@@ -31,6 +31,12 @@
         app:key="@string/pref_candidates_min_height"
         app:summary="変換中にリサイズで画面がちらつかず安定します"
         app:title="候補表示をアプリ上に重ねて伸ばす" />
+    <androidx.preference.CheckBoxPreference
+        app:defaultValue="true"
+        app:iconSpaceReserved="false"
+        app:key="@string/pref_suggest_okuri"
+        app:summary="「おくr」等を提案に含めます"
+        app:title="送りありの提案" />
     <androidx.preference.SeekBarPreference
         android:max="10"
         app:defaultValue="2"

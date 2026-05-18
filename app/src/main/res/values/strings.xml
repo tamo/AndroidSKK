@@ -81,6 +81,7 @@
     <string name="pref_hankaku_kana_key" translatable="false">PrefKeyHankakuKanaKey</string>
     <string name="pref_candidates_size" translatable="false">PrefKeyCandidatesSize</string>
     <string name="pref_candidates_min_height" translatable="false">PrefKeyCandidatesMinHeight</string>
+    <string name="pref_suggest_okuri" translatable="false">PrefKeySuggestOkuri</string>
     <string name="pref_candidates_normal_lines" translatable="false">PrefKeyCandidatesNormalLines</string>
     <string name="pref_candidates_emoji_lines" translatable="false">PrefKeyCandidatesEmojiLines</string>
     <string name="pref_use_candidates_view" translatable="false">PrefKeyUseCandidatesView</string>

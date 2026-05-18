@@ -201,8 +201,11 @@ interface SKKDictionaryInterface {
                         continue
                     }
 
-                    !isAlphabet(str.first().code) && isAlphabet(str.last().code)
-                        -> continue // 送りありエントリは飛ばす
+                    // 送りありエントリ
+                    !isAlphabet(str.first().code) && isAlphabet(str.last().code) ->
+                        if (skkPrefs.suggestOkuri) {
+                            str.dropLast(1).let { list.add(Triple(it, str, 0)) }
+                        } else continue
 
                     else -> list.add(Triple(str, str, 0))
                 }
