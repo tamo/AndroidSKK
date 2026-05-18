@@ -463,3 +463,59 @@ private fun handakutenConv(start: Int, number: Int, target: Int) =
     ) + stepConv(
         start + 2, 3, number, 0x20000 + target
     )
+
+private val KANA_VARIANTS: Pair<Map<Char, List<Char>>, Map<Char, List<Char>>> by lazy {
+    val kanaGroups = listOf(
+        // 各文字の軽い変換
+        "あぁ", "いぃ", "うぅゔ", "えぇ", "おぉ",
+        "かが", "きぎ", "くぐ", "けげ", "こご",
+        "さざ", "しじ", "すず", "せぜ", "そぞ",
+        "ただ", "ちぢ", "つづっ", "てで", "とど",
+        "はばぱ", "ひびぴ", "ふぶぷ", "へべぺ", "ほぼぽ",
+        "やゃ", "ゆゅ", "よょ", "わゎ"
+    ) to listOf(
+        // フリックせず押しただけ、「あ」段からの重い変換
+        "あいうえおぁぃぅぇぉ",
+        "かきくけこがぎぐげご",
+        "さしすせそざじずぜぞ",
+        "たちつってとだぢづでど", "なにぬねの",
+        "はひふへほばびぶべぼぱぴぷぺぽ", "まみむめも",
+        "やゃゆゅよょ", "らりるれろ", "わをん"
+    )
+
+    fun variant(groups: List<String>): Map<Char, List<Char>> {
+        val map = mutableMapOf<Char, List<Char>>()
+        for (group in groups) {
+            map[group.first()] = group.toList()
+        }
+        return map
+    }
+    variant(kanaGroups.first) to variant(kanaGroups.second)
+}
+
+internal fun fuzzy(str: String): Sequence<String> {
+    if (str.isEmpty()) return sequenceOf()
+    val conservative: List<List<Char>> = str.map { char ->
+        KANA_VARIANTS.first[char] ?: listOf(char)
+    }
+    val progressive: List<List<Char>> = str.map { char ->
+        KANA_VARIANTS.second[char] ?: listOf(char)
+    }
+    return kanaCombo(conservative) + kanaCombo(progressive)
+}
+
+private fun kanaCombo(lists: List<List<Char>>): Sequence<String> {
+    val total = lists.fold(1L) { acc, list -> acc * list.size }
+    // 連続する数から総当たりに変換するイディオム
+    return (0 until total).asSequence().map { index ->
+        val sb = StringBuilder(lists.size)
+        var temp = index
+        for (list in lists) {
+            val size = list.size.toLong()
+            val charIndex = (temp % size).toInt()
+            sb.append(list[charIndex])
+            temp /= size
+        }
+        sb.toString()
+    }
+}

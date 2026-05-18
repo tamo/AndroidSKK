@@ -118,6 +118,9 @@ class SKKService : InputMethodService() {
         }
     }
 
+    internal val isFlickOrGodan: Boolean
+        get() = (mInputView in listOf(mFlickJPInputView, mGodanInputView))
+
     // 幅の確認
     internal val isFlickWidth: Boolean
         get() = (mInputView != mQwertyInputView && mInputView != mAbbrevKeyboardView)

@@ -146,6 +146,10 @@ class SKKPrefs(context: Context) {
         get() = prefs.getBoolean(res.getString(R.string.pref_show_status_icon), true)
         set(value) = prefs.edit { putBoolean(res.getString(R.string.pref_show_status_icon), value) }
 
+    var fuzzySuggestion: Boolean
+        get() = prefs.getBoolean(res.getString(R.string.pref_fuzzy_suggestion), true)
+        set(value) = prefs.edit { putBoolean(res.getString(R.string.pref_fuzzy_suggestion), value) }
+
     var haptic: Int
         get() = prefs.getInt(res.getString(R.string.pref_haptic), 1)
         set(value) = prefs.edit { putInt(res.getString(R.string.pref_haptic), value) }

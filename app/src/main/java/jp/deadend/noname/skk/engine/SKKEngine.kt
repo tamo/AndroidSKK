@@ -8,9 +8,11 @@ import jp.deadend.noname.skk.SKKService
 import jp.deadend.noname.skk.SKKUserDictionary
 import jp.deadend.noname.skk.dLog
 import jp.deadend.noname.skk.encodeKey
+import jp.deadend.noname.skk.fuzzy
 import jp.deadend.noname.skk.hankaku2zenkaku
 import jp.deadend.noname.skk.hiragana2katakana
 import jp.deadend.noname.skk.isAlphabet
+import jp.deadend.noname.skk.isHiragana
 import jp.deadend.noname.skk.katakana2hiragana
 import jp.deadend.noname.skk.processConcatAndMore
 import jp.deadend.noname.skk.removeAnnotation
@@ -25,8 +27,10 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONException
 import java.util.ArrayDeque
+import kotlin.time.measureTime
 
 class SKKEngine(
     private val mService: SKKService,
@@ -677,26 +681,65 @@ class SKKEngine(
         mUpdateSuggestionsJob.cancel()
         mUpdateSuggestionsJob.invokeOnCompletion {
             mUpdateSuggestionsJob = MainScope().launch(Dispatchers.Default) {
-                val set = mutableSetOf<Pair<String, String>>()
+                if (str.isEmpty()) {
+                    delay(150) // 短時間に連続で実行されると画面がチラつく
+                    ensureActive()
+                    withContext(Dispatchers.Main) { mService.clearCandidatesView() }
+                    return@launch
+                }
 
-                if (str.isNotEmpty())
+                val set = mutableSetOf<Pair<String, String>>()
+                val fuzzyEnabled = skkPrefs.fuzzySuggestion && mService.isFlickOrGodan &&
+                        str.any { c -> isHiragana(c.code) }
+
+                val elapsed = measureTime {
+                    // 字数を増やさずに変換できるものを最優先
+                    val fuzzyFurther = if (fuzzyEnabled) withTimeoutOrNull(1000) {
+                        // 重い処理: 価値があるので数は少なくてもいいがタイムアウトが必要
+                        val goal: Int = skkPrefs.candidatesNormalLines * 7 / str.length
+                        for (fuzzyStr in fuzzy(str)) {
+                            if (set.size >= goal) break
+                            ensureActive()
+                            for (dict in mDictList) {
+                                if (dict.getCandidates(fuzzyStr).isNullOrEmpty()) continue
+                                set.add(fuzzyStr to fuzzyStr)
+                            }
+                        }
+                        set.isEmpty() // 一つでもあれば、さらに前方一致あいまい検索はしない
+                    } ?: set.isEmpty() // タイムアウトしても未発見なら前方一致あいまい検索してみる
+                    else false
+
+                    // 前方一致は軽いので無条件で実行 (数字ありと数字マスク状態で)
                     for (dict in mDictList) {
                         addFound(this@launch, set, str, dict)
                     }
-                str.replace(Regex("\\d+(\\.\\d+)?"), "#").let {
-                    if (it != str) for (dict in mDictList) {
-                        addFound(this@launch, set, it, dict)
+
+                    str.replace(Regex("\\d+(\\.\\d+)?"), "#").let {
+                        if (it != str) for (dict in mDictList) {
+                            addFound(this@launch, set, it, dict)
+                        }
+
+                        // あいまい前方一致は意味があまりないので数は多く、最後に短時間だけ
+                        val goal: Int = skkPrefs.candidatesNormalLines * 10 / str.length
+                        if (fuzzyFurther) withTimeoutOrNull(500) {
+                            for (fuzzyStr in fuzzy(it)) {
+                                if (set.size > goal) break
+                                ensureActive()
+                                for (dict in mDictList) {
+                                    addFound(this@launch, set, fuzzyStr, dict)
+                                }
+                            }
+                        }
                     }
                 }
+                delay(150 - elapsed.inWholeMilliseconds)
+                ensureActive() // 短時間に連続で実行されないよう最新のみ有効に
 
                 set.distinctBy { it.second }
                     .let { uniqueSet ->
                         mCompletionList = uniqueSet.map { it.first }
                         mCandidateList = uniqueSet.map { it.second }
                     }
-
-                delay(150) // 実測では50もあれば十分と思われる
-                ensureActive() // 短時間に連続で実行されないよう最新のみ有効に
 
                 mCandidateKanjiKey = str
                 mCurrentCandidateIndex = 0
