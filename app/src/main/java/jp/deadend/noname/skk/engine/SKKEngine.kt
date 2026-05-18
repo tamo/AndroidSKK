@@ -696,16 +696,17 @@ class SKKEngine(
                     // 字数を増やさずに変換できるものを最優先
                     val fuzzyFurther = if (fuzzyEnabled) withTimeoutOrNull(1000) {
                         // 重い処理: 価値があるので数は少なくてもいいがタイムアウトが必要
-                        val goal: Int = skkPrefs.candidatesNormalLines * 7 / str.length
-                        for (fuzzyStr in fuzzy(str)) {
-                            if (set.size >= goal) break
-                            ensureActive()
-                            for (dict in mDictList) {
-                                if (dict.getCandidates(fuzzyStr).isNullOrEmpty()) continue
-                                set.add(fuzzyStr to fuzzyStr)
+                        500 > measureTime {
+                            val goal: Int = skkPrefs.candidatesNormalLines * 7 / str.length
+                            for (fuzzyStr in fuzzy(str)) {
+                                if (set.size >= goal) break
+                                ensureActive()
+                                for (dict in mDictList) {
+                                    if (dict.getCandidates(fuzzyStr).isNullOrEmpty()) continue
+                                    set.add(fuzzyStr to fuzzyStr)
+                                }
                             }
-                        }
-                        set.isEmpty() // 一つでもあれば、さらに前方一致あいまい検索はしない
+                        }.inWholeMilliseconds || set.isEmpty()
                     } ?: set.isEmpty() // タイムアウトしても未発見なら前方一致あいまい検索してみる
                     else false
 
