@@ -132,8 +132,9 @@ class SKKSettingsActivityUITest {
 
         // 検索欄
         onView(withId(R.id.userDictToolSearch)).perform(click())
-        // AkU で漢字変換して確定する
-        device.pressKeyCode(KeyEvent.KEYCODE_A, KeyEvent.META_SHIFT_LEFT_ON)
+        // QakU で漢字変換して確定する
+        device.pressKeyCode(KeyEvent.KEYCODE_Q, KeyEvent.META_SHIFT_LEFT_ON)
+        device.pressKeyCode(KeyEvent.KEYCODE_A)
         device.pressKeyCode(KeyEvent.KEYCODE_K)
         device.pressKeyCode(KeyEvent.KEYCODE_U, KeyEvent.META_SHIFT_LEFT_ON)
         device.pressKeyCode(KeyEvent.KEYCODE_ENTER)

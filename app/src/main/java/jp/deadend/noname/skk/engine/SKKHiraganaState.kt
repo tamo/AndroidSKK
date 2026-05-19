@@ -2,6 +2,7 @@ package jp.deadend.noname.skk.engine
 
 import jp.deadend.noname.skk.R
 import jp.deadend.noname.skk.decodeKey
+import jp.deadend.noname.skk.encodeKey
 import jp.deadend.noname.skk.isAlphabet
 import jp.deadend.noname.skk.skkPrefs
 
@@ -43,7 +44,12 @@ object SKKHiraganaState : SKKState {
                 // 漢字変換候補入力の開始。KanjiModeへの移行
                 // すでに composing がある場合はそこから KanjiMode だったものとする (mA = Ma)
                 changeState(SKKKanjiState)
-                SKKKanjiState.processKey(context, codeLower)
+                // Q で KanjiState 開始
+                if (!skkPrefs.isModeKey(encodeKey(codeLower))) {
+                    SKKKanjiState.processKey(context, codeLower)
+                } else {
+                    SKKKanjiState.afterBackspace(context) // 画面の更新
+                }
             } else {
                 mComposing.append(Char(codeLower))
                 // 全角にする記号ならば全角，そうでなければローマ字変換
