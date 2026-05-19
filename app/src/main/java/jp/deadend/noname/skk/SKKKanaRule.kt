@@ -51,7 +51,7 @@ object SKKKanaRule {
             return null
         }
         return try {
-            parse(file.readText(Charsets.UTF_8))
+            parse(file.bufferedReader(Charsets.UTF_8).readText())
         } catch (e: IOException) {
             Log.e("SKK", "SKKKanaRule#loadFromInternalStorage() Error: $e")
             null
