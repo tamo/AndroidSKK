@@ -77,11 +77,8 @@ open class KeyboardView @JvmOverloads constructor(
 
     private val mPaint = Paint()
     private val mPadding = Rect(0, 0, 0, 0)
-    private var mDownTime: Long = 0
-    private var mLastMoveTime: Long = 0
     private var mCurrentKey = NOT_A_KEY
     private var mDownKey = NOT_A_KEY
-    private var mCurrentKeyTime: Long = 0
     private var mRepeatKeyIndex = NOT_A_KEY
     private var mHasRepeated = false
     private var mPopupLayout = 0
@@ -963,16 +960,14 @@ open class KeyboardView @JvmOverloads constructor(
         when (action) {
             MotionEvent.ACTION_DOWN -> {
                 mAbortKey = false
-                mCurrentKeyTime = 0
                 mCurrentKey = keyIndex
                 mDownKey = mCurrentKey
-                mDownTime = me.eventTime
-                mLastMoveTime = mDownTime
                 checkMultiTap(eventTime, mCurrentKey)
-                onKeyboardActionListener?.onPress(
-                    if (mCurrentKey != NOT_A_KEY) mKeyboard.keys[mCurrentKey].codes[0] else 0
-                )
-                if (mCurrentKey >= 0 && mKeyboard.keys[mCurrentKey].repeatable) {
+
+                val key = mKeyboard.keys.getOrNull(mCurrentKey)
+                onKeyboardActionListener?.onPress(key?.codes?.getOrNull(0) ?: 0)
+
+                if (key?.repeatable == true) {
                     mRepeatKeyIndex = mCurrentKey
                     mHandler.sendMessageDelayed(
                         mHandler.obtainMessage(MSG_REPEAT), REPEAT_START_DELAY.toLong()
@@ -991,36 +986,25 @@ open class KeyboardView @JvmOverloads constructor(
             MotionEvent.ACTION_MOVE -> {
                 var continueLongPress = false
                 if (keyIndex != NOT_A_KEY) when (mCurrentKey) {
+                    keyIndex -> continueLongPress = true
                     NOT_A_KEY -> {
                         mCurrentKey = keyIndex
-                        mCurrentKeyTime = eventTime - mDownTime
                         pressKey(keyIndex)
-                    }
-
-                    keyIndex -> {
-                        mCurrentKeyTime += eventTime - mLastMoveTime
-                        continueLongPress = true
                     }
                 }
                 if (!continueLongPress && keyIndex != mCurrentKey) {
                     mHandler.removeMessages(MSG_LONG_PRESS)
                 }
-                mLastMoveTime = eventTime
             }
 
             MotionEvent.ACTION_UP -> {
                 removeMessages()
-                if (keyIndex == mCurrentKey) { // keyIndex == NOT_A_KEY のこともある
-                    mCurrentKeyTime += eventTime - mLastMoveTime
-                }
                 releaseKey(mCurrentKey)
                 mPreviewPopup.dismiss()
 
                 // If we're not on a repeatable key (which sends on a DOWN event)
-                if (
-                    mCurrentKey != NOT_A_KEY && !mKeyboard.keys[mCurrentKey].repeatable
-                    && !mMiniKeyboardOnScreen && !mAbortKey
-                ) {
+                val key = mKeyboard.keys.getOrNull(mCurrentKey)
+                if (key?.repeatable == false && !mMiniKeyboardOnScreen && !mAbortKey) {
                     detectAndSendKey(mCurrentKey, eventTime) // マルチタップのために必要
                 }
                 mRepeatKeyIndex = NOT_A_KEY
