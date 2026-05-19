@@ -57,13 +57,13 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
         when (me.action) {
             MotionEvent.ACTION_DOWN -> {
                 flickStartX = me.x
-                flickStartY = me.y
+                flickStartY = me.y2
                 isFlicked = FLICK_NONE
             }
 
             MotionEvent.ACTION_MOVE -> {
                 val dx = me.x - flickStartX
-                val dy = me.y - flickStartY
+                val dy = me.y2 - flickStartY
                 val dx2 = dx * dx
                 val dy2 = dy * dy
                 if (dx2 + dy2 > mFlickSensitivitySquared) {
@@ -77,7 +77,7 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                                 }
                                 mSpaceFlicked = true
                                 flickStartX = me.x
-                                flickStartY = me.y
+                                flickStartY = me.y2
                             } else if (dx2 < dy2 && dy2 > mFlickSensitivitySquared) {
                                 if (dy < 0) {
                                     mService.keyDownUp(KeyEvent.KEYCODE_DPAD_UP)
@@ -85,7 +85,7 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                                     mService.keyDownUp(KeyEvent.KEYCODE_DPAD_DOWN)
                                 }
                                 mSpaceFlicked = true
-                                flickStartY = me.y
+                                flickStartY = me.y2
                                 flickStartX = me.x
                             }
                             return true

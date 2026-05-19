@@ -489,14 +489,14 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
         when (me.action) {
             MotionEvent.ACTION_DOWN -> {
                 mFlickStartX = me.x
-                mFlickStartY = me.y
+                mFlickStartY = me.y2
                 mArrowStartX = me.x
-                mArrowStartY = me.y
+                mArrowStartY = me.y2
             }
 
             MotionEvent.ACTION_MOVE -> {
                 val dx = me.x - mFlickStartX
-                val dy = me.y - mFlickStartY
+                val dy = me.y2 - mFlickStartY
 
                 when {
                     dx * dx + dy * dy < mFlickSensitivitySquared -> {
@@ -508,7 +508,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
 
                     mArrowPressed -> {
                         val adx = me.x - mArrowStartX
-                        val ady = me.y - mArrowStartY
+                        val ady = me.y2 - mArrowStartY
                         val adx2 = adx * adx
                         val ady2 = ady * ady
                         when {
@@ -522,7 +522,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
                                 }
                                 mArrowFlicked = true
                                 mArrowStartX = me.x
-                                mArrowStartY = me.y
+                                mArrowStartY = me.y2
                                 stopRepeatKey()
                                 return true
                             }
@@ -536,7 +536,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
                                     mService.keyDownUp(KeyEvent.KEYCODE_DPAD_DOWN)
                                 }
                                 mArrowFlicked = true
-                                mArrowStartY = me.y
+                                mArrowStartY = me.y2
                                 mArrowStartX = me.x
                                 stopRepeatKey()
                                 return true

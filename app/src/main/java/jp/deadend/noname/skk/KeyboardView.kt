@@ -921,9 +921,17 @@ open class KeyboardView @JvmOverloads constructor(
         return result
     }
 
+    // candidatesView 表示途中のとき me.y が不正確なので me.rawY から自前で計算
+    protected val MotionEvent.y2: Float
+        get() {
+            if (rawY == y) return y
+            getLocationOnScreen(mCoordinates)
+            return rawY - mCoordinates[1]
+        }
+
     open fun onModifiedTouchEvent(me: MotionEvent, possiblePoly: Boolean): Boolean {
         val touchX = me.x.toInt() - paddingLeft
-        var touchY = me.y.toInt() - paddingTop
+        var touchY = me.y2.toInt() - paddingTop
         if (touchY >= -mVerticalCorrection) {
             touchY += mVerticalCorrection
         }

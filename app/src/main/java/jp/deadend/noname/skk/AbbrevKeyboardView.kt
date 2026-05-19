@@ -40,13 +40,13 @@ class AbbrevKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
         when (me.action) {
             MotionEvent.ACTION_DOWN -> {
                 flickStartX = me.x
-                flickStartY = me.y
+                flickStartY = me.y2
                 isFlicked = FLICK_NONE
             }
 
             MotionEvent.ACTION_MOVE -> {
                 val dx = me.x - flickStartX
-                val dy = me.y - flickStartY
+                val dy = me.y2 - flickStartY
                 val dx2 = dx * dx
                 val dy2 = dy * dy
                 if (dx2 + dy2 > mFlickSensitivitySquared) {
