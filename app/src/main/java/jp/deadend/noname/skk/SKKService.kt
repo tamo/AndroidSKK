@@ -586,7 +586,9 @@ class SKKService : InputMethodService() {
     override fun onStartInput(attribute: EditorInfo, restarting: Boolean) {
         dLog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
         if (attribute.inputType == InputType.TYPE_NULL) {
-            requestHideSelf(0)
+            // 以前ここで requestHideSelf(0) しないとホーム画面に candidatesView が残ったり
+            // 色々と問題があったはずなのだが、今は逆に requestHideSelf(0) すると
+            // LINE で candidatesView が消えるので何もせずに return する
             return
         }
         super.onStartInput(attribute, restarting)
@@ -845,7 +847,7 @@ class SKKService : InputMethodService() {
         super.onComputeInsets(outInsets)
         if (outInsets == null || mInputView == null || mCandidatesViewContainer == null) return
         val height = mInputView!!.height + mCandidatesViewContainer!!.height // paddingBottom は除外
-        if (height == 0) return // このチェックをしない限り LINE で初回起動すると candidates だけ消える
+        if (height == 0) return
         outInsets.apply {
             contentTopInsets = when {
                 isFloating() -> height // 高さをすべて無効にして floating を実現
