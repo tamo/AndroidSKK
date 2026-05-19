@@ -201,6 +201,8 @@ class SKKSettingsActivityUITest {
     @Test
     fun testHardKeyFragment() {
         assert(skkPrefs.kanaKey == CTRL_PRESSED or 'j'.code)
+        // 下の方が見えないのでスワイプアップしておく
+        onView(isRoot()).perform(swipeUp())
         onView(withText("ハードウェアキーボードの設定")).perform(click())
 
         // かなキー (CTRL+J -> TAB)
