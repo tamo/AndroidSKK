@@ -317,22 +317,18 @@ fun dLog(msg: String) {
     if (BuildConfig.DEBUG) android.util.Log.d("SKK", msg)
 }
 
-fun getFileNameFromUri(context: Context, uri: Uri): String? {
-    val fileName: String?
-    when (uri.scheme) {
-        "content" -> {
-            val cursor = context.contentResolver
-                .query(uri, arrayOf((OpenableColumns.DISPLAY_NAME)), null, null, null)
-            cursor?.moveToFirst()
-            fileName = cursor?.getString(cursor.getColumnIndexOrThrow(OpenableColumns.DISPLAY_NAME))
-            cursor?.close()
-        }
-
-        "file" -> fileName = uri.path?.let { File(it).name }
-        else -> fileName = null
+fun getFileNameFromUri(context: Context, uri: Uri): String? = when (uri.scheme) {
+    "content" -> {
+        context.contentResolver
+            .query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    cursor.getString(cursor.getColumnIndexOrThrow(OpenableColumns.DISPLAY_NAME))
+                } else null
+            }
     }
 
-    return fileName
+    "file" -> uri.path?.let { File(it).name }
+    else -> null
 }
 
 @Throws(IOException::class)

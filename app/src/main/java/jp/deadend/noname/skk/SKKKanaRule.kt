@@ -51,7 +51,7 @@ object SKKKanaRule {
             return null
         }
         return try {
-            parse(file.bufferedReader(Charsets.UTF_8).readText())
+            parse(file.bufferedReader(Charsets.UTF_8).use { it.readText() })
         } catch (e: IOException) {
             Log.e("SKK", "SKKKanaRule#loadFromInternalStorage() Error: $e")
             null
@@ -84,7 +84,7 @@ object SKKKanaRule {
 
         return try {
             val text = context.contentResolver.openInputStream(uri)?.use { stream ->
-                stream.bufferedReader(Charsets.UTF_8).readText()
+                stream.bufferedReader(Charsets.UTF_8).use { it.readText() }
             } ?: return false
             getInternalFile(context).writeText(text, Charsets.UTF_8)
             true
