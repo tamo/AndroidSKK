@@ -1172,7 +1172,7 @@ class SKKService : InputMethodService() {
         val ic = currentInputConnection ?: return
         if (ic.getSelectedText(0).isNullOrEmpty()) {
             if (ic.getTextBeforeCursor(1, 0).isNullOrEmpty()) return
-            ic.deleteSurroundingText(1, 0)
+            ic.deleteSurroundingTextInCodePoints(1, 0)
         } else {
             ic.commitText("", 1)
         }
