@@ -3,8 +3,14 @@
 ## 元ネタ
 
 [minghai様](https://code.google.com/archive/p/android-apps-by-minghai/) と
-[海月玲二様](http://ray-mizuki.la.coocan.jp/software/skk_jp.html) の
+[海月玲二様](https://github.com/deadend-noname/AndroidSKK) の
 Apache 2.0 ライセンスによるアプリを元にしています。
+
+https://github.com/deadend-noname/AndroidSKK に海月様の実装があります!
+シンプルな実装がお好みの方はそちらがお勧めです。
+
+tamo の AndroidSKK は今では中身がかなり異なってしまっているため、
+相互のソースコードを同期させることはほぼ不可能と思われます。
 
 ## 変更点
 
