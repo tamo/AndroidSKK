@@ -750,8 +750,10 @@ class SKKService : InputMethodService() {
         dLog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
         val context = createNightModeContext(applicationContext, skkPrefs.theme)
 
-        return (View.inflate(context, R.layout.view_candidates, null) as CandidatesViewContainer)
-            .apply {
+        if (mCandidatesViewContainer == null) {
+            val container =
+                View.inflate(context, R.layout.view_candidates, null) as CandidatesViewContainer
+            container.apply {
                 setService(this@SKKService)
                 initViews()
                 setSize(
@@ -762,20 +764,33 @@ class SKKService : InputMethodService() {
                     ).toInt()
                 )
                 setAlpha(skkPrefs.inactiveAlpha)
-
-                mCandidatesView = findViewById<CandidatesView>(R.id.candidates)
-                    .also { view ->
-                        view.setService(this@SKKService)
-                        view.setContainer(this)
-                    }
             }
+
+            mCandidatesView = container.findViewById<CandidatesView>(R.id.candidates)
+                .apply {
+                    setService(this@SKKService)
+                    setContainer(container)
+                }
+
+            // この時点で mCandidatesViewContainer に代入しておかないとうまくいかないことがある
+            mCandidatesViewContainer = container
+        }
+        // 一時的にshowしておかないと後から表示できない場合がある
+        setCandidatesViewShown(true)
+
+        return mCandidatesViewContainer as View
     }
 
     override fun setCandidatesView(view: View?) {
         dLog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
         (view?.parent as? FrameLayout)?.removeView(view)
         super.setCandidatesView(view)
-        mCandidatesViewContainer = view as CandidatesViewContainer
+
+        // 恐らくありえないが、throw せずに dLog にとどめておく
+        if (mCandidatesView != view) {
+            dLog("Error: setCandidatesView without onCreateCandidatesView")
+            mCandidatesViewContainer = view as CandidatesViewContainer
+        }
     }
 
     override fun onStartInputView(editorInfo: EditorInfo?, restarting: Boolean) {

@@ -285,10 +285,11 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
             var lineW = 0
             var totalLineW = 0
             mTotalWidth = mCandidateList.map { candidate ->
-                mPaint.measureText(candidate).coerceAtLeast(mLineHeight * 0.7f) + X_GAP * 2
+                if (mContainer.lines == 0) 1f else
+                    mPaint.measureText(candidate).coerceAtLeast(mLineHeight * 0.7f) + X_GAP * 2
             }.foldIndexed(0) { i, _, wordWidth ->
                 // 改行
-                if (lineW != 0 && lineW + wordWidth > width) {
+                if (mContainer.lines != 0 && lineW != 0 && lineW + wordWidth > width) {
                     lineN = (lineN + 1) % mContainer.lines
                     if (lineN == 0) {
                         // width より長いエントリがあるときはハミ出た部分だけ次画面として

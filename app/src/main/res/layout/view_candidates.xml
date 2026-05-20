@@ -21,6 +21,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:minHeight="@dimen/candidates_scroll_button_width"
     android:orientation="horizontal">
 
     <jp.deadend.noname.skk.CandidatesViewImageButton
@@ -37,7 +38,7 @@
 
     <FrameLayout
         android:id="@+id/frame"
-        android:layout_width="0dp"
+        android:layout_width="@dimen/candidates_scroll_button_width"
         android:layout_height="match_parent"
         app:layout_constraintEnd_toStartOf="@id/candidates_right"
         app:layout_constraintStart_toEndOf="@id/candidates_left">
