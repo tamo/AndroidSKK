@@ -18,6 +18,7 @@ import jp.deadend.noname.skk.processConcatAndMore
 import jp.deadend.noname.skk.removeAnnotation
 import jp.deadend.noname.skk.skkPrefs
 import jp.deadend.noname.skk.zenkaku2hankaku
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -312,9 +313,7 @@ class SKKEngine(
         }
 
         mService.requestChooseCandidate(mCurrentCandidateIndex)
-        mKanjiKey.setLength(0)
-        mKanjiKey.append(candidateList[mCurrentCandidateIndex])
-        setComposingTextSKK(mKanjiKey)
+        pickSuggestion(mCurrentCandidateIndex, commit = false)
     }
 
     fun chooseAdjacentCandidate(isForward: Boolean) {
@@ -678,12 +677,21 @@ class SKKEngine(
 
     internal fun updateSuggestions(str: String) {
         if (mSuggestionsSuspended) return
+        val oldComList = mCompletionList?.toList()
+        val oldCanList = mCandidateList?.toList()
         mUpdateSuggestionsJob.cancel()
         mUpdateSuggestionsJob.invokeOnCompletion {
             mUpdateSuggestionsJob = MainScope().launch(Dispatchers.Default) {
+                @Throws(CancellationException::class)
+                fun ensureCont() {
+                    if (oldComList != mCompletionList || oldCanList != mCandidateList)
+                        throw CancellationException()
+                    ensureActive()
+                }
+
                 if (str.isEmpty()) {
                     delay(150) // 短時間に連続で実行されると画面がチラつく
-                    ensureActive()
+                    ensureCont()
                     withContext(Dispatchers.Main) { mService.clearCandidatesView() }
                     return@launch
                 }
@@ -700,10 +708,15 @@ class SKKEngine(
                             val goal: Int = skkPrefs.candidatesNormalLines * 7 / str.length
                             for (fuzzyStr in fuzzy(str)) {
                                 if (set.size >= goal) break
-                                ensureActive()
+                                ensureCont()
                                 for (dict in mDictList) {
                                     if (dict.getCandidates(fuzzyStr).isNullOrEmpty()) continue
-                                    set.add(fuzzyStr to fuzzyStr)
+                                    val shownStr =
+                                        if (mService.isHiragana) fuzzyStr else hiragana2katakana(
+                                            fuzzyStr,
+                                            reversed = true
+                                        )!!
+                                    set.add(fuzzyStr to shownStr)
                                 }
                             }
                         }.inWholeMilliseconds || set.isEmpty()
@@ -725,7 +738,7 @@ class SKKEngine(
                         if (fuzzyFurther) withTimeoutOrNull(500) {
                             for (fuzzyStr in fuzzy(it)) {
                                 if (set.size > goal) break
-                                ensureActive()
+                                ensureCont()
                                 for (dict in mDictList) {
                                     addFound(this@launch, set, fuzzyStr, dict)
                                 }
@@ -734,7 +747,7 @@ class SKKEngine(
                     }
                 }
                 delay(150 - elapsed.inWholeMilliseconds)
-                ensureActive() // 短時間に連続で実行されないよう最新のみ有効に
+                ensureCont() // 短時間に連続で実行されないよう最新のみ有効に
 
                 set.distinctBy { it.second }
                     .let { uniqueSet ->
@@ -1048,14 +1061,18 @@ class SKKEngine(
     private fun pickCandidate(index: Int, backspace: Boolean = false, unregister: Boolean = false) {
         if (state !in listOf(SKKChooseState, SKKNarrowingState, SKKEmojiState)) return
         if (mCandidateKanjiKey == "emoji") {
+            suspendSuggestions()
             mKanjiKey.setLength(0)
             mKanjiKey.append(mCandidateKanjiKey)
             mCompletionList = mCandidateList?.map { "emoji" }
             pickSuggestion(index, unregister)
+            resumeSuggestions()
             return
         }
         val candidateList = mCandidateList ?: return
         val candidate = StringBuilder(getCandidate(index) ?: return)
+        dLog("pickCandidate $candidate from $candidateList (unregister=$unregister)")
+        suspendSuggestions()
 
         if (unregister) {
             val confirmingState = state as SKKConfirmingState
@@ -1072,6 +1089,7 @@ class SKKEngine(
                 reset()
                 changeState(kanaState)
             }
+            resumeSuggestions()
             return
         }
 
@@ -1097,13 +1115,14 @@ class SKKEngine(
                 text, candidateList, index, mKanjiKey.toString(), mOkurigana
             )
         }
+        resumeSuggestions()
 
         if (state === SKKNarrowingState && SKKNarrowingState.isSequential) return
         reset()
         changeState(kanaState)
     }
 
-    private fun pickSuggestion(index: Int, unregister: Boolean = false) {
+    private fun pickSuggestion(index: Int, unregister: Boolean = false, commit: Boolean = true) {
         var number = Regex("\\d+(\\.\\d+)?").find(mKanjiKey)
         val rawSuggestion = mCandidateList?.get(index) ?: return
         val s = rawSuggestion.map { ch ->
@@ -1114,36 +1133,45 @@ class SKKEngine(
                 }
             }
         }.joinToString("")
+        dLog("pickSuggestion s=$s from $mCandidateList (unregister=$unregister)")
         val c = mCompletionList?.get(index) ?: return
+        dLog("pickSuggestion c=$c from $mCompletionList")
 
         when (state) {
             SKKAbbrevState -> {
                 setComposingTextSKK(s)
                 mKanjiKey.setLength(0)
                 mKanjiKey.append(s)
-                conversionStart(mKanjiKey)
+                if (commit) conversionStart(mKanjiKey)
             }
 
             SKKKanjiState, SKKOkuriganaState -> {
                 val hira = if (kanaState === SKKHiraganaState) s else katakana2hiragana(s)!!
-                setComposingTextSKK(hira) // 向こうでカタカナにするので
-                val li = hira.length - 1
-                val last = hira.codePointAt(li)
-                if (isAlphabet(last)) {
-                    mKanjiKey.setLength(0)
-                    mKanjiKey.append(hira.take(li))
-                    mComposing.setLength(0)
-                    processKey(encodeKey(Character.toUpperCase(last)))
+                val last = hira.last()
+                val hasOkuri = !isAlphabet(hira.first().code) && isAlphabet(last.code)
+                val kanjiKey = if (hasOkuri) hira.dropLast(1) else hira
+                mKanjiKey.setLength(0)
+                mKanjiKey.append(kanjiKey)
+                mComposing.setLength(0)
+                if (commit) {
+                    if (hasOkuri) {
+                        processKey(encodeKey(last.uppercaseChar().code))
+                    } else {
+                        conversionStart(mKanjiKey)
+                    }
                 } else {
-                    mKanjiKey.setLength(0)
-                    mKanjiKey.append(hira)
-                    mComposing.setLength(0)
-                    conversionStart(mKanjiKey)
+                    // ハードウェアキーボードで Tab を押しただけなら送り仮名で conversionStart しない
+                    val composing = if (hasOkuri && last !in listOf('a', 'i', 'u', 'e', 'o')) {
+                        mComposing.append(last) // 子音は入力したことにして、次の母音を大文字で入力させる
+                        kanjiKey + last
+                    } else kanjiKey
+                    setComposingTextSKK(composing)
                 }
             }
 
             // 絵文字か記号のときだけ Narrowing でここに来る
             SKKASCIIState, SKKEmojiState, SKKNarrowingState -> {
+                if (!commit) return
                 if (isPersonalizedLearning || unregister) {
                     val lambda = {
                         var newEntry = "/160/$s"
