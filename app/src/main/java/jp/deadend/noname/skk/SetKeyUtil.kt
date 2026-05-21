@@ -25,15 +25,16 @@ fun encodeKey(event: KeyEvent): Int {
     val lower = Character.toLowerCase(uc)
     val isKeycode = lower == 0 && !KeyEvent.isModifierKey(event.keyCode)
     val c = if (isKeycode) event.keyCode else lower
-    val meta = when {
-        // 大文字以外はシフトを押していてもシフトなしの記号として扱うことで、キーボード依存をなくす
-        uc != 0 -> if (uc != lower) SHIFT_PRESSED else 0
-        event.metaState and KeyEvent.META_SHIFT_MASK != 0 -> SHIFT_PRESSED
-        else -> 0
-    } or if (event.metaState and KeyEvent.META_ALT_MASK != 0) ALT_PRESSED
-    else 0 or if (event.metaState and KeyEvent.META_CTRL_MASK != 0) CTRL_PRESSED
-    else 0 or if (event.metaState and KeyEvent.META_META_MASK != 0) META_PRESSED
-    else 0 or if (isKeycode) RAW_KEYCODE else 0
+    val meta = (if (isKeycode) RAW_KEYCODE else 0) or
+            (if (event.metaState and KeyEvent.META_META_MASK != 0) META_PRESSED else 0) or
+            (if (event.metaState and KeyEvent.META_CTRL_MASK != 0) CTRL_PRESSED else 0) or
+            (if (event.metaState and KeyEvent.META_ALT_MASK != 0) ALT_PRESSED else 0) or
+            when {
+                // 大文字以外はシフトを押していてもシフトなしの記号として扱うことで、キーボード依存をなくす
+                uc != 0 -> if (uc != lower) SHIFT_PRESSED else 0
+                event.metaState and KeyEvent.META_SHIFT_MASK != 0 -> SHIFT_PRESSED
+                else -> 0
+            }
 
     return meta or c
 }

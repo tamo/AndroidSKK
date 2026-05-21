@@ -21,8 +21,8 @@
             app:defaultValue="false"
             app:iconSpaceReserved="false"
             app:key="@string/pref_toggle_kana_key"
-            app:summary="オンだと，かなモードでかなキーを押すとASCIIモードに戻ります"
-            app:title="かなキーをASCIIとのトグルに" />
+            app:summary="オンだと，かなモードでかなキーを押すと ASCII モードに戻ります"
+            app:title="かなキーを ASCII とのトグルに" />
         <androidx.preference.Preference
             app:iconSpaceReserved="false"
             app:key="@string/pref_cancel_key"
@@ -30,7 +30,7 @@
         <androidx.preference.Preference
             app:iconSpaceReserved="false"
             app:key="@string/pref_katakana_key"
-            app:title="カタカナキー" />
+            app:title="カタカナキー (SHIFT+ で▽開始)" />
         <androidx.preference.Preference
             app:iconSpaceReserved="false"
             app:key="@string/pref_ascii_key"
@@ -57,41 +57,45 @@
             app:defaultValue="false"
             app:iconSpaceReserved="false"
             app:key="@string/pref_sticky_meta"
-            app:summary="shiftを同時押しでなくても効くようにします"
-            app:title="Sticky shift" />
+            app:summary="押しっぱなしでなくてもシフトを有効にします (2回でロック)"
+            app:title="固定シフトキー" />
         <androidx.preference.CheckBoxPreference
             app:defaultValue="false"
             app:iconSpaceReserved="false"
             app:key="@string/pref_sands"
-            app:summary="スペースキーをshiftとして使います"
+            app:summary="スペースキーをシフトとして使います"
             app:title="SandS" />
         <androidx.preference.CheckBoxPreference
             app:defaultValue="false"
-            app:iconSpaceReserved="false"
+            app:dependency="@string/pref_sands"
             app:key="@string/pref_sands_in_ascii"
             app:summary="オフにすると ASCII モードではアプリ側にキーを渡します"
             app:title="ASCII モードでも SandS を有効にする" />
-        <androidx.preference.CheckBoxPreference
-            app:defaultValue="false"
+        <androidx.preference.PreferenceCategory
             app:iconSpaceReserved="false"
-            app:key="@string/pref_emacs_nav_in_ascii"
-            app:summary="オフにすると ASCII モードではアプリ側にキーを渡します"
-            app:title="ASCII モードでもナビキーを有効にする" />
-        <androidx.preference.Preference
-            app:iconSpaceReserved="false"
-            app:key="@string/pref_nav_line_start_key"
-            app:title="行頭キー" />
-        <androidx.preference.Preference
-            app:iconSpaceReserved="false"
-            app:key="@string/pref_nav_line_end_key"
-            app:title="行末キー" />
-        <androidx.preference.Preference
-            app:iconSpaceReserved="false"
-            app:key="@string/pref_nav_forward_key"
-            app:title="一文字進むキー" />
-        <androidx.preference.Preference
-            app:iconSpaceReserved="false"
-            app:key="@string/pref_nav_backward_key"
-            app:title="一文字戻るキー" />
+            app:title="Emacs 風のナビキー">
+            <androidx.preference.Preference
+                app:iconSpaceReserved="false"
+                app:key="@string/pref_nav_line_start_key"
+                app:title="行頭キー" />
+            <androidx.preference.Preference
+                app:iconSpaceReserved="false"
+                app:key="@string/pref_nav_line_end_key"
+                app:title="行末キー" />
+            <androidx.preference.Preference
+                app:iconSpaceReserved="false"
+                app:key="@string/pref_nav_forward_key"
+                app:title="一文字進むキー" />
+            <androidx.preference.Preference
+                app:iconSpaceReserved="false"
+                app:key="@string/pref_nav_backward_key"
+                app:title="一文字戻るキー" />
+            <androidx.preference.CheckBoxPreference
+                app:defaultValue="false"
+                app:iconSpaceReserved="false"
+                app:key="@string/pref_emacs_nav_in_ascii"
+                app:summary="オフにすると ASCII モードではアプリ側にキーを渡します"
+                app:title="ASCII モードでもナビキーを有効にする" />
+        </androidx.preference.PreferenceCategory>
     </androidx.preference.PreferenceCategory>
 </androidx.preference.PreferenceScreen>

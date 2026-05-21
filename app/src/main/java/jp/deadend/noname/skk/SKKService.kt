@@ -889,7 +889,7 @@ class SKKService : InputMethodService() {
     override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean {
         // ハードウェアキー設定と重複しないように
         if (currentInputEditorInfo?.packageName == packageName &&
-            currentInputEditorInfo?.inputType == 0
+            currentInputEditorInfo?.inputType == EditorInfo.TYPE_NULL
         ) return false
 
         // SandS: ASCII モードでのスペースアップ処理
@@ -944,18 +944,18 @@ class SKKService : InputMethodService() {
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
         // ハードウェアキー設定と重複しないように
         if (currentInputEditorInfo?.packageName == packageName &&
-            currentInputEditorInfo?.inputType == 0
+            currentInputEditorInfo?.inputType == EditorInfo.TYPE_NULL
         ) return false
 
         val engineState = mEngine.state
         val encodedKey = encodeKey(event)
 
-        // Emacs 風ナビゲーションキー（NAV_KEY_DISABLED=0 のキーはスキップ）
+        // Emacs 風ナビゲーションキー（NAV_KEY_DISABLED は 0 なので合致し得ない）
         val navKey = when (encodedKey) {
-            skkPrefs.navLineStartKey.takeIf { it != NAV_KEY_DISABLED } -> KeyEvent.KEYCODE_MOVE_HOME
-            skkPrefs.navLineEndKey.takeIf { it != NAV_KEY_DISABLED } -> KeyEvent.KEYCODE_MOVE_END
-            skkPrefs.navForwardKey.takeIf { it != NAV_KEY_DISABLED } -> KeyEvent.KEYCODE_DPAD_RIGHT
-            skkPrefs.navBackwardKey.takeIf { it != NAV_KEY_DISABLED } -> KeyEvent.KEYCODE_DPAD_LEFT
+            skkPrefs.navLineStartKey -> KeyEvent.KEYCODE_MOVE_HOME
+            skkPrefs.navLineEndKey -> KeyEvent.KEYCODE_MOVE_END
+            skkPrefs.navForwardKey -> KeyEvent.KEYCODE_DPAD_RIGHT
+            skkPrefs.navBackwardKey -> KeyEvent.KEYCODE_DPAD_LEFT
             else -> null
         }
         if (navKey != null) {

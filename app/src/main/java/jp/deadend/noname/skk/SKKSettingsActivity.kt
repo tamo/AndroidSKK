@@ -95,9 +95,8 @@ class SKKSettingsActivity : AppCompatActivity() {
             findPreference<Preference>(getString(prefKeyResId))?.apply {
                 summary = if (nav) navKeySummary(currentValue) else getKeyName(currentValue)
                 setOnPreferenceClickListener {
-                    summary = getString(
-                        if (nav) R.string.label_push_any_nav else R.string.label_push_any
-                    )
+                    summary =
+                        if (nav) getString(R.string.label_push_any_nav) else getString(R.string.label_push_any)
                     (requireActivity() as SKKSettingsActivity).keyPref = this
                     true
                 }
