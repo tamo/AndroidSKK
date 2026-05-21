@@ -892,15 +892,14 @@ class SKKService : InputMethodService() {
             currentInputEditorInfo?.inputType == 0
         ) return false
 
-        if (mEngine.state === SKKASCIIState) {
-            // SandS: ASCII モードでのスペースアップ処理
-            if (mSandS && skkPrefs.sandSInAscii && keyCode == KeyEvent.KEYCODE_SPACE) {
-                mSpacePressed = false
-                if (!mSandSUsed) currentInputConnection?.commitText(" ", 1)
-                mSandSUsed = false
-                return true
-            }
-            return super.onKeyUp(keyCode, event)
+        // SandS: ASCII モードでのスペースアップ処理
+        if (mSandS && skkPrefs.sandSInAscii &&
+            mEngine.state === SKKASCIIState && keyCode == KeyEvent.KEYCODE_SPACE
+        ) {
+            mSpacePressed = false
+            if (!mSandSUsed) currentInputConnection?.commitText(" ", 1)
+            mSandSUsed = false
+            return true
         }
 
         when (keyCode) {
@@ -1001,12 +1000,6 @@ class SKKService : InputMethodService() {
                 updateSuggestionsASCII()
                 return result
             }
-        }
-
-        if (engineState === SKKASCIIState && !mEngine.isRegistering) {
-            val result = super.onKeyDown(keyCode, event)
-            updateSuggestionsASCII()
-            return result
         }
 
         if (encodedKey == skkPrefs.cancelKey) {

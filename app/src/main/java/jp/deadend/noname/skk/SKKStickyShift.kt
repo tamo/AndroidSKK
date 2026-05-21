@@ -50,20 +50,20 @@ internal class SKKStickyShift(private val mIs: InputMethodService) {
         }
     }
 
-    fun useState(): Int {
-        if (mState == State.STATE_ON) {
+    fun useState(): Int = when (mState) {
+        State.STATE_LOCKED -> KeyEvent.META_SHIFT_ON
+
+        State.STATE_ON -> {
             if (isPressed) {
-                // stay on
-                isUsed = true
+                isUsed = true // 押して離す前に使ってしまったので、離した時点でオフにする
             } else {
-                mState = State.STATE_NONE
+                mState = State.STATE_NONE // 普通に使ったので、この時点でオフにする
                 mIs.currentInputConnection?.clearMetaKeyStates(MASK_SHIFT_STATES)
-                // on -> off
             }
-            return KeyEvent.META_SHIFT_ON
+            KeyEvent.META_SHIFT_ON
         }
 
-        return 0
+        else -> 0
     }
 
     companion object {
