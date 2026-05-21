@@ -585,10 +585,15 @@ class SKKService : InputMethodService() {
      */
     override fun onStartInput(attribute: EditorInfo, restarting: Boolean) {
         dLog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
+        /* 以前ここで requestHideSelf(0) しないとホーム画面に candidatesView が残ったり
+         * 色々と問題があったはずなのだが、今は何もせずに return しても大丈夫みたい
+         * 以前はホーム画面で即座に検索できるよう TYPE_NULL の不可視フィールドがあったのかも
+         * さらに mPendingInput が暴発しないために return していたが
+         * 音声入力も mushroom も普通に使えるのでこれも不要のようだ
+         * 以上の理由から、将来的にはこの if をまるごと消しても問題ないと思われる
+         */
         if (attribute.inputType == InputType.TYPE_NULL) {
-            // 以前ここで requestHideSelf(0) しないとホーム画面に candidatesView が残ったり
-            // 色々と問題があったはずなのだが、今は逆に requestHideSelf(0) すると
-            // LINE で candidatesView が消えるので何もせずに return する
+            requestHideSelf(0)
             return
         }
         super.onStartInput(attribute, restarting)
