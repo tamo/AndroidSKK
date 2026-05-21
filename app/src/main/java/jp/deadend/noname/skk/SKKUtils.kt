@@ -497,7 +497,8 @@ internal fun fuzzy(str: String): Sequence<String> {
     val progressive: List<List<Char>> = str.map { char ->
         KANA_VARIANTS.second[char] ?: listOf(char)
     }
-    return kanaCombo(conservative) + kanaCombo(progressive)
+    return kanaCombo(conservative) + if (skkPrefs.fuzzierSuggestion)
+        kanaCombo(progressive) else emptySequence()
 }
 
 private fun kanaCombo(lists: List<List<Char>>): Sequence<String> {

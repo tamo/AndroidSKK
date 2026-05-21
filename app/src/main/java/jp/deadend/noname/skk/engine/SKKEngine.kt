@@ -701,15 +701,15 @@ class SKKEngine(
                         str.any { c -> isHiragana(c.code) }
 
                 val elapsed = measureTime {
-                    // 字数を増やさずに変換できるものを最優先
-                    val fuzzyFurther = if (fuzzyEnabled) withTimeoutOrNull(1000) {
-                        // 重い処理: 価値があるので数は少なくてもいいがタイムアウトが必要
-                        500 > measureTime {
-                            val goal: Int = skkPrefs.candidatesNormalLines * 7 / str.length
-                            for (fuzzyStr in fuzzy(str)) {
-                                if (set.size >= goal) break
-                                ensureCont()
-                                for (dict in mDictList) {
+                    for (dict in mDictList) {
+                        // 字数を増やさずに変換できるものを最優先
+                        val fuzzyFurther = if (fuzzyEnabled) withTimeoutOrNull(1000) {
+                            // 重い処理: 価値があるので数は少なくてもいいがタイムアウトが必要
+                            500 > measureTime {
+                                val goal: Int = skkPrefs.candidatesNormalLines * 7 / str.length
+                                for (fuzzyStr in fuzzy(str)) {
+                                    if (set.size >= goal) break
+                                    ensureCont()
                                     if (dict.getCandidates(fuzzyStr).isNullOrEmpty()) continue
                                     val shownStr =
                                         if (mService.isHiragana) fuzzyStr else hiragana2katakana(
@@ -718,28 +718,22 @@ class SKKEngine(
                                         )!!
                                     set.add(fuzzyStr to shownStr)
                                 }
-                            }
-                        }.inWholeMilliseconds || set.isEmpty()
-                    } ?: set.isEmpty() // タイムアウトしても未発見なら前方一致あいまい検索してみる
-                    else false
+                            }.inWholeMilliseconds || set.isEmpty()
+                        } ?: set.isEmpty() // タイムアウトしても未発見なら前方一致あいまい検索してみる
+                        else false
 
-                    // 前方一致は軽いので無条件で実行 (数字ありと数字マスク状態で)
-                    for (dict in mDictList) {
+                        // 前方一致は軽いので無条件で実行 (数字ありと数字マスク状態で)
                         addFound(this@launch, set, str, dict)
-                    }
 
-                    str.replace(Regex("\\d+(\\.\\d+)?"), "#").let {
-                        if (it != str) for (dict in mDictList) {
-                            addFound(this@launch, set, it, dict)
-                        }
+                        str.replace(Regex("\\d+(\\.\\d+)?"), "#").let {
+                            if (it != str) addFound(this@launch, set, it, dict)
 
-                        // あいまい前方一致は意味があまりないので数は多く、最後に短時間だけ
-                        val goal: Int = skkPrefs.candidatesNormalLines * 10 / str.length
-                        if (fuzzyFurther) withTimeoutOrNull(500) {
-                            for (fuzzyStr in fuzzy(it)) {
-                                if (set.size > goal) break
-                                ensureCont()
-                                for (dict in mDictList) {
+                            // あいまい前方一致は意味があまりないので数は多く、最後に短時間だけ
+                            val goal: Int = skkPrefs.candidatesNormalLines * 10 / str.length
+                            if (fuzzyFurther) withTimeoutOrNull(500) {
+                                for (fuzzyStr in fuzzy(it)) {
+                                    if (set.size > goal) break
+                                    ensureCont()
                                     addFound(this@launch, set, fuzzyStr, dict)
                                 }
                             }

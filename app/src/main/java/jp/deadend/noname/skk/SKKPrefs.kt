@@ -35,6 +35,19 @@ class SKKPrefs(context: Context) {
             putBoolean(res.getString(R.string.pref_candidates_min_height), value)
         }
 
+    var fuzzySuggestion: Boolean
+        get() = prefs.getBoolean(res.getString(R.string.pref_fuzzy_suggestion), true)
+        set(value) = prefs.edit { putBoolean(res.getString(R.string.pref_fuzzy_suggestion), value) }
+
+    var fuzzierSuggestion: Boolean
+        get() = prefs.getBoolean(res.getString(R.string.pref_fuzzier_suggestion), false)
+        set(value) = prefs.edit {
+            putBoolean(
+                res.getString(R.string.pref_fuzzier_suggestion),
+                value
+            )
+        }
+
     var suggestOkuri: Boolean
         get() = prefs.getBoolean(res.getString(R.string.pref_suggest_okuri), true)
         set(value) = prefs.edit {
@@ -150,10 +163,6 @@ class SKKPrefs(context: Context) {
     var showStatusIcon: Boolean
         get() = prefs.getBoolean(res.getString(R.string.pref_show_status_icon), true)
         set(value) = prefs.edit { putBoolean(res.getString(R.string.pref_show_status_icon), value) }
-
-    var fuzzySuggestion: Boolean
-        get() = prefs.getBoolean(res.getString(R.string.pref_fuzzy_suggestion), true)
-        set(value) = prefs.edit { putBoolean(res.getString(R.string.pref_fuzzy_suggestion), value) }
 
     var haptic: Int
         get() = prefs.getInt(res.getString(R.string.pref_haptic), 1)

@@ -15,14 +15,12 @@ import androidx.test.espresso.NoMatchingViewException
 import androidx.test.espresso.action.EspressoKey
 import androidx.test.espresso.action.ViewActions.click
 import androidx.test.espresso.action.ViewActions.pressKey
-import androidx.test.espresso.action.ViewActions.swipeUp
 import androidx.test.espresso.assertion.ViewAssertions.doesNotExist
 import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.matcher.ViewMatchers.hasSibling
 import androidx.test.espresso.matcher.ViewMatchers.isChecked
 import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
 import androidx.test.espresso.matcher.ViewMatchers.isNotChecked
-import androidx.test.espresso.matcher.ViewMatchers.isRoot
 import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.espresso.matcher.ViewMatchers.withText
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -83,7 +81,7 @@ class SKKSettingsActivityUITest {
     fun testDictManager() {
         // 新規インストールであることを前提としているので失敗したら再テストで通る
         assert(skkPrefs.dictOrder == skkPrefs.defaultDictOrder)
-        onView(withText("SKK 辞書管理")).perform(click())
+        onView(withText("システム辞書の管理")).perform(click())
         onView(withText("SKK S 辞書"))
             .check(matches(isNotChecked()))
             .perform(click())
@@ -108,8 +106,6 @@ class SKKSettingsActivityUITest {
 
     @Test
     fun testUserDictTool() {
-        // 下の方が見えないのでスワイプアップしておく
-        onView(isRoot()).perform(swipeUp())
         onView(withText("ユーザー辞書の初期化")).perform(click())
         // 初期化されます。よろしいですか
         onView(withText("OK")).perform(click())
@@ -202,8 +198,6 @@ class SKKSettingsActivityUITest {
     @Test
     fun testHardKeyFragment() {
         assert(skkPrefs.kanaKey == CTRL_PRESSED or 'j'.code)
-        // 下の方が見えないのでスワイプアップしておく
-        onView(isRoot()).perform(swipeUp())
         onView(withText("ハードウェアキーボードの設定")).perform(click())
 
         // かなキー (CTRL+J -> TAB)
@@ -219,14 +213,14 @@ class SKKSettingsActivityUITest {
         assert(skkPrefs.kanaKey == '\t'.code)
 
         // カタカナキー (Q -> T)
-        onView(withText("カタカナキー"))
+        onView(withText("カタカナキー (SHIFT+ で▽開始)"))
             .check(matches(hasSibling(withText("Q"))))
             .perform(click())
         repeat(3) {
             Thread.sleep(1000)
-            onView(withText("カタカナキー")).perform(pressKey(KeyEvent.KEYCODE_T))
+            onView(withText("カタカナキー (SHIFT+ で▽開始)")).perform(pressKey(KeyEvent.KEYCODE_T))
         }
-        onView(withText("カタカナキー")).check(matches(hasSibling(withText("T"))))
+        onView(withText("カタカナキー (SHIFT+ で▽開始)")).check(matches(hasSibling(withText("T"))))
         assert(skkPrefs.katakanaKey == 't'.code)
 
         // ASCIIキー (L -> A)
@@ -279,8 +273,6 @@ class SKKSettingsActivityUITest {
     @Test
     fun testSoftKeyFragment() {
         assert(skkPrefs.useSoftKey == "auto")
-        // 下の方が見えないのでスワイプアップしておく
-        onView(isRoot()).perform(swipeUp())
         onView(withText("ソフトウェアキーボードの設定")).perform(click())
         onView(withText("ソフトウェアキーボードの表示"))
             .check(matches(hasSibling(withText("自動"))))

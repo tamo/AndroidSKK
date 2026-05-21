@@ -81,6 +81,8 @@
     <string name="pref_hankaku_kana_key" translatable="false">PrefKeyHankakuKanaKey</string>
     <string name="pref_candidates_size" translatable="false">PrefKeyCandidatesSize</string>
     <string name="pref_candidates_min_height" translatable="false">PrefKeyCandidatesMinHeight</string>
+    <string name="pref_fuzzy_suggestion" translatable="false">PrefKeyFuzzySuggestion</string>
+    <string name="pref_fuzzier_suggestion" translatable="false">PrefKeyFuzzierSuggestion</string>
     <string name="pref_suggest_okuri" translatable="false">PrefKeySuggestOkuri</string>
     <string name="pref_candidates_normal_lines" translatable="false">PrefKeyCandidatesNormalLines</string>
     <string name="pref_candidates_emoji_lines" translatable="false">PrefKeyCandidatesEmojiLines</string>
@@ -91,7 +93,6 @@
     <string name="pref_ignore_high_contrast" translatable="false">PrefKeyOriginalColor</string>
     <string name="pref_use_soft_key" translatable="false">PrefKeyUseSoftKey</string>
     <string name="pref_show_status_icon" translatable="false">PrefKeyShowStatusIcon</string>
-    <string name="pref_fuzzy_suggestion" translatable="false">PrefKeyFuzzySuggestion</string>
     <string name="pref_haptic" translatable="false">PrefKeyHaptic</string>
     <string name="pref_over_edge" translatable="false">PrefKeyOverEdge</string>
     <string name="pref_forbid_paste" translatable="false">PrefKeyForbidPaste</string>

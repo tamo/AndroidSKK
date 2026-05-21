@@ -21,12 +21,6 @@
                 app:key="@string/pref_show_status_icon"
                 app:summary="ソフトウェアキーボード使用時にも「あ」「ア」「Ａ」「ab」といった状態を表示します"
                 app:title="ステータスアイコンを表示" />
-            <androidx.preference.CheckBoxPreference
-                app:defaultValue="true"
-                app:iconSpaceReserved="false"
-                app:key="@string/pref_fuzzy_suggestion"
-                app:summary="濁点の有無などを変えた単語も提案します (ア段は段も変えてみます)"
-                app:title="あいまい候補" />
             <androidx.preference.SeekBarPreference
                 android:max="27"
                 app:defaultValue="1"
