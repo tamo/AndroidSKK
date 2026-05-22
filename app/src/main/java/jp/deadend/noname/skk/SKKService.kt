@@ -27,11 +27,11 @@ import android.util.Log
 import android.util.TypedValue
 import android.view.Display.DEFAULT_DISPLAY
 import android.view.KeyEvent
+import android.view.LayoutInflater
 import android.view.View
 import android.view.WindowInsets
 import android.view.WindowManager
 import android.view.inputmethod.EditorInfo
-import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -39,6 +39,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.preference.PreferenceManager
+import jp.deadend.noname.skk.databinding.InputViewBinding
 import jp.deadend.noname.skk.engine.RomajiConverter
 import jp.deadend.noname.skk.engine.SKKASCIIState
 import jp.deadend.noname.skk.engine.SKKAbbrevState
@@ -57,8 +58,9 @@ import java.io.IOException
 
 
 class SKKService : InputMethodService() {
-    private var mCandidatesViewContainer: CandidatesViewContainer? = null
-    private var mCandidatesView: CandidatesView? = null
+    private lateinit var mBinding: InputViewBinding
+    private val mCandidatesViewContainer get() = mBinding.candidatesContainer.root
+    private val mCandidatesView get() = mBinding.candidatesContainer.candidates
     private var mFlickJPInputView: FlickJPKeyboardView? = null
     private var mGodanInputView: GodanKeyboardView? = null
     private var mQwertyInputView: QwertyKeyboardView? = null
@@ -411,13 +413,15 @@ class SKKService : InputMethodService() {
 
         if (mFlickJPInputView != null) readPrefsForInputView()
 
-        mCandidatesViewContainer?.setSize(
-            TypedValue.applyDimension(
-                TypedValue.COMPLEX_UNIT_SP,
-                skkPrefs.candidatesSize.toFloat(),
-                context.resources.displayMetrics
-            ).toInt()
-        )
+        if (::mBinding.isInitialized) {
+            mCandidatesViewContainer.setSize(
+                TypedValue.applyDimension(
+                    TypedValue.COMPLEX_UNIT_SP,
+                    skkPrefs.candidatesSize.toFloat(),
+                    context.resources.displayMetrics
+                ).toInt()
+            )
+        }
     }
 
     private fun readPrefsForInputView() {
@@ -553,16 +557,36 @@ class SKKService : InputMethodService() {
         readPrefsForInputView()
     }
 
-    override fun onCreateInputView(): View? {
+    override fun onCreateInputView(): View {
         dLog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
-        setCandidatesView(onCreateCandidatesView())
+
+        val context = createNightModeContext(applicationContext, skkPrefs.theme)
+        mBinding = InputViewBinding.inflate(LayoutInflater.from(context))
+
+        mCandidatesViewContainer.apply {
+            setService(this@SKKService)
+            initViews()
+            setSize(
+                TypedValue.applyDimension(
+                    TypedValue.COMPLEX_UNIT_SP,
+                    skkPrefs.candidatesSize.toFloat(),
+                    context.resources.displayMetrics
+                ).toInt()
+            )
+            setAlpha(skkPrefs.inactiveAlpha)
+            visibility = if (skkPrefs.useCandidatesView) View.VISIBLE else View.GONE
+        }
+        mCandidatesView.apply {
+            setService(this@SKKService)
+            setContainer(mCandidatesViewContainer)
+        }
 
         val wasGodan = mInputView?.equals(mGodanInputView) == true
         val wasFlick = mInputView?.equals(mFlickJPInputView) == true
         createInputView()
 
         dLog("onCreateInputView: wasFlick=$wasFlick wasGodan=$wasGodan engineState=$engineState")
-        return if (
+        val keyboardView = if (
             wasGodan || (skkPrefs.preferFlick && skkPrefs.preferGodan && !skkPrefs.godanQwerty)
         ) mGodanInputView?.setKeyState(engineState)
         else when (engineState) {
@@ -575,6 +599,14 @@ class SKKService : InputMethodService() {
                 else -> mFlickJPInputView
             }
         }?.setKeyState(engineState)
+
+        keyboardView?.let {
+            (it.parent as? android.view.ViewGroup)?.removeView(it)
+            mBinding.keyboardContainer.addView(it)
+            mInputView = it
+        }
+
+        return mBinding.root
     }
 
     /**
@@ -747,57 +779,6 @@ class SKKService : InputMethodService() {
         mPrevStates = null
     }
 
-    /**
-     * Called by the framework when your view for showing candidates
-     * needs to be generated, like [.onCreateInputView].
-     */
-    override fun onCreateCandidatesView(): View {
-        dLog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
-        val context = createNightModeContext(applicationContext, skkPrefs.theme)
-
-        if (mCandidatesViewContainer == null) {
-            val container =
-                View.inflate(context, R.layout.view_candidates, null) as CandidatesViewContainer
-            container.apply {
-                setService(this@SKKService)
-                initViews()
-                setSize(
-                    TypedValue.applyDimension(
-                        TypedValue.COMPLEX_UNIT_SP,
-                        skkPrefs.candidatesSize.toFloat(),
-                        context.resources.displayMetrics
-                    ).toInt()
-                )
-                setAlpha(skkPrefs.inactiveAlpha)
-            }
-
-            mCandidatesView = container.findViewById<CandidatesView>(R.id.candidates)
-                .apply {
-                    setService(this@SKKService)
-                    setContainer(container)
-                }
-
-            // この時点で mCandidatesViewContainer に代入しておかないとうまくいかないことがある
-            mCandidatesViewContainer = container
-        }
-        // 一時的にshowしておかないと後から表示できない場合がある
-        setCandidatesViewShown(true)
-
-        return mCandidatesViewContainer as View
-    }
-
-    override fun setCandidatesView(view: View?) {
-        dLog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
-        (view?.parent as? FrameLayout)?.removeView(view)
-        super.setCandidatesView(view)
-
-        // 恐らくありえないが、throw せずに dLog にとどめておく
-        if (mCandidatesView != view) {
-            dLog("Error: setCandidatesView without onCreateCandidatesView")
-            mCandidatesViewContainer = view as CandidatesViewContainer
-        }
-    }
-
     override fun onStartInputView(editorInfo: EditorInfo?, restarting: Boolean) {
         dLog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
         super.onStartInputView(editorInfo, restarting)
@@ -865,18 +846,21 @@ class SKKService : InputMethodService() {
     override fun onComputeInsets(outInsets: Insets?) {
         //dLog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
         super.onComputeInsets(outInsets)
-        if (outInsets == null || mInputView == null || mCandidatesViewContainer == null) return
-        val height = mInputView!!.height + mCandidatesViewContainer!!.height // paddingBottom は除外
-        if (height == 0) return
+        if (outInsets == null || mInputView == null) return
         outInsets.apply {
+            val variableHeight = mCandidatesViewContainer.let { it.height - it.minHeight }
             contentTopInsets = when {
-                isFloating() -> height // 高さをすべて無効にして floating を実現
-                skkPrefs.candidatesMinHeight -> contentTopInsets -
-                        mCandidatesViewContainer!!.minHeight // 常時表示される分だけを確保し固定
+                isFloating() -> mBinding.root.height // 高さをすべて無効にして floating を実現
+                skkPrefs.candidatesMinHeight -> visibleTopInsets + variableHeight
                 else -> visibleTopInsets // 変動する CandidatesView の高さも確保
             }
             touchableInsets = Insets.TOUCHABLE_INSETS_REGION
-            touchableRegion.set(leftOffset, 0, leftOffset + mInputView!!.keyboard.width, height)
+            touchableRegion.set(
+                leftOffset,
+                0,
+                leftOffset + mInputView!!.keyboard.width,
+                mBinding.root.height
+            )
         }
     }
 
@@ -1340,7 +1324,7 @@ class SKKService : InputMethodService() {
     fun resumeSuggestions() = mEngine.resumeSuggestions()
 
     fun setCandidates(list: List<String>?, kanjiKey: String, viewLines: Int) {
-        mCandidatesViewContainer?.apply {
+        mCandidatesViewContainer.apply {
             if (list.isNullOrEmpty()) {
                 setAlpha(skkPrefs.inactiveAlpha)
                 lines = 0
@@ -1349,10 +1333,10 @@ class SKKService : InputMethodService() {
                 lines = viewLines
             }
         }
-        mCandidatesView?.setContents(list, kanjiKey)
+        mCandidatesView.setContents(list, kanjiKey)
     }
 
-    fun requestChooseCandidate(index: Int) = mCandidatesView?.choose(index)
+    fun requestChooseCandidate(index: Int) = mCandidatesView.choose(index)
 
     fun clearCandidatesView() = setCandidates(null, "", 0)
 
@@ -1417,24 +1401,22 @@ class SKKService : InputMethodService() {
         dLog("setInputView($view)")
         // view が null のときはここをスキップして再描画だけする (ドラッグで位置調整のとき使う)
         (view as? KeyboardView)?.let { inputView ->
-            mInputView = inputView
-            mInputView!!.apply {
-                parent?.let { (it as FrameLayout).removeView(view) }
-                keyboard.resize(keyboardWidth(), keyboardHeight(), skkPrefs.keyPaddingBottom)
-                requestLayout()
+            mInputView = inputView // keyboardWidth と keyboardHeight で参照されるので早く代入
+            inputView.keyboard.resize(keyboardWidth(), keyboardHeight(), skkPrefs.keyPaddingBottom)
+            mBinding.keyboardContainer.apply {
+                if (getChildAt(0) != inputView) {
+                    removeAllViews()
+                    (inputView.parent as? android.view.ViewGroup)?.removeView(inputView)
+                    addView(inputView)
+                }
             }
-            super.setInputView(mInputView)
+            super.setInputView(mBinding.root)
             computeLeftOffset()
         }
 
         val right = mScreenWidth - leftOffset - mInputView!!.keyboard.width
-        mInputView!!.parent?.let {
-            (it as FrameLayout).setPadding(leftOffset, 0, right, 0)
-        }
-        mCandidatesViewContainer?.parent?.let {
-            (it as FrameLayout).setPadding(leftOffset, 0, right, 0)
-        }
-        mCandidatesViewContainer?.setSize(-1)
+        mBinding.root.setPadding(leftOffset, 0, right, 0)
+        mCandidatesViewContainer.setSize(-1)
     }
 
     private fun keyboardWidth() =
