@@ -586,10 +586,9 @@ class SKKService : InputMethodService() {
         createInputView()
 
         dLog("onCreateInputView: wasFlick=$wasFlick wasGodan=$wasGodan engineState=$engineState")
-        val keyboardView = if (
+        val keyboardView = (if (
             wasGodan || (skkPrefs.preferFlick && skkPrefs.preferGodan && !skkPrefs.godanQwerty)
-        ) mGodanInputView?.setKeyState(engineState)
-        else when (engineState) {
+        ) mGodanInputView else when (engineState) {
             SKKASCIIState, SKKZenkakuState -> mQwertyInputView
             SKKAbbrevState -> mAbbrevKeyboardView
             else -> when {
@@ -598,15 +597,15 @@ class SKKService : InputMethodService() {
                 skkPrefs.preferGodan -> mGodanInputView
                 else -> mFlickJPInputView
             }
-        }?.setKeyState(engineState)
+        })!!.setKeyState(engineState)
 
-        keyboardView?.let {
+        keyboardView.let {
             (it.parent as? android.view.ViewGroup)?.removeView(it)
             mBinding.keyboardContainer.addView(it)
             mInputView = it
         }
 
-        return mBinding.root
+        return keyboardView
     }
 
     /**
