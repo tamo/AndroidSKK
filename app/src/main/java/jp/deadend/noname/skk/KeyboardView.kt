@@ -830,11 +830,19 @@ open class KeyboardView @JvmOverloads constructor(
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
         if (!isEnabled) return false
+
+        // event.y は view 上端から測る性質上
+        // 非同期に candidatesView が伸びる仕組みと相性が悪いので
+        // 安定した値の取れる event.rawY から逆算しておく
+        event.setLocation(event.x, mCoordinates.let {
+            getLocationOnScreen(it)
+            event.rawY - it[1]
+        })
+
         // Convert multi-pointer up/down events to single up/down events to
         // deal with the typical multi-pointer behavior of two-thumb typing
         // 右手で「さ」をフリックして離さないうちに左手で「あ」をフリックするなど指が速いときの対応
         val result: Boolean
-        val now = event.eventTime
         when (event.action and MotionEvent.ACTION_MASK) {
             MotionEvent.ACTION_DOWN -> { // 1本目の指
                 mActivePointerId = event.getPointerId(0)
@@ -849,22 +857,22 @@ open class KeyboardView @JvmOverloads constructor(
                 mActivePointerId = event.getPointerId(event.actionIndex)
 
                 // 前のは up して今後無視する
-                val up = MotionEvent.obtain(
-                    now, now, MotionEvent.ACTION_UP,
-                    mOldPointerX, mOldPointerY, event.metaState
-                )
-                onModifiedTouchEvent(up, true)
-                up.recycle()
+                MotionEvent.obtain(event).let { up ->
+                    up.action = MotionEvent.ACTION_UP
+                    up.setLocation(mOldPointerX, mOldPointerY)
+                    onModifiedTouchEvent(up, true)
+                    up.recycle()
+                }
 
                 // そして最新のを down して使っていく
                 mOldPointerX = event.getX(event.actionIndex)
                 mOldPointerY = event.getY(event.actionIndex)
-                val down = MotionEvent.obtain(
-                    now, now, MotionEvent.ACTION_DOWN,
-                    mOldPointerX, mOldPointerY, event.metaState
-                )
-                result = onModifiedTouchEvent(down, false)
-                down.recycle()
+                MotionEvent.obtain(event).let { down ->
+                    down.action = MotionEvent.ACTION_DOWN
+                    down.setLocation(mOldPointerX, mOldPointerY)
+                    result = onModifiedTouchEvent(down, false)
+                    down.recycle()
+                }
             }
 
             MotionEvent.ACTION_POINTER_UP -> { // 指が減ったけど最後ではない場合
@@ -872,12 +880,12 @@ open class KeyboardView @JvmOverloads constructor(
                 if (mActivePointerId == event.getPointerId(event.actionIndex)) {
                     // 唯一の指が無効になるので、以降の move はすべて無意味
                     mActivePointerId = -1
-                    val up = MotionEvent.obtain(
-                        now, now, MotionEvent.ACTION_UP,
-                        mOldPointerX, mOldPointerY, event.metaState
-                    )
-                    result = onModifiedTouchEvent(up, true)
-                    up.recycle()
+                    MotionEvent.obtain(event).let { up ->
+                        up.action = MotionEvent.ACTION_UP
+                        up.setLocation(mOldPointerX, mOldPointerY)
+                        result = onModifiedTouchEvent(up, true)
+                        up.recycle()
+                    }
                 } else {
                     result = true // すでに前借りで消費されているので true でいいのでは？
                 }
@@ -888,7 +896,7 @@ open class KeyboardView @JvmOverloads constructor(
                     mActivePointerId = -1
                     stopRepeatKey().let { unrepeatedKey ->
                         if (unrepeatedKey != NOT_A_KEY) { // repeatable なのに repeat しなかったキー
-                            detectAndSendKey(unrepeatedKey, now)
+                            detectAndSendKey(unrepeatedKey, event.eventTime)
                         }
                         onModifiedTouchEvent(event, false)
                     }
@@ -903,12 +911,11 @@ open class KeyboardView @JvmOverloads constructor(
                 if (mActivePointerId != -1) {
                     val activeX = event.getX(event.findPointerIndex(mActivePointerId))
                     val activeY = event.getY(event.findPointerIndex(mActivePointerId))
-                    val move = MotionEvent.obtain(
-                        now, now, MotionEvent.ACTION_MOVE,
-                        activeX, activeY, event.metaState
-                    )
-                    result = onModifiedTouchEvent(move, false)
-                    move.recycle()
+                    MotionEvent.obtain(event).let { move ->
+                        move.setLocation(activeX, activeY)
+                        result = onModifiedTouchEvent(move, false)
+                        move.recycle()
+                    }
                     mOldPointerX = activeX
                     mOldPointerY = activeY
                 } else {
@@ -921,17 +928,9 @@ open class KeyboardView @JvmOverloads constructor(
         return result
     }
 
-    // candidatesView 表示途中のとき me.y が不正確なので me.rawY から自前で計算
-    protected val MotionEvent.y2: Float
-        get() {
-            if (rawY == y) return y
-            getLocationOnScreen(mCoordinates)
-            return rawY - mCoordinates[1]
-        }
-
     open fun onModifiedTouchEvent(me: MotionEvent, possiblePoly: Boolean): Boolean {
         val touchX = me.x.toInt() - paddingLeft
-        var touchY = me.y2.toInt() - paddingTop
+        var touchY = me.y.toInt() - paddingTop
         if (touchY >= -mVerticalCorrection) {
             touchY += mVerticalCorrection
         }

@@ -22,7 +22,6 @@ import android.util.AttributeSet
 import android.view.MotionEvent
 import android.widget.FrameLayout
 import android.widget.LinearLayout
-import jp.deadend.noname.skk.CandidatesView.Companion.LINE_SCALE
 import jp.deadend.noname.skk.databinding.ViewCandidatesBinding
 import kotlin.math.abs
 
@@ -171,7 +170,7 @@ class CandidatesViewContainer(screen: Context, attrs: AttributeSet) : LinearLayo
             binding.candidates.setTextSize(px)
         }
         val width = mService.inputViewWidth - minHeight * 2 // minHeight == size of square button
-        val height = if (lines > 0) (px * lines * LINE_SCALE).toInt() else minHeight
+        val height = if (lines > 0) lines * binding.candidates.mLineHeight else minHeight
         val newLayoutParams = LayoutParams(width, height)
         if (binding.frame.layoutParams.width != newLayoutParams.width ||
             binding.frame.layoutParams.height != newLayoutParams.height

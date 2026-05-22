@@ -395,14 +395,14 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
         when (me.action) {
             MotionEvent.ACTION_DOWN -> {
                 mFlickStartX = me.x
-                mFlickStartY = me.y2
+                mFlickStartY = me.y
                 mArrowStartX = me.x
-                mArrowStartY = me.y2
+                mArrowStartY = me.y
             }
 
             MotionEvent.ACTION_MOVE -> {
                 val dx = me.x - mFlickStartX
-                val dy = me.y2 - mFlickStartY
+                val dy = me.y - mFlickStartY
                 val dx2 = dx * dx
                 val dy2 = dy * dy
 
@@ -417,7 +417,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
 
                     mArrowPressed -> {
                         val adx = me.x - mArrowStartX
-                        val ady = me.y2 - mArrowStartY
+                        val ady = me.y - mArrowStartY
                         val adx2 = adx * adx
                         val ady2 = ady * ady
                         when {
@@ -431,7 +431,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                                 }
                                 mArrowFlicked = true
                                 mArrowStartX = me.x
-                                mArrowStartY = me.y2
+                                mArrowStartY = me.y
                                 stopRepeatKey()
                                 return true
                             }
@@ -445,7 +445,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                                     mService.keyDownUp(KeyEvent.KEYCODE_DPAD_DOWN)
                                 }
                                 mArrowFlicked = true
-                                mArrowStartY = me.y2
+                                mArrowStartY = me.y
                                 mArrowStartX = me.x
                                 stopRepeatKey()
                                 return true

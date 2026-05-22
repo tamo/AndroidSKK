@@ -60,7 +60,7 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
     private val mColorOther: Int
     private val mTextPath: Path
     private val mPaint = Paint()
-    private val mLineHeight
+    internal val mLineHeight
         get() = (mPaint.textSize * LINE_SCALE).toInt()
 
     private var mTargetScrollX = 0
@@ -410,6 +410,6 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
         private const val OUT_OF_BOUNDS = -1
         private const val MAX_CANDIDATES = 2000 // 絵文字は1500程度ある
         private const val X_GAP = 5
-        internal const val LINE_SCALE = 1.3
+        private const val LINE_SCALE = 1.3
     }
 }
