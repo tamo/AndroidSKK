@@ -94,23 +94,19 @@ class SKKPrefs(context: Context) {
             prefs.edit { putBoolean(res.getString(R.string.pref_emacs_nav_in_ascii), value) }
 
     var navLineStartKey: Int
-        get() = prefs.getInt(
-            res.getString(R.string.pref_nav_line_start_key), NAV_LINE_START_KEY_DEFAULT
-        )
+        get() = prefs.getInt(res.getString(R.string.pref_nav_line_start_key), 0)
         set(value) = prefs.edit { putInt(res.getString(R.string.pref_nav_line_start_key), value) }
 
     var navLineEndKey: Int
-        get() =
-            prefs.getInt(res.getString(R.string.pref_nav_line_end_key), NAV_LINE_END_KEY_DEFAULT)
+        get() = prefs.getInt(res.getString(R.string.pref_nav_line_end_key), 0)
         set(value) = prefs.edit { putInt(res.getString(R.string.pref_nav_line_end_key), value) }
 
     var navForwardKey: Int
-        get() = prefs.getInt(res.getString(R.string.pref_nav_forward_key), NAV_FORWARD_KEY_DEFAULT)
+        get() = prefs.getInt(res.getString(R.string.pref_nav_forward_key), 0)
         set(value) = prefs.edit { putInt(res.getString(R.string.pref_nav_forward_key), value) }
 
     var navBackwardKey: Int
-        get() =
-            prefs.getInt(res.getString(R.string.pref_nav_backward_key), NAV_BACKWARD_KEY_DEFAULT)
+        get() = prefs.getInt(res.getString(R.string.pref_nav_backward_key), 0)
         set(value) = prefs.edit { putInt(res.getString(R.string.pref_nav_backward_key), value) }
 
     var katakanaKey: Int

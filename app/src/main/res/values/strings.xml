@@ -26,9 +26,11 @@
 
     <string name="label_kana_rule_manager_activity">SKK ローマ字かな変換ルール</string>
     <string name="label_kana_rule_select">ファイルを選択</string>
+    <string name="label_kana_rule_azik">AZIK 風ルールで上書き</string>
     <string name="label_kana_rule_clear">初期化</string>
     <string name="label_push_any">キーを押してください</string>
     <string name="label_push_any_nav">キーを押してください (Esc で無効化)</string>
+    <string name="label_disabled_key">(無効)</string>
 
     <string name="label_mushroom">マッシュルーム</string>
 
@@ -48,6 +50,7 @@
     <string name="message_extracting_dict">辞書を解凍しています…</string>
     <string name="message_dict_extracted">辞書を解凍しました</string>
 
+    <string name="message_confirm_load_azik_rule">現在の変換ルールを AZIK 風の設定で上書きしますか？</string>
     <string name="message_confirm_clear_kana_rule">ローマ字かな変換ルールをデフォルトに戻しますか？</string>
     <string name="hint_kana_rule_editor">#コメント\nka,か\nna,な</string>
 
@@ -55,7 +58,7 @@
     <string name="error_access_failed">アクセスできません: %1$s</string>
     <string name="error_open_dict">辞書ファイルを開けません</string>
     <string name="error_open_user_dict">辞書 %1$s が開けません。設定画面から初期化してみてください</string>
-    <string name="error_tools_open_user_dict">辞書を開くときにエラーが発生しました。初期化してもよろしいですか？</string>
+    <string name="error_tools_open_user_dict">辞書を開くときにエラーが発生しました。内容をすべて消去してもよろしいですか？</string>
     <string name="error_file_load">ファイル読みこみに失敗しました: %1$s</string>
     <string name="error_no_mushroom">マッシュルームアプリがひとつもインストールされていません</string>
     <string name="error_write_to_external_storage">テキスト形式の保存に失敗しました: %1$s</string>

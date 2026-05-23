@@ -204,7 +204,7 @@ class SKKSettingsActivityUITest {
         onView(withText("かなキー"))
             .check(matches(hasSibling(withText("CTRL+J"))))
             .perform(click())
-            .check(matches(hasSibling(withText("キーを押してください"))))
+            .check(matches(hasSibling(withText("キーを押してください (Esc で無効化)"))))
         repeat(3) {
             Thread.sleep(1000)
             onView(withText("かなキー")).perform(pressKey(KeyEvent.KEYCODE_TAB))

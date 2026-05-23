@@ -81,22 +81,18 @@ class SKKSettingsActivity : AppCompatActivity() {
             registerKeyPref(R.string.pref_zenkaku_key, skkPrefs.zenkakuKey)
             registerKeyPref(R.string.pref_abbrev_key, skkPrefs.abbrevKey)
             registerKeyPref(R.string.pref_hankaku_kana_key, skkPrefs.hankakuKanaKey)
-            registerKeyPref(R.string.pref_nav_line_start_key, skkPrefs.navLineStartKey, true)
-            registerKeyPref(R.string.pref_nav_line_end_key, skkPrefs.navLineEndKey, true)
-            registerKeyPref(R.string.pref_nav_forward_key, skkPrefs.navForwardKey, true)
-            registerKeyPref(R.string.pref_nav_backward_key, skkPrefs.navBackwardKey, true)
+            registerKeyPref(R.string.pref_nav_line_start_key, skkPrefs.navLineStartKey)
+            registerKeyPref(R.string.pref_nav_line_end_key, skkPrefs.navLineEndKey)
+            registerKeyPref(R.string.pref_nav_forward_key, skkPrefs.navForwardKey)
+            registerKeyPref(R.string.pref_nav_backward_key, skkPrefs.navBackwardKey)
         }
 
-        private fun registerKeyPref(
-            prefKeyResId: Int,
-            currentValue: Int,
-            nav: Boolean = false
-        ) {
+        private fun registerKeyPref(prefKeyResId: Int, currentValue: Int) {
             findPreference<Preference>(getString(prefKeyResId))?.apply {
-                summary = if (nav) navKeySummary(currentValue) else getKeyName(currentValue)
+                summary =
+                    getKeyName(currentValue).ifEmpty { getString(R.string.label_disabled_key) }
                 setOnPreferenceClickListener {
-                    summary =
-                        if (nav) getString(R.string.label_push_any_nav) else getString(R.string.label_push_any)
+                    summary = getString(R.string.label_push_any_nav)
                     (requireActivity() as SKKSettingsActivity).keyPref = this
                     true
                 }
@@ -155,9 +151,9 @@ class SKKSettingsActivity : AppCompatActivity() {
             KeyEvent.KEYCODE_HOME -> true
             KeyEvent.KEYCODE_ESCAPE -> if (event.action == KeyEvent.ACTION_DOWN) {
                 PreferenceManager.getDefaultSharedPreferences(applicationContext).edit {
-                    putInt(pref.key, NAV_KEY_DISABLED)
+                    putInt(pref.key, 0)
                 }
-                pref.setSummary(navKeySummary(NAV_KEY_DISABLED))
+                pref.setSummary(getString(R.string.label_disabled_key))
                 MainScope().launch(Dispatchers.Default) {
                     delay(500)
                     keyPref = null
@@ -204,6 +200,3 @@ class SKKSettingsActivity : AppCompatActivity() {
         }
     }
 }
-
-private fun navKeySummary(key: Int): String =
-    if (key == NAV_KEY_DISABLED) "（未設定）" else getKeyName(key)

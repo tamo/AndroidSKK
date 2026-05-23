@@ -2,14 +2,18 @@
 <androidx.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     app:title="@string/label_pref_activity">
-    <androidx.preference.Preference
-        app:fragment="jp.deadend.noname.skk.SKKSettingsActivity$SettingsHardKeyFragment"
-        app:icon="@android:drawable/ic_menu_manage"
-        app:title="@string/label_pref_hard_keyboard" />
-    <androidx.preference.Preference
-        app:fragment="jp.deadend.noname.skk.SKKSettingsActivity$SettingsSoftKeyFragment"
-        app:icon="@android:drawable/ic_menu_manage"
-        app:title="@string/label_pref_soft_keyboard" />
+    <androidx.preference.PreferenceCategory
+        app:iconSpaceReserved="false"
+        app:title="種類別設定">
+        <androidx.preference.Preference
+            app:fragment="jp.deadend.noname.skk.SKKSettingsActivity$SettingsHardKeyFragment"
+            app:icon="@android:drawable/ic_menu_manage"
+            app:title="@string/label_pref_hard_keyboard" />
+        <androidx.preference.Preference
+            app:fragment="jp.deadend.noname.skk.SKKSettingsActivity$SettingsSoftKeyFragment"
+            app:icon="@android:drawable/ic_menu_manage"
+            app:title="@string/label_pref_soft_keyboard" />
+    </androidx.preference.PreferenceCategory>
     <androidx.preference.PreferenceCategory
         app:iconSpaceReserved="false"
         app:title="共通設定">
@@ -18,7 +22,7 @@
             app:dialogTitle="句読点のタイプ"
             app:entries="@array/kutouten_entries"
             app:entryValues="@array/kutouten_values"
-            app:iconSpaceReserved="false"
+            app:icon="@android:drawable/ic_dialog_dialer"
             app:key="@string/pref_kutouten_type"
             app:title="句読点のタイプ"
             app:useSimpleSummaryProvider="true" />
@@ -26,7 +30,7 @@
             app:defaultValue="true"
             app:iconSpaceReserved="false"
             app:key="@string/pref_prefix_mark"
-            app:summary="表示しなければ途中で確定されても問題になりにくいです"
+            app:summary="不意にフォーカスが外れて確定されることが多い場合は表示しないことをお勧めします"
             app:title="変換中の▽や▼を表示" />
     </androidx.preference.PreferenceCategory>
     <androidx.preference.PreferenceCategory
@@ -73,6 +77,7 @@
         app:title="@string/label_dict_manager_reset">
         <androidx.preference.Preference
             app:icon="@android:drawable/ic_notification_clear_all"
+            app:summary="何も登録されていない状態にします"
             app:title="@string/label_dict_tool_recreate">
             <intent
                 android:action="android.intent.action.MAIN"
@@ -82,6 +87,7 @@
         </androidx.preference.Preference>
         <androidx.preference.Preference
             app:icon="@android:drawable/ic_notification_clear_all"
+            app:summary="初期辞書だけの状態にします"
             app:title="@string/label_ascii_tool_recreate">
             <intent
                 android:action="android.intent.action.MAIN"
@@ -91,6 +97,7 @@
         </androidx.preference.Preference>
         <androidx.preference.Preference
             app:icon="@android:drawable/ic_notification_clear_all"
+            app:summary="初期辞書だけの状態にします"
             app:title="@string/label_emoji_tool_recreate">
             <intent
                 android:action="android.intent.action.MAIN"
@@ -114,13 +121,13 @@
             app:defaultValue="false"
             app:iconSpaceReserved="false"
             app:key="@string/pref_candidates_min_height"
-            app:summary="変換中にリサイズで画面がちらつかず安定します"
+            app:summary="変換中にアプリがリサイズしませんが一部隠れます"
             app:title="候補表示をアプリ上に重ねて伸ばす" />
         <androidx.preference.CheckBoxPreference
             app:defaultValue="true"
             app:iconSpaceReserved="false"
             app:key="@string/pref_fuzzy_suggestion"
-            app:summary="濁点の有無などを変えた単語も提案します"
+            app:summary="濁音や半濁音にした単語も提案します (「ひんく」で「ぴんぐ」も出る)"
             app:title="あいまい候補" />
         <androidx.preference.CheckBoxPreference
             app:defaultValue="false"
@@ -155,7 +162,9 @@
         app:icon="@android:drawable/ic_dialog_alert"
         app:title="@string/label_log_viewer">
         <androidx.preference.Preference
+            app:iconSpaceReserved="false"
             app:key="@string/pref_log_viewer"
-            app:title="ここをタップで表示し再度タップでコピー" />
+            app:summary="最新のクラッシュ記録があれば表示され，再度タップでコピーできます"
+            app:title="ここをタップ" />
     </androidx.preference.PreferenceCategory>
 </androidx.preference.PreferenceScreen>

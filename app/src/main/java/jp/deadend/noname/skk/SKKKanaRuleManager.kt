@@ -87,8 +87,25 @@ class SKKKanaRuleManager : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             android.R.id.home -> finish()
+
             R.id.menu_kana_rule_select -> {
                 selectFileLauncher.launch(arrayOf("*/*"))
+            }
+
+            R.id.menu_kara_rule_azik -> {
+                val dialog = ConfirmationDialogFragment.newInstance(
+                    getString(R.string.message_confirm_load_azik_rule)
+                )
+                dialog.setListener(object : ConfirmationDialogFragment.Listener {
+                    override fun onPositiveClick() {
+                        SKKKanaRule.loadAzik(this@SKKKanaRuleManager)
+                        isModified = true
+                        updateEditorText()
+                    }
+
+                    override fun onNegativeClick() {}
+                })
+                dialog.show(supportFragmentManager, "dialog")
             }
 
             R.id.menu_kana_rule_clear -> {

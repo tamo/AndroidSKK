@@ -434,7 +434,7 @@ class SKKService : InputMethodService() {
         val context = createNightModeContext(applicationContext, skkPrefs.theme)
         val keyHeight = keyboardHeight()
         val keyBottom = skkPrefs.keyPaddingBottom
-        val flickWidth = when (mOrientation) {
+        val flickWidth = if (!checkUseSoftKeyboard()) mScreenWidth else when (mOrientation) {
             Configuration.ORIENTATION_PORTRAIT -> skkPrefs.keyWidthPort
             Configuration.ORIENTATION_LANDSCAPE -> skkPrefs.keyWidthLand
             else -> mScreenWidth
@@ -445,7 +445,7 @@ class SKKService : InputMethodService() {
         godan.prepareNewKeyboard(context, flickWidth, keyHeight, keyBottom)
         godan.backgroundAlpha = 255 * alpha / 100
 
-        val qwertyWidth =
+        val qwertyWidth = if (!checkUseSoftKeyboard()) mScreenWidth else
             (flickWidth * skkPrefs.keyWidthQwertyZoom / 100).coerceAtMost(mScreenWidth)
         qwerty.keyboard.resize(qwertyWidth, keyHeight, keyBottom)
         qwerty.mSymbolsKeyboard.resize(qwertyWidth, keyHeight, keyBottom)
@@ -881,7 +881,7 @@ class SKKService : InputMethodService() {
         ) return false
 
         // SandS: ASCII モードでのスペースアップ処理
-        if (mSandS && skkPrefs.sandSInAscii &&
+        if (!mStickyShift && mSandS && skkPrefs.sandSInAscii &&
             mEngine.state === SKKASCIIState && keyCode == KeyEvent.KEYCODE_SPACE
         ) {
             mSpacePressed = false
@@ -899,7 +899,7 @@ class SKKService : InputMethodService() {
             }
 
             KeyEvent.KEYCODE_SPACE -> {
-                if (mSandS) {
+                if (!mStickyShift && mSandS) {
                     mSpacePressed = false
                     if (!mSandSUsed) processKey(' ')
                     mSandSUsed = false
@@ -938,26 +938,21 @@ class SKKService : InputMethodService() {
         val engineState = mEngine.state
         val encodedKey = encodeKey(event)
 
-        // Emacs 風ナビゲーションキー（NAV_KEY_DISABLED は 0 なので合致し得ない）
-        val navKey = when (encodedKey) {
+        // Emacs 風ナビゲーションキー（設定が 0 の場合は encodedKey と合致し得ない）
+        when (encodedKey) {
             skkPrefs.navLineStartKey -> KeyEvent.KEYCODE_MOVE_HOME
             skkPrefs.navLineEndKey -> KeyEvent.KEYCODE_MOVE_END
             skkPrefs.navForwardKey -> KeyEvent.KEYCODE_DPAD_RIGHT
             skkPrefs.navBackwardKey -> KeyEvent.KEYCODE_DPAD_LEFT
             else -> null
-        }
-        if (navKey != null) {
-            return when (resolveEmacsNavAction(
-                engineState.isTransient,
-                engineState === SKKASCIIState,
-                skkPrefs.emacsNavInAscii
-            )) {
-                EmacsNavAction.NAVIGATE -> {
-                    sendDownUpKeyEvents(navKey); true
-                }
+        }?.let { navKey ->
+            return when {
+                engineState.isTransient -> true
 
-                EmacsNavAction.CONSUME -> true
-                EmacsNavAction.PASS_THROUGH -> super.onKeyDown(keyCode, event)
+                engineState is SKKASCIIState && !skkPrefs.emacsNavInAscii ->
+                    super.onKeyDown(keyCode, event)
+
+                else -> true.also { sendDownUpKeyEvents(navKey) }
             }
         }
 
@@ -968,7 +963,7 @@ class SKKService : InputMethodService() {
         }
 
         // SandS: ASCII モードでのスペース＆修飾処理（早期リターンより前に置く）
-        if (mSandS && skkPrefs.sandSInAscii &&
+        if (!mStickyShift && mSandS && skkPrefs.sandSInAscii &&
             engineState === SKKASCIIState && !mEngine.isRegistering
         ) {
             if (keyCode == KeyEvent.KEYCODE_SPACE) {
@@ -1022,7 +1017,7 @@ class SKKService : InputMethodService() {
             KeyEvent.KEYCODE_ENTER -> if (handleEnter()) return true
 
             KeyEvent.KEYCODE_SPACE -> {
-                if (mSandS) {
+                if (!mStickyShift && mSandS) {
                     mSpacePressed = true
                 } else {
                     processKey(' ')
@@ -1418,7 +1413,7 @@ class SKKService : InputMethodService() {
         mCandidatesViewContainer.setSize(-1)
     }
 
-    private fun keyboardWidth() =
+    private fun keyboardWidth() = if (!checkUseSoftKeyboard()) mScreenWidth else
         (when (mOrientation) {
             Configuration.ORIENTATION_PORTRAIT -> skkPrefs.keyWidthPort
             Configuration.ORIENTATION_LANDSCAPE -> skkPrefs.keyWidthLand

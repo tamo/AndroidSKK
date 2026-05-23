@@ -4,9 +4,15 @@
     <androidx.preference.PreferenceCategory
         app:iconSpaceReserved="false"
         app:title="@string/label_pref_hard_keyboard">
-        <androidx.preference.Preference
+        <androidx.preference.CheckBoxPreference
+            app:defaultValue="true"
             app:iconSpaceReserved="false"
-            app:summary="変更すると，ソフトウェアキーボードが正常に動作しない場合があります"
+            app:key="@string/pref_use_candidates_view"
+            app:summary="ハードウェアキーボード使用時にも画面下に候補一覧を表示します"
+            app:title="補完・変換候補の表示" />
+        <androidx.preference.Preference
+            app:icon="@android:drawable/ic_menu_edit"
+            app:summary="AZIK 風にすることさえもできますが，ソフトウェアキーボードは初期状態を前提としているため，変更すると正常に動作しなくなる場合があります"
             app:title="@string/label_kana_rule_manager_activity">
             <intent
                 android:action="android.intent.action.MAIN"
@@ -14,53 +20,49 @@
                 android:targetPackage="jp.deadend.noname.skk" />
         </androidx.preference.Preference>
         <androidx.preference.Preference
+            app:icon="@android:drawable/ic_dialog_dialer"
             app:iconSpaceReserved="false"
             app:key="@string/pref_kana_key"
             app:title="かなキー" />
         <androidx.preference.CheckBoxPreference
             app:defaultValue="false"
-            app:iconSpaceReserved="false"
             app:key="@string/pref_toggle_kana_key"
             app:summary="オンだと，かなモードでかなキーを押すと ASCII モードに戻ります"
             app:title="かなキーを ASCII とのトグルに" />
         <androidx.preference.Preference
-            app:iconSpaceReserved="false"
+            app:icon="@android:drawable/ic_dialog_dialer"
             app:key="@string/pref_cancel_key"
             app:title="キャンセルキー" />
         <androidx.preference.Preference
-            app:iconSpaceReserved="false"
+            app:icon="@android:drawable/ic_dialog_dialer"
             app:key="@string/pref_katakana_key"
             app:title="カタカナキー (SHIFT+ で▽開始)" />
         <androidx.preference.Preference
-            app:iconSpaceReserved="false"
+            app:icon="@android:drawable/ic_dialog_dialer"
             app:key="@string/pref_ascii_key"
             app:title="ASCIIキー" />
         <androidx.preference.Preference
-            app:iconSpaceReserved="false"
+            app:icon="@android:drawable/ic_dialog_dialer"
             app:key="@string/pref_zenkaku_key"
             app:title="全角英数キー" />
         <androidx.preference.Preference
-            app:iconSpaceReserved="false"
+            app:icon="@android:drawable/ic_dialog_dialer"
             app:key="@string/pref_abbrev_key"
             app:title="Abbrevキー" />
         <androidx.preference.Preference
-            app:iconSpaceReserved="false"
+            app:icon="@android:drawable/ic_dialog_dialer"
             app:key="@string/pref_hankaku_kana_key"
             app:title="半角カナキー" />
         <androidx.preference.CheckBoxPreference
-            app:defaultValue="true"
-            app:iconSpaceReserved="false"
-            app:key="@string/pref_use_candidates_view"
-            app:summary="補完候補や変換候補を一覧表示します"
-            app:title="補完・候補の一覧表示" />
-        <androidx.preference.CheckBoxPreference
             app:defaultValue="false"
+            app:disableDependentsState="true"
             app:iconSpaceReserved="false"
             app:key="@string/pref_sticky_meta"
-            app:summary="押しっぱなしでなくてもシフトを有効にします (2回でロック)"
+            app:summary="指を離したあとにもシフトを有効にします (2回でロック)"
             app:title="固定シフトキー" />
         <androidx.preference.CheckBoxPreference
             app:defaultValue="false"
+            app:dependency="@string/pref_sticky_meta"
             app:iconSpaceReserved="false"
             app:key="@string/pref_sands"
             app:summary="スペースキーをシフトとして使います"
@@ -75,21 +77,21 @@
             app:iconSpaceReserved="false"
             app:title="Emacs 風のナビキー">
             <androidx.preference.Preference
-                app:iconSpaceReserved="false"
+                app:icon="@android:drawable/ic_dialog_dialer"
                 app:key="@string/pref_nav_line_start_key"
-                app:title="行頭キー" />
+                app:title="行頭キー (通常は CTRL+A)" />
             <androidx.preference.Preference
-                app:iconSpaceReserved="false"
+                app:icon="@android:drawable/ic_dialog_dialer"
                 app:key="@string/pref_nav_line_end_key"
-                app:title="行末キー" />
+                app:title="行末キー (通常は CTRL+E)" />
             <androidx.preference.Preference
-                app:iconSpaceReserved="false"
+                app:icon="@android:drawable/ic_dialog_dialer"
                 app:key="@string/pref_nav_forward_key"
-                app:title="一文字進むキー" />
+                app:title="一文字進むキー (通常は CTRL+F)" />
             <androidx.preference.Preference
-                app:iconSpaceReserved="false"
+                app:icon="@android:drawable/ic_dialog_dialer"
                 app:key="@string/pref_nav_backward_key"
-                app:title="一文字戻るキー" />
+                app:title="一文字戻るキー (通常は CTRL+B)" />
             <androidx.preference.CheckBoxPreference
                 app:defaultValue="false"
                 app:iconSpaceReserved="false"

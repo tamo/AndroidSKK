@@ -9,6 +9,7 @@ import java.io.IOException
 object SKKKanaRule {
     internal const val INTERNAL_FILE_NAME = "kana-rule.conf"
     internal const val DEFAULT_RULE_FILE = "skk-kana-rule.conf"
+    private const val AZIK_RULE_FILE = "azik-kana-rule.conf"
     private const val MAX_FILE_SIZE = 1 * 1024 * 1024 // 1MB
 
     fun getInternalFile(context: Context): File {
@@ -103,6 +104,13 @@ object SKKKanaRule {
     fun clear(context: Context) {
         val file = File(context.filesDir, INTERNAL_FILE_NAME)
         val defaultRule = context.resources.assets.open(DEFAULT_RULE_FILE)
+            .bufferedReader().use { it.readText() }
+        file.writeText(defaultRule)
+    }
+
+    fun loadAzik(context: Context) {
+        val file = File(context.filesDir, INTERNAL_FILE_NAME)
+        val defaultRule = context.resources.assets.open(AZIK_RULE_FILE)
             .bufferedReader().use { it.readText() }
         file.writeText(defaultRule)
     }
