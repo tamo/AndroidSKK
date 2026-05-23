@@ -70,6 +70,7 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
     private val mGestureDetector: GestureDetector
 
     private var mScrollX = 0
+    private val mCoordinates = IntArray(2)
 
     init {
         val r = context.resources
@@ -342,6 +343,12 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
     }
 
     override fun onTouchEvent(me: MotionEvent): Boolean {
+        me.setLocation(me.x, mCoordinates.let {
+            getLocationOnScreen(it)
+            me.rawY - it[1]
+        })
+        if (me.y < 0 || height < me.y) return false
+
         if (mCandidateList.isEmpty()) { // ドラッグで位置調整
             return mContainer.binding.candidatesLeft.dispatchTouchEvent(me)
         }

@@ -43,6 +43,7 @@ class CandidatesViewContainer(screen: Context, attrs: AttributeSet) : LinearLayo
     private var mDragStartX = 0f
     private var mPinchStartWidth = 0
     private var mPinchStartDistance = 0f
+    private val mCoordinates = IntArray(2)
 
     fun setService(service: SKKService) {
         mService = service
@@ -59,6 +60,14 @@ class CandidatesViewContainer(screen: Context, attrs: AttributeSet) : LinearLayo
                 val id = event.getPointerId(event.actionIndex)
                 val idx = mActivePointers.indexOfFirst { it.first == id }
                 val x = event.getRawX(event.findPointerIndex(id))
+
+                // y が本当に自分の範囲内か確認
+                event.setLocation(event.x, mCoordinates.let {
+                    getLocationOnScreen(it)
+                    event.rawY - it[1]
+                })
+                if (event.y < 0 || height < event.y) return@OnTouchListener false
+
                 when (event.action and MotionEvent.ACTION_MASK) {
                     MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> {
                         mActivePointers.add(id to x)
