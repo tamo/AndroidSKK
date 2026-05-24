@@ -40,6 +40,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
     private val mPopupSize = 120
     private val mPopupOffset = intArrayOf(0, 0)
     private val mFixedPopupPos = intArrayOf(0, 0)
+    private val mCoordinates = IntArray(2)
 
     // シンプル切り替え用
     private var mIsASCII = false
@@ -587,7 +588,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
         }
         setupPopupTextView()
 
-        if (mFixedPopupPos[0] == 0) calculatePopupPos()
+        calculatePopupPos()
 
         if (mUsePopup) {
             val popup = checkNotNull(mPopup) { "BUG: popup is null!!" }
@@ -609,15 +610,12 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
     private fun calculatePopupPos() {
         val scale = context.resources.displayMetrics.density
         val size = (mPopupSize * scale + 0.5f).toInt()
-
-        val offsetInWindow = IntArray(2)
-        getLocationInWindow(offsetInWindow)
-        val windowLocation = IntArray(2)
-        getLocationOnScreen(windowLocation)
-        mPopupOffset[0] = -size / 2
-        mPopupOffset[1] = -windowLocation[1] + offsetInWindow[1] - size / 2
-        mFixedPopupPos[0] = windowLocation[0] + this.width / 2 + mPopupOffset[0]
-        mFixedPopupPos[1] = windowLocation[1] - size / 2 + mPopupOffset[1]
+        val fingerOffset = size * skkPrefs.fingerOffset / 100
+        getLocationInWindow(mCoordinates)
+        mPopupOffset[0] = mCoordinates[0] - size / 2
+        mPopupOffset[1] = mCoordinates[1] - size / 2 - fingerOffset
+        mFixedPopupPos[0] = mCoordinates[0] + this.width / 2 - size / 2
+        mFixedPopupPos[1] = mCoordinates[1] - size - fingerOffset
     }
 
     override fun onKey(primaryCode: Int) {

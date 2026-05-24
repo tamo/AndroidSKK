@@ -60,13 +60,22 @@
                 app:iconSpaceReserved="false"
                 app:key="@string/pref_use_popup"
                 app:summary="フリック入力用のガイドを表示します"
-                app:title="ポップアップ (フリック入力用のガイド) の表示" />
+                app:title="ポップアップの表示" />
             <androidx.preference.CheckBoxPreference
                 app:defaultValue="true"
                 app:dependency="@string/pref_use_popup"
                 app:key="@string/pref_fixed_popup"
-                app:summary="フリック入力ガイドを，常に上部の同じ場所に表示します"
+                app:summary="オンだと常に上部の同じ場所，オフだと指の近くに表示します"
                 app:title="ポップアップの固定" />
+            <androidx.preference.SeekBarPreference
+                android:max="200"
+                app:defaultValue="70"
+                app:dependency="@string/pref_use_popup"
+                app:key="@string/pref_finger_offset"
+                app:min="-200"
+                app:showSeekBarValue="true"
+                app:summary="固定オフでこの値が 0 だと指の真下になり実質見えません"
+                app:title="ポップアップの上下ずらし" />
             <androidx.preference.CheckBoxPreference
                 app:defaultValue="false"
                 app:disableDependentsState="true"

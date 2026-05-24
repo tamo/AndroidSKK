@@ -204,6 +204,10 @@ class SKKPrefs(context: Context) {
         get() = prefs.getBoolean(res.getString(R.string.pref_fixed_popup), true)
         set(value) = prefs.edit { putBoolean(res.getString(R.string.pref_fixed_popup), value) }
 
+    var fingerOffset: Int
+        get() = prefs.getInt(res.getString(R.string.pref_finger_offset), 70)
+        set(value) = prefs.edit { putInt(res.getString(R.string.pref_finger_offset), value) }
+
     var useSoftCancelKey: Boolean
         get() = prefs.getBoolean(res.getString(R.string.pref_use_soft_cancel_key), false)
         set(value) = prefs.edit {
