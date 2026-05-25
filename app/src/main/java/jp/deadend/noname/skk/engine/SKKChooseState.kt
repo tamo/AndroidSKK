@@ -8,6 +8,7 @@ import jp.deadend.noname.skk.skkPrefs
 object SKKChooseState : SKKConfirmingState {
     override val isTransient = true
     override val icon = 0
+    override val hasCandidates = true
     override val prefix = "▼"
     override var pendingLambda: (() -> Unit)? = null
     override var oldComposingText = ""

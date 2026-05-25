@@ -130,8 +130,10 @@ class SKKPrefs(context: Context) {
             prefs.getInt(res.getString(R.string.pref_hankaku_kana_key), CTRL_PRESSED or 'q'.code)
         set(value) = prefs.edit { putInt(res.getString(R.string.pref_hankaku_kana_key), value) }
 
-    fun isModeKey(keyCode: Int): Boolean =
-        keyCode in listOf(katakanaKey, asciiKey, zenkakuKey, abbrevKey, hankakuKanaKey)
+    fun isModeKey(keyCode: Int): Boolean = when (keyCode) {
+        katakanaKey, asciiKey, zenkakuKey, abbrevKey, hankakuKanaKey -> true
+        else -> false
+    }
 
     var useCandidatesView: Boolean
         get() = prefs.getBoolean(res.getString(R.string.pref_use_candidates_view), true)

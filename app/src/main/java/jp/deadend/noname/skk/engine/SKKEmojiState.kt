@@ -6,6 +6,8 @@ object SKKEmojiState : SKKConfirmingState {
     var isSequential = false
     override val isTransient = false
     override val icon = 0
+    override val isJapanese = false
+    override val canSuggest = true
     override var pendingLambda: (() -> Unit)? = null
     override var oldComposingText = ""
 
@@ -29,7 +31,7 @@ object SKKEmojiState : SKKConfirmingState {
 
             else -> {
                 context.oldState.processKey(context, keyCode)
-                if (context.state === SKKEmojiState) {
+                if (context.state is SKKEmojiState) {
                     context.changeState(context.oldState)
                 }
             }

@@ -147,13 +147,13 @@ class SKKEngine(
     fun handleKanaKey() = state.handleKanaKey(this)
 
     fun handleKatakanaKey(): Boolean = true.also {
-        changeState(if (kanaState === SKKHiraganaState) SKKKatakanaState else SKKHiraganaState)
+        changeState(if (kanaState is SKKHiraganaState) SKKKatakanaState else SKKHiraganaState)
     }
 
     fun handleASCIIKey(): Boolean {
         if (mComposing.length != 1 || mComposing[0] != 'z') {
             // ▽モード(KanjiState)では l で Abbrev モードに遷移（SKK 原本の動作）
-            if (state === SKKKanjiState) {
+            if (state is SKKKanjiState) {
                 changeState(SKKAbbrevState)
             } else {
                 changeState(SKKASCIIState, true)
@@ -198,10 +198,10 @@ class SKKEngine(
     }
 
     fun handleEnter(): Boolean {
-        when (state) {
-            SKKChooseState, SKKNarrowingState -> pickCandidate(mCurrentCandidateIndex)
-            SKKKanjiState, SKKOkuriganaState, SKKAbbrevState -> changeState(kanaState)
-            SKKEmojiState -> pickSuggestion(mCurrentCandidateIndex)
+        when {
+            state.hasCandidates -> pickCandidate(mCurrentCandidateIndex)
+            state.isTransient && state.canSuggest -> changeState(kanaState)
+            state is SKKEmojiState -> pickSuggestion(mCurrentCandidateIndex)
             else -> {
                 if (mComposing.isEmpty()) {
                     if (!mRegistrationStack.isEmpty()) {
@@ -211,7 +211,7 @@ class SKKEngine(
                     }
                 } else {
                     commitTextSKK(
-                        if (state === SKKHanKanaState) zenkaku2hankaku(mComposing.toString())!!
+                        if (state is SKKHanKanaState) zenkaku2hankaku(mComposing.toString())!!
                         else mComposing
                     )
                     mComposing.setLength(0)
@@ -223,8 +223,8 @@ class SKKEngine(
     }
 
     fun handleBackspace(): Boolean {
-        when (state) {
-            SKKNarrowingState, SKKChooseState, SKKEmojiState -> {
+        when {
+            state.hasCandidates || state is SKKEmojiState -> {
                 state.afterBackspace(this)
                 return true
             }
@@ -232,7 +232,7 @@ class SKKEngine(
 
         // 変換中のものがない場合
         if (mComposing.isEmpty() && mKanjiKey.isEmpty()) {
-            if (state == SKKKanjiState || state == SKKAbbrevState) {
+            if (state.isTransient && state.canSuggest) {
                 changeState(kanaState)
                 return true
             }
@@ -289,7 +289,7 @@ class SKKEngine(
                 mService.showStatusIcon(state.icon)
             }
 
-            state === SKKASCIIState -> mService.hideStatusIcon()
+            state is SKKASCIIState -> mService.hideStatusIcon()
             else -> mService.showStatusIcon(state.icon)
         }
 
@@ -331,7 +331,7 @@ class SKKEngine(
             registerStart(mKanjiKey.toString())
             return
         } else if (mCurrentCandidateIndex < 0) when (state) {
-            SKKChooseState -> {
+            is SKKChooseState -> {
                 if (mComposing.isEmpty()) {
                     // KANJIモードに戻る
                     if (mOkurigana.isNotEmpty()) {
@@ -375,11 +375,11 @@ class SKKEngine(
                 }
             }
         }
-        when (state) {
-            SKKChooseState, SKKNarrowingState ->
+        when {
+            state.hasCandidates ->
                 pickCandidate(index, unregister = unregister)
 
-            SKKAbbrevState, SKKKanjiState, SKKASCIIState, SKKEmojiState, SKKOkuriganaState ->
+            state.canSuggest ->
                 pickSuggestion(index, unregister)
 
             else -> throw RuntimeException("cannot pick candidate in $state")
@@ -387,9 +387,9 @@ class SKKEngine(
     }
 
     fun prepareToMushroom(clip: String): String {
-        val str = when (state) {
-            SKKKanjiState, SKKAbbrevState -> mKanjiKey.toString()
-            SKKASCIIState -> getPrefixASCII().ifEmpty { clip }
+        val str = when {
+            state is SKKASCIIState -> getPrefixASCII().ifEmpty { clip }
+            state.canSuggest -> mKanjiKey.toString()
             else -> clip
         }
 
@@ -406,7 +406,7 @@ class SKKEngine(
     // 小文字大文字変換，濁音，半濁音に使う
     fun changeLastChar(type: String) {
         when {
-            state === SKKKanjiState && mComposing.isEmpty() && mKanjiKey.isNotEmpty() -> {
+            state is SKKKanjiState && mComposing.isEmpty() && mKanjiKey.isNotEmpty() -> {
                 val s = mKanjiKey.toString() // ▽あい
                 val idx = s.length - 1
                 if (idx < 1 && type == LAST_CONVERSION_SHIFT) return // ▽あ
@@ -425,38 +425,39 @@ class SKKEngine(
                 }
             }
 
-            state === SKKNarrowingState && mComposing.isEmpty() && SKKNarrowingState.mHint.isNotEmpty() -> {
-                val hint = SKKNarrowingState.mHint // ▼藹 hint: わ
-                val idx = hint.length - 1
-                if (type == LAST_CONVERSION_SHIFT) return
-                val newLastChar = RomajiConverter.convertLastChar(hint.substring(idx), type).second
-                // この convertLastChar にも 2 文字が渡ることはない
+            state.hasCandidates && mComposing.isEmpty() -> {
+                if (state is SKKNarrowingState && SKKNarrowingState.mHint.isNotEmpty()) {
+                    val hint = SKKNarrowingState.mHint // ▼藹 hint: わ
+                    val idx = hint.length - 1
+                    if (type == LAST_CONVERSION_SHIFT) return
+                    val newLastChar =
+                        RomajiConverter.convertLastChar(hint.substring(idx), type).second
+                    // この convertLastChar にも 2 文字が渡ることはない
 
-                hint.deleteCharAt(idx)
-                hint.append(newLastChar)
-                narrowCandidates(hint.toString())
-            }
+                    hint.deleteCharAt(idx)
+                    hint.append(newLastChar)
+                    narrowCandidates(hint.toString())
+                } else if (state is SKKChooseState) {
+                    if (mOkurigana.isEmpty()) return
+                    val okurigana = mOkurigana // ▼合い (okurigana = い)
+                    val newOkurigana = RomajiConverter.convertLastChar(okurigana, type).second
 
-            state === SKKChooseState -> {
-                if (mOkurigana.isEmpty()) return
-                val okurigana = mOkurigana // ▼合い (okurigana = い)
-                val newOkurigana = RomajiConverter.convertLastChar(okurigana, type).second
-
-                if (type == LAST_CONVERSION_SHIFT) {
-                    handleCancel() // ▽あ (mOkurigana = null)
-                    mKanjiKey.append(newOkurigana) // ▽あい
-                    setComposingTextSKK(mKanjiKey)
-                    updateSuggestions(mKanjiKey.toString())
-                    return
+                    if (type == LAST_CONVERSION_SHIFT) {
+                        handleCancel() // ▽あ (mOkurigana = null)
+                        mKanjiKey.append(newOkurigana) // ▽あい
+                        setComposingTextSKK(mKanjiKey)
+                        updateSuggestions(mKanjiKey.toString())
+                        return
+                    }
+                    // 例外: 送りがなが「っ」になる場合は，どのみち必ずt段の音なのでmKanjiKeyはそのまま
+                    // 「ゃゅょ」で送りがなが始まる場合はないはず
+                    if (type != LAST_CONVERSION_SMALL) {
+                        mKanjiKey.deleteCharAt(mKanjiKey.length - 1)
+                        mKanjiKey.append(RomajiConverter.getConsonantForVoiced(newOkurigana))
+                    }
+                    mOkurigana = newOkurigana
+                    conversionStart(mKanjiKey) //変換やりなおし
                 }
-                // 例外: 送りがなが「っ」になる場合は，どのみち必ずt段の音なのでmKanjiKeyはそのまま
-                // 「ゃゅょ」で送りがなが始まる場合はないはず
-                if (type != LAST_CONVERSION_SMALL) {
-                    mKanjiKey.deleteCharAt(mKanjiKey.length - 1)
-                    mKanjiKey.append(RomajiConverter.getConsonantForVoiced(newOkurigana))
-                }
-                mOkurigana = newOkurigana
-                conversionStart(mKanjiKey) //変換やりなおし
             }
 
             mComposing.isEmpty() && mKanjiKey.isEmpty() -> {
@@ -534,10 +535,10 @@ class SKKEngine(
 
             mRegistrationStack.peekFirst()?.let { regInfo ->
                 val key =
-                    if (kanaState === SKKHiraganaState) regInfo.key
+                    if (kanaState is SKKHiraganaState) regInfo.key
                     else hiragana2katakana(regInfo.key)!!
                 val okurigana =
-                    if (kanaState === SKKHiraganaState) regInfo.okurigana
+                    if (kanaState is SKKHiraganaState) regInfo.okurigana
                     else hiragana2katakana(regInfo.okurigana).orEmpty()
                 // 半角カナ変換はあとで
                 if (okurigana.isEmpty()) {
@@ -568,7 +569,7 @@ class SKKEngine(
                 reversed = true
             )
         )
-        if (state === SKKNarrowingState) {
+        if (state is SKKNarrowingState) {
             ct.append(" hint: ", SKKNarrowingState.mHint, mComposing)
         }
 
@@ -809,7 +810,7 @@ class SKKEngine(
     }
 
     internal fun updateSuggestionsASCII() {
-        if (state !== SKKASCIIState) return
+        if (state !is SKKASCIIState) return
         MainScope().launch(Dispatchers.Default) {
             delay(50) // バックスペースなどの処理が間に合っていないことがあるので
             updateSuggestions(getPrefixASCII())
@@ -1053,7 +1054,10 @@ class SKKEngine(
     }
 
     private fun pickCandidate(index: Int, backspace: Boolean = false, unregister: Boolean = false) {
-        if (state !in listOf(SKKChooseState, SKKNarrowingState, SKKEmojiState)) return
+        when {
+            state.hasCandidates || state is SKKEmojiState -> {}
+            else -> return
+        }
         if (mCandidateKanjiKey == "emoji") {
             suspendSuggestions()
             mKanjiKey.setLength(0)
@@ -1140,7 +1144,7 @@ class SKKEngine(
             }
 
             SKKKanjiState, SKKOkuriganaState -> {
-                val hira = if (kanaState === SKKHiraganaState) s else katakana2hiragana(s)!!
+                val hira = if (kanaState is SKKHiraganaState) s else katakana2hiragana(s)!!
                 val last = hira.last()
                 val hasOkuri = !isAlphabet(hira.first().code) && isAlphabet(last.code)
                 val kanjiKey = if (hasOkuri) hira.dropLast(1) else hira
@@ -1155,7 +1159,7 @@ class SKKEngine(
                     }
                 } else {
                     // ハードウェアキーボードで Tab を押しただけなら送り仮名で conversionStart しない
-                    val composing = if (hasOkuri && last !in listOf('a', 'i', 'u', 'e', 'o')) {
+                    val composing = if (hasOkuri && last !in "aiueo") {
                         mComposing.append(last) // 子音は入力したことにして、次の母音を大文字で入力させる
                         kanjiKey + last
                     } else kanjiKey
@@ -1170,7 +1174,7 @@ class SKKEngine(
                     val lambda = {
                         var newEntry = "/160/$s"
                         val key = when {
-                            state === SKKASCIIState -> c
+                            state is SKKASCIIState -> c
                             c == "/きごう" -> c
                             else -> "emoji"
                         }
@@ -1288,14 +1292,12 @@ class SKKEngine(
     }
 
     internal fun changeState(state: SKKState, force: Boolean = false) {
-        val willBeTemporaryView = state in listOf(SKKAbbrevState, SKKZenkakuState)
+        val willBeTemporaryView = state is SKKAbbrevState || state is SKKZenkakuState
         val wasTemporaryView = mService.isTemporaryView
-        val inCompatibleStates = (
-                this.state in listOf(SKKAbbrevState, SKKKanjiState) &&
-                        state in listOf(SKKAbbrevState, SKKKanjiState)
-                )
+        val inCompatibleStates = (this.state.isTransient && this.state.canSuggest &&
+                state.isTransient && state.canSuggest)
 
-        if (this.state != SKKEmojiState)
+        if (this.state !is SKKEmojiState)
             oldState = this.state
         else mKanjiKey.setLength(0) // mKanjiKey=="emoji"は基本的に無意味なので
 
@@ -1320,7 +1322,7 @@ class SKKEngine(
             SKKHiraganaState, SKKKatakanaState, SKKHanKanaState ->
                 mService.kanaState = state
 
-            SKKNarrowingState -> {
+            is SKKNarrowingState -> {
                 SKKNarrowingState.mHint.setLength(0)
                 SKKNarrowingState.mOriginalCandidates = null
                 SKKNarrowingState.mSpaceUsed = false
@@ -1330,7 +1332,7 @@ class SKKEngine(
         }
         if (state.icon != 0) {
             mService.showStatusIcon(state.icon)
-        } else if (state == SKKASCIIState) {
+        } else if (state is SKKASCIIState) {
             mService.hideStatusIcon()
         }
     }

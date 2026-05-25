@@ -12,6 +12,7 @@ import jp.deadend.noname.skk.zenkaku2hankaku
 object SKKKanjiState : SKKState {
     override val isTransient = true
     override val icon = 0
+    override val canSuggest = true
     override val prefix = "▽"
 
     override fun handleKanaKey(context: SKKEngine) {
@@ -50,7 +51,7 @@ object SKKKanjiState : SKKState {
                 skkPrefs.katakanaKey -> {
                     // カタカナ変換
                     if (mKanjiKey.isNotEmpty()) {
-                        val str = if (kanaState == SKKHiraganaState) {
+                        val str = if (kanaState is SKKHiraganaState) {
                             hiragana2katakana(mKanjiKey.toString())
                         } else {
                             mKanjiKey.toString() // すでにひらがななのでそのまま
@@ -65,7 +66,7 @@ object SKKKanjiState : SKKState {
                 skkPrefs.hankakuKanaKey -> {
                     if (mKanjiKey.isNotEmpty()) {
                         val zenkakuKatakana = hiragana2katakana(mKanjiKey.toString())
-                        val str = if (kanaState === SKKHanKanaState) {
+                        val str = if (kanaState is SKKHanKanaState) {
                             zenkakuKatakana // 半角カナで半角を出すのはエンターだから Ctrl-Q は全角カナが自然だと思う
                         } else {
                             zenkaku2hankaku(zenkakuKatakana)
@@ -139,7 +140,7 @@ object SKKKanjiState : SKKState {
                         if (hiraganaChar != null) {
                             mComposing.setLength(0)
                             mKanjiKey.append(
-                                if (kanaState == SKKHiraganaState) {
+                                if (kanaState is SKKHiraganaState) {
                                     hiraganaChar
                                 } else {
                                     katakana2hiragana(hiraganaChar)

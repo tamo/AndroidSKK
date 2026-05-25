@@ -11,10 +11,7 @@ import android.widget.TextView
 import androidx.core.content.res.ResourcesCompat
 import jp.deadend.noname.skk.databinding.PopupFlickguideBinding
 import jp.deadend.noname.skk.engine.RomajiConverter.getVowel
-import jp.deadend.noname.skk.engine.SKKASCIIState
 import jp.deadend.noname.skk.engine.SKKAbbrevState
-import jp.deadend.noname.skk.engine.SKKChooseState
-import jp.deadend.noname.skk.engine.SKKEmojiState
 import jp.deadend.noname.skk.engine.SKKEngine
 import jp.deadend.noname.skk.engine.SKKState
 import jp.deadend.noname.skk.engine.SKKZenkakuState
@@ -158,17 +155,13 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
 
     override fun setKeyState(state: SKKState): GodanKeyboardView {
         val wasASCII = mIsASCII
-        mIsASCII = (state in listOf(SKKAbbrevState, SKKASCIIState, SKKZenkakuState))
+        mIsASCII = !state.isJapanese
         if (wasASCII != mIsASCII) {
             prepareNewKeyboard(context, width, height, skkPrefs.keyPaddingBottom)
         }
 
         val qKey = checkNotNull(findKeyByCode(keyboard, KEYCODE_GODAN_CHAR_Q)) { "BUG: no Q key" }
-        qKey.on = (state !in listOf(
-            SKKASCIIState,
-            SKKEmojiState,
-            SKKZenkakuState
-        ) && !mService.isHiragana)
+        qKey.on = (state.isJapanese && !mService.isHiragana)
             .also { isKatakana ->
                 listOf(
                     KEYCODE_GODAN_CHAR_A, KEYCODE_GODAN_CHAR_I, KEYCODE_GODAN_CHAR_U,
@@ -185,7 +178,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
         val lKey = checkNotNull(findKeyByCode(keyboard, KEYCODE_GODAN_CHAR_L)) { "BUG: no L key" }
         lKey.on = mIsASCII
 
-        isZenkaku = (state === SKKZenkakuState)
+        isZenkaku = (state is SKKZenkakuState)
 
         invalidateAllKeys()
         return this
@@ -719,9 +712,10 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
             KEYCODE_GODAN_PASTE -> mService.pasteClip()
             KEYCODE_GODAN_GOOGLE -> mService.googleTransliterate()
             KEYCODE_GODAN_CHAR_L -> {
-                when (mService.engineState) {
-                    SKKAbbrevState -> mService.processKey(skkPrefs.kanaKey) // かな入力(KanjiState)
-                    SKKASCIIState, SKKZenkakuState -> mService.handleKanaKey()
+                val state = mService.engineState
+                when {
+                    state is SKKAbbrevState -> mService.processKey(skkPrefs.kanaKey) // かな入力(KanjiState)
+                    !state.isJapanese -> mService.handleKanaKey()
                     else -> mService.processKey(if (isShifted) skkPrefs.zenkakuKey else skkPrefs.asciiKey)
                 }
             }
@@ -832,10 +826,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                     "絵☻" -> mService.emojiCandidates(isShifted)
                     else -> if (
                         popupText.length == 2 &&
-                        popupText[0] in listOf(
-                            'あ', 'い', 'う', 'え', 'お',
-                            'ア', 'イ', 'ウ', 'エ', 'オ'
-                        )
+                        popupText[0] in "あいうえおアイウエオ"
                     ) {
                         mPopupTextView?.getOrNull(0)?.text?.let { vowelStr ->
                             when (val vowel = vowelStr.first()) {
@@ -846,7 +837,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                                     mService.processKey(encodeKey(c))
                                     mService.resumeSuggestions()
                                     // 前の processKey で▼モードになっていたら次で確定してしまうので止まる
-                                    if (mService.engineState !== SKKChooseState) when (popupText[1]) {
+                                    if (!mService.engineState.hasCandidates) when (popupText[1]) {
                                         'っ', 'ッ' -> "xtu"
                                         'ん', 'ン' -> "nn"
                                         else -> throw RuntimeException("mPopupTextView is $mPopupTextView")

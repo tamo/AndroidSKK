@@ -43,7 +43,6 @@ import jp.deadend.noname.skk.databinding.InputViewBinding
 import jp.deadend.noname.skk.engine.RomajiConverter
 import jp.deadend.noname.skk.engine.SKKASCIIState
 import jp.deadend.noname.skk.engine.SKKAbbrevState
-import jp.deadend.noname.skk.engine.SKKChooseState
 import jp.deadend.noname.skk.engine.SKKEmojiState
 import jp.deadend.noname.skk.engine.SKKEngine
 import jp.deadend.noname.skk.engine.SKKHanKanaState
@@ -121,13 +120,13 @@ class SKKService : InputMethodService() {
     }
 
     internal val isFlickOrGodan: Boolean
-        get() = (mInputView in listOf(mFlickJPInputView, mGodanInputView))
+        get() = (mInputView === mFlickJPInputView || mInputView === mGodanInputView)
 
     // 幅の確認
     internal val isFlickWidth: Boolean
-        get() = (mInputView != mQwertyInputView && mInputView != mAbbrevKeyboardView)
+        get() = (mInputView !== mQwertyInputView && mInputView !== mAbbrevKeyboardView)
     internal val isTemporaryView: Boolean
-        get() = (mInputView == mAbbrevKeyboardView || mEngine.state === SKKZenkakuState)
+        get() = (mInputView === mAbbrevKeyboardView || mEngine.state is SKKZenkakuState)
     internal var leftOffset = 0
 
     // 画面サイズが実際に変わる前に onConfigurationChanged で受け取ってサイズ計算
@@ -147,14 +146,14 @@ class SKKService : InputMethodService() {
     internal val engineState: SKKState
         get() {
             val rawState = mEngine.state
-            return if (rawState === SKKEmojiState) mEngine.oldState else rawState
+            return if (rawState is SKKEmojiState) mEngine.oldState else rawState
         }
     private lateinit var mUserDict: SKKUserDictionary
     private lateinit var mAsciiDict: SKKUserDictionary
     private lateinit var mEmojiDict: SKKUserDictionary
 
     internal val isHiragana: Boolean
-        get() = kanaState === SKKHiraganaState
+        get() = kanaState is SKKHiraganaState
     internal var kanaState: SKKState
         get() = mEngine.kanaState
         set(state) {
@@ -711,8 +710,8 @@ class SKKService : InputMethodService() {
                 // 日本語にする
                 "flick-jp" -> {
                     if (
-                        engineState in listOf(SKKAbbrevState, SKKASCIIState, SKKZenkakuState)
-                        || mInputView !in listOf(mFlickJPInputView, mGodanInputView)
+                        !engineState.isJapanese
+                        || (mInputView !== mFlickJPInputView && mInputView !== mGodanInputView)
                         || (mInputView?.equals(mFlickJPInputView) == true
                                 && mInputView!!.keyboard !== mFlickJPInputView!!.mJPKeyboard)
                     ) {
@@ -882,7 +881,7 @@ class SKKService : InputMethodService() {
 
         // SandS: ASCII モードでのスペースアップ処理
         if (!mStickyShift && mSandS && skkPrefs.sandSInAscii &&
-            mEngine.state === SKKASCIIState && keyCode == KeyEvent.KEYCODE_SPACE
+            mEngine.state is SKKASCIIState && keyCode == KeyEvent.KEYCODE_SPACE
         ) {
             mSpacePressed = false
             if (!mSandSUsed) currentInputConnection?.commitText(" ", 1)
@@ -964,7 +963,7 @@ class SKKService : InputMethodService() {
 
         // SandS: ASCII モードでのスペース＆修飾処理（早期リターンより前に置く）
         if (!mStickyShift && mSandS && skkPrefs.sandSInAscii &&
-            engineState === SKKASCIIState && !mEngine.isRegistering
+            engineState is SKKASCIIState && !mEngine.isRegistering
         ) {
             if (keyCode == KeyEvent.KEYCODE_SPACE) {
                 mSpacePressed = true
@@ -990,9 +989,7 @@ class SKKService : InputMethodService() {
             return handleCancel()
         }
 
-        if (keyCode == KeyEvent.KEYCODE_TAB &&
-            engineState in listOf(SKKKanjiState, SKKAbbrevState)
-        ) {
+        if (keyCode == KeyEvent.KEYCODE_TAB && engineState.canSuggest) {
             val isShifted = when {
                 mStickyShift -> mShiftKey.useState() != 0
                 mSandS && mSpacePressed -> true.also { mSandSUsed = true }
@@ -1116,8 +1113,9 @@ class SKKService : InputMethodService() {
     fun handleDpad(keyCode: Int): Boolean {
         dLog("handleDpad(${KeyEvent.keyCodeToString(keyCode)}) in ${mEngine.state}")
         if (mStickyShift) mShiftKey.useState()
+        val state = mEngine.state
         when {
-            mEngine.state === SKKChooseState -> {
+            state.hasCandidates -> {
                 when (keyCode) {
                     KeyEvent.KEYCODE_DPAD_LEFT -> mEngine.chooseAdjacentCandidate(false)
                     KeyEvent.KEYCODE_DPAD_RIGHT -> mEngine.chooseAdjacentCandidate(true)
@@ -1125,7 +1123,7 @@ class SKKService : InputMethodService() {
                 return true
             }
 
-            mEngine.state === SKKEmojiState -> {
+            state is SKKEmojiState -> {
                 when (keyCode) {
                     KeyEvent.KEYCODE_DPAD_LEFT -> mEngine.chooseAdjacentSuggestion(false)
                     KeyEvent.KEYCODE_DPAD_RIGHT -> mEngine.chooseAdjacentSuggestion(true)

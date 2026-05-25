@@ -238,16 +238,16 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
         val flickLabel = if (skkPrefs.preferGodan) "Godan" else "Flick"
         kanaKey?.label = if (skkPrefs.preferFlick) flickLabel else kanaLabel
         kanaKey?.downLabel = if (skkPrefs.preferFlick) kanaLabel else flickLabel
-        kanaKey?.on = state === SKKHiraganaState // Kanji とか Choose とかで消えるのがイヤなら以下にする
-        // kanaKey?.on = (state !in listOf(SKKASCIIState, SKKZenkakuState) && mService.isHiragana)
+        kanaKey?.on = state is SKKHiraganaState // Kanji とか Choose とかで消えるのがイヤなら以下にする
+        // kanaKey?.on = (state.isJapanese && mService.isHiragana)
 
         val qKey = findKeyByCode('q'.code)
-        qKey?.on = (state !in listOf(SKKASCIIState, SKKZenkakuState) && !mService.isHiragana)
+        qKey?.on = (state.isJapanese && !mService.isHiragana)
 
         val lKey = findKeyByCode('l'.code)
-        lKey?.on = (state === SKKASCIIState)
+        lKey?.on = (state is SKKASCIIState)
 
-        isZenkaku = (state === SKKZenkakuState)
+        isZenkaku = (state is SKKZenkakuState)
 
         invalidateAllKeys()
         return this

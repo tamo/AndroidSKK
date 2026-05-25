@@ -9,6 +9,8 @@ import jp.deadend.noname.skk.skkPrefs
 object SKKAbbrevState : SKKState {
     override val isTransient = true
     override val icon = R.drawable.ic_abbrev
+    override val isJapanese = false
+    override val canSuggest = true
     override val prefix = "▽"
 
     override fun handleKanaKey(context: SKKEngine) {

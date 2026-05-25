@@ -6,6 +6,8 @@ import jp.deadend.noname.skk.decodeKey
 object SKKASCIIState : SKKState {
     override val isTransient = false
     override val icon = 0
+    override val isJapanese = false
+    override val canSuggest = true
 
     override fun handleKanaKey(context: SKKEngine) {
         context.changeState(SKKHiraganaState) // Flickにするのは別キーなので内部だけひらがなに

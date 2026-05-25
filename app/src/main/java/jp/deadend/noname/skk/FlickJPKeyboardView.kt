@@ -13,7 +13,6 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.content.res.ResourcesCompat
 import jp.deadend.noname.skk.databinding.PopupFlickguideBinding
 import jp.deadend.noname.skk.engine.SKKASCIIState
-import jp.deadend.noname.skk.engine.SKKChooseState
 import jp.deadend.noname.skk.engine.SKKEngine
 import jp.deadend.noname.skk.engine.SKKHanKanaState
 import jp.deadend.noname.skk.engine.SKKHiraganaState
@@ -214,7 +213,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
             var key = findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_MOJI)
             if (key != null) {
                 key.label =
-                    if (mService.kanaState === SKKHanKanaState) "10\n：カナ>\n声" else "10\n：ｶﾅ>\n声"
+                    if (mService.kanaState is SKKHanKanaState) "10\n：カナ>\n声" else "10\n：ｶﾅ>\n声"
             }
 
             // ＜＞を変更
@@ -237,7 +236,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
             var key = findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_MOJI)
             if (key != null) {
                 key.label =
-                    if (mService.kanaState === SKKHiraganaState) "10\n：カナ>\n声" else "10\n：かな>\n声"
+                    if (mService.kanaState is SKKHiraganaState) "10\n：カナ>\n声" else "10\n：かな>\n声"
             }
 
             // ＜＞を復元
@@ -673,7 +672,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
         val consonant: Int = when (keyCode) {
             KEYCODE_FLICK_JP_CHAR_A -> {
                 if (isLeftCurve(flick)) {
-                    if (mService.engineState === SKKChooseState) {
+                    if (mService.engineState.hasCandidates) {
                         mService.handleEnter() // x の前に確定しておく
                     }
                     mService.processKey('x')
@@ -1074,7 +1073,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
         }
 
         val dialog = dialogBuilder.create()
-        dialog.window!!.let {
+        dialog.window?.let {
             it.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
             it.attributes?.token = this.windowToken
             it.setType(WindowManager.LayoutParams.TYPE_APPLICATION_ATTACHED_DIALOG)

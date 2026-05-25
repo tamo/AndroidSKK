@@ -9,6 +9,7 @@ object SKKZenkakuState : SKKState {
     override val isTransient = false
     override val icon =
         R.drawable.ic_full_alphabet
+    override val isJapanese = false
 
     override fun handleKanaKey(context: SKKEngine) {
         context.changeState(SKKHiraganaState)

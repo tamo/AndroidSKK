@@ -4,6 +4,9 @@ package jp.deadend.noname.skk.engine
 interface SKKState {
     val isTransient: Boolean
     val icon: Int
+    val isJapanese: Boolean get() = true
+    val canSuggest: Boolean get() = false
+    val hasCandidates: Boolean get() = false
     val prefix: String? get() = null
     fun handleKanaKey(context: SKKEngine)
     fun processKey(context: SKKEngine, keyCode: Int)
