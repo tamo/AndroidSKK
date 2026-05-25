@@ -14,11 +14,10 @@ interface SKKConfirmingState : SKKState {
         val (lowerCode, _) = decodeKey(keyCode)
         pendingLambda?.let {
             context.setComposingTextSKK(oldComposingText)
-            if (lowerCode == 'y'.code) {
-                pendingLambda!!.invoke()
-                pendingLambda = null
-                return true
-            } else pendingLambda = null
+            return (if (lowerCode == 'y'.code) {
+                it.invoke()
+                true
+            } else false).also { pendingLambda = null }
         }
         return false
     }

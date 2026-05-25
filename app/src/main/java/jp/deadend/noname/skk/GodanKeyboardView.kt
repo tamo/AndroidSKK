@@ -99,7 +99,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
     }
 
     override fun onDetachedFromWindow() {
-        if (mPopup?.isShowing == true) mPopup!!.dismiss()
+        mPopup?.dismiss()
         super.onDetachedFromWindow()
         isShifted = false
         isCapsLocked = false
@@ -584,19 +584,10 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
         calculatePopupPos()
 
         if (mUsePopup) {
-            val popup = checkNotNull(mPopup) { "BUG: popup is null!!" }
-            if (mFixedPopup) {
-                popup.showAtLocation(
-                    this, android.view.Gravity.NO_GRAVITY,
-                    mFixedPopupPos[0], mFixedPopupPos[1]
-                )
-            } else {
-                popup.showAtLocation(
-                    this, android.view.Gravity.NO_GRAVITY,
-                    mFlickStartX.toInt() + mPopupOffset[0],
+            val (x, y) = if (mFixedPopup) mFixedPopupPos[0] to mFixedPopupPos[1]
+            else mFlickStartX.toInt() + mPopupOffset[0] to
                     mFlickStartY.toInt() + mPopupOffset[1]
-                )
-            }
+            mPopup?.showAtLocation(this, android.view.Gravity.NO_GRAVITY, x, y)
         }
     }
 
@@ -863,8 +854,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
         mFlickState = EnumSet.of(FlickState.NONE)
         mFlickStartX = -1f
         mFlickStartY = -1f
-        val popup = checkNotNull(mPopup) { "BUG: popup is null!!" }
-        if (popup.isShowing) popup.dismiss()
+        mPopup?.dismiss()
     }
 
     override fun onRelease(primaryCode: Int) {

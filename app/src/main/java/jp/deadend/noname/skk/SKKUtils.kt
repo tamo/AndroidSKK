@@ -10,9 +10,8 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStream
-import java.util.Calendar
-import java.util.Locale
-import java.util.TimeZone
+import java.time.ZoneId
+import java.time.ZonedDateTime
 import java.util.zip.ZipInputStream
 import kotlin.math.max
 
@@ -20,62 +19,52 @@ private val PAT_QUOTED = "\"(.+?)\"".toRegex()
 private val PAT_ESCAPE_NUM = """\\\d{1,3}""".toRegex()
 
 // 半角から全角 (UNICODE)
-fun hankaku2zenkaku(str: String?): String? {
-    if (str == null) return null
-
-    var skipNext = false
-    return str.mapIndexedNotNull { index, it ->
-        when {
-            skipNext -> {
-                skipNext = false
-                null
-            }
-
-            it.code < 0x10000 -> {
-                val c = H2Z[it.code]
-                when {
-                    c == null -> it
-
-                    str.length > index + 1 -> when (str[index + 1]) {
-                        'ﾞ' -> H2Z[0x10000 + it.code]?.let { d ->
-                            skipNext = true
-                            Char(d)
-                        } ?: Char(c)
-
-                        'ﾟ' -> H2Z[0x20000 + it.code]?.let { h ->
-                            skipNext = true
-                            Char(h)
-                        } ?: Char(c)
-
-                        else -> Char(c)
+fun hankaku2zenkaku(str: String?): String? = str?.let { s ->
+    buildString(s.length) {
+        var i = 0
+        while (i < s.length) {
+            val char = s[i]
+            val code = char.code
+            if (code < 0x10000) {
+                val base = H2Z[code]
+                if (base != null && i + 1 < s.length) {
+                    val combined = when (s[i + 1]) {
+                        'ﾞ' -> H2Z[0x10000 + code]
+                        'ﾟ' -> H2Z[0x20000 + code]
+                        else -> null
                     }
-
-                    else -> Char(c)
+                    if (combined != null) {
+                        append(combined.toChar())
+                        i += 2
+                        continue
+                    }
                 }
+                append(base?.toChar() ?: char)
+            } else {
+                append(char)
             }
-
-            else -> it
+            i++
         }
-    }.joinToString("")
+    }
 }
 
-fun zenkaku2hankaku(str: String?): String? {
-    if (str == null) return null
-
-    return str.map {
-        val fc = Z2H[it.code]
-        if (fc == null) {
-            it.toString()
-        } else {
-            val f = (0x30000 and fc) shr 16
-            val c = 0x0FFFF and fc
-            Char(c).toString() + when (f) {
-                1 -> "ﾞ"
-                2 -> "ﾟ"
-                else -> ""
+fun zenkaku2hankaku(str: String?): String? = str?.let { s ->
+    buildString(s.length) {
+        for (char in s) {
+            val fc = Z2H[char.code]
+            if (fc == null) {
+                append(char)
+            } else {
+                val f = (0x30000 and fc) shr 16
+                val c = 0x0FFFF and fc
+                append(c.toChar())
+                when (f) {
+                    1 -> append('ﾞ')
+                    2 -> append('ﾟ')
+                }
             }
         }
-    }.joinToString("")
+    }
 }
 
 // ひらがなを全角カタカナにする
@@ -112,21 +101,19 @@ fun katakana2hiragana(str: String?): String? {
     // 「ヴ」が「う゛」ではなく「ゔ」になる
 }
 
-fun isAlphabet(code: Int) = (code in 0x41..0x5A || code in 0x61..0x7A)
-fun isAlNum(code: Int) = isAlphabet(code) || (code in 0x30..0x39)
+fun isAlphabet(code: Int) = code.toChar() in 'a'..'z' || code.toChar() in 'A'..'Z'
+fun isAlNum(code: Int) = isAlphabet(code) || code.toChar() in '0'..'9'
 
-fun isHiragana(code: Int) = (code in 0x3041..0x3096)
-fun isKatakana(code: Int) =
-    (hankaku2zenkaku(Char(code).toString())?.first()?.code in 0x30A1..0x30FA)
+fun isHiragana(code: Int) = code in 0x3041..0x3096
+fun isKatakana(code: Int) = (H2Z[code] ?: code) in 0x30A1..0x30FA
 
-fun isDakuten(code: Int) = (code == 0x3099 || code == 0x309B)
-fun isHandakuten(code: Int) = (code == 0x309A || code == 0x309C)
+fun isDakuten(code: Int) = code == 0x3099 || code == 0x309B
+fun isHandakuten(code: Int) = code == 0x309A || code == 0x309C
 fun isKanaSymbol(code: Int) = isDakuten(code) || isHandakuten(code)
-        || (code in 0x309D..0x309E) // ゝゞ
-        || (code in 0x30FD..0x30FE) // ヽヾ
+        || code in 0x309D..0x309E // ゝゞ
+        || code in 0x30FD..0x30FE // ヽヾ
 
-fun isVowel(code: Int) =
-    (code == 0x61 || code == 0x69 || code == 0x75 || code == 0x65 || code == 0x6F)
+fun isVowel(code: Int) = code.toChar() in "aiueo"
 // a, i, u, e, o
 
 fun removeAnnotation(str: String): String {
@@ -251,24 +238,25 @@ fun processConcatAndMore(rawStr: String, kanjiKey: String): String {
             } else 0f
             val str = unescapeOctal(unquote(raw))
 
-            val calendar = Calendar.getInstance(TimeZone.getTimeZone("Asia/Tokyo"), Locale.JAPAN)
+            var dt = ZonedDateTime.now(ZoneId.of("Asia/Tokyo"))
 
             if (numberList.isNotEmpty()) {
-                val num = numberList.removeAt(0).toInt()
-                when (argUnit) {
+                val numStr = numberList.removeAt(0)
+                val num = numStr.toFloat()
+                dt = when (argUnit) {
                     "y" -> {
-                        if (isDelta) calendar.add(Calendar.YEAR, num * sign * times.toInt())
-                        else calendar.set(Calendar.YEAR, num * times.toInt())
+                        if (isDelta) dt.plusYears((num * sign * times).toLong())
+                        else dt.withYear((num * times).toInt())
                     }
 
                     "m" -> {
-                        if (isDelta) calendar.add(Calendar.MONTH, num * sign * times.toInt())
-                        else calendar.set(Calendar.MONTH, num * times.toInt())
+                        if (isDelta) dt.plusMonths((num * sign * times).toLong())
+                        else dt.withMonth((num * times).toInt())
                     }
 
                     "d" -> {
-                        if (isDelta) calendar.add(Calendar.DATE, num * sign * times.toInt())
-                        else calendar.set(Calendar.DAY_OF_MONTH, num * times.toInt())
+                        if (isDelta) dt.plusDays((num * sign * times).toLong())
+                        else dt.withDayOfMonth((num * times).toInt())
                     }
 
                     // 単位換算など
@@ -281,26 +269,27 @@ fun processConcatAndMore(rawStr: String, kanjiKey: String): String {
                 return str.replace(Regex("[ymd]{1,4}"), "#")
             }
 
-            val oldYear = calendar.get(Calendar.YEAR)
+            val oldYear = dt.year
             if ((yearDelta.toIntOrNull() ?: 0) <= -oldYear) {
                 return str.replace(Regex("y{1,4}"), "#")
             }
 
-            calendar.add(Calendar.YEAR, yearDelta.toIntOrNull() ?: 0)
-            calendar.add(Calendar.MONTH, monthDelta.toIntOrNull() ?: 0)
-            calendar.add(Calendar.DATE, dateDelta.toIntOrNull() ?: 0)
+            dt = dt.plusYears((yearDelta.toIntOrNull() ?: 0).toLong())
+                .plusMonths((monthDelta.toIntOrNull() ?: 0).toLong())
+                .plusDays((dateDelta.toIntOrNull() ?: 0).toLong())
 
-            val dayWeek = calendar.get(Calendar.DAY_OF_WEEK) // Calendar.*DAY == 日1〜土7
+            val dayWeek = dt.dayOfWeek.value % 7 + 1 // Mon(1)..Sun(7) -> Sun(1)..Sat(7)
             val dayWeekStr = "X日月火水木金土"[dayWeek].toString()
-            val hour = calendar.get(Calendar.HOUR_OF_DAY)
-            val yearStr = calendar.get(Calendar.YEAR).toString()
+            val hour = dt.hour
+            val yearStr = dt.year.toString()
             val format = str
                 .replace("aaaa", dayWeekStr + "曜日")
                 .replace("aaa", dayWeekStr)
                 .replace("aa", if (hour < 12) "午前" else "午後")
                 .replace(Regex("(?<!y)y(?!y)"), yearStr) // 単独の y で 1 桁を許容するように
 
-            return DateFormat.format(format, calendar).toString()
+            return DateFormat.format(format, java.util.Date(dt.toInstant().toEpochMilli()))
+                .toString()
         }
 
     return processNumber(rawStr, numberList)

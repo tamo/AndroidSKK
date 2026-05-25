@@ -74,7 +74,8 @@ object RomajiConverter {
     fun convert(romaji: String) = mRomajiMap[romaji].orEmpty()
     fun getConsonantForVoiced(kana: String): String {
         val hiragana = katakana2hiragana(hankaku2zenkaku(kana)) ?: return ""
-        return if (hiragana.isEmpty()) "" else when (val c = hiragana[0].code) {
+        if (hiragana.isEmpty()) return ""
+        return when (val c = hiragana[0].code) {
             'ぁ'.code, 'あ'.code -> "a"
             'ぃ'.code, 'い'.code -> "i"
             'ぅ'.code -> "u"
@@ -117,14 +118,14 @@ object RomajiConverter {
         var first = if (str.lastIndex > 0) str[str.lastIndex - 1].toString() else "" // 1 文字の場合
         val last = str.last()
 
-        val zen = hankaku2zenkaku(first + last)!! // 2文字
+        val zen = checkNotNull(hankaku2zenkaku(first + last))
         val kana = if (first.isNotEmpty() && zen.length == 1) {
             first = "" // ｶﾞとかﾊﾟ(2文字)からガやパ(1文字)になったので消さないとｶガやﾊパになる
             zen
         } else if (type == SKKEngine.LAST_CONVERSION_SHIFT && isAlNum(last.code)) {
             last.toString() // 英数SHIFTは全角にしないで使う
         } else {
-            hankaku2zenkaku(last.toString())!!
+            checkNotNull(hankaku2zenkaku(last.toString()))
         }
         assert(kana.length == 1)
 

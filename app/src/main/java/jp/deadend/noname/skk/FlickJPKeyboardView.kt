@@ -133,7 +133,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
     }
 
     override fun onDetachedFromWindow() {
-        if (mPopup?.isShowing == true) mPopup!!.dismiss()
+        mPopup?.dismiss()
         super.onDetachedFromWindow()
         //isShifted = false
     }
@@ -193,7 +193,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
                 else -> continue
             }
             key.label = if (state !== SKKHiraganaState) {
-                hiragana2katakana(label)!!
+                hiragana2katakana(label) ?: label
             } else label
         }
         invalidateAllKeys()

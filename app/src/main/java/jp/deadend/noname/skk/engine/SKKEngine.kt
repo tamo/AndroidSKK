@@ -23,6 +23,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
@@ -40,6 +41,7 @@ class SKKEngine(
     private val mASCIIDict: SKKUserDictionary,
     private val mEmojiDict: SKKUserDictionary
 ) {
+    private val mScope = MainScope()
     var state: SKKState = SKKHiraganaState
         private set
     internal var kanaState: SKKState = SKKHiraganaState
@@ -140,6 +142,7 @@ class SKKEngine(
         mUserDict.close()
         mASCIIDict.close()
         mEmojiDict.close()
+        mScope.cancel()
     }
 
     fun processKey(keyCode: Int) = state.processKey(this, keyCode)
@@ -210,7 +213,7 @@ class SKKEngine(
                     }
                 } else {
                     commitTextSKK(
-                        if (state is SKKHanKanaState) zenkaku2hankaku(mComposing.toString())!!
+                        if (state is SKKHanKanaState) zenkaku2hankaku(mComposing.toString()).orEmpty()
                         else mComposing
                     )
                     mComposing.setLength(0)
@@ -359,7 +362,7 @@ class SKKEngine(
                     return
                 }
 
-                SKKNarrowingState -> {
+                is SKKNarrowingState -> {
                     mCurrentCandidateIndex = candidateList.size - 1
                 }
             }
@@ -511,7 +514,7 @@ class SKKEngine(
                         updateSuggestions(mKanjiKey.toString())
                     } else {
                         ic.commitText(
-                            if (state === SKKHanKanaState) zenkaku2hankaku(newLastChar)
+                            if (state is SKKHanKanaState) zenkaku2hankaku(newLastChar)
                             else newLastChar,
                             1
                         )
@@ -541,7 +544,7 @@ class SKKEngine(
             mRegistrationStack.peekFirst()?.let { regInfo ->
                 val key =
                     if (kanaState is SKKHiraganaState) regInfo.key
-                    else hiragana2katakana(regInfo.key)!!
+                    else hiragana2katakana(regInfo.key).orEmpty()
                 val okurigana =
                     if (kanaState is SKKHiraganaState) regInfo.okurigana
                     else hiragana2katakana(regInfo.okurigana).orEmpty()
@@ -687,7 +690,7 @@ class SKKEngine(
         val oldCanList = mCandidateList?.toList()
         mUpdateSuggestionsJob.cancel()
         mUpdateSuggestionsJob.invokeOnCompletion {
-            mUpdateSuggestionsJob = MainScope().launch(Dispatchers.Default) {
+            mUpdateSuggestionsJob = mScope.launch(Dispatchers.Default) {
                 @Throws(CancellationException::class)
                 fun ensureCont() {
                     if (oldComList != mCompletionList || oldCanList != mCandidateList)
@@ -721,7 +724,7 @@ class SKKEngine(
                                         if (mService.isHiragana) fuzzyStr else hiragana2katakana(
                                             fuzzyStr,
                                             reversed = true
-                                        )!!
+                                        ).orEmpty()
                                     set.add(fuzzyStr to shownStr)
                                 }
                             }.inWholeMilliseconds || set.isEmpty()
@@ -749,11 +752,9 @@ class SKKEngine(
                 delay(150 - elapsed.inWholeMilliseconds)
                 ensureCont() // 短時間に連続で実行されないよう最新のみ有効に
 
-                set.distinctBy { it.second }
-                    .let { uniqueSet ->
-                        mCompletionList = uniqueSet.map { it.first }
-                        mCandidateList = uniqueSet.map { it.second }
-                    }
+            val uniqueSet = set.distinctBy { it.second }
+            mCompletionList = uniqueSet.map { it.first }
+            mCandidateList = uniqueSet.map { it.second }
 
                 mCandidateKanjiKey = str
                 mCurrentCandidateIndex = 0
@@ -793,7 +794,7 @@ class SKKEngine(
     ) {
         val dictionary = when (dict) {
             mUserDict -> {
-                if (key == "emoji" || state === SKKASCIIState) mASCIIDict else mUserDict
+                if (key == "emoji" || state is SKKASCIIState) mASCIIDict else mUserDict
             }
 
             mEmojiDict -> {
@@ -810,13 +811,13 @@ class SKKEngine(
         if (mService.isHiragana) {
             target.addAll(dictionary.findKeys(scope, key))
         } else dictionary.findKeys(scope, key).forEach { suggestion ->
-            target.add(suggestion.first to hiragana2katakana(suggestion.second, reversed = true)!!)
+            target.add(suggestion.first to hiragana2katakana(suggestion.second, reversed = true).orEmpty())
         }
     }
 
     internal fun updateSuggestionsASCII() {
         if (state !is SKKASCIIState) return
-        MainScope().launch(Dispatchers.Default) {
+        mScope.launch(Dispatchers.Default) {
             delay(50) // バックスペースなどの処理が間に合っていないことがあるので
             updateSuggestions(getPrefixASCII())
         }
@@ -988,7 +989,7 @@ class SKKEngine(
                 "\"#$%&'()=^~¥|@`[{;+*]},<.>\\_←↓↑→“”‘’『』【】！＂＃＄％＆＇（）－＝＾～￥｜＠｀［｛；＋：＊］｝，＜．＞／？＼＿、。"
                     .toCharArray()
                     .map { it.toString() }
-        mCompletionList = mCandidateList!!.map { "/きごう" }
+        mCompletionList = mCandidateList?.map { "/きごう" }
         mCurrentCandidateIndex = 0
         mCandidateKanjiKey = "/きごう"
         mService.setCandidates(mCandidateList, "/きごう", skkPrefs.candidatesNormalLines)
@@ -1004,11 +1005,11 @@ class SKKEngine(
         val userEntry = mUserDict.getEntry(key)
         dLog("user dictionary: $key -> ${userEntry?.candidates} with ${userEntry?.okuriganaBlocks}")
         val (userOkList, userRestList) = (userEntry?.candidates ?: listOf()).partition { s ->
-            mOkurigana.isEmpty() || userEntry!!.okuriganaBlocks.any {
+            mOkurigana.isEmpty() || userEntry?.okuriganaBlocks?.any {
                 it.first == katakana2hiragana(hankaku2zenkaku(mOkurigana)) && it.second == s
                 // 送り仮名ブロックを直接使って変換するのではなく、この判定にだけ使っている
                 // なので、送り仮名ブロックだけで存在していても無意味である
-            }
+            } == true
         }
 
         val rawList: List<String> = mDictList.asSequence().mapNotNull { dict ->
@@ -1183,9 +1184,9 @@ class SKKEngine(
             }
 
             SKKKanjiState, SKKOkuriganaState -> {
-                val hira = if (kanaState is SKKHiraganaState) s else katakana2hiragana(s)!!
-                val last = hira.last()
-                val hasOkuri = !isAlphabet(hira.first().code) && isAlphabet(last.code)
+                val hira = if (kanaState is SKKHiraganaState) s else katakana2hiragana(s).orEmpty()
+                val last = hira.lastOrNull() ?: ' '
+                val hasOkuri = hira.isNotEmpty() && !isAlphabet(hira.first().code) && isAlphabet(last.code)
                 val kanjiKey = if (hasOkuri) hira.dropLast(1) else hira
                 mKanjiKey.setLength(0)
                 mKanjiKey.append(kanjiKey)

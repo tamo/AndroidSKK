@@ -300,7 +300,7 @@ class SKKService : InputMethodService() {
         notificationManager.createNotificationChannel(channel)
         // 事前に権限を持っていないと、onCreate 内では権限要求を出せないみたいなので注意！
 
-        fun openUserDictionary(name: String, isASCII: Boolean): SKKUserDictionary {
+        fun openUserDictionary(name: String, isASCII: Boolean): SKKUserDictionary? {
             val dict = SKKUserDictionary.newInstance(
                 this@SKKService,
                 filesDir.absolutePath + "/" + name,
@@ -319,13 +319,17 @@ class SKKService : InputMethodService() {
                     getString(R.string.error_open_user_dict, name),
                     pendingIntent
                 )
-                super.onDestroy()
+                stopSelf()
             }
-            return dict!!
+            return dict
         }
-        mUserDict = openUserDictionary(getString(R.string.dict_name_user), isASCII = false)
-        mAsciiDict = openUserDictionary(getString(R.string.dict_name_ascii), isASCII = true)
-        mEmojiDict = openUserDictionary(getString(R.string.dict_name_emoji), isASCII = true)
+        // エラー時には、上で通知を出しているので単に return する (throw しない)
+        mUserDict =
+            openUserDictionary(getString(R.string.dict_name_user), isASCII = false) ?: return
+        mAsciiDict =
+            openUserDictionary(getString(R.string.dict_name_ascii), isASCII = true) ?: return
+        mEmojiDict =
+            openUserDictionary(getString(R.string.dict_name_emoji), isASCII = true) ?: return
         val dictList = openDictionaries()
         if (dictList.minus(mUserDict).minus(mEmojiDict).isEmpty()) {
             val intent = Intent(applicationContext, SKKDictManager::class.java)
@@ -628,9 +632,9 @@ class SKKService : InputMethodService() {
         }
         super.onStartInput(attribute, restarting)
 
-        if (!mPendingInput.isNullOrEmpty()) {
-            dLog("commiting pending input: $mPendingInput")
-            currentInputConnection.commitText(mPendingInput!!, 1)
+        mPendingInput?.let { pending ->
+            dLog("commiting pending input: $pending")
+            currentInputConnection.commitText(pending, 1)
             mPendingInput = null
         }
 
@@ -697,7 +701,7 @@ class SKKService : InputMethodService() {
                 mPrevStates = PrevStates(this, mInputView, engineState)
             } else {
                 // 未使用の prev を上書きせず保持するが、keyboard だけは戻しておく
-                mPrevStates!!.let { prev ->
+                mPrevStates?.let { prev ->
                     prev.keyboard?.let { kb ->
                         prev.inputView?.keyboard = kb
                     }
@@ -751,7 +755,7 @@ class SKKService : InputMethodService() {
             mPrevStates?.let { prev ->
                 if (
                     prev.inputView?.equals(mInputView) == true // null 不可
-                    && prev.keyboard?.equals(mInputView!!.keyboard) != false // null 可
+                    && prev.keyboard?.equals(mInputView?.keyboard) != false // null 可
                     && prev.state == engineState
                 ) {
                     mPrevStates = null
