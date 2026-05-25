@@ -1060,24 +1060,61 @@ class SKKEngine(
 
     private fun pickCandidate(index: Int, backspace: Boolean = false, unregister: Boolean = false) {
         if (!state.hasCandidates) return
-        if (mCandidateKanjiKey == "emoji" || mCandidateKanjiKey == "/きごう") {
-            suspendSuggestions()
-            mKanjiKey.setLength(0)
-            mKanjiKey.append(mCandidateKanjiKey)
-            mCompletionList = mCandidateList?.map { mCandidateKanjiKey }
-            pickSuggestion(index, unregister)
-            resumeSuggestions()
-            return
-        }
         val candidateList = mCandidateList ?: return
+        val rawCandidate = candidateList[index]
         val candidate = StringBuilder(getCandidate(index) ?: return)
         dLog("pickCandidate $candidate from $candidateList (unregister=$unregister)")
         suspendSuggestions()
 
+        if (mCandidateKanjiKey == "emoji" || mCandidateKanjiKey == "/きごう") {
+            if (isPersonalizedLearning || unregister) {
+                val s = removeAnnotation(candidate.toString())
+                var newEntry = "/160/$s"
+                (mASCIIDict.getEntry(mCandidateKanjiKey)?.let { entry ->
+                    entry.candidates.asSequence()
+                        .zipWithNext()
+                        .filterIndexed { i, _ -> i % 2 == 0 }
+                        .mapNotNull {
+                            if (it.second == s) {
+                                newEntry = "/${it.first.toInt().coerceAtLeast(160)}/$s"
+                                null
+                            } else it
+                        }
+                        .fold("/") { str, pair -> "$str${pair.first}/${pair.second}/" }
+                }.orEmpty())
+                    .let {
+                        if (unregister) newEntry = ""
+                        dLog("replaceEntry($mCandidateKanjiKey, $newEntry$it)")
+                        mASCIIDict.replaceEntry(mCandidateKanjiKey, newEntry + it)
+                    }
+            }
+
+            if (unregister) {
+                val confirmingState = state as SKKConfirmingState
+                confirmingState.oldComposingText = mComposingText.toString()
+                val entryString = "/${removeAnnotation(rawCandidate)}/"
+                setComposingTextSKK("削除? (y/N) $entryString")
+                mService.setCandidates(listOf("削除する $entryString"), "", 1)
+                confirmingState.pendingLambda = {
+                    reset()
+                    changeState(oldState)
+                }
+                resumeSuggestions()
+                return
+            }
+
+            commitTextSKK(removeAnnotation(candidate.toString()))
+            resumeSuggestions()
+            if (state.isSequential) return
+            reset()
+            changeState(oldState)
+            return
+        }
+
         if (unregister) {
             val confirmingState = state as SKKConfirmingState
             confirmingState.oldComposingText = mComposingText.toString()
-            val unannotated = removeAnnotation(candidateList[index])
+            val unannotated = removeAnnotation(rawCandidate)
             val entryString =
                 "/$unannotated/${
                     if (mOkurigana.isNotEmpty()) "[$mOkurigana/$unannotated/]/" else ""
@@ -1085,7 +1122,7 @@ class SKKEngine(
             setComposingTextSKK("削除? (y/N) $entryString")
             mService.setCandidates(listOf("削除する $entryString"), "", 1)
             confirmingState.pendingLambda = {
-                mUserDict.removeEntry(mKanjiKey.toString(), candidateList[index], mOkurigana)
+                mUserDict.removeEntry(mKanjiKey.toString(), rawCandidate, mOkurigana)
                 reset()
                 changeState(kanaState)
             }
@@ -1094,7 +1131,7 @@ class SKKEngine(
         }
 
         if (isPersonalizedLearning) {
-            mUserDict.addEntry(mKanjiKey.toString(), candidateList[index], mOkurigana)
+            mUserDict.addEntry(mKanjiKey.toString(), rawCandidate, mOkurigana)
             // ユーザー辞書登録時はエスケープや注釈を消さない
         }
 
@@ -1117,7 +1154,7 @@ class SKKEngine(
         }
         resumeSuggestions()
 
-        if (state === SKKNarrowingState && SKKNarrowingState.isSequential) return
+        if (state.isSequential) return
         reset()
         changeState(kanaState)
     }
@@ -1169,18 +1206,12 @@ class SKKEngine(
                 }
             }
 
-            // 絵文字か記号のときだけ Narrowing でここに来る
-            SKKASCIIState, SKKEmojiState, SKKNarrowingState -> {
+            is SKKASCIIState -> {
                 if (!commit) return
                 if (isPersonalizedLearning || unregister) {
                     val lambda = {
                         var newEntry = "/160/$s"
-                        val key = when {
-                            state is SKKASCIIState -> c
-                            c == "/きごう" -> c
-                            else -> "emoji"
-                        }
-                        (mASCIIDict.getEntry(key)?.let { entry ->
+                        (mASCIIDict.getEntry(c)?.let { entry ->
                             entry.candidates.asSequence() // freq1, val1, freq2, val2
                                 .zipWithNext() // (freq1, val1), (val1, freq2), (freq2, val2)
                                 .filterIndexed { i, _ -> i % 2 == 0 } // (freq1, val1), (freq2, val2)
@@ -1194,18 +1225,15 @@ class SKKEngine(
                         }.orEmpty())
                             .let {
                                 if (unregister) newEntry = ""
-                                dLog("replaceEntry($key, $newEntry$it)")
-                                mASCIIDict.replaceEntry(key, newEntry + it)
+                                dLog("replaceEntry($c, $newEntry$it)")
+                                mASCIIDict.replaceEntry(c, newEntry + it)
                             }
                     }
                     if (unregister) {
                         val confirmingState = state as SKKConfirmingState
                         confirmingState.oldComposingText = mComposingText.toString()
                         val unannotated = removeAnnotation(rawSuggestion)
-                        val entryString =
-                            "/$unannotated/${
-                                if (mOkurigana.isNotEmpty()) "[$mOkurigana/$unannotated/]/" else ""
-                            }"
+                        val entryString = "/$unannotated/"
                         setComposingTextSKK("削除? (y/N) $entryString")
                         mService.setCandidates(listOf("削除する $entryString"), "", 1)
                         confirmingState.pendingLambda = {
@@ -1218,21 +1246,10 @@ class SKKEngine(
                         lambda()
                     }
                 }
-                when (state) {
-                    is SKKASCIIState -> {
-                        if (deletePrefixASCII(c)) {
-                            commitTextSKK(removeAnnotation(s))
-                            deleteSuffixASCII()
-                            reset()
-                        }
-                    }
-
-                    is SKKEmojiState, is SKKNarrowingState -> {
-                        commitTextSKK(removeAnnotation(s))
-                        if (state.isSequential) return
-                        reset() // 暗黙の確定がされないように
-                        changeState(oldState)
-                    }
+                if (deletePrefixASCII(c)) {
+                    commitTextSKK(removeAnnotation(s))
+                    deleteSuffixASCII()
+                    reset()
                 }
             }
         }
