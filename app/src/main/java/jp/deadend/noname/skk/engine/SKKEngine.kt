@@ -609,7 +609,7 @@ class SKKEngine(
         mCandidateList = list
         mCurrentCandidateIndex = 0
         mCandidateKanjiKey = str
-        mService.setCandidates(list, str, skkPrefs.candidatesNormalLines)
+        setCandidates(list, str, skkPrefs.candidatesNormalLines)
         setCurrentCandidateToComposing()
     }
 
@@ -641,7 +641,7 @@ class SKKEngine(
         if (narrowed.isNotEmpty()) {
             mCandidateList = narrowed
             mCurrentCandidateIndex = 0
-            mService.setCandidates(
+            setCandidates(
                 narrowed,
                 mCandidateKanjiKey,
                 if (mCandidateKanjiKey == "emoji")
@@ -670,7 +670,7 @@ class SKKEngine(
             mCandidateList = lastConv.list
             mCurrentCandidateIndex = lastConv.index
             mCandidateKanjiKey = lastConv.kanjiKey
-            mService.setCandidates(
+            setCandidates(
                 mCandidateList,
                 mCandidateKanjiKey,
                 skkPrefs.candidatesNormalLines
@@ -752,25 +752,22 @@ class SKKEngine(
                 delay(150 - elapsed.inWholeMilliseconds)
                 ensureCont() // 短時間に連続で実行されないよう最新のみ有効に
 
-            val uniqueSet = set.distinctBy { it.second }
-            mCompletionList = uniqueSet.map { it.first }
-            mCandidateList = uniqueSet.map { it.second }
+                val uniqueSet = set.distinctBy { it.second }
+                uniqueSet.unzip().let {
+                    mCompletionList = it.first
+                    mCandidateList = if (str == "emoji") it.second.map { s -> removeAnnotation(s) }
+                    else it.second
+                }
 
                 mCandidateKanjiKey = str
                 mCurrentCandidateIndex = 0
                 withContext(Dispatchers.Main) {
-                    if (str == "emoji")
-                        mService.setCandidates(
-                            mCandidateList?.map { removeAnnotation(it) },
-                            str,
-                            skkPrefs.candidatesEmojiLines
-                        )
-                    else
-                        mService.setCandidates(
-                            mCandidateList,
-                            str,
-                            skkPrefs.candidatesNormalLines
-                        )
+                    setCandidates(
+                        mCandidateList,
+                        str,
+                        if (str == "emoji") skkPrefs.candidatesEmojiLines
+                        else skkPrefs.candidatesNormalLines
+                    )
                 }
             }
             mUpdateSuggestionsJob.start()
@@ -810,8 +807,8 @@ class SKKEngine(
         }
         if (mService.isHiragana) {
             target.addAll(dictionary.findKeys(scope, key))
-        } else dictionary.findKeys(scope, key).forEach { suggestion ->
-            target.add(suggestion.first to hiragana2katakana(suggestion.second, reversed = true).orEmpty())
+        } else dictionary.findKeys(scope, key).forEach { pair ->
+            target.add(pair.first to hiragana2katakana(pair.second, reversed = true).orEmpty())
         }
     }
 
@@ -965,11 +962,7 @@ class SKKEngine(
                         mCandidateList = list
                         mCurrentCandidateIndex = 0
                         mCandidateKanjiKey = mKanjiKey.toString()
-                        mService.setCandidates(
-                            list,
-                            mKanjiKey.toString(),
-                            skkPrefs.candidatesNormalLines
-                        )
+                        setCandidates(list, mKanjiKey.toString(), skkPrefs.candidatesNormalLines)
                         setCurrentCandidateToComposing()
                     }
                 },
@@ -992,7 +985,7 @@ class SKKEngine(
         mCompletionList = mCandidateList?.map { "/きごう" }
         mCurrentCandidateIndex = 0
         mCandidateKanjiKey = "/きごう"
-        mService.setCandidates(mCandidateList, "/きごう", skkPrefs.candidatesNormalLines)
+        setCandidates(mCandidateList, "/きごう", skkPrefs.candidatesNormalLines)
     }
 
     internal fun emojiCandidates(sequential: Boolean) {
@@ -1055,6 +1048,9 @@ class SKKEngine(
         }
     }
 
+    internal fun setCandidates(list: List<String>?, key: String, lines: Int) =
+        mService.setCandidates(list, key, lines)
+
     internal fun pickCurrentCandidate(backspace: Boolean = false, unregister: Boolean = false) {
         pickCandidate(mCurrentCandidateIndex, backspace, unregister)
     }
@@ -1091,12 +1087,8 @@ class SKKEngine(
             }
 
             if (unregister) {
-                val confirmingState = state as SKKConfirmingState
-                confirmingState.oldComposingText = mComposingText.toString()
-                val entryString = "/${removeAnnotation(rawCandidate)}/"
-                setComposingTextSKK("削除? (y/N) $entryString")
-                mService.setCandidates(listOf("削除する $entryString"), "", 1)
-                confirmingState.pendingLambda = {
+                val confirm = state as SKKConfirmingState
+                confirm.confirmUnregister(this, "/${removeAnnotation(rawCandidate)}/") {
                     reset()
                     changeState(oldState)
                 }
@@ -1113,16 +1105,13 @@ class SKKEngine(
         }
 
         if (unregister) {
-            val confirmingState = state as SKKConfirmingState
-            confirmingState.oldComposingText = mComposingText.toString()
             val unannotated = removeAnnotation(rawCandidate)
-            val entryString =
+            (state as SKKConfirmingState).confirmUnregister(
+                this,
                 "/$unannotated/${
                     if (mOkurigana.isNotEmpty()) "[$mOkurigana/$unannotated/]/" else ""
                 }"
-            setComposingTextSKK("削除? (y/N) $entryString")
-            mService.setCandidates(listOf("削除する $entryString"), "", 1)
-            confirmingState.pendingLambda = {
+            ) {
                 mUserDict.removeEntry(mKanjiKey.toString(), rawCandidate, mOkurigana)
                 reset()
                 changeState(kanaState)
@@ -1186,7 +1175,8 @@ class SKKEngine(
             SKKKanjiState, SKKOkuriganaState -> {
                 val hira = if (kanaState is SKKHiraganaState) s else katakana2hiragana(s).orEmpty()
                 val last = hira.lastOrNull() ?: ' '
-                val hasOkuri = hira.isNotEmpty() && !isAlphabet(hira.first().code) && isAlphabet(last.code)
+                val hasOkuri = hira.isNotEmpty() &&
+                        !isAlphabet(hira.first().code) && isAlphabet(last.code)
                 val kanjiKey = if (hasOkuri) hira.dropLast(1) else hira
                 mKanjiKey.setLength(0)
                 mKanjiKey.append(kanjiKey)
@@ -1231,22 +1221,17 @@ class SKKEngine(
                             }
                     }
                     if (unregister) {
-                        val confirmingState = state as SKKConfirmingState
-                        confirmingState.oldComposingText = mComposingText.toString()
-                        val unannotated = removeAnnotation(rawSuggestion)
-                        val entryString = "/$unannotated/"
-                        setComposingTextSKK("削除? (y/N) $entryString")
-                        mService.setCandidates(listOf("削除する $entryString"), "", 1)
-                        confirmingState.pendingLambda = {
+                        val confirm = state as SKKConfirmingState
+                        confirm.confirmUnregister(this, "/${removeAnnotation(rawSuggestion)}/") {
                             lambda()
                             reset()
                             changeState(oldState)
                         }
                         return
-                    } else {
-                        lambda()
                     }
+                    lambda()
                 }
+
                 if (deletePrefixASCII(c)) {
                     commitTextSKK(removeAnnotation(s))
                     deleteSuffixASCII()

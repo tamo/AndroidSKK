@@ -30,4 +30,11 @@ interface SKKConfirmingState : SKKState {
         pendingLambda = null
         return false
     }
+
+    fun confirmUnregister(context: SKKEngine, entryString: String, onConfirm: () -> Unit) {
+        oldComposingText = context.mComposingText.toString()
+        context.setComposingTextSKK("削除? (y/N) $entryString")
+        context.setCandidates(listOf("削除する $entryString"), "", 1)
+        pendingLambda = onConfirm
+    }
 }
