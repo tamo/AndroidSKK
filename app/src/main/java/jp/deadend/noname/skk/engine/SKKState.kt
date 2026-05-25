@@ -7,6 +7,7 @@ interface SKKState {
     val isJapanese: Boolean get() = true
     val canSuggest: Boolean get() = false
     val hasCandidates: Boolean get() = false
+    val isSequential: Boolean get() = false
     val prefix: String? get() = null
     fun handleKanaKey(context: SKKEngine)
     fun processKey(context: SKKEngine, keyCode: Int)

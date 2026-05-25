@@ -201,7 +201,6 @@ class SKKEngine(
         when {
             state.hasCandidates -> pickCandidate(mCurrentCandidateIndex)
             state.isTransient && state.canSuggest -> changeState(kanaState)
-            state is SKKEmojiState -> pickSuggestion(mCurrentCandidateIndex)
             else -> {
                 if (mComposing.isEmpty()) {
                     if (!mRegistrationStack.isEmpty()) {
@@ -223,11 +222,9 @@ class SKKEngine(
     }
 
     fun handleBackspace(): Boolean {
-        when {
-            state.hasCandidates || state is SKKEmojiState -> {
-                state.afterBackspace(this)
-                return true
-            }
+        if (state.hasCandidates) {
+            state.afterBackspace(this)
+            return true
         }
 
         // 変換中のものがない場合
@@ -328,35 +325,43 @@ class SKKEngine(
         // 最初の候補より戻ると変換に戻る 最後の候補より進むと登録
         // 以前は NarrowingState で最後より進むと最初に戻っていたが ChooseState 同様にした
         if (mCurrentCandidateIndex > candidateList.size - 1) {
-            registerStart(mKanjiKey.toString())
-            return
-        } else if (mCurrentCandidateIndex < 0) when (state) {
-            is SKKChooseState -> {
-                if (mComposing.isEmpty()) {
-                    // KANJIモードに戻る
-                    if (mOkurigana.isNotEmpty()) {
-                        mOkurigana = ""
-                        mKanjiKey.deleteCharAt(mKanjiKey.length - 1)
-                    }
-                    changeState(SKKKanjiState)
-                    setComposingTextSKK(mKanjiKey)
-                    updateSuggestions(mKanjiKey.toString())
-                } else {
-                    mKanjiKey.setLength(0)
-                    changeState(SKKAbbrevState)
-                    setComposingTextSKK(mComposing)
-                    updateSuggestions(mComposing.toString())
-                }
-
+            if (mCandidateKanjiKey == "emoji" || mCandidateKanjiKey == "/きごう") {
                 mCurrentCandidateIndex = 0
-                mUpdateSuggestionsJob.invokeOnCompletion {
-                    setCurrentCandidateToComposing()
-                }
+            } else {
+                registerStart(mKanjiKey.toString())
                 return
             }
-
-            SKKNarrowingState -> {
+        } else if (mCurrentCandidateIndex < 0) {
+            if (mCandidateKanjiKey == "emoji" || mCandidateKanjiKey == "/きごう") {
                 mCurrentCandidateIndex = candidateList.size - 1
+            } else when (state) {
+                is SKKChooseState -> {
+                    if (mComposing.isEmpty()) {
+                        // KANJIモードに戻る
+                        if (mOkurigana.isNotEmpty()) {
+                            mOkurigana = ""
+                            mKanjiKey.deleteCharAt(mKanjiKey.length - 1)
+                        }
+                        changeState(SKKKanjiState)
+                        setComposingTextSKK(mKanjiKey)
+                        updateSuggestions(mKanjiKey.toString())
+                    } else {
+                        mKanjiKey.setLength(0)
+                        changeState(SKKAbbrevState)
+                        setComposingTextSKK(mComposing)
+                        updateSuggestions(mComposing.toString())
+                    }
+
+                    mCurrentCandidateIndex = 0
+                    mUpdateSuggestionsJob.invokeOnCompletion {
+                        setCurrentCandidateToComposing()
+                    }
+                    return
+                }
+
+                SKKNarrowingState -> {
+                    mCurrentCandidateIndex = candidateList.size - 1
+                }
             }
         }
 
@@ -1054,15 +1059,12 @@ class SKKEngine(
     }
 
     private fun pickCandidate(index: Int, backspace: Boolean = false, unregister: Boolean = false) {
-        when {
-            state.hasCandidates || state is SKKEmojiState -> {}
-            else -> return
-        }
-        if (mCandidateKanjiKey == "emoji") {
+        if (!state.hasCandidates) return
+        if (mCandidateKanjiKey == "emoji" || mCandidateKanjiKey == "/きごう") {
             suspendSuggestions()
             mKanjiKey.setLength(0)
             mKanjiKey.append(mCandidateKanjiKey)
-            mCompletionList = mCandidateList?.map { "emoji" }
+            mCompletionList = mCandidateList?.map { mCandidateKanjiKey }
             pickSuggestion(index, unregister)
             resumeSuggestions()
             return
@@ -1217,7 +1219,7 @@ class SKKEngine(
                     }
                 }
                 when (state) {
-                    SKKASCIIState -> {
+                    is SKKASCIIState -> {
                         if (deletePrefixASCII(c)) {
                             commitTextSKK(removeAnnotation(s))
                             deleteSuffixASCII()
@@ -1225,9 +1227,9 @@ class SKKEngine(
                         }
                     }
 
-                    SKKEmojiState, SKKNarrowingState -> {
+                    is SKKEmojiState, is SKKNarrowingState -> {
                         commitTextSKK(removeAnnotation(s))
-                        if (SKKEmojiState.isSequential) return
+                        if (state.isSequential) return
                         reset() // 暗黙の確定がされないように
                         changeState(oldState)
                     }

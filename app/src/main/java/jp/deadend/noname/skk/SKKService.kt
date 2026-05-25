@@ -1123,14 +1123,6 @@ class SKKService : InputMethodService() {
                 return true
             }
 
-            state is SKKEmojiState -> {
-                when (keyCode) {
-                    KeyEvent.KEYCODE_DPAD_LEFT -> mEngine.chooseAdjacentSuggestion(false)
-                    KeyEvent.KEYCODE_DPAD_RIGHT -> mEngine.chooseAdjacentSuggestion(true)
-                }
-                return true
-            }
-
             mEngine.isRegistering -> return true
 
             mEngine.state.isTransient -> return true

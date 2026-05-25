@@ -4,7 +4,7 @@ import jp.deadend.noname.skk.decodeKey
 import jp.deadend.noname.skk.skkPrefs
 
 object SKKNarrowingState : SKKConfirmingState {
-    var isSequential = false
+    override var isSequential = false
     override val isTransient = true
     override val icon = 0
     override val hasCandidates = true

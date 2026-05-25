@@ -3,11 +3,12 @@ package jp.deadend.noname.skk.engine
 import jp.deadend.noname.skk.decodeKey
 
 object SKKEmojiState : SKKConfirmingState {
-    var isSequential = false
-    override val isTransient = false
+    override var isSequential = false
+    override val isTransient = true
     override val icon = 0
     override val isJapanese = false
-    override val canSuggest = true
+    override val canSuggest = false
+    override val hasCandidates = true
     override var pendingLambda: (() -> Unit)? = null
     override var oldComposingText = ""
 
@@ -21,8 +22,8 @@ object SKKEmojiState : SKKConfirmingState {
         val (lower, shifted) = decodeKey(keyCode)
         val charCode = if (shifted) Character.toUpperCase(lower) else lower
         when (charCode) {
-            ' '.code -> context.chooseAdjacentSuggestion(true)
-            'x'.code -> context.chooseAdjacentSuggestion(false)
+            ' '.code -> context.chooseAdjacentCandidate(true)
+            'x'.code -> context.chooseAdjacentCandidate(false)
             'X'.code -> context.pickCurrentCandidate(unregister = true)
             ':'.code -> {
                 context.changeState(SKKNarrowingState)
@@ -30,9 +31,9 @@ object SKKEmojiState : SKKConfirmingState {
             }
 
             else -> {
-                context.oldState.processKey(context, keyCode)
-                if (context.state is SKKEmojiState) {
-                    context.changeState(context.oldState)
+                context.pickCurrentCandidate()
+                if (context.state !is SKKEmojiState) {
+                    context.processKey(keyCode)
                 }
             }
         }
