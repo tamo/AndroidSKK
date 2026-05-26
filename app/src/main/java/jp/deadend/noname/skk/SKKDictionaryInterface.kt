@@ -7,6 +7,7 @@ import jdbm.helper.Tuple
 import jdbm.helper.TupleBrowser
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
@@ -224,7 +225,7 @@ interface SKKDictionaryInterface {
     fun getCandidates(rawKey: String): List<String>? = null
 
     fun close() {
-        runBlocking {
+        runBlocking(Dispatchers.IO) {
             mMutex.withLock {
                 mRecMan?.let {
                     it.commit()

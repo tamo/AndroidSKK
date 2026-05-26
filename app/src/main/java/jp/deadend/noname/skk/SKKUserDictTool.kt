@@ -417,8 +417,12 @@ class SKKUserDictTool : AppCompatActivity() {
                 }
             } else {
                 try {
-                    mRecMan =
-                        RecordManagerFactory.createRecordManager(filesDir.absolutePath + "/" + mDictName)
+                    val props = java.util.Properties().apply {
+                        setProperty(jdbm.RecordManagerOptions.DISABLE_TRANSACTIONS, "true")
+                    }
+                    mRecMan = RecordManagerFactory.createRecordManager(
+                        filesDir.absolutePath + "/" + mDictName, props
+                    )
                     mBtree = BTree(mRecMan, StringComparator())
                     mRecMan!!.setNamedObject(getString(R.string.btree_name), mBtree!!.recordId)
                     mRecMan!!.commit()
@@ -472,8 +476,11 @@ class SKKUserDictTool : AppCompatActivity() {
 
         val recID: Long?
         try {
+            val props = java.util.Properties().apply {
+                setProperty(jdbm.RecordManagerOptions.DISABLE_TRANSACTIONS, "true")
+            }
             mRecMan = RecordManagerFactory.createRecordManager(
-                filesDir.absolutePath + "/" + mDictName
+                filesDir.absolutePath + "/" + mDictName, props
             )
             recID = mRecMan!!.getNamedObject(getString(R.string.btree_name))
         } catch (e: IOException) {

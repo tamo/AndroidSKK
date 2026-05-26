@@ -2,7 +2,6 @@ package jp.deadend.noname.skk
 
 import android.util.Log
 import jdbm.RecordManager
-import jdbm.RecordManagerFactory
 import jdbm.btree.BTree
 import kotlinx.coroutines.sync.Mutex
 import java.io.IOException
@@ -39,7 +38,10 @@ class SKKDictionary private constructor(
     companion object {
         fun newInstance(mDictFile: String, btreeName: String): SKKDictionary? {
             return try {
-                val recMan = RecordManagerFactory.createRecordManager(mDictFile)
+                val props = java.util.Properties().apply {
+                    setProperty(jdbm.RecordManagerOptions.DISABLE_TRANSACTIONS, "true")
+                }
+                val recMan = jdbm.RecordManagerFactory.createRecordManager(mDictFile, props)
                 val recID = recMan.getNamedObject(btreeName)
                 val btree = BTree<String, String>().load(recMan, recID)
 

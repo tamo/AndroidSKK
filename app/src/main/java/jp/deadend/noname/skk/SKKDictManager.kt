@@ -286,8 +286,8 @@ class SKKDictManager : AppCompatActivity() {
                                 else ->
                                     "https://tamo.github.io/dict/SKK-JISYO.${type}.gz"
                             }
-                        ).openStream().use { us ->
-                            FileOutputStream(path).use { fs ->
+                        ).openStream().buffered().use { us ->
+                            FileOutputStream(path).buffered().use { fs ->
                                 us.copyTo(fs)
                             }
                         }
@@ -422,8 +422,11 @@ class SKKDictManager : AppCompatActivity() {
             val item = mDictList[position]
             var recMan: RecordManager? = null
             try {
+                val props = java.util.Properties().apply {
+                    setProperty(jdbm.RecordManagerOptions.DISABLE_TRANSACTIONS, "true")
+                }
                 recMan = RecordManagerFactory.createRecordManager(
-                    filesDir.absolutePath + "/" + dictFileBaseName
+                    filesDir.absolutePath + "/" + dictFileBaseName, props
                 )
                 val btree = BTree<String, String>(recMan, StringComparator())
                 recMan.setNamedObject(getString(R.string.btree_name), btree.recordId)

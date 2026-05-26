@@ -48,7 +48,7 @@ internal class MyUncaughtExceptionHandler(val context: Context) : UncaughtExcept
 
         val dir = context.getExternalFilesDir(null) ?: return
         val file = File(dir, "SKK_strace_$dateTimeStr.txt")
-        PrintWriter(FileOutputStream(file)).use { pw ->
+        PrintWriter(FileOutputStream(file).buffered()).use { pw ->
             pw.println("This is a crash report of SKK.")
             pw.println()
             pw.println("Device:  " + Build.DEVICE)

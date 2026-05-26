@@ -161,7 +161,10 @@ class SKKUserDictionary private constructor(
             filename: String,
             btreeName: String
         ): Pair<RecordManager, BTree<String, String>> {
-            val recMan = RecordManagerFactory.createRecordManager(filename)
+            val props = java.util.Properties().apply {
+                setProperty(jdbm.RecordManagerOptions.DISABLE_TRANSACTIONS, "true")
+            }
+            val recMan = RecordManagerFactory.createRecordManager(filename, props)
             val recID = recMan.getNamedObject(btreeName)
             if (recID == 0L) {
                 val btree = BTree<String, String>(recMan, StringComparator())
