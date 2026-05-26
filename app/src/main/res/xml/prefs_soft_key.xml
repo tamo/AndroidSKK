@@ -155,7 +155,7 @@
                 app:title="横画面の高さに対するキーボードの高さ割合（％）" />
             <androidx.preference.SeekBarPreference
                 android:max="50"
-                app:defaultValue="0"
+                app:defaultValue="15"
                 app:iconSpaceReserved="false"
                 app:key="@string/pref_key_padding_bottom"
                 app:min="0"

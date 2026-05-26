@@ -286,7 +286,7 @@ class SKKPrefs(context: Context) {
         }
 
     var keyPaddingBottom: Int
-        get() = prefs.getInt(res.getString(R.string.pref_key_padding_bottom), 0)
+        get() = prefs.getInt(res.getString(R.string.pref_key_padding_bottom), 15)
         set(value) = prefs.edit {
             putInt(res.getString(R.string.pref_key_padding_bottom), value)
         }
