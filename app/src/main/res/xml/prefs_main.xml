@@ -136,10 +136,10 @@
             app:summary="ア段は段も変えて検索します (「あたま」で「いとま」も出る)"
             app:title="もっとあいまい候補" />
         <androidx.preference.CheckBoxPreference
-            app:defaultValue="true"
+            app:defaultValue="false"
             app:iconSpaceReserved="false"
             app:key="@string/pref_suggest_okuri"
-            app:summary="「おくr」等を提案に含めます"
+            app:summary="「おくr」等を提案に含めます (次に「い」で「送り」になり，「り」は「送っり」になるので注意)"
             app:title="送りありの提案" />
         <androidx.preference.SeekBarPreference
             android:max="10"

@@ -49,7 +49,7 @@ class SKKPrefs(context: Context) {
         }
 
     var suggestOkuri: Boolean
-        get() = prefs.getBoolean(res.getString(R.string.pref_suggest_okuri), true)
+        get() = prefs.getBoolean(res.getString(R.string.pref_suggest_okuri), false)
         set(value) = prefs.edit {
             putBoolean(res.getString(R.string.pref_suggest_okuri), value)
         }
