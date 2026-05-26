@@ -92,7 +92,7 @@ class SKKSettingsActivity : AppCompatActivity() {
                 summary =
                     getKeyName(currentValue).ifEmpty { getString(R.string.label_disabled_key) }
                 setOnPreferenceClickListener {
-                    summary = getString(R.string.label_push_any_nav)
+                    summary = getString(R.string.label_push_any)
                     (requireActivity() as SKKSettingsActivity).keyPref = this
                     true
                 }

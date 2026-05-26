@@ -28,8 +28,7 @@
     <string name="label_kana_rule_select">ファイルを選択</string>
     <string name="label_kana_rule_azik">AZIK 風ルールで上書き</string>
     <string name="label_kana_rule_clear">初期化</string>
-    <string name="label_push_any">キーを押してください</string>
-    <string name="label_push_any_nav">キーを押してください (Esc で無効化)</string>
+    <string name="label_push_any">キーを押してください (Esc で無効化)</string>
     <string name="label_disabled_key">(無効)</string>
 
     <string name="label_mushroom">マッシュルーム</string>
