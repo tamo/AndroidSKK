@@ -579,7 +579,9 @@ class SKKEngine(
 
         // 問題になったことはないが、念のため直前で参照する
         val ic = mService.currentInputConnection ?: return
-        ic.setComposingText(ct, 1)
+        // SpannableStringBuilder SPAN_EXCLUSIVE_EXCLUSIVE spans cannot have a zero length
+        // というエラーを防ぐため最初から SpannableString にする
+        ic.setComposingText(ct.ifEmpty { SpannableString("") }, 1)
     }
 
     /***

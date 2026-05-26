@@ -23,6 +23,7 @@ import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.text.InputType
+import android.text.SpannableString
 import android.util.Log
 import android.util.TypedValue
 import android.view.Display.DEFAULT_DISPLAY
@@ -683,7 +684,9 @@ class SKKService : InputMethodService() {
                                 deleteSurroundingText(it.length, 0)
                             } // 回転などでテキストが確定されていることがあるので消す
                         }
-                        setComposingText(mEngine.mComposingText, 1)
+                        // SPAN_EXCLUSIVE_EXCLUSIVE spans cannot have a zero length
+                        // と言われないため empty なら最初から SpannableString にしておく
+                        setComposingText(mEngine.mComposingText.ifEmpty { SpannableString("") }, 1)
                         // candidatesView も復元したいけど無理っぽい
                     }
                 }
