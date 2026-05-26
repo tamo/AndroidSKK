@@ -25,6 +25,9 @@ jobs:
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v6
 
+    - name: Test with Gradle Wrapper
+      run: ./gradlew testDebugUnitTest
+
     - name: Build with Gradle Wrapper
       run: ./gradlew assembleDebug
 
