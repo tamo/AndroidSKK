@@ -127,7 +127,7 @@
             app:defaultValue="true"
             app:iconSpaceReserved="false"
             app:key="@string/pref_fuzzy_suggestion"
-            app:summary="濁音や半濁音にした単語も提案します (「ひんく」で「ぴんぐ」も出る)"
+            app:summary="濁音や半濁音にした単語も提案します (「ひんく」で「ぴんぐ」も出る)\n英字ではqwertyの隣接キーも提案します"
             app:title="あいまい候補" />
         <androidx.preference.CheckBoxPreference
             app:defaultValue="false"

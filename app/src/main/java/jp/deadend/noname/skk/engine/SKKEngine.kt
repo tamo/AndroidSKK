@@ -12,7 +12,6 @@ import jp.deadend.noname.skk.fuzzy
 import jp.deadend.noname.skk.hankaku2zenkaku
 import jp.deadend.noname.skk.hiragana2katakana
 import jp.deadend.noname.skk.isAlphabet
-import jp.deadend.noname.skk.isHiragana
 import jp.deadend.noname.skk.katakana2hiragana
 import jp.deadend.noname.skk.processConcatAndMore
 import jp.deadend.noname.skk.removeAnnotation
@@ -41,7 +40,6 @@ class SKKEngine(
     private val mASCIIDict: SKKUserDictionary,
     private val mEmojiDict: SKKUserDictionary
 ) {
-    private val mScope = MainScope()
     var state: SKKState = SKKHiraganaState
         private set
     internal var kanaState: SKKState = SKKHiraganaState
@@ -142,7 +140,6 @@ class SKKEngine(
         mUserDict.close()
         mASCIIDict.close()
         mEmojiDict.close()
-        mScope.cancel()
     }
 
     fun processKey(keyCode: Int) = state.processKey(this, keyCode)
@@ -690,7 +687,7 @@ class SKKEngine(
         val oldCanList = mCandidateList?.toList()
         mUpdateSuggestionsJob.cancel()
         mUpdateSuggestionsJob.invokeOnCompletion {
-            mUpdateSuggestionsJob = mScope.launch(Dispatchers.Default) {
+            mUpdateSuggestionsJob = MainScope().launch(Dispatchers.Default) {
                 @Throws(CancellationException::class)
                 fun ensureCont() {
                     if (oldComList != mCompletionList || oldCanList != mCandidateList)
@@ -706,13 +703,11 @@ class SKKEngine(
                 }
 
                 val set = mutableSetOf<Pair<String, String>>()
-                val fuzzyEnabled = skkPrefs.fuzzySuggestion && mService.isFlickOrGodan &&
-                        str.any { c -> isHiragana(c.code) }
-
                 val elapsed = measureTime {
                     for (dict in mDictList) {
                         // 字数を増やさずに変換できるものを最優先
-                        val fuzzyFurther = if (fuzzyEnabled) withTimeoutOrNull(1000) {
+                        val fuzzyFurther = if (!skkPrefs.fuzzySuggestion) false
+                        else withTimeoutOrNull(1000) {
                             // 重い処理: 価値があるので数は少なくてもいいがタイムアウトが必要
                             500 > measureTime {
                                 val goal: Int = skkPrefs.candidatesNormalLines * 7 / str.length
@@ -721,7 +716,8 @@ class SKKEngine(
                                     ensureCont()
                                     if (dict.getCandidates(fuzzyStr).isNullOrEmpty()) continue
                                     val shownStr =
-                                        if (mService.isHiragana) fuzzyStr else hiragana2katakana(
+                                        if (mService.isHiragana) fuzzyStr
+                                        else hiragana2katakana(
                                             fuzzyStr,
                                             reversed = true
                                         ).orEmpty()
@@ -729,7 +725,6 @@ class SKKEngine(
                                 }
                             }.inWholeMilliseconds || set.isEmpty()
                         } ?: set.isEmpty() // タイムアウトしても未発見なら前方一致あいまい検索してみる
-                        else false
 
                         // 前方一致は軽いので無条件で実行 (数字ありと数字マスク状態で)
                         addFound(this@launch, set, str, dict)
@@ -814,7 +809,7 @@ class SKKEngine(
 
     internal fun updateSuggestionsASCII() {
         if (state !is SKKASCIIState) return
-        mScope.launch(Dispatchers.Default) {
+        MainScope().launch(Dispatchers.Default) {
             delay(50) // バックスペースなどの処理が間に合っていないことがあるので
             updateSuggestions(getPrefixASCII())
         }
@@ -824,23 +819,6 @@ class SKKEngine(
         val ic = mService.currentInputConnection ?: return ""
         val tbc = ic.getTextBeforeCursor(ASCII_WORD_MAX_LENGTH, 0) ?: return ""
         return tbc.split(Regex("[^a-zA-Z0-9]")).last()
-    }
-
-    private fun deletePrefixASCII(expected: String): Boolean {
-        val ic = mService.currentInputConnection ?: return false
-        val tbc = ic.getTextBeforeCursor(expected.length, 0) ?: return false
-        val wbc = tbc.split(Regex("[^a-zA-Z0-9]")).last()
-        return if (expected.startsWith(wbc)) {
-            ic.deleteSurroundingText(wbc.length, 0)
-            true
-        } else false
-    }
-
-    private fun deleteSuffixASCII() {
-        val ic = mService.currentInputConnection ?: return
-        val tac = ic.getTextAfterCursor(ASCII_WORD_MAX_LENGTH, 0) ?: return
-        val wac = tac.split(Regex("[^a-zA-Z0-9]")).first()
-        ic.deleteSurroundingText(0, wac.length)
     }
 
     private fun registerStart(str: String) {
@@ -1163,6 +1141,8 @@ class SKKEngine(
         dLog("pickSuggestion s=$s from $mCandidateList (unregister=$unregister)")
         val c = mCompletionList?.get(index) ?: return
         dLog("pickSuggestion c=$c from $mCompletionList")
+        // c を入力して s になるイメージなので基本的に両者は同じだが
+        // c が ill で s が I'll になるような、入力した文字まで変化する場合がある
 
         when (state) {
             SKKAbbrevState -> {
@@ -1232,12 +1212,35 @@ class SKKEngine(
                     lambda()
                 }
 
-                if (deletePrefixASCII(c)) {
-                    commitTextSKK(removeAnnotation(s))
-                    deleteSuffixASCII()
-                    reset()
-                }
+                val slim = removeAnnotation(s)
+                commitTextSKK(slim) // アプリ側で補完表示していることがあるのでまず上書きしておく
+                deleteSurroundingASCII(slim)
+                reset()
             }
+        }
+    }
+
+    private fun deleteSurroundingASCII(text: String): Boolean {
+        val ic = mService.currentInputConnection ?: return false
+        val delimiter = Regex("[^\\p{L}&&[^\\p{IsHan}\\p{IsHiragana}\\p{IsKatakana}]]")
+        ic.beginBatchEdit()
+        try {
+            val tbc = ic.getTextBeforeCursor(text.length * 2, 0) ?: throw Exception()
+            val wbc = tbc.dropLast(text.length).split(delimiter).last()
+            if (ic.deleteSurroundingText(wbc.length + text.length, 0) &&
+                ic.commitText(text, 1)
+            ) dLog("deleted already-typed [$wbc] before [$text]")
+            else throw Exception()
+
+            val tac = ic.getTextAfterCursor(ASCII_WORD_MAX_LENGTH, 0) ?: throw Exception()
+            val wac = tac.split(delimiter, limit = 2).first()
+            if (!ic.deleteSurroundingText(0, wac.length)) throw Exception()
+            ic.endBatchEdit()
+            return true
+        } catch (_: Exception) {
+            dLog("connection lost while trimming around '$text'")
+            ic.endBatchEdit()
+            return false
         }
     }
 

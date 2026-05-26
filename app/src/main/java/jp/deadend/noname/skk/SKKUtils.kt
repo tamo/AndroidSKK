@@ -450,6 +450,7 @@ private fun handakutenConv(start: Int, number: Int, target: Int) =
     )
 
 private val KANA_VARIANTS: Pair<Map<Char, List<Char>>, Map<Char, List<Char>>> by lazy {
+    @Suppress("SpellCheckingInspection")
     val kanaGroups = listOf(
         // 各文字の軽い変換
         "あぁ", "いぃ", "うぅゔ", "えぇ", "おぉ",
@@ -457,7 +458,11 @@ private val KANA_VARIANTS: Pair<Map<Char, List<Char>>, Map<Char, List<Char>>> by
         "さざ", "しじ", "すず", "せぜ", "そぞ",
         "ただ", "ちぢ", "つづっ", "てで", "とど",
         "はばぱ", "ひびぴ", "ふぶぷ", "へべぺ", "ほぼぽ",
-        "やゃ", "ゆゅ", "よょ", "わゎ"
+        "やゃ", "ゆゅ", "よょ", "わゎ",
+        // 英字で隣接
+        "qwa", "wqeas", "ewrsd", "retdf", "tryfg", "ytugh", "uyihj", "iuojk", "oipkl", "pol",
+        "aqws", "sweadz", "dersfx", "frtdgc", "gtyfhv", "hyugjb", "juihkn", "kiojlm", "lopk",
+        "zsx", "xdzc", "cfxv", "vgcb", "bhvn", "njbm", "mkn"
     ) to listOf(
         // フリックせず押しただけ、「あ」段からの重い変換
         "あいうえおぁぃぅぇぉ",
@@ -465,7 +470,12 @@ private val KANA_VARIANTS: Pair<Map<Char, List<Char>>, Map<Char, List<Char>>> by
         "さしすせそざじずぜぞ",
         "たちつってとだぢづでど", "なにぬねの",
         "はひふへほばびぶべぼぱぴぷぺぽ", "まみむめも",
-        "やゃゆゅよょ", "らりるれろ", "わをん"
+        "やゃゆゅよょ", "らりるれろ", "わをん",
+        // 英字でもう少し広範囲
+        "qwa", "wqeas", "ewrsd", "retdf", "tryfg", "ytugh", "uyihj", "iuojk", "oipkl", "pol",
+        "aqwsz", "sweadz", "dersfzxc", "frtdgxcv", "gtyfhcvb",
+        "hyugjvbn", "juihkbnm", "kiojlnm", "lopkm",
+        "zasdx", "xsdfzc", "cdfgxv", "vfghcb", "bghjvn", "nhjkbm", "mjkln"
     )
 
     fun variant(groups: List<String>): Map<Char, List<Char>> {

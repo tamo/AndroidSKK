@@ -119,9 +119,6 @@ class SKKService : InputMethodService() {
         }
     }
 
-    internal val isFlickOrGodan: Boolean
-        get() = (mInputView === mFlickJPInputView || mInputView === mGodanInputView)
-
     // 幅の確認
     internal val isFlickWidth: Boolean
         get() = (mInputView !== mQwertyInputView && mInputView !== mAbbrevKeyboardView)
@@ -869,6 +866,26 @@ class SKKService : InputMethodService() {
     override fun onUpdateEditorToolType(toolType: Int) {
         dLog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
         super.onUpdateEditorToolType(toolType)
+        updateSuggestionsASCII()
+    }
+
+    override fun onUpdateSelection(
+        oldSelStart: Int,
+        oldSelEnd: Int,
+        newSelStart: Int,
+        newSelEnd: Int,
+        candidatesStart: Int,
+        candidatesEnd: Int
+    ) {
+        super.onUpdateSelection(
+            oldSelStart,
+            oldSelEnd,
+            newSelStart,
+            newSelEnd,
+            candidatesStart,
+            candidatesEnd
+        )
+        // 文字列の途中をタップした場合などに補完する (state == ASCII チェックは内部でしている)
         updateSuggestionsASCII()
     }
 
