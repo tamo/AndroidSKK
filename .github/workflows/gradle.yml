@@ -25,10 +25,13 @@ jobs:
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v6
 
-    - name: Test with Gradle Wrapper
+    - name: Test
       run: ./gradlew testDebugUnitTest
 
-    - name: Build with Gradle Wrapper
+    - name: Make dicts
+      run: ./gradlew generateAsciiDict generateEmojiDict
+
+    - name: Build
       run: ./gradlew assembleDebug
 
     - name: Rename apk file

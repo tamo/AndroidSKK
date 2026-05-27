@@ -1,3 +1,6 @@
+import groovy.json.JsonSlurper
+import java.util.zip.GZIPInputStream
+
 plugins {
     id 'com.android.application'
 }
@@ -61,4 +64,107 @@ dependencies {
 }
 repositories {
     mavenCentral()
+}
+
+afterEvaluate {
+    tasks.register('downloadDicts') {
+        group = 'build'
+        description = 'Downloads dictionary files from GitHub'
+        def dictDirFile = file("src/test/dict")
+        doLast {
+            if (!dictDirFile.exists()) dictDirFile.mkdirs()
+
+            // Fetch the latest branch name from GitHub API
+            def branch = "lineage-23.2" // fallback
+            try {
+                def process = "gh api repos/LineageOS/android_packages_inputmethods_LatinIME".execute()
+                def json = new JsonSlurper().parseText(process.text)
+                branch = json.default_branch ?: branch
+                println "Detected default branch: $branch"
+            } catch (Exception e) {
+                println "Failed to fetch default branch, using fallback: $branch ($e.message)"
+            }
+
+            def urls = [
+                    "https://github.com/LineageOS/android_packages_inputmethods_LatinIME/raw/refs/heads/${branch}/dictionaries/en_US_wordlist.combined.gz",
+                    "https://github.com/LineageOS/android_packages_inputmethods_LatinIME/raw/refs/heads/${branch}/NOTICE",
+                    'https://github.com/tamo/dict/raw/refs/heads/abridged/SKK-JISYO.emoji'
+            ]
+
+            urls.each { urlString ->
+                def url = new URL(urlString)
+                def fileName = urlString.tokenize('/')[-1]
+                def destFile = new File(dictDirFile, fileName)
+                println "Downloading $urlString to $destFile"
+                destFile.withOutputStream { out ->
+                    url.withInputStream { it.transferTo(out) }
+                }
+
+                if (fileName.endsWith('.gz')) {
+                    def decompressedName = fileName.replace('.gz', '')
+                    def decompressedFile = new File(dictDirFile, decompressedName)
+                    println "Decompressing $destFile to $decompressedFile"
+                    destFile.withInputStream { input ->
+                        decompressedFile.withOutputStream { output ->
+                            output << new GZIPInputStream(input)
+                        }
+                    }
+                    destFile.delete()
+                }
+            }
+
+            // Extract NOTICE-unicode from SKK-JISYO.emoji
+            def emojiFile = new File(dictDirFile, 'SKK-JISYO.emoji')
+            def noticeFile = new File(dictDirFile, 'NOTICE-unicode')
+            if (emojiFile.exists()) {
+                println "Generating $noticeFile"
+                noticeFile.withWriter('UTF-8') { writer ->
+                    emojiFile.any { line ->
+                        if (line.contains('okuri-')) {
+                            return true
+                        }
+                        if (line.startsWith(';;')) {
+                            if (!line.contains('-*- mode:')) {
+                                writer.writeLine(line.substring(2).trim())
+                            }
+                            return false
+                        }
+                        return true
+                    }
+                }
+            }
+        }
+    }
+
+    tasks.register('generateAsciiDict', JavaExec) {
+        group = 'build'
+        description = 'Generates skk_asciidict.zip from en_US_wordlist.combined'
+        dependsOn 'downloadDicts'
+        mainClass = 'jp.deadend.noname.skk.MakeAssetDict'
+        def compileTask = tasks.named('compileDebugUnitTestKotlin')
+        dependsOn compileTask
+        classpath = compileTask.get().outputs.files + configurations.debugUnitTestRuntimeClasspath
+        args = [
+                'wordlist',
+                "${project.projectDir}/src/test/dict/en_US_wordlist.combined",
+                "${project.projectDir}/src/main/assets/skk_asciidict.zip",
+                "${project.projectDir}/src/test/dict/NOTICE"
+        ]
+    }
+
+    tasks.register('generateEmojiDict', JavaExec) {
+        group = 'build'
+        description = 'Generates skk_emojidict.zip from SKK-JISYO.emoji'
+        dependsOn 'downloadDicts'
+        mainClass = 'jp.deadend.noname.skk.MakeAssetDict'
+        def compileTask = tasks.named('compileDebugUnitTestKotlin')
+        dependsOn compileTask
+        classpath = compileTask.get().outputs.files + configurations.debugUnitTestRuntimeClasspath
+        args = [
+                'emoji',
+                "${project.projectDir}/src/test/dict/SKK-JISYO.emoji",
+                "${project.projectDir}/src/main/assets/skk_emojidict.zip",
+                "${project.projectDir}/src/test/dict/NOTICE-unicode"
+        ]
+    }
 }
