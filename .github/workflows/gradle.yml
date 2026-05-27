@@ -28,8 +28,11 @@ jobs:
     - name: Test
       run: ./gradlew testDebugUnitTest
 
+    # Use GH_TOKEN to retrieve default branch name of lineage
     - name: Make dicts
       run: ./gradlew generateAsciiDict generateEmojiDict
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Build
       run: ./gradlew assembleDebug
