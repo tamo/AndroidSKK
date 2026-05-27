@@ -1333,10 +1333,13 @@ class SKKEngine(
                 mService.kanaState = state
 
             is SKKNarrowingState -> {
-                SKKNarrowingState.mHint.setLength(0)
-                SKKNarrowingState.mOriginalCandidates = null
-                SKKNarrowingState.mSpaceUsed = false
-                SKKNarrowingState.isSequential = false
+                state.apply {
+                    mHint.setLength(0)
+                    mOriginalCandidates = null
+                    mSpaceUsed = false
+                    isSequential = false
+                    isASCII = false
+                }
                 setCurrentCandidateToComposing()
             }
         }
@@ -1347,7 +1350,7 @@ class SKKEngine(
         }
     }
 
-    private fun changeSoftKeyboard(state: SKKState) {
+    internal fun changeSoftKeyboard(state: SKKState) {
         // 仮名からASCII以外の一時的なキーボードになるときや明示的変更のとき記録して後で戻れるようにしておく
         when (state) {
             SKKAbbrevState, SKKZenkakuState -> cameFromFlick = mService.isFlickWidth

@@ -15,6 +15,7 @@ object SKKNarrowingState : SKKConfirmingState {
     internal val mHint = StringBuilder()
     internal var mOriginalCandidates: List<String>? = null
     internal var mSpaceUsed = false // xを前候補にするためのフラグ
+    internal var isASCII = false
 
     override fun handleKanaKey(context: SKKEngine) {
         super.handleKanaKey(context)
@@ -27,13 +28,35 @@ object SKKNarrowingState : SKKConfirmingState {
         val charCode = if (shifted) Character.toUpperCase(lower) else lower
         context.apply {
             when (keyCode) {
-                skkPrefs.asciiKey, skkPrefs.zenkakuKey, skkPrefs.abbrevKey -> {
+                skkPrefs.zenkakuKey, skkPrefs.abbrevKey -> {
                     // 暗黙の確定
                     pickCurrentCandidate()
                     changeInputMode(keyCode)
                     return
                 }
+
+                skkPrefs.asciiKey -> if (!isASCII) {
+                    isASCII = true
+                    changeSoftKeyboard(SKKASCIIState)
+                    return
+                }
+
+                skkPrefs.kanaKey -> if (isASCII) {
+                    // おそらくここは通らず changeToFlick 経由で日本語キーボードに戻る
+                    isASCII = false
+                    changeSoftKeyboard(SKKHiraganaState)
+                    return
+                }
             }
+
+            if (isASCII) {
+                // このモードでは ' ' も 'X' も利かない
+                mHint.append(Char(charCode))
+                mComposing.setLength(0)
+                narrowCandidates(mHint.toString())
+                return
+            }
+
             when (charCode) {
                 ' '.code -> {
                     mSpaceUsed = true
@@ -84,6 +107,7 @@ object SKKNarrowingState : SKKConfirmingState {
     }
 
     override fun changeToFlick(context: SKKEngine): Boolean {
+        isASCII = false
         return false
     }
 }
