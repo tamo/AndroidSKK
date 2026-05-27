@@ -612,27 +612,25 @@ class SKKEngine(
     }
 
     internal fun narrowCandidates(hint: String) {
-        dLog("narrowCandidates: hint: $hint")
+        dLog("narrowCandidates: hint: $hint, mCandidateKanjiKey: $mCandidateKanjiKey")
         if (SKKNarrowingState.mOriginalCandidates == null) {
             SKKNarrowingState.mOriginalCandidates = mCandidateList
         }
         val candidates = SKKNarrowingState.mOriginalCandidates ?: return
 
         val narrowed = if (hint.isEmpty()) candidates else {
-            val hintKanjiSequence = findCandidates(hint).joinToString("") {
+            val hintKanjiList = findCandidates(hint).map {
                 processConcatAndMore(removeAnnotation(it), "")
             }
-
-            // mCandidateKanjiKey("かんじ") -> candidates("漢字", "幹事", "監事", "感じ")
-            // hint("おとこ") -> hintKanjiSequence("男漢♂")
-            candidates.filter { str -> /* str("漢字; 注釈も含む") */
-                str.any { ch -> hintKanjiSequence.contains(ch) } /* hintKanjiSequenceは注釈なし */
-                        || str.contains(hint) /* ひらがなかカタカナでヒントを含むstrもOK */
+            dLog("narrowCandidates: hintKanjiList: $hintKanjiList")
+            // hint("おとこ") -> hintKanjiList(["男", "漢", "♂"]) 注釈なし
+            // mCandidateKanjiKey("かんじ") -> candidates("漢字; 注釈も含む", "幹事", "監事", "感じ")
+            // -> narrowed(["漢字; 注釈も含む"]) 「漢」で合致
+            candidates.filter { str ->
+                hintKanjiList.any { unannotated -> str.contains(unannotated) }
+                        // ひらがなかカタカナでヒントを含むstrもOK
+                        || str.contains(hint)
                         || hiragana2katakana(hint).let { !it.isNullOrEmpty() && str.contains(it) }
-            }.let { nList ->
-                if (mCandidateKanjiKey == "emoji")
-                    nList.map { removeAnnotation(it) }
-                else nList
             }
         }
 
@@ -640,14 +638,15 @@ class SKKEngine(
             mCandidateList = narrowed
             mCurrentCandidateIndex = 0
             setCandidates(
-                narrowed,
+                if (mCandidateKanjiKey == "emoji")
+                    narrowed.map { removeAnnotation(it) }
+                else narrowed,
                 mCandidateKanjiKey,
                 if (mCandidateKanjiKey == "emoji")
                     skkPrefs.candidatesEmojiLines
                 else skkPrefs.candidatesNormalLines
             )
-        }
-        dLog("narrowCandidates: setCurrentCandidateToComposing: $mCandidateList")
+        } else dLog("narrowCandidates: no entries")
         setCurrentCandidateToComposing()
     }
 
@@ -707,7 +706,7 @@ class SKKEngine(
                 val elapsed = measureTime {
                     for (dict in mDictList) {
                         // 字数を増やさずに変換できるものを最優先
-                        val fuzzyFurther = if (!skkPrefs.fuzzySuggestion) false
+                        val fuzzyFurther = if (str == "emoji" || !skkPrefs.fuzzySuggestion) false
                         else withTimeoutOrNull(1000) {
                             // 重い処理: 価値があるので数は少なくてもいいがタイムアウトが必要
                             500 > measureTime {
@@ -751,15 +750,17 @@ class SKKEngine(
                 val uniqueSet = set.distinctBy { it.second }
                 uniqueSet.unzip().let {
                     mCompletionList = it.first
-                    mCandidateList = if (str == "emoji") it.second.map { s -> removeAnnotation(s) }
-                    else it.second
+                    mCandidateList = it.second
                 }
 
                 mCandidateKanjiKey = str
                 mCurrentCandidateIndex = 0
                 withContext(Dispatchers.Main) {
                     setCandidates(
-                        mCandidateList,
+                        mCandidateList?.let {
+                            if (str == "emoji") it.map { s -> removeAnnotation(s) }
+                            else it
+                        },
                         str,
                         if (str == "emoji") skkPrefs.candidatesEmojiLines
                         else skkPrefs.candidatesNormalLines
