@@ -113,13 +113,12 @@ fun isKanaSymbol(code: Int) = isDakuten(code) || isHandakuten(code)
         || code in 0x309D..0x309E // ゝゞ
         || code in 0x30FD..0x30FE // ヽヾ
 
+fun isAnyKana(code: Int) = isHiragana(code) || isKatakana(code) || isKanaSymbol(code)
+
 fun isVowel(code: Int) = code.toChar() in "aiueo"
 // a, i, u, e, o
 
-fun removeAnnotation(str: String): String {
-    val i = str.indexOf(';') // セミコロンで解説が始まる
-    return if (i == -1) str else str.take(i)
-}
+fun removeAnnotation(str: String): String = str.substringBefore(';')
 
 private fun processNumber(str: String, numberList: List<String>): String {
     var result = str
@@ -133,9 +132,9 @@ private fun processSingleNumber(str: String, number: String): String {
         "#1" -> str.replaceFirst(
             target, number // 全角
                 .map { char ->
-                    when (char.code) {
-                        in '0'.code..'9'.code -> Char(char.code + '０'.code - '0'.code)
-                        '.'.code -> '．' // もしかして「・」の方がいい?
+                    when (char) {
+                        in '0'..'9' -> Char(char.code + '０'.code - '0'.code)
+                        '.' -> '．' // もしかして「・」の方がいい?
                         else -> char
                     }
                 }
@@ -145,9 +144,9 @@ private fun processSingleNumber(str: String, number: String): String {
         "#2" -> str.replaceFirst(
             target, number // 単純漢数字
                 .map { char ->
-                    when (char.code) {
-                        in '0'.code..'9'.code -> "〇一二三四五六七八九"[char.code - '0'.code]
-                        '.'.code -> '．' // もしかして「・」の方がいい?
+                    when (char) {
+                        in '0'..'9' -> "〇一二三四五六七八九"[char - '0']
+                        '.' -> '．' // もしかして「・」の方がいい?
                         else -> char
                     }
                 }
@@ -207,7 +206,7 @@ private fun unquote(str: String): String = PAT_QUOTED.findAll(str)
     .joinToString("") { it.groupValues[1] }
 
 private fun unescapeOctal(str: String): String = PAT_ESCAPE_NUM.replace(str) {
-    Char(it.value.substring(1).toInt(8)).toString()
+    Char(it.value.removePrefix("\\").toInt(8)).toString()
 } // emacs-lispのリテラルは8進数
 
 fun processConcatAndMore(rawStr: String, kanjiKey: String): String {
@@ -423,14 +422,13 @@ private val Z2H_OPTIONAL = listOf(
 val Z2H = (Z2H_PAIRS + Z2H_OPTIONAL).toMap()
 val H2Z = Z2H_PAIRS.associate { (z, h) -> h to z }
 
-private fun stepConv(start: Int, step: Int, number: Int, target: Int): List<Pair<Int, Int>> {
-    val other = start + step * (number - 1)
-    val list = mutableListOf<Pair<Int, Int>>()
-    for (i in start.rangeTo(other).step(step)) {
-        list.add(i to (i - start) / step + target)
+private fun stepConv(start: Int, step: Int, number: Int, target: Int): List<Pair<Int, Int>> =
+    buildList {
+        val other = start + step * (number - 1)
+        for (i in start..other step step) {
+            add(i to (i - start) / step + target)
+        }
     }
-    return list
-}
 
 private fun dakutenConv(start: Int, number: Int, target: Int) =
     stepConv(
@@ -501,17 +499,9 @@ internal fun fuzzy(str: String): Sequence<String> {
 }
 
 private fun kanaCombo(lists: List<List<Char>>): Sequence<String> {
-    val total = lists.fold(1L) { acc, list -> acc * list.size }
-    // 連続する数から総当たりに変換するイディオム
-    return (0 until total).asSequence().map { index ->
-        val sb = StringBuilder(lists.size)
-        var temp = index
-        for (list in lists) {
-            val size = list.size.toLong()
-            val charIndex = (temp % size).toInt()
-            sb.append(list[charIndex])
-            temp /= size
+    return lists.fold(sequenceOf("")) { acc, list ->
+        acc.flatMap { prefix ->
+            list.asSequence().map { char -> prefix + char }
         }
-        sb.toString()
     }
 }

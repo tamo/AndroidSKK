@@ -29,7 +29,7 @@ class SKKMushroom : AppCompatActivity() {
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
             if (result.resultCode == RESULT_OK) {
                 val extras = result.data?.extras
-                val s = if (extras == null) "" else extras.getString(REPLACE_KEY)
+                val s = extras?.getString(REPLACE_KEY).orEmpty()
 
                 val retIntent = Intent(this@SKKMushroom, SKKService::class.java)
                 retIntent.putExtra(SKKService.KEY_COMMAND, SKKService.COMMAND_MUSHROOM)

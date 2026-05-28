@@ -5,10 +5,9 @@ import jdbm.RecordManager
 import jdbm.btree.BTree
 import jdbm.helper.Tuple
 import jdbm.helper.TupleBrowser
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.isActive
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -25,13 +24,11 @@ private fun appendToEntry(key: String, value: String, btree: BTree<String, Strin
     val oldVal = btree.find(key)
 
     if (oldVal != null) {
-        val valList = value.substring(1).split("/").dropLastWhile { it.isEmpty() }
-        val oldValList = oldVal.substring(1).split("/").dropLastWhile { it.isEmpty() }
+        val valList = value.trim('/').split('/')
+        val oldValList = oldVal.trim('/').split('/')
 
-        val newValue = StringBuilder()
-        newValue.append("/")
-        valList.union(oldValList).forEach { newValue.append(it, "/") }
-        btree.insert(key, newValue.toString(), true)
+        val newValue = valList.union(oldValList).joinToString("/", prefix = "/", postfix = "/")
+        btree.insert(key, newValue, true)
     } else {
         btree.insert(key, value, true)
     }
@@ -74,10 +71,10 @@ internal fun loadFromTextDict(
     decoder.onUnmappableCharacter(CodingErrorAction.REPLACE)
 
     val loadSKKLine = fun(line: String) {
-        val idx = line.indexOf(' ')
-        if (idx != -1 && !line.startsWith(";;")) {
-            val key = line.take(idx)
-            val value = line.substring(idx + 1, line.length)
+        if (line.startsWith(";;")) return
+        val parts = line.split(' ', limit = 2)
+        if (parts.size == 2) {
+            val (key, value) = parts
             if (overwrite) {
                 btree.insert(key, value, true)
             } else {
@@ -163,16 +160,14 @@ interface SKKDictionaryInterface {
         val list = mutableListOf<Triple<String, String, Int>>()
         val tuple = Tuple<String, String>()
         val browser: TupleBrowser<String, String>
-        val topFreq = ArrayList<Int>()
+        val topFreq = mutableListOf<Int>()
 
         try {
             browser = mBTree?.browse(key) ?: return listOf()
 
             // 絵文字は1500ほどあるし CandidatesView の行数が可変になったので多めが良さそう
             while (list.size < if (mIsASCII) 1500 else 15) {
-                if (!scope.isActive) {
-                    throw CancellationException()
-                }
+                scope.ensureActive()
 
                 if (!browser.getNext(tuple)) break
                 val str = tuple.key
@@ -189,11 +184,9 @@ interface SKKDictionaryInterface {
                                 val freq = it.first.toInt() +
                                         if (str == key) 50 else 0 // 完全一致を優先
                                 if (freq !in topFreq) {
-                                    topFreq.apply {
-                                        add(freq)
-                                        sortDescending()
-                                        while (size > 5) removeAt(lastIndex)
-                                    }
+                                    topFreq.add(freq)
+                                    topFreq.sortDescending()
+                                    if (topFreq.size > 5) topFreq.removeAt(topFreq.lastIndex)
                                 }
                                 if (freq >= topFreq.last()) { // 頻度が5位に入らなければだめ
                                     list.add(Triple(str, it.second, freq))

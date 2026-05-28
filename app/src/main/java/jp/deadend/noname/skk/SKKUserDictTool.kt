@@ -368,7 +368,7 @@ class SKKUserDictTool : AppCompatActivity() {
         if (!mInFileLauncher && mAdapter.count == 0) {
             when (val commandChar = mDictName.first()) {
                 '*', '+' -> {
-                    mDictName = mDictName.drop(1)
+                    mDictName = mDictName.removePrefix(commandChar.toString())
                     val cfDialog = ConfirmationDialogFragment.newInstance(
                         getString(R.string.message_tools_confirm_clear)
                     )

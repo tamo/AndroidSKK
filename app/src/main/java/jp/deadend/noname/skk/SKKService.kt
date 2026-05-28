@@ -48,8 +48,8 @@ import jp.deadend.noname.skk.engine.SKKEmojiState
 import jp.deadend.noname.skk.engine.SKKEngine
 import jp.deadend.noname.skk.engine.SKKHanKanaState
 import jp.deadend.noname.skk.engine.SKKHiraganaState
-import jp.deadend.noname.skk.engine.SKKPreeditState
 import jp.deadend.noname.skk.engine.SKKKatakanaState
+import jp.deadend.noname.skk.engine.SKKPreeditState
 import jp.deadend.noname.skk.engine.SKKState
 import jp.deadend.noname.skk.engine.SKKZenkakuState
 import kotlinx.coroutines.MainScope
@@ -252,18 +252,20 @@ class SKKService : InputMethodService() {
                 "ユーザー辞書/${getString(R.string.dict_name_user)}/絵文字辞書/${getString(R.string.dict_name_emoji)}/"
             )
         dLog("dict pref: $prefVal")
-        if (!prefVal.isNullOrEmpty()) {
-            val vals = prefVal.split("/").dropLastWhile { it.isEmpty() }
-            for (i in 1 until vals.size step 2) {
-                when (vals[i]) {
-                    getString(R.string.dict_name_user) -> result.add(mUserDict)
-                    //getString(R.string.dict_name_ascii) -> result.add(mAsciiDict)
-                    getString(R.string.dict_name_emoji) -> result.add(mEmojiDict)
-                    else -> SKKDictionary.newInstance(
-                        dd + "/" + vals[i], getString(R.string.btree_name)
-                    )?.also { result.add(it) } ?: dLog("failed to open ${vals[i]}")
+        prefVal?.split("/")?.chunked(2)?.forEach { chunk ->
+            if (chunk.size < 2) return@forEach
+            val dict = when (val dictPath = chunk[1]) {
+                getString(R.string.dict_name_user) -> mUserDict
+                // getString(R.string.dict_name_ascii) -> mAsciiDict
+                getString(R.string.dict_name_emoji) -> mEmojiDict
+                else -> SKKDictionary.newInstance(
+                    "$dd/$dictPath", getString(R.string.btree_name)
+                ) ?: run {
+                    dLog("failed to open $dictPath")
+                    null
                 }
             }
+            dict?.let { result.add(it) }
         }
 
         return result
@@ -600,11 +602,9 @@ class SKKService : InputMethodService() {
             }
         })!!.setKeyState(engineState)
 
-        keyboardView.let {
-            (it.parent as? android.view.ViewGroup)?.removeView(it)
-            mBinding.keyboardContainer.addView(it)
-            mInputView = it
-        }
+        (keyboardView.parent as? android.view.ViewGroup)?.removeView(keyboardView)
+        mBinding.keyboardContainer.addView(keyboardView)
+        mInputView = keyboardView
 
         return keyboardView
     }

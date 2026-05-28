@@ -68,7 +68,10 @@ object SKKOkuriganaState : SKKState {
                         mComposing.setLength(0) // これまでの composing は typo とみなしてやり直す
                         mKanjiKey.deleteCharAt(mKanjiKey.lastIndex)
                         changeState(SKKPreeditState)
-                        SKKPreeditState.processKey(context, encodeKey(Character.toUpperCase(keyCode)))
+                        SKKPreeditState.processKey(
+                            context,
+                            encodeKey(Character.toUpperCase(keyCode))
+                        )
                         return
                     }
                     setComposingTextSKK(

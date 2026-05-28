@@ -4,10 +4,8 @@ import jp.deadend.noname.skk.SKKApplication
 import jp.deadend.noname.skk.dLog
 import jp.deadend.noname.skk.hankaku2zenkaku
 import jp.deadend.noname.skk.isAlNum
+import jp.deadend.noname.skk.isAnyKana
 import jp.deadend.noname.skk.isDakuten
-import jp.deadend.noname.skk.isHiragana
-import jp.deadend.noname.skk.isKanaSymbol
-import jp.deadend.noname.skk.isKatakana
 import jp.deadend.noname.skk.isVowel
 import jp.deadend.noname.skk.katakana2hiragana
 
@@ -75,32 +73,32 @@ object RomajiConverter {
     fun getConsonantForVoiced(kana: String): String {
         val hiragana = katakana2hiragana(hankaku2zenkaku(kana)) ?: return ""
         if (hiragana.isEmpty()) return ""
-        return when (val c = hiragana[0].code) {
-            'ぁ'.code, 'あ'.code -> "a"
-            'ぃ'.code, 'い'.code -> "i"
-            'ぅ'.code -> "u"
-            'う'.code -> if (hiragana.length > 1 && isDakuten(hiragana[1].code)) "v" else "u"
-            'ぇ'.code, 'え'.code -> "e"
-            'ぉ'.code, 'お'.code -> "o"
-            in 'か'.code..'ご'.code -> if ((c - 'か'.code) % 2 == 0) "k" else "g"
-            in 'さ'.code..'ぞ'.code -> if ((c - 'さ'.code) % 2 == 0) "s" else "z"
-            in 'た'.code..'ぢ'.code -> if ((c - 'た'.code) % 2 == 0) "t" else "d"
-            'っ'.code -> "t"
-            in 'つ'.code..'ど'.code -> if ((c - 'つ'.code) % 2 == 0) "t" else "d"
-            in 'な'.code..'の'.code -> "n"
-            in 'は'.code..'ぽ'.code -> when ((c - 'は'.code) % 3) {
+        return when (val c = hiragana[0]) {
+            'ぁ', 'あ' -> "a"
+            'ぃ', 'い' -> "i"
+            'ぅ' -> "u"
+            'う' -> if (hiragana.length > 1 && isDakuten(hiragana[1].code)) "v" else "u"
+            'ぇ', 'え' -> "e"
+            'ぉ', 'お' -> "o"
+            in 'か'..'ご' -> if ((c - 'か') % 2 == 0) "k" else "g"
+            in 'さ'..'ぞ' -> if ((c - 'さ') % 2 == 0) "s" else "z"
+            in 'た'..'ぢ' -> if ((c - 'た') % 2 == 0) "t" else "d"
+            'っ' -> "t"
+            in 'つ'..'ど' -> if ((c - 'つ') % 2 == 0) "t" else "d"
+            in 'な'..'の' -> "n"
+            in 'は'..'ぽ' -> when ((c - 'は') % 3) {
                 0 -> "h"
                 1 -> "b"
                 else -> "p"
             }
 
-            in 'ま'.code..'も'.code -> "m"
-            in 'ゃ'.code..'よ'.code -> "y"
-            in 'ら'.code..'ろ'.code -> "r"
-            in 'ゎ'.code..'を'.code -> "w"
-            'ん'.code -> "n"
-            'ゔ'.code -> "v"
-            'ゕ'.code, 'ゖ'.code -> "k"
+            in 'ま'..'も' -> "m"
+            in 'ゃ'..'よ' -> "y"
+            in 'ら'..'ろ' -> "r"
+            in 'ゎ'..'を' -> "w"
+            'ん' -> "n"
+            'ゔ' -> "v"
+            'ゕ', 'ゖ' -> "k"
             else -> ""
         }
     }
@@ -132,7 +130,7 @@ object RomajiConverter {
         val kanaLast = kana.last().code
         if (
             type != SKKEngine.LAST_CONVERSION_SHIFT // SHIFTは英数でも可
-            && !isHiragana(kanaLast) && !isKatakana(kanaLast) && !isKanaSymbol(kanaLast)
+            && !isAnyKana(kanaLast)
         ) {
             dLog("last is not convertible: $last")
             return first to last.toString()

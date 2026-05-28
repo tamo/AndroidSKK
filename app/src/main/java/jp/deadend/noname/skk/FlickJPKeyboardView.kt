@@ -32,7 +32,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
     private var mArrowFlicked = false
     private var mArrowStartX = -1f
     private var mArrowStartY = -1f
-    private var mCurrentPopupLabels = (0..6).map { "" }.toTypedArray()
+    private var mCurrentPopupLabels = Array(7) { "" }
 
     private var mUsePopup = true
     private var mFixedPopup = false
@@ -100,27 +100,25 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
     private val mFlickGuideLabelList = SparseArray<Array<String>>()
 
     init {
-        val a = mFlickGuideLabelList
-        a.append(KEYCODE_FLICK_JP_CHAR_A, arrayOf("あ", "い", "う", "え", "お", "小", ""))
-        a.append(KEYCODE_FLICK_JP_CHAR_KA, arrayOf("か", "き", "く", "け", "こ", "", "゛"))
-        a.append(KEYCODE_FLICK_JP_CHAR_SA, arrayOf("さ", "し", "す", "せ", "そ", "", "゛"))
-        a.append(KEYCODE_FLICK_JP_CHAR_TA, arrayOf("た", "ち", "つ", "て", "と", "", "゛"))
-        a.append(KEYCODE_FLICK_JP_CHAR_NA, arrayOf("な", "に", "ぬ", "ね", "の", "", ""))
-        a.append(KEYCODE_FLICK_JP_CHAR_HA, arrayOf("は", "ひ", "ふ", "へ", "ほ", "゜", "゛"))
-        a.append(KEYCODE_FLICK_JP_CHAR_MA, arrayOf("ま", "み", "む", "め", "も", "", ""))
-        a.append(KEYCODE_FLICK_JP_CHAR_YA, arrayOf("や", "（", "ゆ", "）", "よ", "小", ""))
-        a.append(KEYCODE_FLICK_JP_CHAR_RA, arrayOf("ら", "り", "る", "れ", "ろ", "", ""))
-        a.append(KEYCODE_FLICK_JP_CHAR_WA, arrayOf("わ", "を", "ん", "ー", "～", "", ""))
-        a.append(KEYCODE_FLICK_JP_CHAR_TEN, arrayOf("、", "。", "？", "！", "…", "", ""))
-        a.append(KEYCODE_FLICK_JP_CHAR_TEN_SHIFTED, arrayOf("　", "（", "「", "）", "」", "", ""))
-        a.append(KEYCODE_FLICK_JP_CHAR_TEN_NUM, arrayOf("，", "．", "－", "：", "／", "", ""))
-        a.append(KEYCODE_FLICK_JP_CHAR_TEN_NUM_LEFT, arrayOf("＃", "￥", "＋", "＄", "＊", "", ""))
-        a.append(KEYCODE_FLICK_JP_MOJI, arrayOf("カナ", "：", "10", "＞", "声", "", ""))
-        a.append(
-            KEYCODE_FLICK_JP_TO_QWERTY,
-            arrayOf("abc", "絵☻", "全角ａ", "記号", "qwerty", "", "")
-        )
-        a.append(KEYCODE_FLICK_JP_SPACE, arrayOf("SPACE", "", "Mush", "", "", "", ""))
+        mapOf(
+            KEYCODE_FLICK_JP_CHAR_A to arrayOf("あ", "い", "う", "え", "お", "小", ""),
+            KEYCODE_FLICK_JP_CHAR_KA to arrayOf("か", "き", "く", "け", "こ", "", "゛"),
+            KEYCODE_FLICK_JP_CHAR_SA to arrayOf("さ", "し", "す", "せ", "そ", "", "゛"),
+            KEYCODE_FLICK_JP_CHAR_TA to arrayOf("た", "ち", "つ", "て", "と", "", "゛"),
+            KEYCODE_FLICK_JP_CHAR_NA to arrayOf("な", "に", "ぬ", "ね", "の", "", ""),
+            KEYCODE_FLICK_JP_CHAR_HA to arrayOf("は", "ひ", "ふ", "へ", "ほ", "゜", "゛"),
+            KEYCODE_FLICK_JP_CHAR_MA to arrayOf("ま", "み", "む", "め", "も", "", ""),
+            KEYCODE_FLICK_JP_CHAR_YA to arrayOf("や", "（", "ゆ", "）", "よ", "小", ""),
+            KEYCODE_FLICK_JP_CHAR_RA to arrayOf("ら", "り", "る", "れ", "ろ", "", ""),
+            KEYCODE_FLICK_JP_CHAR_WA to arrayOf("わ", "を", "ん", "ー", "～", "", ""),
+            KEYCODE_FLICK_JP_CHAR_TEN to arrayOf("、", "。", "？", "！", "…", "", ""),
+            KEYCODE_FLICK_JP_CHAR_TEN_SHIFTED to arrayOf("　", "（", "「", "）", "」", "", ""),
+            KEYCODE_FLICK_JP_CHAR_TEN_NUM to arrayOf("，", "．", "－", "：", "／", "", ""),
+            KEYCODE_FLICK_JP_CHAR_TEN_NUM_LEFT to arrayOf("＃", "￥", "＋", "＄", "＊", "", ""),
+            KEYCODE_FLICK_JP_MOJI to arrayOf("カナ", "：", "10", "＞", "声", "", ""),
+            KEYCODE_FLICK_JP_TO_QWERTY to arrayOf("abc", "絵☻", "全角ａ", "記号", "qwerty", "", ""),
+            KEYCODE_FLICK_JP_SPACE to arrayOf("SPACE", "", "Mush", "", "", "", "")
+        ).forEach { (code, labels) -> mFlickGuideLabelList.append(code, labels) }
     }
 
     override fun setService(service: SKKService) {
@@ -152,11 +150,13 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
             shiftKey.label = ""
             shiftKey.icon = null
         }
-        shiftKeys[0].codes[0] = Keyboard.KEYCODE_SHIFT
-        shiftKeys[0].icon = ResourcesCompat.getDrawable(
-            resources, R.drawable.ic_keyboard_shift, null
-        )?.also {
-            it.setBounds(0, 0, it.intrinsicWidth, it.intrinsicHeight)
+        shiftKeys[0].apply {
+            codes[0] = Keyboard.KEYCODE_SHIFT
+            icon = ResourcesCompat.getDrawable(
+                resources, R.drawable.ic_keyboard_shift, null
+            )?.also {
+                it.setBounds(0, 0, it.intrinsicWidth, it.intrinsicHeight)
+            }
         }
 
         for (kanaKey in kanaKeys) {
@@ -178,23 +178,16 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
             else -> return this
         }
         mService.kanaState = state
+        val labels = mapOf(
+            KEYCODE_FLICK_JP_CHAR_A to "あ", KEYCODE_FLICK_JP_CHAR_KA to "か",
+            KEYCODE_FLICK_JP_CHAR_SA to "さ", KEYCODE_FLICK_JP_CHAR_TA to "た",
+            KEYCODE_FLICK_JP_CHAR_NA to "な", KEYCODE_FLICK_JP_CHAR_HA to "は",
+            KEYCODE_FLICK_JP_CHAR_MA to "ま", KEYCODE_FLICK_JP_CHAR_YA to "や",
+            KEYCODE_FLICK_JP_CHAR_RA to "ら", KEYCODE_FLICK_JP_CHAR_WA to "ん\nをわー\n〜"
+        )
         for (key in keyboard.keys) {
-            val label = when (key.codes[0]) {
-                KEYCODE_FLICK_JP_CHAR_A -> "あ"
-                KEYCODE_FLICK_JP_CHAR_KA -> "か"
-                KEYCODE_FLICK_JP_CHAR_SA -> "さ"
-                KEYCODE_FLICK_JP_CHAR_TA -> "た"
-                KEYCODE_FLICK_JP_CHAR_NA -> "な"
-                KEYCODE_FLICK_JP_CHAR_HA -> "は"
-                KEYCODE_FLICK_JP_CHAR_MA -> "ま"
-                KEYCODE_FLICK_JP_CHAR_YA -> "や"
-                KEYCODE_FLICK_JP_CHAR_RA -> "ら"
-                KEYCODE_FLICK_JP_CHAR_WA -> "ん\nをわー\n〜"
-                else -> continue
-            }
-            key.label = if (state !== SKKHiraganaState) {
-                hiragana2katakana(label) ?: label
-            } else label
+            val label = labels[key.codes[0]] ?: continue
+            key.label = if (state !== SKKHiraganaState) hiragana2katakana(label) ?: label else label
         }
         invalidateAllKeys()
         return this
@@ -204,51 +197,30 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
         keyboard.keys.find { it.codes[0] == code }
 
     private fun onSetShifted() {
-        if (isShifted) {
-            mKutoutenKey.codes[0] = KEYCODE_FLICK_JP_CHAR_TEN_SHIFTED
-            mKutoutenKey.label = "「\n（□）\n」"
-            mSpaceKey.label = "設定"
-            mQwertyKey.label = "全角ａ\n☻略記\nqwerty"
+        val shifted = isShifted
+        mKutoutenKey.codes[0] =
+            if (shifted) KEYCODE_FLICK_JP_CHAR_TEN_SHIFTED else KEYCODE_FLICK_JP_CHAR_TEN
+        mKutoutenKey.label = if (shifted) "「\n（□）\n」" else mKutoutenLabel
+        mSpaceKey.label = if (shifted) "設定" else ""
+        mQwertyKey.label = if (shifted) "全角ａ\n☻略記\nqwerty" else "全角ａ\n☻abc記\nqwerty"
 
-            var key = findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_MOJI)
-            if (key != null) {
-                key.label =
-                    if (mService.kanaState is SKKHanKanaState) "10\n：カナ>\n声" else "10\n：ｶﾅ>\n声"
+        findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_MOJI)?.let { key ->
+            key.label = when {
+                shifted -> if (mService.kanaState is SKKHanKanaState) "10\n：カナ>\n声" else "10\n：ｶﾅ>\n声"
+                else -> if (mService.kanaState is SKKHiraganaState) "10\n：カナ>\n声" else "10\n：かな>\n声"
             }
+        }
 
-            // ＜＞を変更
-            key = findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_LEFT)
-            if (key != null) {
-                key.codes[0] = KEYCODE_FLICK_JP_PASTE
-                key.label = "貼付"
-            }
-            key = findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_RIGHT)
-            if (key != null) {
-                key.codes[0] = KEYCODE_FLICK_JP_GOOGLE
-                key.label = "Google"
-            }
-        } else {
-            mKutoutenKey.codes[0] = KEYCODE_FLICK_JP_CHAR_TEN
-            mKutoutenKey.label = mKutoutenLabel
-            mSpaceKey.label = ""
-            mQwertyKey.label = "全角ａ\n☻abc記\nqwerty" // 変更したら voice.xml も更新すること
-
-            var key = findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_MOJI)
-            if (key != null) {
-                key.label =
-                    if (mService.kanaState is SKKHiraganaState) "10\n：カナ>\n声" else "10\n：かな>\n声"
-            }
-
-            // ＜＞を復元
-            key = findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_PASTE)
-            if (key != null) {
-                key.codes[0] = KEYCODE_FLICK_JP_LEFT
-                key.label = ""
-            }
-            key = findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_GOOGLE)
-            if (key != null) {
-                key.codes[0] = KEYCODE_FLICK_JP_RIGHT
-                key.label = ""
+        val lr = listOf(
+            KEYCODE_FLICK_JP_LEFT to KEYCODE_FLICK_JP_PASTE,
+            KEYCODE_FLICK_JP_RIGHT to KEYCODE_FLICK_JP_GOOGLE
+        )
+        lr.forEach { (normalCode, shiftedCode) ->
+            findKeyByCode(mJPKeyboard, if (shifted) normalCode else shiftedCode)?.let { key ->
+                key.codes[0] = if (shifted) shiftedCode else normalCode
+                key.label = if (shifted)
+                    (if (shiftedCode == KEYCODE_FLICK_JP_PASTE) "貼付" else "Google")
+                else ""
             }
         }
     }
@@ -368,104 +340,58 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
             it.text = ""
             it.setBackgroundResource(R.drawable.popup_label)
         }
-        val activeLabel = when {
-            mFlickState.contains(FlickState.NONE) -> {
-                labels[0].text = mCurrentPopupLabels[0]
-                if (!isCurve(mFlickState)) {
-                    labels[1].text = mCurrentPopupLabels[1]
-                    labels[2].text = mCurrentPopupLabels[2]
-                    labels[3].text = mCurrentPopupLabels[3]
-                    labels[4].text = mCurrentPopupLabels[4]
-                }
-                labels[5].text = mCurrentPopupLabels[5]
-                labels[6].text = mCurrentPopupLabels[6]
-                if (mLastPressedKey == KEYCODE_FLICK_JP_CHAR_WA) {
-                    // 例外：小さい「ゎ」
-                    labels[5].text = "小"
-                }
-                when {
-                    isLeftCurve(mFlickState) -> 5
-                    isRightCurve(mFlickState) -> 6
-                    else -> 0
-                }
-            }
 
-            mFlickState.contains(FlickState.LEFT) -> {
-                if (!isCurve(mFlickState)) {
-                    labels[0].text = mCurrentPopupLabels[0]
-                }
-                labels[1].text = mCurrentPopupLabels[1]
-                labels[7].text = mCurrentPopupLabels[5]
-                labels[8].text = mCurrentPopupLabels[6]
-                if (mLastPressedKey == KEYCODE_FLICK_JP_CHAR_YA) {
-                    // 例外：括弧
-                    labels[7].text = "「"
-                    labels[8].text = "『"
-                }
-                when {
-                    isLeftCurve(mFlickState) -> 7
-                    isRightCurve(mFlickState) -> 8
-                    else -> 1
-                }
-            }
-
-            mFlickState.contains(FlickState.UP) -> {
-                if (!isCurve(mFlickState)) {
-                    labels[0].text = mCurrentPopupLabels[0]
-                }
-                labels[2].text = mCurrentPopupLabels[2]
-                labels[9].text = mCurrentPopupLabels[5]
-                labels[10].text = mCurrentPopupLabels[6]
-                if (mLastPressedKey == KEYCODE_FLICK_JP_CHAR_TA) {
-                    // 例外：小さい「っ」
-                    labels[9].text = "小"
-                }
-                if (mLastPressedKey == KEYCODE_FLICK_JP_CHAR_A && !mService.isHiragana) {
-                    // 例外：「ヴ」
-                    labels[10].text = "゛"
-                }
-                when {
-                    isLeftCurve(mFlickState) -> 9
-                    isRightCurve(mFlickState) -> 10
-                    else -> 2
-                }
-            }
-
-            mFlickState.contains(FlickState.RIGHT) -> {
-                if (!isCurve(mFlickState)) {
-                    labels[0].text = mCurrentPopupLabels[0]
-                }
-                labels[3].text = mCurrentPopupLabels[3]
-                labels[11].text = mCurrentPopupLabels[5]
-                labels[12].text = mCurrentPopupLabels[6]
-                if (mLastPressedKey == KEYCODE_FLICK_JP_CHAR_YA) {
-                    // 例外：括弧
-                    labels[11].text = "」"
-                    labels[12].text = "』"
-                }
-                when {
-                    isLeftCurve(mFlickState) -> 11
-                    isRightCurve(mFlickState) -> 12
-                    else -> 3
-                }
-            }
-
-            mFlickState.contains(FlickState.DOWN) -> {
-                if (!isCurve(mFlickState)) {
-                    labels[0].text = mCurrentPopupLabels[0]
-                }
-                labels[4].text = mCurrentPopupLabels[4]
-                labels[13].text = mCurrentPopupLabels[5]
-                labels[14].text = mCurrentPopupLabels[6]
-                when {
-                    isLeftCurve(mFlickState) -> 13
-                    isRightCurve(mFlickState) -> 14
-                    else -> 4
-                }
-            }
-
-            else -> -1
+        //    09 02 10
+        // 08 05    06 11
+        // 01    00    03
+        // 07          12
+        //    14 04 13
+        val baseIndex = when {
+            mFlickState.contains(FlickState.LEFT) -> 1
+            mFlickState.contains(FlickState.UP) -> 2
+            mFlickState.contains(FlickState.RIGHT) -> 3
+            mFlickState.contains(FlickState.DOWN) -> 4
+            else -> 0 // NONE
         }
+
+        val activeLabel = when {
+            isLeftCurve(mFlickState) -> baseIndex * 2 + 5
+            isRightCurve(mFlickState) -> baseIndex * 2 + 6
+            else -> baseIndex
+        }
+
+        // ラベルのテキスト設定
+        if (baseIndex == 0) {
+            labels[0].text = mCurrentPopupLabels[0]
+            if (!isCurve(mFlickState)) {
+                labels[1].text = mCurrentPopupLabels[1]
+                labels[2].text = mCurrentPopupLabels[2]
+                labels[3].text = mCurrentPopupLabels[3]
+                labels[4].text = mCurrentPopupLabels[4]
+            }
+            labels[5].text =
+                if (mLastPressedKey == KEYCODE_FLICK_JP_CHAR_WA) "小" else mCurrentPopupLabels[5]
+            labels[6].text = mCurrentPopupLabels[6]
+        } else {
+            if (!isCurve(mFlickState)) labels[0].text = mCurrentPopupLabels[0]
+            labels[baseIndex].text = mCurrentPopupLabels[baseIndex]
+            val cl = baseIndex * 2 + 5
+            val cr = baseIndex * 2 + 6
+            labels[cl].text = when (mLastPressedKey) {
+                KEYCODE_FLICK_JP_CHAR_YA if baseIndex == 1 -> "「"
+                KEYCODE_FLICK_JP_CHAR_TA if baseIndex == 2 -> "小"
+                else -> mCurrentPopupLabels[5]
+            }
+            labels[cr].text = when (mLastPressedKey) {
+                KEYCODE_FLICK_JP_CHAR_YA if baseIndex == 1 -> "『"
+                KEYCODE_FLICK_JP_CHAR_A if baseIndex == 2 && !mService.isHiragana -> "゛"
+                KEYCODE_FLICK_JP_CHAR_YA if baseIndex == 3 -> "』"
+                else -> mCurrentPopupLabels[6]
+            }
+            // YA 右の括弧だけ特殊
+            if (mLastPressedKey == KEYCODE_FLICK_JP_CHAR_YA && baseIndex == 3) labels[cl].text = "」"
+        }
+
         labels[activeLabel].setBackgroundResource(R.drawable.popup_label_highlighted)
         for (i in 5..14) {
             val size = when (labels[i].text) {
@@ -511,36 +437,21 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
                         val ady = me.y - mArrowStartY
                         val adx2 = adx * adx
                         val ady2 = ady * ady
-                        when {
-                            adx2 > ady2 && adx2 > mFlickSensitivitySquared -> {
-                                if (adx < 0) {
-                                    if (!mService.handleDpad(KeyEvent.KEYCODE_DPAD_LEFT)) {
-                                        mService.keyDownUp(KeyEvent.KEYCODE_DPAD_LEFT)
-                                    }
-                                } else if (!mService.handleDpad(KeyEvent.KEYCODE_DPAD_RIGHT)) {
-                                    mService.keyDownUp(KeyEvent.KEYCODE_DPAD_RIGHT)
-                                }
-                                mArrowFlicked = true
-                                mArrowStartX = me.x
-                                mArrowStartY = me.y
-                                stopRepeatKey()
-                                return true
-                            }
+                        val horizontal = adx2 > ady2
+                        val dist2 = if (horizontal) adx2 else ady2
 
-                            adx2 < ady2 && ady2 > mFlickSensitivitySquared -> {
-                                if (ady < 0) {
-                                    if (!mService.handleDpad(KeyEvent.KEYCODE_DPAD_UP)) {
-                                        mService.keyDownUp(KeyEvent.KEYCODE_DPAD_UP)
-                                    }
-                                } else if (!mService.handleDpad(KeyEvent.KEYCODE_DPAD_DOWN)) {
-                                    mService.keyDownUp(KeyEvent.KEYCODE_DPAD_DOWN)
-                                }
-                                mArrowFlicked = true
-                                mArrowStartY = me.y
-                                mArrowStartX = me.x
-                                stopRepeatKey()
-                                return true
+                        if (dist2 > mFlickSensitivitySquared) {
+                            val key = if (horizontal) {
+                                if (adx < 0) KeyEvent.KEYCODE_DPAD_LEFT else KeyEvent.KEYCODE_DPAD_RIGHT
+                            } else {
+                                if (ady < 0) KeyEvent.KEYCODE_DPAD_UP else KeyEvent.KEYCODE_DPAD_DOWN
                             }
+                            if (!mService.handleDpad(key)) mService.keyDownUp(key)
+                            mArrowFlicked = true
+                            mArrowStartX = me.x
+                            mArrowStartY = me.y
+                            stopRepeatKey()
+                            return true
                         }
                     }
 
@@ -557,6 +468,10 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
         return super.onModifiedTouchEvent(me, possiblePoly)
     }
 
+    /**
+     * 計算負荷の低い擬似的な角度を計算します (0.0 から 4.0)
+     * 0: 右, 1: 下, 2: 左, 3: 上
+     */
     private fun diamondAngle(x: Float, y: Float): Float {
         return if (y >= 0) {
             if (x >= 0) y / (x + y) else 1 - x / (-x + y)
@@ -667,27 +582,20 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
             flick.contains(FlickState.RIGHT) -> 'e'
             flick.contains(FlickState.DOWN) -> 'o'
             else -> 'a'
-        }.code
+        }
 
-        val consonant: Int = when (keyCode) {
+        val consonant: Char? = when (keyCode) {
             KEYCODE_FLICK_JP_CHAR_A -> {
                 if (isLeftCurve(flick)) {
-                    if (mService.engineState.hasCandidates) {
-                        mService.handleEnter() // x の前に確定しておく
-                    }
+                    if (mService.engineState.hasCandidates) mService.handleEnter()
                     mService.processKey('x')
                     mService.processKey(vowel)
-                } else if (!mService.isHiragana && flick == EnumSet.of(
-                        FlickState.UP,
-                        FlickState.CURVE_RIGHT
-                    )
+                } else if (!mService.isHiragana &&
+                    flick == EnumSet.of(FlickState.UP, FlickState.CURVE_RIGHT)
                 ) {
-                    mService.processKey('v')
-                    mService.processKey('u')
-                } else if (isShifted) {
-                    mService.processKey(encodeKey(Character.toUpperCase(vowel)))
+                    mService.processKey('v'); mService.processKey('u')
                 } else {
-                    mService.processKey(vowel)
+                    mService.processKey(if (isShifted) vowel.uppercaseChar() else vowel)
                 }
                 return
             }
@@ -705,22 +613,12 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
             KEYCODE_FLICK_JP_CHAR_MA -> 'm'
             KEYCODE_FLICK_JP_CHAR_YA -> {
                 val yaSymbol = when {
-                    flick.contains(FlickState.LEFT) -> when {
-                        isCurve(flick) -> '['
-                        else -> '('
-                    }
-
-                    flick.contains(FlickState.RIGHT) -> when {
-                        isCurve(flick) -> ']'
-                        else -> ')'
-                    }
-
+                    flick.contains(FlickState.LEFT) -> if (isCurve(flick)) '[' else '('
+                    flick.contains(FlickState.RIGHT) -> if (isCurve(flick)) ']' else ')'
                     else -> 'y'
                 }
                 if (yaSymbol != 'y') {
-                    if (isRightCurve(flick)) {
-                        mService.processKey('z')
-                    }
+                    if (isRightCurve(flick)) mService.processKey('z')
                     mService.processKey(yaSymbol)
                     return
                 }
@@ -731,35 +629,21 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
             KEYCODE_FLICK_JP_CHAR_WA -> {
                 when (flick) {
                     EnumSet.of(FlickState.NONE) -> {
-                        if (isShifted) {
-                            mService.processKey('W')
-                        } else {
-                            mService.processKey('w')
-                        }
-                        mService.processKey('a')
+                        mService.processKey(if (isShifted) 'W' else 'w'); mService.processKey('a')
                     }
 
                     EnumSet.of(FlickState.NONE, FlickState.CURVE_LEFT) -> {
-                        if (isShifted) {
-                            mService.processKey('X')
-                        } else {
-                            mService.processKey('x')
-                        }
-                        mService.processKey('w')
-                        mService.processKey('a')
+                        if (mService.engineState.hasCandidates) mService.handleEnter()
+                        mService.processKey(if (isShifted) 'X' else 'x')
+                        mService.processKey('w'); mService.processKey('a')
                     }
 
                     EnumSet.of(FlickState.LEFT) -> {
-                        mService.processKey('w')
-                        mService.processKey('o')
+                        mService.processKey('w'); mService.processKey('o')
                     }
 
                     EnumSet.of(FlickState.UP) -> {
-                        if (isShifted) {
-                            mService.processKey('N')
-                        } else {
-                            mService.processKey('n')
-                        }
+                        if (isShifted) mService.processKey('N') else mService.processKey('n')
                         mService.processKey('n')
                     }
 
@@ -770,74 +654,68 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
             }
 
             KEYCODE_FLICK_JP_CHAR_TEN -> {
-                when (flick) {
-                    EnumSet.of(FlickState.NONE) -> mService.processKey(',')
-                    EnumSet.of(FlickState.LEFT) -> mService.processKey('.')
-                    EnumSet.of(FlickState.UP) -> mService.processKey('?')
-                    EnumSet.of(FlickState.RIGHT) -> mService.processKey('!')
-                    EnumSet.of(FlickState.DOWN) -> {
-                        mService.processKey('z')
-                        mService.processKey('.')
+                when {
+                    flick.contains(FlickState.NONE) -> mService.processKey(',')
+                    flick.contains(FlickState.LEFT) -> mService.processKey('.')
+                    flick.contains(FlickState.UP) -> mService.processKey('?')
+                    flick.contains(FlickState.RIGHT) -> mService.processKey('!')
+                    flick.contains(FlickState.DOWN) -> {
+                        mService.processKey('z'); mService.processKey('.')
                     }
                 }
                 return
             }
 
             KEYCODE_FLICK_JP_CHAR_TEN_SHIFTED -> {
-                when (flick) {
-                    EnumSet.of(FlickState.NONE) -> mService.processKeyIn(SKKZenkakuState, ' ')
-                    EnumSet.of(FlickState.LEFT) -> mService.processKey('(')
-                    EnumSet.of(FlickState.UP) -> mService.processKey('[')
-                    EnumSet.of(FlickState.RIGHT) -> mService.processKey(')')
-                    EnumSet.of(FlickState.DOWN) -> mService.processKey(']')
+                when {
+                    flick.contains(FlickState.NONE) -> mService.processKeyIn(SKKZenkakuState, ' ')
+                    flick.contains(FlickState.LEFT) -> mService.processKey('(')
+                    flick.contains(FlickState.UP) -> mService.processKey('[')
+                    flick.contains(FlickState.RIGHT) -> mService.processKey(')')
+                    flick.contains(FlickState.DOWN) -> mService.processKey(']')
                 }
                 return
             }
 
             KEYCODE_FLICK_JP_CHAR_TEN_NUM -> {
-                when (flick) {
-                    EnumSet.of(FlickState.NONE) -> mService.commitTextSKK(",")
-                    EnumSet.of(FlickState.LEFT) -> mService.commitTextSKK(".")
-                    EnumSet.of(FlickState.UP) -> mService.commitTextSKK("-")
-                    EnumSet.of(FlickState.RIGHT) -> mService.commitTextSKK(":")
-                    EnumSet.of(FlickState.DOWN) -> mService.commitTextSKK("/")
+                val s = when {
+                    flick.contains(FlickState.NONE) -> ","
+                    flick.contains(FlickState.LEFT) -> "."
+                    flick.contains(FlickState.UP) -> "-"
+                    flick.contains(FlickState.RIGHT) -> ":"
+                    flick.contains(FlickState.DOWN) -> "/"
+                    else -> ""
                 }
-                return
+                mService.commitTextSKK(s); return
             }
 
             KEYCODE_FLICK_JP_CHAR_TEN_NUM_LEFT -> {
-                when (flick) {
-                    EnumSet.of(FlickState.NONE) -> mService.commitTextSKK("#")
-                    EnumSet.of(FlickState.LEFT) -> mService.commitTextSKK("￥")
-                    EnumSet.of(FlickState.UP) -> mService.commitTextSKK("+")
-                    EnumSet.of(FlickState.RIGHT) -> mService.commitTextSKK("$")
-                    EnumSet.of(FlickState.DOWN) -> mService.commitTextSKK("*")
+                val s = when {
+                    flick.contains(FlickState.NONE) -> "#"
+                    flick.contains(FlickState.LEFT) -> "￥"
+                    flick.contains(FlickState.UP) -> "+"
+                    flick.contains(FlickState.RIGHT) -> "$"
+                    flick.contains(FlickState.DOWN) -> "*"
+                    else -> ""
                 }
-                return
+                mService.commitTextSKK(s); return
             }
 
-            else -> return
-        }.code
-
-        mService.suspendCompletion()
-        if (isShifted) {
-            mService.processKey(encodeKey(Character.toUpperCase(consonant)))
-        } else {
-            mService.processKey(consonant)
+            else -> null
         }
 
-        if (isLeftCurve(flick)) {
-            if (consonant == 't'.code && vowel == 'u'.code
-                || consonant == 'y'.code && (vowel == 'a'.code || vowel == 'u'.code || vowel == 'o'.code)
-            ) {
+        consonant?.let { c ->
+            mService.suspendCompletion()
+            mService.processKey(if (isShifted) c.uppercaseChar() else c)
+            if (isLeftCurve(flick) && (c == 't' && vowel == 'u' || c == 'y' && vowel in "auo")) {
                 mService.processKey(vowel)
                 mService.resumeCompletion()
                 mService.changeLastChar(SKKEngine.LAST_CONVERSION_SMALL)
-                return
+            } else {
+                mService.resumeCompletion()
+                mService.processKey(vowel)
             }
         }
-        mService.resumeCompletion()
-        mService.processKey(vowel)
     }
 
     override fun onLongPress(key: Keyboard.Key): Boolean {
@@ -858,18 +736,19 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
         mArrowFlicked = false
 
         if (mUsePopup) {
-            val labels = mFlickGuideLabelList.get(primaryCode)
-            if (labels == null) {
-                mCurrentPopupLabels = (0..6).map { "" }.toTypedArray()
+            val labels = mFlickGuideLabelList[primaryCode] ?: run {
+                mCurrentPopupLabels.fill("")
                 return
             }
 
-            for (i in 0..6) {
-                if (mService.isHiragana) {
-                    mCurrentPopupLabels[i] = labels[i]
-                } else {
-                    mCurrentPopupLabels[i] = checkNotNull(
-                        hiragana2katakana(labels[i], reversed = true)
+            labels.forEachIndexed { i, label ->
+                if (i > 6) return@forEachIndexed
+                mCurrentPopupLabels[i] = if (mService.isHiragana) label else {
+                    checkNotNull(
+                        hiragana2katakana(
+                            label,
+                            reversed = true
+                        )
                     ) { "BUG: invalid popup label!!" }
                 }
             }
@@ -948,29 +827,18 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
 
             KEYCODE_FLICK_JP_ENTER -> if (!mService.handleEnter()) mService.pressEnter()
             KEYCODE_FLICK_JP_KOMOJI -> {
-                val smallState = if (skkPrefs.useSoftCancelKey) FlickState.UP else FlickState.NONE
-                val cancelState = if (skkPrefs.useSoftCancelKey) FlickState.NONE else FlickState.UP
+                val isSoftCancel = skkPrefs.useSoftCancelKey
                 when (mFlickState) {
-                    EnumSet.of(smallState) ->
+                    EnumSet.of(if (isSoftCancel) FlickState.UP else FlickState.NONE) ->
                         mService.changeLastChar(
-                            if (!skkPrefs.useSoftCancelKey && skkPrefs.useSoftTransKey)
-                                SKKEngine.LAST_CONVERSION_TRANS
-                            else
-                                SKKEngine.LAST_CONVERSION_SMALL
+                            if (!isSoftCancel && skkPrefs.useSoftTransKey) SKKEngine.LAST_CONVERSION_TRANS
+                            else SKKEngine.LAST_CONVERSION_SMALL
                         )
 
-                    EnumSet.of(FlickState.LEFT) ->
-                        mService.changeLastChar(SKKEngine.LAST_CONVERSION_DAKUTEN)
-
-                    EnumSet.of(cancelState) ->
-                        mService.handleCancel()
-
-                    EnumSet.of(FlickState.RIGHT) ->
-                        mService.changeLastChar(SKKEngine.LAST_CONVERSION_HANDAKUTEN)
-
-                    EnumSet.of(FlickState.DOWN) -> {
-                        mService.changeLastChar(SKKEngine.LAST_CONVERSION_SHIFT)
-                    }
+                    EnumSet.of(FlickState.LEFT) -> mService.changeLastChar(SKKEngine.LAST_CONVERSION_DAKUTEN)
+                    EnumSet.of(if (isSoftCancel) FlickState.NONE else FlickState.UP) -> mService.handleCancel()
+                    EnumSet.of(FlickState.RIGHT) -> mService.changeLastChar(SKKEngine.LAST_CONVERSION_HANDAKUTEN)
+                    EnumSet.of(FlickState.DOWN) -> mService.changeLastChar(SKKEngine.LAST_CONVERSION_SHIFT)
                 }
             }
 
@@ -980,17 +848,13 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
                 )
 
                 EnumSet.of(FlickState.LEFT) -> mService.processKey(':')
-
                 EnumSet.of(FlickState.UP) -> if (keyboard !== mNumKeyboard) {
-                    keyboard = mNumKeyboard
-                    isHankaku = false
+                    keyboard = mNumKeyboard; isHankaku = false
                 }
 
                 EnumSet.of(FlickState.RIGHT) -> mService.processKey('>')
-
                 EnumSet.of(FlickState.DOWN) -> if (keyboard !== mVoiceKeyboard) {
-                    keyboard = mVoiceKeyboard
-                    isHankaku = false
+                    keyboard = mVoiceKeyboard; isHankaku = false
                 }
             }
 
@@ -1011,7 +875,6 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
                     .also { consumesShift = false }
 
                 EnumSet.of(FlickState.UP) -> mService.processKey(skkPrefs.zenkakuKey)
-
                 EnumSet.of(FlickState.RIGHT) -> mService.symbolCandidates()
                     .also { consumesShift = false }
 
@@ -1067,10 +930,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
         val dialogBuilder = AlertDialog.Builder(context, R.style.Theme_SKK).apply {
             setTitle("${prefix}${leftSymbol} ${rightSymbol}${suffix}")
             setItems(array) { _, which ->
-                val chosen = array[which].substring(
-                    leftSymbol.length,
-                    array[which].length - rightSymbol.length
-                )
+                val chosen = array[which].removeSurrounding(leftSymbol, rightSymbol)
                 mService.commitTextSKK(prefix)
                 if (chosen.isNotEmpty()) {
                     mService.commitTextSKK(chosen)
@@ -1089,22 +949,15 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
     }
 
     private fun extractCommon(list: ArrayList<String>): Triple<String, Array<String>, String> {
-        var commonPrefix = list.last()
-        var commonSuffix = list.last()
-        list.forEach {
-            if (commonPrefix.isNotEmpty()) {
-                commonPrefix = it.commonPrefixWith(commonPrefix)
-            }
-            if (commonSuffix.isNotEmpty()) {
-                commonSuffix = it.commonSuffixWith(commonSuffix)
-            }
-        }
+        var commonPrefix = list.first()
+        list.forEach { commonPrefix = it.commonPrefixWith(commonPrefix) }
 
-        val array = list.map {
-            leftSymbol + it.substring(
-                commonPrefix.length,
-                it.length - commonSuffix.length
-            ) + rightSymbol
+        val remaining = list.map { it.substring(commonPrefix.length) }
+        var commonSuffix = remaining.first()
+        remaining.forEach { commonSuffix = it.commonSuffixWith(commonSuffix) }
+
+        val array = remaining.map {
+            leftSymbol + it.substring(0, it.length - commonSuffix.length) + rightSymbol
         }.toTypedArray()
         return Triple(commonPrefix, array, commonSuffix)
     }

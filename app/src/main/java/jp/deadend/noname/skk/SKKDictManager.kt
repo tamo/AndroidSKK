@@ -103,16 +103,15 @@ class SKKDictManager : AppCompatActivity() {
         // インストール済みかどうかチェック
         fileList()
             .filter { it.startsWith("skk_dict_") && it.endsWith(".db") }
-            .forEach {
-                val entry = it.dropLast(".db".length)
-                val type = entry.drop("skk_dict_".length)
-                val dupIndex = dictList.indexOfFirst { dict ->
-                    entry == dict.value.removePrefix("/")
-                }
-                if (dupIndex == -1) {
-                    dictList.add(Tuple("SKK $type 辞書", entry))
+            .forEach { fullName ->
+                val filename = fullName.removeSuffix(".db")
+                val existing = dictList.find { it.value.removePrefix("/") == filename }
+
+                if (existing == null) {
+                    val type = filename.removePrefix("skk_dict_")
+                    dictList.add(Tuple("SKK $type 辞書", filename))
                 } else {
-                    dictList[dupIndex].value = entry
+                    existing.value = filename
                 }
             }
 
@@ -135,8 +134,9 @@ class SKKDictManager : AppCompatActivity() {
 
     private fun itemClickListener(position: Int) {
         val newList = mDictList.toMutableList()
-        if (newList[position].value.startsWith("/skk_dict_")) {
-            downloadDict(newList[position].value.drop("/skk_dict_".length), position)
+        val item = newList[position]
+        if (item.value.startsWith("/skk_dict_")) {
+            downloadDict(item.value.removePrefix("/skk_dict_"), position)
         } else {
             when (newList[position].value) {
                 getString(R.string.dict_name_user) -> return
@@ -168,13 +168,12 @@ class SKKDictManager : AppCompatActivity() {
     }
 
     override fun onPause() {
-        val dictListString = StringBuilder()
-        mDictList
-            .filter { !it.value.startsWith('/') }
-            .forEach { dictListString.append(it.key, "/", it.value, "/") }
+        val dictListString = mDictList
+            .filterNot { it.value.startsWith('/') }
+            .joinToString("") { "${it.key}/${it.value}/" }
 
-        if (skkPrefs.dictOrder != dictListString.toString()) {
-            skkPrefs.dictOrder = dictListString.toString()
+        if (skkPrefs.dictOrder != dictListString) {
+            skkPrefs.dictOrder = dictListString
 
             if (SKKService.isRunning()) { // まだ起動していないなら不要
                 val intent = Intent(this@SKKDictManager, SKKService::class.java)
@@ -376,10 +375,10 @@ class SKKDictManager : AppCompatActivity() {
         }
 
         val isGzip = name.endsWith(".gz")
-        val nameWithoutGZ = if (isGzip) name.dropLast(3) else name
+        val nameWithoutGZ = name.removeSuffix(".gz")
 
         val dictFileBaseName = if (common && name.startsWith("SKK-JISYO.")) {
-            "skk_dict_" + nameWithoutGZ.substring("SKK-JISYO.".length)
+            "skk_dict_" + nameWithoutGZ.removePrefix("SKK-JISYO.")
         } else {
             "dict_" + nameWithoutGZ.replace(".", "_")
         }

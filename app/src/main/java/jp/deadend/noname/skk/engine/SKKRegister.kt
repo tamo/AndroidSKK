@@ -16,7 +16,7 @@ class SKKRegister(private val engine: SKKEngine) {
     }
 
     internal val isOngoing: Boolean
-        get() = !mStack.isEmpty()
+        get() = mStack.isNotEmpty()
 
     internal fun start(str: String) = engine.apply {
         mStack.addFirst(RegistrationInfo(str, mOkurigana))

@@ -42,12 +42,10 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
     internal fun cycleCompletionCursor(isForward: Boolean) {
         val list = mList ?: return
 
-        if (isForward) mIndex++ else mIndex--
-
-        if (mIndex > list.size - 1) {
-            mIndex = 0
-        } else if (mIndex < 0) {
-            mIndex = list.size - 1
+        mIndex = if (isForward) {
+            (mIndex + 1) % list.size
+        } else {
+            (mIndex - 1 + list.size) % list.size
         }
 
         updateViewCursor()
@@ -59,7 +57,7 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
 
         if (isForward) mIndex++ else mIndex--
 
-        if (mIndex > list.size - 1) {
+        if (mIndex > list.lastIndex) {
             if (mQuery == "emoji" || mQuery == "/きごう") {
                 mIndex = 0
             } else {
@@ -68,7 +66,7 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
             }
         } else if (mIndex < 0) {
             if (mQuery == "emoji" || mQuery == "/きごう") {
-                mIndex = list.size - 1
+                mIndex = list.lastIndex
             } else when (engine.state) {
                 is SKKChooseState -> engine.apply {
                     if (mComposing.isEmpty()) {
@@ -94,7 +92,7 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
                 }
 
                 is SKKNarrowingState -> {
-                    mIndex = list.size - 1
+                    mIndex = list.lastIndex
                 }
             }
         }
@@ -224,14 +222,13 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
     fun pickCompletion(index: Int, unregister: Boolean = false, commit: Boolean = true) {
         var number = Regex("\\d+(\\.\\d+)?").find(engine.mKanjiKey)
         val rawCompletion = mList?.get(index) ?: return
-        val s = rawCompletion.map { ch ->
-            if (ch != '#' || number == null) ch.toString() else {
-                number.let {
-                    number = it.next()
-                    it.value
-                }
-            }
-        }.joinToString("")
+        val s = rawCompletion.replace(Regex("#")) {
+            number?.let { n ->
+                val v = n.value
+                number = n.next()
+                v
+            } ?: "#"
+        }
         dLog("pickCompletion s=$s from $mList (unregister=$unregister)")
         val c = mCompletionList?.get(index) ?: return
         dLog("pickCompletion c=$c from $mCompletionList")
@@ -443,18 +440,18 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
                 ensureCont() // 短時間に連続で実行されないよう最新のみ有効に
 
                 val uniqueSet = set.distinctBy { it.second }
-                uniqueSet.unzip().let {
-                    mCompletionList = it.first
-                    mList = it.second
-                }
+                val (completionList, list) = uniqueSet.unzip()
+                mCompletionList = completionList
+                mList = list
 
                 mQuery = str
                 mIndex = 0
-                mList?.let {
-                    val list = if (str == "emoji") it.map { s -> removeAnnotation(s) } else it
+                mList?.let { rawList ->
+                    val displayList =
+                        if (str == "emoji") rawList.map { removeAnnotation(it) } else rawList
                     withContext(Dispatchers.Main) {
                         service.setCandidates(
-                            list, str,
+                            displayList, str,
                             if (str == "emoji") skkPrefs.candidatesEmojiLines
                             else skkPrefs.candidatesNormalLines
                         )
@@ -504,10 +501,13 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
 
             else -> dict
         }
+        val keys = dictionary.findKeys(scope, key)
         if (engine.kanaState is SKKHiraganaState) {
-            target.addAll(dictionary.findKeys(scope, key))
-        } else dictionary.findKeys(scope, key).forEach { pair ->
-            target.add(pair.first to hiragana2katakana(pair.second, reversed = true).orEmpty())
+            target.addAll(keys)
+        } else {
+            keys.mapTo(target) { (first, second) ->
+                first to hiragana2katakana(second, reversed = true).orEmpty()
+            }
         }
     }
 }

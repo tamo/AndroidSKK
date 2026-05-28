@@ -57,33 +57,26 @@ class SKKUserDictionary private constructor(
         getEntry(rawKey)?.candidates?.distinct()
 
     fun addEntry(key: String, value: String, okurigana: String) {
-        val oldVal = mBTree.let { if (it == null) return else it.find(key) }
+        val oldVal = mBTree?.find(key) ?: return
 
-        val newVal = oldVal?.let { getEntry(key, it) }.let { entry ->
-            if (entry == null) return@let "/$value/" +
-                    if (okurigana.isNotEmpty()) "[$okurigana/$value/]/" else ""
-
+        val newVal = getEntry(key, oldVal)?.let { entry ->
             val candidates =
                 listOf(value)
                     .plus(entry.candidates)
-                    .distinctBy { candidate ->
-                        candidate.takeWhile { it != ';' } // 注釈は無視して一致判定する
-                    }
+                    .distinctBy { candidate -> removeAnnotation(candidate) }
 
             val okuriganaBlocks =
-                (if (okurigana.isEmpty()) listOf() else listOf(okurigana to value))
+                (if (okurigana.isEmpty()) emptyList() else listOf(okurigana to value))
                     .plus(entry.okuriganaBlocks)
-                    .distinctBy { pair ->
-                        pair.first to pair.second.takeWhile { it != ';' }
-                    }
+                    .distinctBy { (okuri, kanji) -> okuri to removeAnnotation(kanji) }
 
-            candidates.fold("/") { acc, str -> "$acc$str/" } +
-                    okuriganaBlocks.fold("") { acc, pair -> "$acc[${pair.first}/${pair.second}/]/" }
-        }
+            candidates.joinToString("/", prefix = "/", postfix = "/") +
+                    okuriganaBlocks.joinToString("") { (okuri, kanji) -> "[$okuri/$kanji/]/" }
+        } ?: ("/$value/" + if (okurigana.isNotEmpty()) "[$okurigana/$value/]/" else "")
 
         safeRun {
             mOldKey = key
-            mOldValue = oldVal.orEmpty()
+            mOldValue = oldVal
             mBTree?.insert(key, newVal, true)
             mRecMan?.commit()
         }

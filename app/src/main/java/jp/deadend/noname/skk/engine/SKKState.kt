@@ -1,6 +1,6 @@
 package jp.deadend.noname.skk.engine
 
-@Suppress("SameReturnValue")
+@Suppress("SameReturnValue", "EmptyMethod")
 interface SKKState {
     val isTransient: Boolean
     val icon: Int

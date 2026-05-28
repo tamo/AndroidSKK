@@ -117,12 +117,11 @@ class SKKEngine(
     internal fun handleKanaKey() =
         state.handleKanaKey(this)
 
-    private fun handleKatakanaKey(): Boolean {
+    private fun handleKatakanaKey(): Boolean = true.also {
         changeState(
             if (kanaState is SKKHiraganaState) SKKKatakanaState
             else SKKHiraganaState
         )
-        return true
     }
 
     internal fun handleASCIIKey(): Boolean {
@@ -139,9 +138,8 @@ class SKKEngine(
         return false
     }
 
-    private fun handleZenkakuKey(): Boolean {
+    private fun handleZenkakuKey(): Boolean = true.also {
         changeState(SKKZenkakuState)
-        return true
     }
 
     private fun handleAbbrevKey(): Boolean {
@@ -152,9 +150,8 @@ class SKKEngine(
         return false
     }
 
-    private fun handleHankakuKanaKey(): Boolean {
+    private fun handleHankakuKanaKey(): Boolean = true.also {
         changeState(SKKHanKanaState)
-        return true
     }
 
     // Backspace ではなくジェスチャー等で「戻る」操作
@@ -215,13 +212,11 @@ class SKKEngine(
                 changeState(kanaState)
                 return true
             }
-            mRegister.mStack.peekFirst()?.entry.let { firstEntry ->
-                if (firstEntry == null) return state.isTransient
-                if (firstEntry.isNotEmpty()) {
-                    firstEntry.deleteCharAt(firstEntry.lastIndex)
-                    setComposingTextSKK("")
-                } // else 何もしない
-            }
+            val firstEntry = mRegister.mStack.peekFirst()?.entry ?: return state.isTransient
+            if (firstEntry.isNotEmpty()) {
+                firstEntry.deleteCharAt(firstEntry.lastIndex)
+                setComposingTextSKK("")
+            } // else 何もしない
         }
 
         if (mComposing.isNotEmpty()) {
@@ -244,15 +239,13 @@ class SKKEngine(
     internal fun commitTextSKK(text: CharSequence) {
         val ic = mService.currentInputConnection ?: return
 
-        mRegister.mStack.peekFirst()?.entry.let { firstEntry ->
-            if (firstEntry == null) {
-                ic.commitText(text, 1)
-                mComposingText.setLength(0)
-                return
-            }
-            firstEntry.append(text)
-            setComposingTextSKK("")
+        val firstEntry = mRegister.mStack.peekFirst()?.entry ?: run {
+            ic.commitText(text, 1)
+            mComposingText.setLength(0)
+            return
         }
+        firstEntry.append(text)
+        setComposingTextSKK("")
     }
 
     internal fun resetOnStartInput() {
@@ -565,7 +558,7 @@ class SKKEngine(
     internal fun getPrefixASCII(): String {
         val ic = mService.currentInputConnection ?: return ""
         val tbc = ic.getTextBeforeCursor(ASCII_WORD_MAX_LENGTH, 0) ?: return ""
-        return tbc.split(Regex("[^a-zA-Z0-9]")).last()
+        return Regex("[a-zA-Z0-9]*$").find(tbc)?.value.orEmpty()
     }
 
     internal fun googleTransliterate() {
@@ -583,7 +576,7 @@ class SKKEngine(
 
         changeState(SKKPreeditState)
         val query = if (mKanjiKey.isNotEmpty() && isAlphabet(mKanjiKey.last().code)) {
-            val trimmedKanjiKey = mKanjiKey.substring(0, mKanjiKey.lastIndex)
+            val trimmedKanjiKey = mKanjiKey.dropLast(1)
             setComposingTextSKK("${trimmedKanjiKey}*${mOkurigana}")
             "${trimmedKanjiKey}${mOkurigana}"
         } else {
@@ -602,15 +595,11 @@ class SKKEngine(
                         if (jsonArray.length() == 0) {
                             throw JSONException("no array")
                         }
-                        var i = 0
-                        while (i < jsonArray.length()) {
-                            val item = StringBuilder(jsonArray.get(i).toString())
-                            if (mOkurigana.isNotEmpty() && item.length > mOkurigana.length) {
-                                item.deleteRange(item.length - mOkurigana.length, item.length)
-                            } // 本当は合致しているか確認するべきかもしれない
-                            list.add(item.toString())
-                            i++
+                        val candidates = (0 until jsonArray.length()).map { index ->
+                            val item = jsonArray.get(index).toString()
+                            if (mOkurigana.isNotEmpty()) item.removeSuffix(mOkurigana) else item
                         }
+                        list.addAll(candidates)
                     } catch (e: JSONException) {
                         dLog(" googleTransliterate JSON error: ${e.message}")
                         list.addAll(

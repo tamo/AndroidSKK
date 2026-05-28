@@ -457,22 +457,16 @@ open class KeyboardView @JvmOverloads constructor(
                         }.map { it * labelZoom }
                         val sizeDefault = mPaint.textSize
                         val lineScale = 1.05f // 行間
+                        val lineHeights = sizeFactors.map { it * sizeDefault }
+                        val totalHeight = lineHeights.sum()
+                        val centerX = (key.width + mPadding.left - mPadding.right) / 2f
+                        val centerY = (key.height + mPadding.top - mPadding.bottom) / 2f
+
                         lines.forEachIndexed { i, line ->
-                            fun drawText(t: String, descent: Float) {
-                                canvas.drawText(
-                                    t,
-                                    (key.width + mPadding.left - mPadding.right) / 2f,
-                                    (key.height + mPadding.top - mPadding.bottom) / 2f + lineScale * (
-                                            ((0..<numLines).fold(0f) { s, j ->
-                                                s + sizeDefault * sizeFactors[j]
-                                            } - descent) / 2f -
-                                                    (0..<numLines - 1 - i).fold(0f) { s, j ->
-                                                        s + sizeDefault * sizeFactors[j]
-                                                    }
-                                            ),
-                                    mPaint
-                                )
-                            }
+                            val offsetSum = lineHeights.take(numLines - 1 - i).sum()
+                            val yOffset =
+                                lineScale * ((totalHeight - mPaint.descent()) / 2f - offsetSum)
+                            val drawY = centerY + yOffset
 
                             mPaint.textSize = sizeDefault * sizeFactors[i]
                             mPaint.typeface = if (i.toFloat() == (numLines - 1) / 2f) {
@@ -482,22 +476,21 @@ open class KeyboardView @JvmOverloads constructor(
                             }
 
                             if (isGodanKey && i == 1) {
-                                val descent = mPaint.descent()
                                 val centerText = line.drop(1).dropLast(1)
-                                drawText(centerText, descent)
+                                canvas.drawText(centerText, centerX, drawY, mPaint)
 
                                 // 左右フリックのキー
                                 mPaint.typeface = Typeface.DEFAULT
                                 mPaint.textSize *= .6f
-                                drawText(
+                                canvas.drawText(
                                     "${line.first()}${
                                         centerText.filter { it.code < 0x7F }.length.let { ascii ->
                                             "　".repeat(1 + ceil(centerText.length - ascii * 0.5).toInt())
                                         }
-                                    }${line.last()}", descent
+                                    }${line.last()}", centerX, drawY, mPaint
                                 )
                             } else {
-                                drawText(line, mPaint.descent())
+                                canvas.drawText(line, centerX, drawY, mPaint)
                             }
                         }
 
