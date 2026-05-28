@@ -640,6 +640,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
     }
 
     private fun release() {
+        var consumesShift = true
         when (mLastPressedKey) {
             // onKey で消費済み
             Keyboard.KEYCODE_DELETE, Keyboard.KEYCODE_CAPSLOCK -> {}
@@ -660,6 +661,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                     }
                 }
                 onSetShifted(isShifted)
+                consumesShift = false
             }
 
             KEYCODE_GODAN_ENTER -> if (!mService.handleEnter()) mService.pressEnter()
@@ -705,7 +707,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
             KEYCODE_GODAN_CHAR_L -> {
                 val state = mService.engineState
                 when {
-                    state is SKKAbbrevState -> mService.processKey(skkPrefs.kanaKey) // かな入力(KanjiState)
+                    state is SKKAbbrevState -> mService.processKey(skkPrefs.kanaKey) // かな入力(PreeditState)
                     !state.isJapanese -> mService.handleKanaKey()
                     else -> mService.processKey(if (isShifted) skkPrefs.zenkakuKey else skkPrefs.asciiKey)
                 }
@@ -813,8 +815,8 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                         mService.processKey(skkPrefs.hankakuKanaKey)
                     }
 
-                    "記号" -> mService.symbolCandidates(isShifted)
-                    "絵☻" -> mService.emojiCandidates(isShifted)
+                    "記号" -> mService.symbolCandidates().also { consumesShift = false }
+                    "絵☻" -> mService.emojiCandidates().also { consumesShift = false }
                     else -> if (
                         popupText.length == 2 &&
                         popupText[0] in "あいうえおアイウエオ"
@@ -824,9 +826,9 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                                 'A', 'I', 'U', 'E', 'O' -> {
                                     val c = if (!isShifted) Character.toLowerCase(vowel.code)
                                     else vowel.code
-                                    mService.suspendSuggestions()
+                                    mService.suspendCompletion()
                                     mService.processKey(encodeKey(c))
-                                    mService.resumeSuggestions()
+                                    mService.resumeCompletion()
                                     // 前の processKey で▼モードになっていたら次で確定してしまうので止まる
                                     if (!mService.engineState.hasCandidates) when (popupText[1]) {
                                         'っ', 'ッ' -> "xtu"
@@ -844,7 +846,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
             }
         }
 
-        if (mLastPressedKey != Keyboard.KEYCODE_SHIFT) {
+        if (consumesShift) {
             if (!isCapsLocked) isShifted = false
             onSetShifted(isShifted)
         }

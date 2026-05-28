@@ -132,7 +132,7 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
 
     override fun onRelease(primaryCode: Int) {
         mSpacePressed = false
-        mService.resumeSuggestions()
+        mService.resumeCompletion()
 
         // シフトで up と none が交換される
         val flickNone = if (isShifted) FLICK_UP else FLICK_NONE
@@ -203,7 +203,7 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
 
             else -> {
                 if (primaryCode == ' '.code && mSpaceFlicked) {
-                    mService.updateSuggestionsASCII()
+                    mService.completeASCII()
                     return
                 }
 
@@ -257,7 +257,7 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
         mSpacePressed = (primaryCode == ' '.code)
         mSpaceFlicked = false
         if (mSpacePressed) {
-            mService.suspendSuggestions()
+            mService.suspendCompletion()
         }
     }
 

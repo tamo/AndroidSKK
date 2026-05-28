@@ -48,10 +48,10 @@ class SKKPrefs(context: Context) {
             )
         }
 
-    var suggestOkuri: Boolean
-        get() = prefs.getBoolean(res.getString(R.string.pref_suggest_okuri), false)
+    var completeOkuri: Boolean
+        get() = prefs.getBoolean(res.getString(R.string.pref_complete_okuri), false)
         set(value) = prefs.edit {
-            putBoolean(res.getString(R.string.pref_suggest_okuri), value)
+            putBoolean(res.getString(R.string.pref_complete_okuri), value)
         }
     var candidatesNormalLines: Int
         get() = prefs.getInt(res.getString(R.string.pref_candidates_normal_lines), 2)

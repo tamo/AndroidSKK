@@ -48,7 +48,7 @@ import jp.deadend.noname.skk.engine.SKKEmojiState
 import jp.deadend.noname.skk.engine.SKKEngine
 import jp.deadend.noname.skk.engine.SKKHanKanaState
 import jp.deadend.noname.skk.engine.SKKHiraganaState
-import jp.deadend.noname.skk.engine.SKKKanjiState
+import jp.deadend.noname.skk.engine.SKKPreeditState
 import jp.deadend.noname.skk.engine.SKKKatakanaState
 import jp.deadend.noname.skk.engine.SKKState
 import jp.deadend.noname.skk.engine.SKKZenkakuState
@@ -869,7 +869,7 @@ class SKKService : InputMethodService() {
     override fun onUpdateEditorToolType(toolType: Int) {
         dLog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
         super.onUpdateEditorToolType(toolType)
-        updateSuggestionsASCII()
+        completeASCII()
     }
 
     override fun onUpdateSelection(
@@ -889,7 +889,7 @@ class SKKService : InputMethodService() {
             candidatesEnd
         )
         // 文字列の途中をタップした場合などに補完する (state == ASCII チェックは内部でしている)
-        updateSuggestionsASCII()
+        completeASCII()
     }
 
     /**
@@ -987,7 +987,7 @@ class SKKService : InputMethodService() {
 
         // SandS: ASCII モードでのスペース＆修飾処理（早期リターンより前に置く）
         if (!mStickyShift && mSandS && skkPrefs.sandSInAscii &&
-            engineState is SKKASCIIState && !mEngine.isRegistering
+            engineState is SKKASCIIState && !mEngine.mRegister.isOngoing
         ) {
             if (keyCode == KeyEvent.KEYCODE_SPACE) {
                 mSpacePressed = true
@@ -1003,7 +1003,7 @@ class SKKService : InputMethodService() {
                 }
                 mSandSUsed = true
                 val result = super.onKeyDown(keyCode, shiftedEvent)
-                updateSuggestionsASCII()
+                completeASCII()
                 return result
             }
         }
@@ -1013,13 +1013,13 @@ class SKKService : InputMethodService() {
             return handleCancel()
         }
 
-        if (keyCode == KeyEvent.KEYCODE_TAB && engineState.canSuggest) {
+        if (keyCode == KeyEvent.KEYCODE_TAB && engineState.canComplete) {
             val isShifted = when {
                 mStickyShift -> mShiftKey.useState() != 0
                 mSandS && mSpacePressed -> true.also { mSandSUsed = true }
                 else -> event.isShiftPressed
             }
-            mEngine.chooseAdjacentSuggestion(!isShifted)
+            mEngine.mCandidates.cycleCompletionCursor(!isShifted)
             return true
         }
 
@@ -1111,12 +1111,14 @@ class SKKService : InputMethodService() {
 
     fun googleTransliterate() = mEngine.googleTransliterate()
 
-    fun symbolCandidates(sequential: Boolean) = mEngine.symbolCandidates(sequential)
+    fun symbolCandidates() = mEngine.symbolCandidates()
 
-    fun emojiCandidates(sequential: Boolean) = mEngine.emojiCandidates(sequential)
+    fun emojiCandidates() = mEngine.emojiCandidates()
 
-    fun pickCandidatesViewManually(index: Int, unregister: Boolean = false) =
-        mEngine.pickCandidatesViewManually(index, unregister)
+    fun pickCandidatesViewManually(index: Int, unregister: Boolean = false) {
+        val sequential = mInputView?.isShifted == true
+        mEngine.pickCandidatesViewManually(index, unregister, sequential)
+    }
 
     fun handleBackspace(): Boolean {
         if (mStickyShift) mShiftKey.useState()
@@ -1141,13 +1143,13 @@ class SKKService : InputMethodService() {
         when {
             state.hasCandidates -> {
                 when (keyCode) {
-                    KeyEvent.KEYCODE_DPAD_LEFT -> mEngine.chooseAdjacentCandidate(false)
-                    KeyEvent.KEYCODE_DPAD_RIGHT -> mEngine.chooseAdjacentCandidate(true)
+                    KeyEvent.KEYCODE_DPAD_LEFT -> mEngine.moveCandidateCursor(false)
+                    KeyEvent.KEYCODE_DPAD_RIGHT -> mEngine.moveCandidateCursor(true)
                 }
                 return true
             }
 
-            mEngine.isRegistering -> return true
+            mEngine.mRegister.isOngoing -> return true
 
             mEngine.state.isTransient -> return true
         }
@@ -1166,7 +1168,7 @@ class SKKService : InputMethodService() {
             KeyEvent.KEYCODE_DPAD_RIGHT -> if (ic.getTextAfterCursor(1, 0).isNullOrEmpty()) return
         }
         sendDownUpKeyEvents(keyEventCode)
-        updateSuggestionsASCII()
+        completeASCII()
     }
 
     fun pressDel() {
@@ -1181,13 +1183,13 @@ class SKKService : InputMethodService() {
         } else {
             ic.commitText("", 1)
         }
-        updateSuggestionsASCII()
+        completeASCII()
     }
 
     fun pressSearch() {
         val ic = currentInputConnection ?: return
         ic.performEditorAction(EditorInfo.IME_ACTION_SEARCH)
-        updateSuggestionsASCII()
+        completeASCII()
     }
 
     fun pressEnter() {
@@ -1325,11 +1327,11 @@ class SKKService : InputMethodService() {
         mIsRecording = true
     }
 
-    fun updateSuggestionsASCII() = mEngine.updateSuggestionsASCII()
+    fun completeASCII() = mEngine.mCandidates.completeASCII()
 
-    fun suspendSuggestions() = mEngine.suspendSuggestions()
+    fun suspendCompletion() = mEngine.mCandidates.suspendCompletion()
 
-    fun resumeSuggestions() = mEngine.resumeSuggestions()
+    fun resumeCompletion() = mEngine.mCandidates.resumeCompletion()
 
     fun setCandidates(list: List<String>?, kanjiKey: String, viewLines: Int) {
         mCandidatesViewContainer.apply {
@@ -1344,7 +1346,7 @@ class SKKService : InputMethodService() {
         mCandidatesView.setContents(list, kanjiKey)
     }
 
-    fun requestChooseCandidate(index: Int) = mCandidatesView.choose(index)
+    fun setCandidatesCursor(index: Int) = mCandidatesView.choose(index)
 
     fun clearCandidatesView() = setCandidates(null, "", 0)
 
@@ -1383,7 +1385,7 @@ class SKKService : InputMethodService() {
                 // 他の場合は基本的に state==engineState のはずなので、どちらでも構わない
                 SKKASCIIState -> mQwertyInputView?.setKeyState(engineState)
 
-                SKKKanjiState, SKKHiraganaState, SKKKatakanaState, SKKHanKanaState -> when {
+                SKKPreeditState, SKKHiraganaState, SKKKatakanaState, SKKHanKanaState -> when {
                     !skkPrefs.preferFlick -> mQwertyInputView
                     skkPrefs.preferGodan -> mGodanInputView
                     else -> mFlickJPInputView

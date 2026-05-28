@@ -53,20 +53,20 @@ object SKKNarrowingState : SKKConfirmingState {
                 // このモードでは ' ' も 'X' も利かない
                 mHint.append(Char(charCode))
                 mComposing.setLength(0)
-                narrowCandidates(mHint.toString())
+                mCandidates.narrow(mHint.toString())
                 return
             }
 
             when (charCode) {
                 ' '.code -> {
                     mSpaceUsed = true
-                    chooseAdjacentCandidate(true)
+                    moveCandidateCursor(true)
                 }
 
                 'X'.code -> pickCurrentCandidate(unregister = true)
 
                 else -> if (mSpaceUsed && keyCode == 'x'.code) {
-                    chooseAdjacentCandidate(false)
+                    moveCandidateCursor(false)
                 } else {
                     SKKHiraganaState
                         .processKana(
@@ -76,7 +76,7 @@ object SKKNarrowingState : SKKConfirmingState {
                         ) { _, hiraganaChar ->
                             mHint.append(hiraganaChar)
                             mComposing.setLength(0)
-                            narrowCandidates(mHint.toString())
+                            mCandidates.narrow(mHint.toString())
                         }
                 }
             }
@@ -87,14 +87,14 @@ object SKKNarrowingState : SKKConfirmingState {
         super.afterBackspace(context)
         context.apply {
             if (mHint.isEmpty()) {
-                conversionStart(context.mKanjiKey)
+                startConversion(context.mKanjiKey)
             } else {
                 if (mComposing.isNotEmpty()) {
                     mComposing.deleteCharAt(mComposing.lastIndex)
-                    setCurrentCandidateToComposing()
+                    mCandidates.updateComposingText()
                 } else {
                     mHint.deleteCharAt(mHint.lastIndex)
-                    narrowCandidates(mHint.toString())
+                    mCandidates.narrow(mHint.toString())
                 }
             }
         }
@@ -102,7 +102,7 @@ object SKKNarrowingState : SKKConfirmingState {
 
     override fun handleCancel(context: SKKEngine): Boolean {
         super.handleCancel(context)
-        context.conversionStart(context.mKanjiKey)
+        context.startConversion(context.mKanjiKey)
         return true
     }
 

@@ -9,10 +9,10 @@ import jp.deadend.noname.skk.skkPrefs
 import jp.deadend.noname.skk.zenkaku2hankaku
 
 // 漢字変換のためのひらがな入力中(▽モード)
-object SKKKanjiState : SKKState {
+object SKKPreeditState : SKKState {
     override val isTransient = true
     override val icon = 0
-    override val canSuggest = true
+    override val canComplete = true
     override val prefix = "▽"
 
     override fun handleKanaKey(context: SKKEngine) {
@@ -89,7 +89,7 @@ object SKKKanjiState : SKKState {
                     }
                     if (codeLower == '>'.code) mKanjiKey.append('>') // 接頭辞入力
                     mComposing.setLength(0)
-                    conversionStart(mKanjiKey)
+                    startConversion(mKanjiKey)
                 }
 
                 else -> {
@@ -103,7 +103,7 @@ object SKKKanjiState : SKKState {
                             mOkurigana = RomajiConverter.convert(mComposing.toString())
                             mKanjiKey.append(mComposing[0]) //送りありの場合子音文字追加
                             mComposing.setLength(0) // 送りがなに消費されたはず
-                            conversionStart(mKanjiKey)
+                            startConversion(mKanjiKey)
                         } else { // それ以外は送り仮名モード
                             if (!RomajiConverter.isIntermediateRomaji(
                                     "${mComposing}${Char(codeLower)}"
@@ -154,7 +154,7 @@ object SKKKanjiState : SKKState {
                             }
                             setComposingTextSKK("${mKanjiKey}${mComposing}")
                         }
-                        updateSuggestions(mKanjiKey.toString())
+                        complete(mKanjiKey.toString())
                     }
                 }
             }
@@ -164,7 +164,7 @@ object SKKKanjiState : SKKState {
     override fun afterBackspace(context: SKKEngine) {
         context.apply {
             setComposingTextSKK("${mKanjiKey}${mComposing}")
-            updateSuggestions(mKanjiKey.toString())
+            complete(mKanjiKey.toString())
         }
     }
 

@@ -10,7 +10,7 @@ object SKKAbbrevState : SKKState {
     override val isTransient = true
     override val icon = R.drawable.ic_abbrev
     override val isJapanese = false
-    override val canSuggest = true
+    override val canComplete = true
     override val prefix = "▽"
 
     override fun handleKanaKey(context: SKKEngine) {
@@ -32,19 +32,19 @@ object SKKAbbrevState : SKKState {
                 }
 
                 skkPrefs.kanaKey -> {
-                    changeState(SKKKanjiState)
+                    changeState(SKKPreeditState)
                     return
                 }
             }
 
             // スペースで変換するかそのままComposingに積む
             when (charCode) {
-                ' '.code -> if (mKanjiKey.isNotEmpty()) conversionStart(mKanjiKey)
+                ' '.code -> if (mKanjiKey.isNotEmpty()) startConversion(mKanjiKey)
 
                 else -> {
                     mKanjiKey.append(Char(keyCode))
                     setComposingTextSKK(mKanjiKey)
-                    updateSuggestions(mKanjiKey.toString())
+                    complete(mKanjiKey.toString())
                 }
             }
         }
@@ -53,7 +53,7 @@ object SKKAbbrevState : SKKState {
     override fun afterBackspace(context: SKKEngine) {
         context.apply {
             setComposingTextSKK(mKanjiKey)
-            updateSuggestions(mKanjiKey.toString())
+            complete(mKanjiKey.toString())
         }
     }
 

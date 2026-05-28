@@ -39,13 +39,13 @@ object SKKChooseState : SKKConfirmingState {
                 }
             }
             when (charCode) {
-                ' '.code -> chooseAdjacentCandidate(true)
-                'x'.code -> chooseAdjacentCandidate(false)
+                ' '.code -> moveCandidateCursor(true)
+                'x'.code -> moveCandidateCursor(false)
                 'X'.code -> pickCurrentCandidate(unregister = true)
                 '>'.code -> {
                     // 接尾辞入力
                     pickCurrentCandidate()
-                    changeState(SKKKanjiState) // Abbrevキーボードのことは無視
+                    changeState(SKKPreeditState) // Abbrevキーボードのことは無視
                     mKanjiKey.append('>')
                     setComposingTextSKK(mKanjiKey)
                 }
@@ -79,7 +79,7 @@ object SKKChooseState : SKKConfirmingState {
                 } else { // 漢字変換中
                     mComposing.setLength(0) // 最初から空のはずだけど念のため
                     mOkurigana = "" // これは入っている可能性がある
-                    changeState(SKKKanjiState) // Abbrevの可能性はない
+                    changeState(SKKPreeditState) // Abbrevの可能性はない
                     val maybeComposing = mKanjiKey.lastOrNull() ?: Char(0)
                     if (isAlphabet(maybeComposing.code)) {
                         mKanjiKey.deleteCharAt(mKanjiKey.lastIndex) // 送りがなのアルファベットを削除
@@ -89,7 +89,7 @@ object SKKChooseState : SKKConfirmingState {
                     }
                 }
                 setComposingTextSKK("${mKanjiKey}${mComposing}")
-                updateSuggestions(mKanjiKey.toString())
+                complete(mKanjiKey.toString())
             }
         }
         return true

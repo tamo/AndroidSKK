@@ -41,14 +41,14 @@ object SKKHiraganaState : SKKState {
                 if (hiraganaChar != null) commitFunc(context, hiraganaChar)
             }
             if (isUpper) {
-                // 漢字変換候補入力の開始。KanjiModeへの移行
-                // すでに composing がある場合はそこから KanjiMode だったものとする (mA = Ma)
-                changeState(SKKKanjiState)
-                // Q で KanjiState 開始
+                // 漢字変換候補入力の開始。PreeditModeへの移行
+                // すでに composing がある場合はそこから PreeditMode だったものとする (mA = Ma)
+                changeState(SKKPreeditState)
+                // Q で PreeditState 開始
                 if (!skkPrefs.isModeKey(encodeKey(codeLower))) {
-                    SKKKanjiState.processKey(context, codeLower)
+                    SKKPreeditState.processKey(context, codeLower)
                 } else {
-                    SKKKanjiState.afterBackspace(context) // 画面の更新
+                    SKKPreeditState.afterBackspace(context) // 画面の更新
                 }
             } else {
                 mComposing.append(Char(codeLower))
@@ -92,8 +92,8 @@ object SKKHiraganaState : SKKState {
 
     override fun handleCancel(context: SKKEngine): Boolean {
         context.apply {
-            if (isRegistering) {
-                cancelRegister()
+            if (mRegister.isOngoing) {
+                mRegister.cancel()
                 return true
             } else {
                 return reConvert()

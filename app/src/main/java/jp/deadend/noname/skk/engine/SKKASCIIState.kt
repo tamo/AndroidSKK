@@ -7,7 +7,7 @@ object SKKASCIIState : SKKConfirmingState {
     override val isTransient = false
     override val icon = 0
     override val isJapanese = false
-    override val canSuggest = true
+    override val canComplete = true
     override var pendingLambda: (() -> Unit)? = null
     override var oldComposingText = ""
 
@@ -21,12 +21,12 @@ object SKKASCIIState : SKKConfirmingState {
         val (lower, shifted) = decodeKey(keyCode)
         val c = if (shifted) Character.toUpperCase(lower) else lower
         context.commitTextSKK(Char(c).toString())
-        context.updateSuggestionsASCII()
+        context.completeASCII()
     }
 
     override fun afterBackspace(context: SKKEngine) {
         super.afterBackspace(context)
-        context.updateSuggestionsASCII()
+        context.completeASCII()
     }
 
     override fun handleCancel(context: SKKEngine): Boolean {

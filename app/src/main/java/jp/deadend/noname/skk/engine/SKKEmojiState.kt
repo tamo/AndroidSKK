@@ -7,7 +7,7 @@ object SKKEmojiState : SKKConfirmingState {
     override val isTransient = true
     override val icon = 0
     override val isJapanese = false
-    override val canSuggest = false
+    override val canComplete = false
     override val hasCandidates = true
     override var pendingLambda: (() -> Unit)? = null
     override var oldComposingText = ""
@@ -22,8 +22,8 @@ object SKKEmojiState : SKKConfirmingState {
         val (lower, shifted) = decodeKey(keyCode)
         val charCode = if (shifted) Character.toUpperCase(lower) else lower
         when (charCode) {
-            ' '.code -> context.chooseAdjacentCandidate(true)
-            'x'.code -> context.chooseAdjacentCandidate(false)
+            ' '.code -> context.moveCandidateCursor(true)
+            'x'.code -> context.moveCandidateCursor(false)
             'X'.code -> context.pickCurrentCandidate(unregister = true)
             ':'.code -> {
                 context.changeState(SKKNarrowingState)

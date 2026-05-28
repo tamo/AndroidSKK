@@ -819,7 +819,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
             else -> return
         }.code
 
-        mService.suspendSuggestions()
+        mService.suspendCompletion()
         if (isShifted) {
             mService.processKey(encodeKey(Character.toUpperCase(consonant)))
         } else {
@@ -831,12 +831,12 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
                 || consonant == 'y'.code && (vowel == 'a'.code || vowel == 'u'.code || vowel == 'o'.code)
             ) {
                 mService.processKey(vowel)
-                mService.resumeSuggestions()
+                mService.resumeCompletion()
                 mService.changeLastChar(SKKEngine.LAST_CONVERSION_SMALL)
                 return
             }
         }
-        mService.resumeSuggestions()
+        mService.resumeCompletion()
         mService.processKey(vowel)
     }
 
@@ -934,6 +934,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
     }
 
     private fun release() {
+        var consumesShift = true
         when (mLastPressedKey) {
             // repeatable のフリック
             KEYCODE_FLICK_JP_SPACE -> if (mFlickState == EnumSet.of(FlickState.UP))
@@ -942,6 +943,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
             Keyboard.KEYCODE_SHIFT -> {
                 isShifted = !isShifted
                 onSetShifted()
+                consumesShift = false
             }
 
             KEYCODE_FLICK_JP_ENTER -> if (!mService.handleEnter()) mService.pressEnter()
@@ -1005,9 +1007,14 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
                     if (isShifted) skkPrefs.abbrevKey else skkPrefs.asciiKey
                 )
 
-                EnumSet.of(FlickState.LEFT) -> mService.emojiCandidates(isShifted)
+                EnumSet.of(FlickState.LEFT) -> mService.emojiCandidates()
+                    .also { consumesShift = false }
+
                 EnumSet.of(FlickState.UP) -> mService.processKey(skkPrefs.zenkakuKey)
-                EnumSet.of(FlickState.RIGHT) -> mService.symbolCandidates(isShifted)
+
+                EnumSet.of(FlickState.RIGHT) -> mService.symbolCandidates()
+                    .also { consumesShift = false }
+
                 EnumSet.of(FlickState.DOWN) -> mService.changeSoftKeyboard(SKKASCIIState)
             }
 
@@ -1023,7 +1030,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
                 -> processFlickForLetter(mLastPressedKey, mFlickState)
         }
 
-        if (mLastPressedKey != Keyboard.KEYCODE_SHIFT) {
+        if (consumesShift) {
             isShifted = false
             onSetShifted()
         }

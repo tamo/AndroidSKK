@@ -85,7 +85,7 @@
     <string name="pref_candidates_min_height" translatable="false">PrefKeyCandidatesMinHeight</string>
     <string name="pref_fuzzy_suggestion" translatable="false">PrefKeyFuzzySuggestion</string>
     <string name="pref_fuzzier_suggestion" translatable="false">PrefKeyFuzzierSuggestion</string>
-    <string name="pref_suggest_okuri" translatable="false">PrefKeySuggestOkuri</string>
+    <string name="pref_complete_okuri" translatable="false">PrefKeyCompleteOkuri</string>
     <string name="pref_candidates_normal_lines" translatable="false">PrefKeyCandidatesNormalLines</string>
     <string name="pref_candidates_emoji_lines" translatable="false">PrefKeyCandidatesEmojiLines</string>
     <string name="pref_use_candidates_view" translatable="false">PrefKeyUseCandidatesView</string>
