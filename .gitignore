@@ -19,6 +19,7 @@ local.properties
 /app/release
 /app/.project
 /app/.classpath
+/app/src/test/dict
 .externalNativeBuild
 .kotlin/
 
