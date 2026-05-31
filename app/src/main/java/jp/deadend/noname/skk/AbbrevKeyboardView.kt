@@ -16,7 +16,7 @@ class AbbrevKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
 
     override fun setService(service: SKKService) {
         super.setService(service)
-        keyboard = Keyboard(context, R.xml.abbrev, mService.mScreenWidth, mService.mScreenHeight)
+        keyboard = Keyboard(context, R.xml.abbrev, mService.mRootWidth, mService.mScreenHeight)
         onKeyboardActionListener = this
         setKeyState(SKKAbbrevState)
     }

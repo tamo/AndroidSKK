@@ -90,6 +90,7 @@
     <string name="pref_candidates_emoji_lines" translatable="false">PrefKeyCandidatesEmojiLines</string>
     <string name="pref_use_candidates_view" translatable="false">PrefKeyUseCandidatesView</string>
     <string name="pref_flick_sensitivity" translatable="false">PrefKeyFlickSensitivity</string>
+    <string name="pref_gesture_insets" translatable="false">PrefKeyGestureInsets</string>
     <string name="pref_theme" translatable="false">PrefKeyTheme</string>
     <string name="pref_use_inset" translatable="false">PrefKeyInset</string>
     <string name="pref_ignore_high_contrast" translatable="false">PrefKeyOriginalColor</string>

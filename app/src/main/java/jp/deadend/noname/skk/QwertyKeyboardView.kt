@@ -11,10 +11,10 @@ import jp.deadend.noname.skk.engine.SKKZenkakuState
 
 class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
     val mLatinKeyboard: Keyboard by lazy {
-        Keyboard(context, R.xml.qwerty, mService.mScreenWidth, mService.mScreenHeight)
+        Keyboard(context, R.xml.qwerty, mService.mRootWidth, mService.mScreenHeight)
     }
     val mSymbolsKeyboard: Keyboard by lazy {
-        Keyboard(context, R.xml.symbols, mService.mScreenWidth, mService.mScreenHeight)
+        Keyboard(context, R.xml.symbols, mService.mRootWidth, mService.mScreenHeight)
     }
 
     private var mSpacePressed = false

@@ -361,7 +361,7 @@ open class KeyboardView @JvmOverloads constructor(
 
     public override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
-        mKeyboard.resize(w, h, skkPrefs.keyPaddingBottom)
+        mKeyboard.resize(w, h)
         mBuffer = null
     }
 
@@ -784,7 +784,7 @@ open class KeyboardView @JvmOverloads constructor(
                 }
                 miniKeyboardView.keyboard = Keyboard(
                     context, popupKeyboardId,
-                    mService.mScreenWidth, mService.mScreenHeight,
+                    mService.mRootWidth, mService.mScreenHeight,
                     key.popupCharacters, -1, paddingLeft + paddingRight
                 )
                 miniKeyboardView.setPopupParent(this)

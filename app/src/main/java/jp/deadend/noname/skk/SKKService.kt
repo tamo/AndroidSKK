@@ -30,10 +30,11 @@ import android.view.Display.DEFAULT_DISPLAY
 import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
-import android.view.WindowInsets
 import android.view.WindowManager
 import android.view.inputmethod.EditorInfo
 import android.widget.Toast
+import android.window.OnBackAnimationCallback
+import android.window.OnBackInvokedDispatcher
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
@@ -55,7 +56,9 @@ import jp.deadend.noname.skk.engine.SKKZenkakuState
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 import java.io.IOException
-
+import kotlin.math.max
+import android.graphics.Insets as AGInsets
+import android.view.WindowInsets.Type as InsetsType
 
 class SKKService : InputMethodService() {
     private lateinit var mBinding: InputViewBinding
@@ -69,10 +72,12 @@ class SKKService : InputMethodService() {
     // 現在表示中の KeyboardView
     private var mInputView: KeyboardView? = mFlickJPInputView
     internal var inputViewWidth
-        get() = mInputView?.keyboard?.width ?: mScreenWidth
+        get() = mInputView?.keyboard?.width ?: mRootWidth
         set(width) {
+            // CandidatesViewContainer をドラッグしている間にしか呼ばれない
+            // だからすべての keyboard を resize するのではなく現行だけでいい
             mInputView?.let { inputView ->
-                inputView.keyboard.resize(width, keyboardHeight(), skkPrefs.keyPaddingBottom)
+                inputView.keyboard.resize(width, keyboardHeight())
                 inputView.requestLayout()
                 setInputView(null)
             }
@@ -121,15 +126,23 @@ class SKKService : InputMethodService() {
     }
 
     // 幅の確認
-    internal val isFlickWidth: Boolean
-        get() = (mInputView !== mQwertyInputView && mInputView !== mAbbrevKeyboardView)
+    internal fun isFlickWidth(view: KeyboardView? = null): Boolean =
+        (view ?: mInputView).let { it is FlickJPKeyboardView || it is GodanKeyboardView }
+
     internal val isTemporaryView: Boolean
         get() = (mInputView === mAbbrevKeyboardView || mEngine.state is SKKZenkakuState)
     internal var leftOffset = 0
+    private val bottomOffset
+        get() = max(
+            mInsets.bottom,
+            keyboardHeight() * skkPrefs.keyPaddingBottom / 100
+        )
 
     // 画面サイズが実際に変わる前に onConfigurationChanged で受け取ってサイズ計算
     private var mOrientation = Configuration.ORIENTATION_UNDEFINED
-    internal var mScreenWidth = 0
+    internal var mRootWidth = 0
+    internal var mCutout = AGInsets.NONE // カメラ穴などで、すでに消えている部分
+    internal var mInsets = AGInsets.NONE // mCutout に gesture 用の空間を加えたもの
     internal var mScreenHeight = 0
 
     // 入力中かどうか
@@ -386,19 +399,7 @@ class SKKService : InputMethodService() {
         })
         mAudioManager = getSystemService(AUDIO_SERVICE) as AudioManager
 
-        mOrientation = resources.configuration.orientation
-        mScreenWidth = if (Build.VERSION.SDK_INT >= 35) {
-            val manager = getSystemService(WindowManager::class.java)
-            val metrics = manager.currentWindowMetrics
-            val insets = metrics.windowInsets.getInsetsIgnoringVisibility(
-                WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout()
-            )
-            metrics.bounds.width() - insets.left - insets.right
-        } else {
-            resources.displayMetrics.widthPixels
-        }
-        mScreenHeight = resources.displayMetrics.heightPixels
-
+        updateDimensions()
         readPrefs()
         instance = this
     }
@@ -436,23 +437,18 @@ class SKKService : InputMethodService() {
 
         val context = createNightModeContext(applicationContext, skkPrefs.theme)
         val keyHeight = keyboardHeight()
-        val keyBottom = skkPrefs.keyPaddingBottom
-        val flickWidth = if (!checkUseSoftKeyboard()) mScreenWidth else when (mOrientation) {
-            Configuration.ORIENTATION_PORTRAIT -> skkPrefs.keyWidthPort
-            Configuration.ORIENTATION_LANDSCAPE -> skkPrefs.keyWidthLand
-            else -> mScreenWidth
-        }
         val alpha = skkPrefs.backgroundAlpha
-        flick.prepareNewKeyboard(context, flickWidth, keyHeight, keyBottom)
+
+        val flickWidth = keyboardWidth(flick)
+        flick.prepareNewKeyboard(context, flickWidth, keyHeight)
         flick.backgroundAlpha = 255 * alpha / 100
-        godan.prepareNewKeyboard(context, flickWidth, keyHeight, keyBottom)
+        godan.prepareNewKeyboard(context, flickWidth, keyHeight)
         godan.backgroundAlpha = 255 * alpha / 100
 
-        val qwertyWidth = if (!checkUseSoftKeyboard()) mScreenWidth else
-            (flickWidth * skkPrefs.keyWidthQwertyZoom / 100).coerceAtMost(mScreenWidth)
-        qwerty.keyboard.resize(qwertyWidth, keyHeight, keyBottom)
-        qwerty.mSymbolsKeyboard.resize(qwertyWidth, keyHeight, keyBottom)
-        abbrev.keyboard.resize(qwertyWidth, keyHeight, keyBottom)
+        val qwertyWidth = keyboardWidth(qwerty)
+        qwerty.keyboard.resize(qwertyWidth, keyHeight)
+        qwerty.mSymbolsKeyboard.resize(qwertyWidth, keyHeight)
+        abbrev.keyboard.resize(qwertyWidth, keyHeight)
 
         val density = context.resources.displayMetrics.density
         val sensitivity = (skkPrefs.flickSensitivity * density + 0.5f).toInt()
@@ -504,20 +500,39 @@ class SKKService : InputMethodService() {
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         dLog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
-        assert(newConfig.orientation == resources.configuration.orientation)
-        mOrientation = resources.configuration.orientation
-        mScreenWidth = if (Build.VERSION.SDK_INT >= 35) {
+        updateDimensions(newConfig)
+        super.onConfigurationChanged(newConfig) // これが onInitializeInterface を呼ぶ
+    }
+
+    private fun updateDimensions(config: Configuration? = null) {
+        val conf = config ?: resources.configuration
+        mOrientation = conf.orientation
+        val density = resources.displayMetrics.density
+        mRootWidth = (conf.screenWidthDp * density + 0.5f).toInt()
+        mScreenHeight = (conf.screenHeightDp * density + 0.5f).toInt()
+        dLog("updateDimensions: legacy width=$mRootWidth height=$mScreenHeight")
+
+        if (Build.VERSION.SDK_INT >= 34) {
             val manager = getSystemService(WindowManager::class.java)
             val metrics = manager.currentWindowMetrics
-            val insets = metrics.windowInsets.getInsetsIgnoringVisibility(
-                WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout()
+            mRootWidth = metrics.bounds.width()
+            mScreenHeight = metrics.bounds.height()
+            dLog("updateDimensions: modern width=$mRootWidth height=$mScreenHeight")
+
+            mCutout = metrics.windowInsets.getInsetsIgnoringVisibility(
+                InsetsType.systemBars() or InsetsType.displayCutout()
             )
-            metrics.bounds.width() - insets.left - insets.right
-        } else {
-            resources.displayMetrics.widthPixels
+            mInsets = metrics.windowInsets.getInsetsIgnoringVisibility(
+                InsetsType.systemBars() or InsetsType.displayCutout() or
+                        if (skkPrefs.gestureInsets) InsetsType.systemGestures() else 0
+            )
+            dLog("updateDimensions: cutout=$mCutout (systemBars|displayCutout)")
+            dLog("updateDimensions: insets=$mInsets (systemBars|displayCutout|systemGestures)")
+
+            mRootWidth -= mInsets.run { left + right }
+            mScreenHeight -= mInsets.run { top + bottom }
+            dLog("updateDimensions: rootWidth=$mRootWidth screenHeight=$mScreenHeight")
         }
-        mScreenHeight = resources.displayMetrics.heightPixels
-        super.onConfigurationChanged(newConfig) // これが onInitializeInterface を呼ぶ
     }
 
     private fun createNightModeContext(context: Context, mode: String): Context {
@@ -558,6 +573,25 @@ class SKKService : InputMethodService() {
         }
 
         readPrefsForInputView()
+    }
+
+    private val backAnimationCallback = if (Build.VERSION.SDK_INT >= 34) {
+        OnBackAnimationCallback {
+            if (!mEngine.handleCancel() && mInputView?.handleBack() != true)
+                requestHideSelf(0)
+        }
+    } else Unit
+
+    override fun onWindowShown() = backAnimationCallback.let {
+        if (Build.VERSION.SDK_INT >= 34 && it is OnBackAnimationCallback)
+            window.onBackInvokedDispatcher
+                .registerOnBackInvokedCallback(OnBackInvokedDispatcher.PRIORITY_DEFAULT, it)
+    }
+
+    override fun onWindowHidden() = backAnimationCallback.let {
+        if (Build.VERSION.SDK_INT >= 34 && it is OnBackAnimationCallback)
+            window.onBackInvokedDispatcher
+                .unregisterOnBackInvokedCallback(it)
     }
 
     override fun onCreateInputView(): View {
@@ -1031,7 +1065,7 @@ class SKKService : InputMethodService() {
                 }
             }
 
-            KeyEvent.KEYCODE_BACK -> if (mEngine.handleBackKey()) return true
+            KeyEvent.KEYCODE_BACK -> if (mEngine.handleCancel()) return true
 
             KeyEvent.KEYCODE_DEL -> if (handleBackspace()) return true
 
@@ -1408,11 +1442,11 @@ class SKKService : InputMethodService() {
     }
 
     override fun setInputView(view: View?) {
-        dLog("setInputView($view)")
         // view が null のときはここをスキップして再描画だけする (ドラッグで位置調整のとき使う)
         (view as? KeyboardView)?.let { inputView ->
+            dLog("setInputView($view)")
             mInputView = inputView // keyboardWidth と keyboardHeight で参照されるので早く代入
-            inputView.keyboard.resize(keyboardWidth(), keyboardHeight(), skkPrefs.keyPaddingBottom)
+            inputView.keyboard.resize(keyboardWidth(), keyboardHeight())
             mBinding.keyboardContainer.apply {
                 if (getChildAt(0) != inputView) {
                     removeAllViews()
@@ -1424,18 +1458,33 @@ class SKKService : InputMethodService() {
             computeLeftOffset()
         }
 
-        val right = mScreenWidth - leftOffset - mInputView!!.keyboard.width
-        mBinding.root.setPadding(leftOffset, 0, right, 0)
+        // |    insets.left    |    rootWidth    |    insets.right    |
+        // |cutout.left|leftOffset|keyboard|(rightOffset)|cutout.right|
+        val rightOffset = mInsets.left + mRootWidth + mInsets.right -
+                (mCutout.left + leftOffset + mInputView!!.keyboard.width + mCutout.right)
+        mBinding.root.setPadding(leftOffset, 0, rightOffset, bottomOffset)
         mCandidatesViewContainer.setSize(-1)
     }
 
-    private fun keyboardWidth() = if (!checkUseSoftKeyboard()) mScreenWidth else
-        (when (mOrientation) {
-            Configuration.ORIENTATION_PORTRAIT -> skkPrefs.keyWidthPort
-            Configuration.ORIENTATION_LANDSCAPE -> skkPrefs.keyWidthLand
-            else -> mScreenWidth
-        } * (if (isFlickWidth) 100 else skkPrefs.keyWidthQwertyZoom) / 100)
-            .coerceAtMost(mScreenWidth)
+    private fun keyboardWidth(view: KeyboardView? = mInputView): Int {
+        if (!checkUseSoftKeyboard()) return mRootWidth
+        val minWidth = resources.getDimensionPixelSize(R.dimen.keyboard_minimum_width)
+        val baseWidth = when (mOrientation) {
+            Configuration.ORIENTATION_PORTRAIT -> {
+                val w = skkPrefs.keyWidthPort
+                if (w < minWidth) mRootWidth else w.coerceIn(minWidth, mRootWidth)
+            }
+
+            Configuration.ORIENTATION_LANDSCAPE -> {
+                val w = skkPrefs.keyWidthLand
+                if (w < minWidth) mRootWidth * 3 / 10 else w.coerceIn(minWidth, mRootWidth)
+            }
+
+            else -> mRootWidth
+        }
+        return (baseWidth * (if (isFlickWidth(view)) 100 else skkPrefs.keyWidthQwertyZoom) / 100)
+            .coerceAtMost(mRootWidth)
+    }
 
     private fun keyboardHeight() = if (!checkUseSoftKeyboard()) 0 else
         mScreenHeight * when (mOrientation) {
@@ -1445,15 +1494,16 @@ class SKKService : InputMethodService() {
         } / 100
 
     private fun computeLeftOffset() {
-        leftOffset = (mScreenWidth * when (mOrientation) {
+        val center = when (mOrientation) {
             Configuration.ORIENTATION_LANDSCAPE -> skkPrefs.keyCenterLand
             else -> skkPrefs.keyCenterPort
-        } - keyboardWidth() / 2)
-            .toInt()
-            .coerceIn(0, mScreenWidth - keyboardWidth())
+        }
+        leftOffset = mInsets.left - mCutout.left +
+                (mRootWidth * center - keyboardWidth() / 2 + 0.5f).toInt()
+                    .coerceIn(0, mRootWidth - keyboardWidth())
     }
 
-    private fun isFloating(): Boolean = keyboardWidth() < mScreenWidth - mScreenHeight
+    private fun isFloating(): Boolean = mRootWidth - keyboardWidth() > mScreenHeight
 //            && when (mOrientation) {
 //                Configuration.ORIENTATION_PORTRAIT -> skkPrefs.keyHeightPort > 50
 //                Configuration.ORIENTATION_LANDSCAPE -> skkPrefs.keyHeightLand > 30

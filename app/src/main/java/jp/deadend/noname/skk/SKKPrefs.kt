@@ -3,8 +3,6 @@ package jp.deadend.noname.skk
 import android.content.Context
 import androidx.core.content.edit
 import androidx.preference.PreferenceManager
-import kotlin.math.max
-import kotlin.math.min
 
 class SKKPrefs(context: Context) {
     private val prefs = PreferenceManager.getDefaultSharedPreferences(context)
@@ -236,6 +234,10 @@ class SKKPrefs(context: Context) {
         get() = prefs.getInt(res.getString(R.string.pref_flick_sensitivity), 24)
         set(value) = prefs.edit { putInt(res.getString(R.string.pref_flick_sensitivity), value) }
 
+    var gestureInsets: Boolean
+        get() = prefs.getBoolean(res.getString(R.string.pref_gesture_insets), false)
+        set(value) = prefs.edit { putBoolean(res.getString(R.string.pref_gesture_insets), value) }
+
     var useMiniKey: Boolean
         get() = prefs.getBoolean(res.getString(R.string.pref_mini_keyboard), true)
         set(value) = prefs.edit {
@@ -341,26 +343,11 @@ class SKKPrefs(context: Context) {
         }
 
     var keyWidthPort: Int
-        get() {
-            val screenWidth = res.displayMetrics.run { min(widthPixels, heightPixels) }
-            return prefs.getInt(res.getString(R.string.pref_key_width_port), screenWidth)
-                .coerceAtLeast(res.getDimensionPixelSize(R.dimen.keyboard_minimum_width))
-        }
-        set(value) = prefs.edit {
-            putInt(res.getString(R.string.pref_key_width_port), value)
-        }
+        get() = prefs.getInt(res.getString(R.string.pref_key_width_port), -1)
+        set(value) = prefs.edit { putInt(res.getString(R.string.pref_key_width_port), value) }
 
     var keyWidthLand: Int
-        get() {
-            val screenWidth = res.displayMetrics.run { max(widthPixels, heightPixels) }
-            return prefs.getInt(
-                res.getString(R.string.pref_key_width_land),
-                screenWidth * 3 / 10
-            )
-                .coerceAtLeast(res.getDimensionPixelSize(R.dimen.keyboard_minimum_width))
-        }
-        set(value) = prefs.edit {
-            putInt(res.getString(R.string.pref_key_width_land), value)
-        }
+        get() = prefs.getInt(res.getString(R.string.pref_key_width_land), -1)
+        set(value) = prefs.edit { putInt(res.getString(R.string.pref_key_width_land), value) }
 
 }

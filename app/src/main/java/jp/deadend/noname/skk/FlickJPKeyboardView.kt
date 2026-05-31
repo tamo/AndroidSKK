@@ -44,13 +44,13 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
     private val mCoordinates = IntArray(2)
 
     val mJPKeyboard: Keyboard by lazy {
-        Keyboard(context, R.xml.keys_flick_jp, mService.mScreenWidth, mService.mScreenHeight)
+        Keyboard(context, R.xml.keys_flick_jp, mService.mRootWidth, mService.mScreenHeight)
     }
     val mNumKeyboard: Keyboard by lazy {
-        Keyboard(context, R.xml.keys_flick_number, mService.mScreenWidth, mService.mScreenHeight)
+        Keyboard(context, R.xml.keys_flick_number, mService.mRootWidth, mService.mScreenHeight)
     }
-    private val mVoiceKeyboard: Keyboard by lazy {
-        Keyboard(context, R.xml.keys_flick_voice, mService.mScreenWidth, mService.mScreenHeight)
+    val mVoiceKeyboard: Keyboard by lazy {
+        Keyboard(context, R.xml.keys_flick_voice, mService.mRootWidth, mService.mScreenHeight)
     }
 
     private var mKutoutenLabel = "？\n． ，！\n…"
@@ -228,12 +228,11 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
     internal fun prepareNewKeyboard(
         context: Context,
         widthPixel: Int,
-        heightPixel: Int,
-        bottomPercent: Int
+        heightPixel: Int
     ) {
-        mJPKeyboard.resize(widthPixel, heightPixel, bottomPercent)
-        mNumKeyboard.resize(widthPixel, heightPixel, bottomPercent)
-        mVoiceKeyboard.resize(widthPixel, heightPixel, bottomPercent)
+        mJPKeyboard.resize(widthPixel, heightPixel)
+        mNumKeyboard.resize(widthPixel, heightPixel)
+        mVoiceKeyboard.resize(widthPixel, heightPixel)
         keyboard = mJPKeyboard
         invalidateAllKeys()
 

@@ -311,9 +311,10 @@ open class Keyboard {
         rows.add(row)
     }
 
-    fun resize(newWidth: Int, newHeight: Int, newBottom: Int) {
-        if ((newWidth == width) && (newHeight == height) && newBottom == bottom) return
+    fun resize(newWidth: Int, newHeight: Int) {
+        if ((newWidth == width) && (newHeight == height)) return
         if (newWidth < 1) return // newHeight はハードキーボード接続時に 0 許容
+        dLog("Keyboard.resize($newWidth, $newHeight) <- ($width, $height)")
 
         var totalHeight = 0
         var maxWidth = 0
@@ -330,7 +331,7 @@ open class Keyboard {
         }
 
         val hScaleFactor = newWidth.toFloat() / maxWidth
-        val vScaleFactor = newHeight.toFloat() * (100 - newBottom) / 100 / totalHeight
+        val vScaleFactor = newHeight.toFloat() / totalHeight
         var x: Int
         var y = 0
         for (row in rows) {
@@ -350,7 +351,6 @@ open class Keyboard {
 
         width = newWidth
         height = newHeight
-        bottom = newBottom
 
         computeNearestNeighbors()
     }

@@ -40,8 +40,7 @@
         android:id="@+id/frame"
         android:layout_width="@dimen/candidates_scroll_button_width"
         android:layout_height="match_parent"
-        app:layout_constraintEnd_toStartOf="@id/candidates_right"
-        app:layout_constraintStart_toEndOf="@id/candidates_left">
+        android:layout_weight="1">
 
         <jp.deadend.noname.skk.CandidatesView
             android:id="@+id/candidates"

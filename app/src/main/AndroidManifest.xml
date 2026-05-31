@@ -17,6 +17,7 @@
     <application
         android:name=".SKKApplication"
         android:allowBackup="true"
+        android:enableOnBackInvokedCallback="true"
         android:icon="@drawable/icon"
         android:label="@string/ime_name"
         android:supportsRtl="false">

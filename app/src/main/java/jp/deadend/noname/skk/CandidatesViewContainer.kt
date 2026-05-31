@@ -19,9 +19,13 @@ package jp.deadend.noname.skk
 import android.content.Context
 import android.content.res.Configuration
 import android.util.AttributeSet
+import android.util.SparseArray
 import android.view.MotionEvent
-import android.widget.FrameLayout
 import android.widget.LinearLayout
+import androidx.core.content.res.ResourcesCompat
+import androidx.core.graphics.drawable.toDrawable
+import androidx.core.util.isEmpty
+import androidx.core.util.size
 import jp.deadend.noname.skk.databinding.ViewCandidatesBinding
 import kotlin.math.abs
 
@@ -37,7 +41,7 @@ class CandidatesViewContainer(screen: Context, attrs: AttributeSet) : LinearLayo
     internal val minHeight = resources.getDimensionPixelSize(R.dimen.candidates_scroll_button_width)
     private lateinit var mService: SKKService
 
-    private val mActivePointers = mutableListOf<Pair<Int, Float>>()
+    private val mActivePointers = SparseArray<Float>()
     private var mDragging = false
     private var mDragStartLeft = 0
     private var mDragStartX = 0f
@@ -58,8 +62,17 @@ class CandidatesViewContainer(screen: Context, attrs: AttributeSet) : LinearLayo
         val onTouchListener = OnTouchListener { view, event ->
             try {
                 val id = event.getPointerId(event.actionIndex)
-                val idx = mActivePointers.indexOfFirst { it.first == id }
                 val x = event.getRawX(event.findPointerIndex(id))
+                when (event.actionMasked) {
+                    MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN ->
+                        mActivePointers.put(id, x)
+
+                    MotionEvent.ACTION_MOVE -> for (i in 0 until event.pointerCount)
+                        mActivePointers.put(event.getPointerId(i), event.getRawX(i))
+
+                    MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_UP ->
+                        mActivePointers.remove(id)
+                }
 
                 // y が本当に自分の範囲内か確認
                 event.setLocation(event.x, mCoordinates.let {
@@ -68,58 +81,55 @@ class CandidatesViewContainer(screen: Context, attrs: AttributeSet) : LinearLayo
                 })
                 if (event.y < 0 || height < event.y) return@OnTouchListener false
 
-                when (event.action and MotionEvent.ACTION_MASK) {
+                when (event.actionMasked) {
                     MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> {
-                        mActivePointers.add(id to x)
                         if (!view.performClick()) {
                             mDragStartLeft = mService.leftOffset
-                            if (mActivePointers.count() == 1) {
+                            if (mActivePointers.size == 1) {
                                 mDragStartX = x
                                 mDragging = true
                             } else {
                                 mPinchStartWidth = width
                                 mPinchStartDistance = abs(
-                                    mActivePointers.last().second - mActivePointers.first().second
+                                    mActivePointers.valueAt(1) - mActivePointers.valueAt(0)
                                 )
                             }
                         }
                     }
 
                     MotionEvent.ACTION_MOVE -> {
-                        assert(idx != -1)
-                        mActivePointers[idx] = id to x
-                        if (mActivePointers.count() > 1) { // 幅の調整
+                        val rightEdge = mService.mInsets.left + mService.mRootWidth
+                        if (mActivePointers.size > 1) { // 幅の調整
                             val currentDistance = abs(
-                                mActivePointers.last().second - mActivePointers.first().second
+                                mActivePointers.valueAt(1) - mActivePointers.valueAt(0)
                             )
                             val newWidth =
                                 (mPinchStartWidth - mPinchStartDistance + currentDistance)
                                     .toInt().coerceIn(
                                         resources.getDimensionPixelSize(R.dimen.keyboard_minimum_width),
-                                        mService.mScreenWidth
+                                        mService.mRootWidth
                                     )
                             val newLeftOffset =
                                 mDragStartLeft + (mPinchStartDistance - currentDistance).toInt() / 2
                             mService.leftOffset =
-                                newLeftOffset.coerceIn(0, mService.mScreenWidth - newWidth)
+                                newLeftOffset.coerceIn(mService.mInsets.left, rightEdge - newWidth)
                             mService.inputViewWidth = newWidth
                         } else if (mDragging) { // 位置の調整
-                            val newLeftOffset = mDragStartLeft + (
-                                    mActivePointers.first().second - mDragStartX
-                                    ).toInt()
-                            mService.leftOffset =
-                                newLeftOffset.coerceIn(0, mService.mScreenWidth - width)
+                            val newLeftOffset =
+                                mDragStartLeft + (mActivePointers.get(id) - mDragStartX).toInt()
+                            mService.leftOffset = newLeftOffset.coerceIn(
+                                mService.mInsets.left, rightEdge - mService.inputViewWidth
+                            )
                             mService.setInputView(null)
                         }
                     }
 
                     MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_UP -> {
-                        mActivePointers.removeAt(idx)
-                        if (mActivePointers.count() == 1) {
+                        if (mActivePointers.size == 1) {
                             saveWidth()
                             // もう一度ドラッグに戻る
                             mDragStartLeft = mService.leftOffset
-                            mDragStartX = mActivePointers.first().second
+                            mDragStartX = mActivePointers.valueAt(0)
                         } else if (mActivePointers.isEmpty()) {
                             if (mDragging) {
                                 if (mDragStartLeft != mService.leftOffset) {
@@ -129,6 +139,12 @@ class CandidatesViewContainer(screen: Context, attrs: AttributeSet) : LinearLayo
                             }
                             // DOWN で performClick() しているので else は無視
                         }
+                        // 正常終了し save されたことを伝えたい
+                        performHapticFeedback(skkPrefs.haptic)
+                        foreground =
+                            ResourcesCompat.getColor(resources, R.color.key_checked_color, null)
+                                .toDrawable()
+                        postDelayed({ foreground = null }, 100)
                     }
 
                     else -> dLog(event.toString())
@@ -144,9 +160,10 @@ class CandidatesViewContainer(screen: Context, attrs: AttributeSet) : LinearLayo
     }
 
     private fun saveLeft(leftOffset: Int) {
+        val currentWidth = mService.inputViewWidth
         val centerRate =
-            if (mService.mScreenWidth <= width) 0.5f
-            else (leftOffset * 2 + width) / 2.0f / mService.mScreenWidth
+            if (mService.mRootWidth <= currentWidth) 0.5f
+            else (leftOffset - mService.mInsets.left + currentWidth / 2.0f) / mService.mRootWidth
         when (resources.configuration.orientation) {
             Configuration.ORIENTATION_LANDSCAPE -> skkPrefs.keyCenterLand = centerRate
             else -> skkPrefs.keyCenterPort = centerRate
@@ -156,12 +173,13 @@ class CandidatesViewContainer(screen: Context, attrs: AttributeSet) : LinearLayo
     private fun saveWidth() {
         setSize(-1)
         val widthToSave = width * 100 /
-                if (mService.isFlickWidth) 100 else skkPrefs.keyWidthQwertyZoom
+                if (mService.isFlickWidth()) 100 else skkPrefs.keyWidthQwertyZoom
+        val minWidth = resources.getDimensionPixelSize(R.dimen.keyboard_minimum_width)
         when (resources.configuration.orientation) {
             Configuration.ORIENTATION_LANDSCAPE ->
-                skkPrefs.keyWidthLand = widthToSave.coerceIn(101, mService.mScreenWidth)
+                skkPrefs.keyWidthLand = widthToSave.coerceIn(minWidth, mService.mRootWidth)
 
-            else -> skkPrefs.keyWidthPort = widthToSave.coerceIn(101, mService.mScreenWidth)
+            else -> skkPrefs.keyWidthPort = widthToSave.coerceIn(minWidth, mService.mRootWidth)
         }
     }
 
@@ -178,14 +196,9 @@ class CandidatesViewContainer(screen: Context, attrs: AttributeSet) : LinearLayo
         if (px > 0) {
             binding.candidates.setTextSize(px)
         }
-        val width = mService.inputViewWidth - minHeight * 2 // minHeight == size of square button
         val height = if (lines > 0) lines * binding.candidates.mLineHeight else minHeight
-        val newLayoutParams = LayoutParams(width, height)
-        if (binding.frame.layoutParams.width != newLayoutParams.width ||
-            binding.frame.layoutParams.height != newLayoutParams.height
-        ) {
-            binding.frame.layoutParams = newLayoutParams
-            binding.candidates.layoutParams = FrameLayout.LayoutParams(width, height)
+        if (binding.frame.layoutParams.height != height) {
+            binding.frame.layoutParams.height = height
             requestLayout()
         }
     }

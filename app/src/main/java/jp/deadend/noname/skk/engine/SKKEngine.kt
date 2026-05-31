@@ -154,28 +154,6 @@ class SKKEngine(
         changeState(SKKHanKanaState)
     }
 
-    // Backspace ではなくジェスチャー等で「戻る」操作
-    internal fun handleBackKey(): Boolean {
-        if (mRegister.isOngoing) {
-            mRegister.mStack.removeFirst()
-        }
-
-        return when {
-            state.isTransient -> {
-                reset() // 確定なし
-                changeState(kanaState)
-                true
-            }
-
-            mRegister.isOngoing -> {
-                reset()
-                true
-            }
-
-            else -> false
-        }
-    }
-
     internal fun handleEnter(): Boolean {
         when {
             state.hasCandidates -> mCandidates.pickCandidate(mCandidates.mIndex)
@@ -802,7 +780,7 @@ class SKKEngine(
     internal fun changeSoftKeyboard(state: SKKState) {
         // 仮名からASCII以外の一時的なキーボードになるときや明示的変更のとき記録して後で戻れるようにしておく
         when (state) {
-            SKKAbbrevState, SKKZenkakuState -> cameFromFlick = mService.isFlickWidth
+            SKKAbbrevState, SKKZenkakuState -> cameFromFlick = mService.isFlickWidth()
             SKKASCIIState -> cameFromFlick = false
             SKKHiraganaState,
             SKKKatakanaState, SKKHanKanaState -> cameFromFlick = true

@@ -83,7 +83,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
         keyboard = Keyboard(
             context,
             if (!mIsASCII && skkPrefs.simpleGodan) R.xml.keys_godan_simple else R.xml.keys_godan,
-            mService.mScreenWidth,
+            mService.mRootWidth,
             mService.mScreenHeight
         )
         setKeyState(mService.engineState)
@@ -148,7 +148,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
         val wasASCII = mIsASCII
         mIsASCII = !state.isJapanese
         if (wasASCII != mIsASCII) {
-            prepareNewKeyboard(context, width, height, skkPrefs.keyPaddingBottom)
+            prepareNewKeyboard(context, width, height)
         }
 
         val qKey = checkNotNull(findKeyByCode(keyboard, KEYCODE_GODAN_CHAR_Q)) { "BUG: no Q key" }
@@ -187,18 +187,17 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
     internal fun prepareNewKeyboard(
         context: Context,
         widthPixel: Int,
-        heightPixel: Int,
-        bottomPercent: Int
+        heightPixel: Int
     ) {
         keyboard = Keyboard(
             context,
             if (!mIsASCII && skkPrefs.simpleGodan) R.xml.keys_godan_simple else R.xml.keys_godan,
-            mService.mScreenWidth,
+            mService.mRootWidth,
             mService.mScreenHeight
         )
         keyboard.isShifted = isShifted
         keyboard.isCapsLocked = isCapsLocked
-        keyboard.resize(widthPixel, heightPixel, bottomPercent)
+        keyboard.resize(widthPixel, heightPixel)
         invalidateAllKeys()
 
         readPrefs(context)
