@@ -200,6 +200,10 @@ class SKKPrefs(context: Context) {
         get() = prefs.getBoolean(res.getString(R.string.pref_use_popup), true)
         set(value) = prefs.edit { putBoolean(res.getString(R.string.pref_use_popup), value) }
 
+    var popupOnPress: Boolean
+        get() = prefs.getBoolean(res.getString(R.string.pref_popup_on_press), true)
+        set(value) = prefs.edit { putBoolean(res.getString(R.string.pref_popup_on_press), value) }
+
     var useFixedPopup: Boolean
         get() = prefs.getBoolean(res.getString(R.string.pref_fixed_popup), true)
         set(value) = prefs.edit { putBoolean(res.getString(R.string.pref_fixed_popup), value) }
@@ -239,9 +243,15 @@ class SKKPrefs(context: Context) {
         set(value) = prefs.edit { putBoolean(res.getString(R.string.pref_gesture_insets), value) }
 
     var useMiniKey: Boolean
-        get() = prefs.getBoolean(res.getString(R.string.pref_mini_keyboard), true)
+        get() = prefs.getBoolean(res.getString(R.string.pref_mini_keyboard), false)
         set(value) = prefs.edit {
             putBoolean(res.getString(R.string.pref_mini_keyboard), value)
+        }
+
+    var longPressTimeout: Int
+        get() = prefs.getInt(res.getString(R.string.pref_long_press_timeout), 500)
+        set(value) = prefs.edit {
+            putInt(res.getString(R.string.pref_long_press_timeout), value)
         }
 
     var theme: String

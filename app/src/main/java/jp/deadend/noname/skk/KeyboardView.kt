@@ -19,7 +19,6 @@ import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
-import android.view.ViewConfiguration
 import android.widget.PopupWindow
 import android.widget.TextView
 import android.widget.Toast
@@ -309,7 +308,7 @@ open class KeyboardView @JvmOverloads constructor(
                 if (value != 0) mHandler.removeMessages(MSG_LONG_PRESS)
                 else if (mCurrentKey != NOT_A_KEY) {
                     mHandler.sendMessageDelayed(
-                        mHandler.obtainMessage(MSG_LONG_PRESS), LONG_PRESS_TIMEOUT.toLong()
+                        mHandler.obtainMessage(MSG_LONG_PRESS), skkPrefs.longPressTimeout.toLong()
                     )
                 }
                 field = value
@@ -976,7 +975,8 @@ open class KeyboardView @JvmOverloads constructor(
                 if (!mAbortKey) {
                     if (mCurrentKey != NOT_A_KEY) {
                         mHandler.sendMessageDelayed(
-                            mHandler.obtainMessage(MSG_LONG_PRESS, me), LONG_PRESS_TIMEOUT.toLong()
+                            mHandler.obtainMessage(MSG_LONG_PRESS, me),
+                            skkPrefs.longPressTimeout.toLong()
                         )
                     }
                     pressKey(mCurrentKey)
@@ -1219,7 +1219,6 @@ open class KeyboardView @JvmOverloads constructor(
         private const val DELAY_AFTER_PREVIEW = 70
         private const val REPEAT_INTERVAL = 50 // ~20 keys per second
         private const val REPEAT_START_DELAY = 400
-        private val LONG_PRESS_TIMEOUT = ViewConfiguration.getLongPressTimeout()
 
         // private const val MAX_NEARBY_KEYS = 12
         private const val MULTI_TAP_INTERVAL = 800 // milliseconds

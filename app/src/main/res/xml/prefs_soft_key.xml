@@ -64,6 +64,12 @@
             <androidx.preference.CheckBoxPreference
                 app:defaultValue="true"
                 app:dependency="@string/pref_use_popup"
+                app:key="@string/pref_popup_on_press"
+                app:summary="オフだと長押しでのみ表示します (長押し判定までの時間は別途変更可能)"
+                app:title="ポップアップの即時表示" />
+            <androidx.preference.CheckBoxPreference
+                app:defaultValue="true"
+                app:dependency="@string/pref_use_popup"
                 app:key="@string/pref_fixed_popup"
                 app:summary="オンだと常に上部の同じ場所，オフだと指の近くに表示します"
                 app:title="ポップアップの固定" />
@@ -106,12 +112,22 @@
 
         <androidx.preference.PreferenceCategory
             app:iconSpaceReserved="false"
-            app:title="英字キーボード">
+            app:title="長押し">
+            <androidx.preference.SeekBarPreference
+                android:max="3000"
+                app:defaultValue="500"
+                app:iconSpaceReserved="false"
+                app:key="@string/pref_long_press_timeout"
+                app:min="100"
+                app:seekBarIncrement="50"
+                app:showSeekBarValue="true"
+                app:summary="1000 で 1 秒です"
+                app:title="長押し判定までの時間" />
             <androidx.preference.CheckBoxPreference
-                app:defaultValue="true"
+                app:defaultValue="false"
                 app:iconSpaceReserved="false"
                 app:key="@string/pref_mini_keyboard"
-                app:summary="アルファベットや . の長押しでポップアップを出します"
+                app:summary="英字キーボードのアルファベットや . を長押しでポップアップを出します"
                 app:title="アクセント文字の使用" />
         </androidx.preference.PreferenceCategory>
 

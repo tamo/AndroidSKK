@@ -423,7 +423,9 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
         if (mFlickState != newState) {
             mFlickState = newState
             performHapticFeedback(skkPrefs.haptic)
-            stopRepeatKey()
+            if (findKeyByCode(keyboard, mLastPressedKey)?.repeatable ?: false) {
+                stopRepeatKey()
+            }
         }
     }
 
@@ -484,6 +486,9 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
             return true
         }
 
+        if (mUsePopup && !skkPrefs.popupOnPress) {
+            if (showPopup()) return true
+        }
         return super.onLongPress(key)
     }
 
@@ -505,16 +510,26 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                 hiragana2katakana(label) ?: label
             }
         }
+        // Godan は各キー動作が mPopupTextView に依存するので無条件に実行
         setupPopupTextView()
+
+        if (mUsePopup && skkPrefs.popupOnPress) {
+            showPopup()
+        }
+    }
+
+    private fun showPopup(): Boolean {
+        if (mCurrentPopupLabels[0] == "") return false
 
         calculatePopupPos()
 
-        if (mUsePopup) {
-            val (x, y) = if (mFixedPopup) mFixedPopupPos[0] to mFixedPopupPos[1]
-            else mFlickStartX.toInt() + mPopupOffset[0] to
-                    mFlickStartY.toInt() + mPopupOffset[1]
-            mPopup?.showAtLocation(this, android.view.Gravity.NO_GRAVITY, x, y)
-        }
+        val (x, y) = if (mFixedPopup) mFixedPopupPos[0] to mFixedPopupPos[1]
+        else mFlickStartX.toInt() + mPopupOffset[0] to
+                mFlickStartY.toInt() + mPopupOffset[1]
+        mPopup?.showAtLocation(this, android.view.Gravity.NO_GRAVITY, x, y)
+
+        // true だと release して repeat が終わってしまうので
+        return !(findKeyByCode(keyboard, mLastPressedKey)?.repeatable ?: false)
     }
 
     private fun calculatePopupPos() {

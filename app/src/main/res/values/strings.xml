@@ -106,9 +106,11 @@
     <string name="pref_godan_qwerty" translatable="false">PrefKeyGodanQwerty</string>
     <string name="pref_godan_swap_qc" translatable="false">PrefKeyGodanSwapQC</string>
     <string name="pref_use_popup" translatable="false">PrefKeyUsePopup</string>
+    <string name="pref_popup_on_press" translatable="false">PrefKeyPopupOnPress</string>
     <string name="pref_fixed_popup" translatable="false">PrefKeyFixedPopup</string>
     <string name="pref_finger_offset" translatable="false">PrefKeyFingerOffset</string>
     <string name="pref_mini_keyboard" translatable="false">PrefKeyUseMiniKey</string>
+    <string name="pref_long_press_timeout" translatable="false">PrefKeyLongPressTimeout</string>
     <string name="pref_use_soft_cancel_key" translatable="false">PrefKeyUseSoftCancelKey</string>
     <string name="pref_use_soft_trans_key" translatable="false">PrefKeyUseSoftTransKey</string>
     <string name="pref_use_small_k" translatable="false">PrefKeyUseSmallK</string>

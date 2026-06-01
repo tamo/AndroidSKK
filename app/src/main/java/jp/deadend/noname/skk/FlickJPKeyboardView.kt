@@ -509,7 +509,9 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
         if (mFlickState != newState) {
             mFlickState = newState
             performHapticFeedback(skkPrefs.haptic)
-            stopRepeatKey()
+            if (findKeyByCode(mJPKeyboard, mLastPressedKey)?.repeatable ?: false) {
+                stopRepeatKey()
+            }
         }
     }
 
@@ -724,6 +726,10 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
             return true
         }
 
+        if (mUsePopup && !skkPrefs.popupOnPress) {
+            if (showPopup()) return true
+        }
+
         return super.onLongPress(key)
     }
 
@@ -734,41 +740,44 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
 
         mArrowFlicked = false
 
-        if (mUsePopup) {
-            val labels = mFlickGuideLabelList[primaryCode] ?: run {
-                mCurrentPopupLabels.fill("")
-                return
-            }
+        val labels = mFlickGuideLabelList[primaryCode] ?: run {
+            mCurrentPopupLabels.fill("")
+            return
+        }
 
-            labels.forEachIndexed { i, label ->
-                if (i > 6) return@forEachIndexed
-                mCurrentPopupLabels[i] = if (mService.isHiragana) label else {
-                    checkNotNull(
-                        hiragana2katakana(
-                            label,
-                            reversed = true
-                        )
-                    ) { "BUG: invalid popup label!!" }
-                }
-            }
-            setupPopupTextView()
-
-            calculatePopupPos()
-
-            val popup = checkNotNull(mPopup) { "BUG: popup is null!!" }
-            if (mFixedPopup) {
-                popup.showAtLocation(
-                    this, android.view.Gravity.NO_GRAVITY,
-                    mFixedPopupPos[0], mFixedPopupPos[1]
-                )
-            } else {
-                popup.showAtLocation(
-                    this, android.view.Gravity.NO_GRAVITY,
-                    mFlickStartX.toInt() + mPopupOffset[0],
-                    mFlickStartY.toInt() + mPopupOffset[1]
-                )
+        labels.forEachIndexed { i, label ->
+            if (i > 6) return@forEachIndexed
+            mCurrentPopupLabels[i] = if (mService.isHiragana) label else {
+                checkNotNull(
+                    hiragana2katakana(
+                        label,
+                        reversed = true
+                    )
+                ) { "BUG: invalid popup label!!" }
             }
         }
+
+        if (mUsePopup && skkPrefs.popupOnPress) {
+            showPopup()
+        }
+    }
+
+    private fun showPopup(): Boolean {
+        if (mCurrentPopupLabels[0] == "") return false
+
+        // FlickJP は mPopupTextView の内容をロジックに使わない
+        setupPopupTextView()
+
+        calculatePopupPos()
+
+        val popup = checkNotNull(mPopup) { "BUG: popup is null!!" }
+        val (x, y) = if (mFixedPopup) mFixedPopupPos[0] to mFixedPopupPos[1]
+        else mFlickStartX.toInt() + mPopupOffset[0] to
+                mFlickStartY.toInt() + mPopupOffset[1]
+        popup.showAtLocation(this, android.view.Gravity.NO_GRAVITY, x, y)
+
+        // true だと release して repeat が終わってしまうので
+        return !(findKeyByCode(mJPKeyboard, mLastPressedKey)?.repeatable ?: false)
     }
 
     private fun calculatePopupPos() {
