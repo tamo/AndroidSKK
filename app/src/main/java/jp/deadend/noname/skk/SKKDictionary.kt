@@ -33,17 +33,23 @@ class SKKDictionary private constructor(
 
     companion object {
         fun newInstance(mDictFile: String, btreeName: String): SKKDictionary? {
+            var recMan: RecordManager? = null
             return try {
                 val props = java.util.Properties().apply {
                     setProperty(jdbm.RecordManagerOptions.DISABLE_TRANSACTIONS, "true")
                 }
-                val recMan = jdbm.RecordManagerFactory.createRecordManager(mDictFile, props)
+                recMan = jdbm.RecordManagerFactory.createRecordManager(mDictFile, props)
                 val recID = recMan.getNamedObject(btreeName)
                 val btree = BTree<String, String>().load(recMan, recID)
 
                 SKKDictionary(recMan, btree)
             } catch (e: Exception) {
                 Log.e("SKK", "Error in opening the dictionary: $e")
+                try {
+                    recMan?.close()
+                } catch (ee: Exception) {
+                    Log.e("SKK", "Error in closing the dictionary: $ee")
+                }
 
                 null
             }

@@ -41,6 +41,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.net.URL
+import java.nio.file.Files
 import java.util.Collections
 import java.util.zip.GZIPInputStream
 import kotlin.math.floor
@@ -101,9 +102,9 @@ class SKKDictManager : AppCompatActivity() {
             .distinctBy { it.value.removePrefix("/") } // 重複を消去
             .toMutableList()
         // インストール済みかどうかチェック
-        fileList()
-            .filter { it.startsWith("skk_dict_") && it.endsWith(".db") }
-            .forEach { fullName ->
+        Files.newDirectoryStream(filesDir.toPath(), "skk_dict_*.db").use { stream ->
+            stream.forEach { path ->
+                val fullName = path.fileName.toString()
                 val filename = fullName.removeSuffix(".db")
                 val existing = dictList.find { it.value.removePrefix("/") == filename }
 
@@ -114,6 +115,7 @@ class SKKDictManager : AppCompatActivity() {
                     existing.value = filename
                 }
             }
+        }
 
         binding.dictManagerList.apply {
             layoutManager = LinearLayoutManager(this@SKKDictManager)
@@ -205,12 +207,15 @@ class SKKDictManager : AppCompatActivity() {
                 dialog.setListener(
                     object : ConfirmationDialogFragment.Listener {
                         override fun onPositiveClick() {
-                            fileList().forEach { file ->
-                                if (!file.startsWith(getString(R.string.dict_name_user)) &&
-                                    !file.startsWith(getString(R.string.dict_name_ascii)) &&
-                                    !file.startsWith(getString(R.string.dict_name_emoji))
-                                ) {
-                                    deleteFile(file)
+                            Files.newDirectoryStream(filesDir.toPath()).use { stream ->
+                                stream.forEach { path ->
+                                    val file = path.fileName.toString()
+                                    if (!file.startsWith(getString(R.string.dict_name_user)) &&
+                                        !file.startsWith(getString(R.string.dict_name_ascii)) &&
+                                        !file.startsWith(getString(R.string.dict_name_emoji))
+                                    ) {
+                                        deleteFile(file)
+                                    }
                                 }
                             }
                             try {
@@ -384,14 +389,13 @@ class SKKDictManager : AppCompatActivity() {
         }
 
         val filesDir = filesDir
-        val filesList = filesDir?.listFiles()
-        if (filesDir == null || filesList == null) {
+        if (filesDir == null) {
             SimpleMessageDialogFragment.newInstance(
                 getString(R.string.error_access_failed, filesDir)
             ).show(supportFragmentManager, "dialog")
             return
         }
-        if (filesList.any { it.name == "$dictFileBaseName.db" }) {
+        if (File(filesDir, "$dictFileBaseName.db").exists()) {
             val dialog = ConfirmationDialogFragment.newInstance(
                 getString(R.string.error_dict_exists, dictFileBaseName)
             )
@@ -420,6 +424,7 @@ class SKKDictManager : AppCompatActivity() {
         MainScope().launch(Dispatchers.IO) {
             val item = mDictList[position]
             var recMan: RecordManager? = null
+            var success = false
             try {
                 val props = java.util.Properties().apply {
                     setProperty(jdbm.RecordManagerOptions.DISABLE_TRANSACTIONS, "true")
@@ -445,7 +450,7 @@ class SKKDictManager : AppCompatActivity() {
                 contentResolver.openInputStream(uri)?.use { inputStream ->
                     val processedInputStream =
                         if (isGzip) GZIPInputStream(inputStream) else inputStream
-                    loadFromTextDict(processedInputStream, charset, false, recMan, btree, false) {
+                    loadFromTextDict(processedInputStream, charset, false, recMan!!, btree, false) {
                         if (floor(sqrt(it.toFloat())) % 70 == 0f) {
                             MainScope().launch {
                                 val newList = mDictList.toMutableList()
@@ -462,6 +467,7 @@ class SKKDictManager : AppCompatActivity() {
                     mAdapter.submitList(newList)
                     mDictList = newList
                 }
+                success = true
             } catch (e: IOException) {
                 withContext(Dispatchers.Main) {
                     if (e is CharacterCodingException) {
@@ -478,27 +484,21 @@ class SKKDictManager : AppCompatActivity() {
                     mDictList = newList
                 }
                 Log.e("SKK", "SKKDictManager#loadDict() Error: $e")
+            } finally {
                 if (recMan != null) {
                     try {
                         recMan.close()
                     } catch (ee: IOException) {
                         Log.e("SKK", "SKKDictManager#loadDict() can't close(): $ee")
                     }
-
                 }
-                deleteFile("$dictFileBaseName.db")
-                deleteFile("$dictFileBaseName.lg")
-                return@launch
+                if (!success) {
+                    deleteFile("$dictFileBaseName.db")
+                    deleteFile("$dictFileBaseName.lg")
+                }
             }
 
-            try {
-                recMan.close()
-            } catch (ee: IOException) {
-                Log.e("SKK", "SKKDictManager#loadDict() can't close(): $ee")
-                return@launch
-            }
-
-            withContext(Dispatchers.Main) {
+            if (success) withContext(Dispatchers.Main) {
                 addDict(dictFileBaseName.removePrefix("/"), position)
             }
         }

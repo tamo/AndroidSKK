@@ -25,6 +25,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.nio.file.Files
 
 
 class SKKSettingsActivity : AppCompatActivity() {
@@ -37,10 +38,12 @@ class SKKSettingsActivity : AppCompatActivity() {
 
             findPreference<Preference>(getString(R.string.pref_log_viewer))?.apply {
                 setOnPreferenceClickListener {
-                    val latest = context.getExternalFilesDir(null)
-                        ?.listFiles { _, name -> name.startsWith("SKK_strace_") }
-                        ?.maxByOrNull { file -> file.lastModified() }
+                    val dir = context.getExternalFilesDir(null)
                         ?: return@setOnPreferenceClickListener false
+                    val latest =
+                        Files.newDirectoryStream(dir.toPath(), "SKK_strace_*").use { stream ->
+                            stream.map { it.toFile() }.maxByOrNull { it.lastModified() }
+                        } ?: return@setOnPreferenceClickListener false
                     isIconSpaceReserved = false
                     isSingleLineTitle = false
                     title = latest.readText()

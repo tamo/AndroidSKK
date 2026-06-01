@@ -430,6 +430,9 @@ class SKKUserDictTool : AppCompatActivity() {
                     mBtree = null
                     mRecMan = null
                 } catch (e: IOException) {
+                    val recMan = mRecMan
+                    mRecMan = null
+                    recMan?.close()
                     throw RuntimeException(e)
                 }
                 dLog("New user dictionary created")
@@ -508,13 +511,20 @@ class SKKUserDictTool : AppCompatActivity() {
 
     private fun closeUserDict() {
         mBtree = null
-        try {
-            mRecMan?.commit()
-            mRecMan?.close()
+        mRecMan?.let { recMan ->
             mRecMan = null
-        } catch (e: IOException) {
-            startServiceCommand(SKKService.COMMAND_RELOAD_DICT)
-            throw RuntimeException("closeUserDict error closing mRecMan: ${e.message}")
+            try {
+                recMan.commit()
+            } catch (e: IOException) {
+                Log.e("SKK", "closeUserDict commit error: ${e.message}")
+            } finally {
+                try {
+                    recMan.close()
+                } catch (e: IOException) {
+                    startServiceCommand(SKKService.COMMAND_RELOAD_DICT)
+                    throw RuntimeException("closeUserDict close error: ${e.message}")
+                }
+            }
         }
         dLog("UserDictTool: closed")
     }
@@ -537,6 +547,7 @@ class SKKUserDictTool : AppCompatActivity() {
                     if (browser == null) {
                         Log.e("SKK", "UserDictTool updateListItems: browser=null")
                         withContext(Dispatchers.Main) { onFailToOpenUserDict() }
+                        closeUserDict()
                         return@launch
                     }
 
