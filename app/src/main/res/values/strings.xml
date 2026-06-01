@@ -68,19 +68,6 @@
 
     <string name="pref_kutouten_type" translatable="false">PrefKeyKutoutenType</string>
     <string name="pref_prefix_mark" translatable="false">PrefKeyPrefixMark</string>
-    <string name="pref_kana_key" translatable="false">PrefKeyKanaKey2</string>
-    <string name="pref_toggle_kana_key" translatable="false">PrefKeyToggleKanaKey</string>
-    <string name="pref_cancel_key" translatable="false">PrefKeyCancelKey2</string>
-    <string name="pref_emacs_nav_in_ascii" translatable="false">PrefKeyEmacsNavInAscii</string>
-    <string name="pref_nav_line_start_key" translatable="false">PrefKeyNavLineStartKey</string>
-    <string name="pref_nav_line_end_key" translatable="false">PrefKeyNavLineEndKey</string>
-    <string name="pref_nav_forward_key" translatable="false">PrefKeyNavForwardKey</string>
-    <string name="pref_nav_backward_key" translatable="false">PrefKeyNavBackwardKey</string>
-    <string name="pref_katakana_key" translatable="false">PrefKeyKatakanaKey</string>
-    <string name="pref_ascii_key" translatable="false">PrefKeyASCIIKey</string>
-    <string name="pref_zenkaku_key" translatable="false">PrefKeyZenkakuKey</string>
-    <string name="pref_abbrev_key" translatable="false">PrefKeyAbbrevKey</string>
-    <string name="pref_hankaku_kana_key" translatable="false">PrefKeyHankakuKanaKey</string>
     <string name="pref_candidates_size" translatable="false">PrefKeyCandidatesSize</string>
     <string name="pref_candidates_min_height" translatable="false">PrefKeyCandidatesMinHeight</string>
     <string name="pref_fuzzy_suggestion" translatable="false">PrefKeyFuzzySuggestion</string>
@@ -88,18 +75,28 @@
     <string name="pref_complete_okuri" translatable="false">PrefKeyCompleteOkuri</string>
     <string name="pref_candidates_normal_lines" translatable="false">PrefKeyCandidatesNormalLines</string>
     <string name="pref_candidates_emoji_lines" translatable="false">PrefKeyCandidatesEmojiLines</string>
+    <string name="pref_log_viewer" translatable="false">PrefLogViewer</string>
+
     <string name="pref_use_candidates_view" translatable="false">PrefKeyUseCandidatesView</string>
-    <string name="pref_flick_sensitivity" translatable="false">PrefKeyFlickSensitivity</string>
-    <string name="pref_gesture_insets" translatable="false">PrefKeyGestureInsets</string>
-    <string name="pref_theme" translatable="false">PrefKeyTheme</string>
-    <string name="pref_use_inset" translatable="false">PrefKeyInset</string>
-    <string name="pref_ignore_high_contrast" translatable="false">PrefKeyOriginalColor</string>
+    <string name="pref_kana_key" translatable="false">PrefKeyKanaKey2</string>
+    <string name="pref_toggle_kana_key" translatable="false">PrefKeyToggleKanaKey</string>
+    <string name="pref_cancel_key" translatable="false">PrefKeyCancelKey2</string>
+    <string name="pref_katakana_key" translatable="false">PrefKeyKatakanaKey</string>
+    <string name="pref_ascii_key" translatable="false">PrefKeyASCIIKey</string>
+    <string name="pref_zenkaku_key" translatable="false">PrefKeyZenkakuKey</string>
+    <string name="pref_abbrev_key" translatable="false">PrefKeyAbbrevKey</string>
+    <string name="pref_hankaku_kana_key" translatable="false">PrefKeyHankakuKanaKey</string>
+    <string name="pref_sticky_meta" translatable="false">PrefKeyStickyMeta</string>
+    <string name="pref_sands" translatable="false">PrefKeySandS</string>
+    <string name="pref_sands_in_ascii" translatable="false">PrefKeySandSInAscii</string>
+    <string name="pref_nav_line_start_key" translatable="false">PrefKeyNavLineStartKey</string>
+    <string name="pref_nav_line_end_key" translatable="false">PrefKeyNavLineEndKey</string>
+    <string name="pref_nav_forward_key" translatable="false">PrefKeyNavForwardKey</string>
+    <string name="pref_nav_backward_key" translatable="false">PrefKeyNavBackwardKey</string>
+    <string name="pref_emacs_nav_in_ascii" translatable="false">PrefKeyEmacsNavInAscii</string>
+
     <string name="pref_use_soft_key" translatable="false">PrefKeyUseSoftKey</string>
     <string name="pref_show_status_icon" translatable="false">PrefKeyShowStatusIcon</string>
-    <string name="pref_haptic" translatable="false">PrefKeyHaptic</string>
-    <string name="pref_over_edge" translatable="false">PrefKeyOverEdge</string>
-    <string name="pref_forbid_paste" translatable="false">PrefKeyForbidPaste</string>
-    <string name="pref_use_del" translatable="false">PrefKeyUseDel</string>
     <string name="pref_use_flick" translatable="false">PrefKeyPreferFlick</string>
     <string name="pref_use_godan" translatable="false">PrefKeyPreferGodan</string>
     <string name="pref_godan_simple" translatable="false">PrefKeyGodanSimple</string>
@@ -109,32 +106,38 @@
     <string name="pref_popup_on_press" translatable="false">PrefKeyPopupOnPress</string>
     <string name="pref_fixed_popup" translatable="false">PrefKeyFixedPopup</string>
     <string name="pref_finger_offset" translatable="false">PrefKeyFingerOffset</string>
-    <string name="pref_mini_keyboard" translatable="false">PrefKeyUseMiniKey</string>
-    <string name="pref_long_press_timeout" translatable="false">PrefKeyLongPressTimeout</string>
     <string name="pref_use_soft_cancel_key" translatable="false">PrefKeyUseSoftCancelKey</string>
     <string name="pref_use_soft_trans_key" translatable="false">PrefKeyUseSoftTransKey</string>
     <string name="pref_use_small_k" translatable="false">PrefKeyUseSmallK</string>
     <string name="pref_exchange_shift_kana" translatable="false">PrefKeyChangeShift</string>
+    <string name="pref_long_press_timeout" translatable="false">PrefKeyLongPressTimeout</string>
+    <string name="pref_mini_keyboard" translatable="false">PrefKeyUseMiniKey</string>
+    <string name="pref_flick_sensitivity" translatable="false">PrefKeyFlickSensitivity</string>
+    <string name="pref_gesture_insets" translatable="false">PrefKeyGestureInsets</string>
     <string name="pref_key_label_zoom" translatable="false">PrefKeyKeyZoom</string>
     <string name="pref_key_height_port" translatable="false">PrefKeyKeyHeightPort</string>
     <string name="pref_key_height_land" translatable="false">PrefKeyKeyHeightLand</string>
     <string name="pref_key_width_port" translatable="false">PrefKeyKeyWidthPort</string>
     <string name="pref_key_width_land" translatable="false">PrefKeyKeyWidthLand</string>
-    <string name="pref_key_padding_bottom" translatable="false">PrefKeyKeyPaddingBottom</string>
-    <string name="pref_key_width_qwerty_zoom" translatable="false">PrefKeyKeyWidthQwertyZoom</string>
     <string name="pref_key_center_port" translatable="false">PrefKeyKeyCenterPort</string>
     <string name="pref_key_center_land" translatable="false">PrefKeyKeyCenterLand</string>
+    <string name="pref_key_padding_bottom" translatable="false">PrefKeyKeyPaddingBottom</string>
+    <string name="pref_key_width_qwerty_zoom" translatable="false">PrefKeyKeyWidthQwertyZoom</string>
+    <string name="pref_theme" translatable="false">PrefKeyTheme</string>
+    <string name="pref_use_inset" translatable="false">PrefKeyInset</string>
+    <string name="pref_background_alpha" translatable="false">PrefKeyBackgroundAlpha</string>
+    <string name="pref_ignore_high_contrast" translatable="false">PrefKeyOriginalColor</string>
     <string name="pref_type_uri" translatable="false">PrefKeyTypeURI</string>
     <string name="pref_type_number" translatable="false">PrefKeyTypeNumber</string>
     <string name="pref_type_phone" translatable="false">PrefKeyTypePhone</string>
     <string name="pref_type_password" translatable="false">PrefKeyTypePassword</string>
     <string name="pref_type_text" translatable="false">PrefKeyTypeText</string>
-    <string name="pref_background_alpha" translatable="false">PrefKeyBackgroundAlpha</string>
-    <string name="pref_sticky_meta" translatable="false">PrefKeyStickyMeta</string>
-    <string name="pref_sands" translatable="false">PrefKeySandS</string>
-    <string name="pref_sands_in_ascii" translatable="false">PrefKeySandSInAscii</string>
+    <string name="pref_haptic" translatable="false">PrefKeyHaptic</string>
+    <string name="pref_over_edge" translatable="false">PrefKeyOverEdge</string>
+    <string name="pref_forbid_paste" translatable="false">PrefKeyForbidPaste</string>
+    <string name="pref_use_del" translatable="false">PrefKeyUseDel</string>
+
     <string name="pref_dict_order" translatable="false">PrefKeyDicsOrder</string>
-    <string name="pref_log_viewer" translatable="false">PrefLogViewer</string>
 
     <string name="btree_name" translatable="false">skk_dict</string>
     <string name="dict_name_user" translatable="false">skk_userdict</string>

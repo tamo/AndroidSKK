@@ -40,10 +40,7 @@ class SKKPrefs(context: Context) {
     var fuzzierSuggestion: Boolean
         get() = prefs.getBoolean(res.getString(R.string.pref_fuzzier_suggestion), false)
         set(value) = prefs.edit {
-            putBoolean(
-                res.getString(R.string.pref_fuzzier_suggestion),
-                value
-            )
+            putBoolean(res.getString(R.string.pref_fuzzier_suggestion), value)
         }
 
     var completeOkuri: Boolean
@@ -51,6 +48,7 @@ class SKKPrefs(context: Context) {
         set(value) = prefs.edit {
             putBoolean(res.getString(R.string.pref_complete_okuri), value)
         }
+
     var candidatesNormalLines: Int
         get() = prefs.getInt(res.getString(R.string.pref_candidates_normal_lines), 2)
         set(value) = prefs.edit {
@@ -63,15 +61,13 @@ class SKKPrefs(context: Context) {
             putInt(res.getString(R.string.pref_candidates_emoji_lines), value)
         }
 
-    // 辞書管理
-    val defaultDictOrder =
-        "ユーザー辞書/${res.getString(R.string.dict_name_user)}/絵文字辞書/${res.getString(R.string.dict_name_emoji)}/"
-    var dictOrder: String
-        get() = prefs.getString(res.getString(R.string.pref_dict_order), defaultDictOrder)
-            ?: defaultDictOrder
-        set(value) = prefs.edit { putString(res.getString(R.string.pref_dict_order), value) }
-
     // prefs_hard_key
+    var useCandidatesView: Boolean
+        get() = prefs.getBoolean(res.getString(R.string.pref_use_candidates_view), true)
+        set(value) = prefs.edit {
+            putBoolean(res.getString(R.string.pref_use_candidates_view), value)
+        }
+
     var kanaKey: Int
         get() = prefs.getInt(res.getString(R.string.pref_kana_key), CTRL_PRESSED or 'j'.code)
         set(value) = prefs.edit { putInt(res.getString(R.string.pref_kana_key), value) }
@@ -85,27 +81,6 @@ class SKKPrefs(context: Context) {
     var cancelKey: Int
         get() = prefs.getInt(res.getString(R.string.pref_cancel_key), CTRL_PRESSED or 'g'.code)
         set(value) = prefs.edit { putInt(res.getString(R.string.pref_cancel_key), value) }
-
-    var emacsNavInAscii: Boolean
-        get() = prefs.getBoolean(res.getString(R.string.pref_emacs_nav_in_ascii), false)
-        set(value) =
-            prefs.edit { putBoolean(res.getString(R.string.pref_emacs_nav_in_ascii), value) }
-
-    var navLineStartKey: Int
-        get() = prefs.getInt(res.getString(R.string.pref_nav_line_start_key), 0)
-        set(value) = prefs.edit { putInt(res.getString(R.string.pref_nav_line_start_key), value) }
-
-    var navLineEndKey: Int
-        get() = prefs.getInt(res.getString(R.string.pref_nav_line_end_key), 0)
-        set(value) = prefs.edit { putInt(res.getString(R.string.pref_nav_line_end_key), value) }
-
-    var navForwardKey: Int
-        get() = prefs.getInt(res.getString(R.string.pref_nav_forward_key), 0)
-        set(value) = prefs.edit { putInt(res.getString(R.string.pref_nav_forward_key), value) }
-
-    var navBackwardKey: Int
-        get() = prefs.getInt(res.getString(R.string.pref_nav_backward_key), 0)
-        set(value) = prefs.edit { putInt(res.getString(R.string.pref_nav_backward_key), value) }
 
     var katakanaKey: Int
         get() = prefs.getInt(res.getString(R.string.pref_katakana_key), 'q'.code)
@@ -124,20 +99,16 @@ class SKKPrefs(context: Context) {
         set(value) = prefs.edit { putInt(res.getString(R.string.pref_abbrev_key), value) }
 
     var hankakuKanaKey: Int
-        get() =
-            prefs.getInt(res.getString(R.string.pref_hankaku_kana_key), CTRL_PRESSED or 'q'.code)
+        get() = prefs.getInt(
+            res.getString(R.string.pref_hankaku_kana_key),
+            CTRL_PRESSED or 'q'.code
+        )
         set(value) = prefs.edit { putInt(res.getString(R.string.pref_hankaku_kana_key), value) }
 
     fun isModeKey(keyCode: Int): Boolean = when (keyCode) {
         katakanaKey, asciiKey, zenkakuKey, abbrevKey, hankakuKanaKey -> true
         else -> false
     }
-
-    var useCandidatesView: Boolean
-        get() = prefs.getBoolean(res.getString(R.string.pref_use_candidates_view), true)
-        set(value) = prefs.edit {
-            putBoolean(res.getString(R.string.pref_use_candidates_view), value)
-        }
 
     var useStickyMeta: Boolean
         get() = prefs.getBoolean(res.getString(R.string.pref_sticky_meta), false)
@@ -151,6 +122,31 @@ class SKKPrefs(context: Context) {
         get() = prefs.getBoolean(res.getString(R.string.pref_sands_in_ascii), false)
         set(value) = prefs.edit { putBoolean(res.getString(R.string.pref_sands_in_ascii), value) }
 
+    var navLineStartKey: Int
+        get() = prefs.getInt(res.getString(R.string.pref_nav_line_start_key), 0)
+        set(value) = prefs.edit { putInt(res.getString(R.string.pref_nav_line_start_key), value) }
+
+    var navLineEndKey: Int
+        get() = prefs.getInt(res.getString(R.string.pref_nav_line_end_key), 0)
+        set(value) = prefs.edit { putInt(res.getString(R.string.pref_nav_line_end_key), value) }
+
+    var navForwardKey: Int
+        get() = prefs.getInt(res.getString(R.string.pref_nav_forward_key), 0)
+        set(value) = prefs.edit { putInt(res.getString(R.string.pref_nav_forward_key), value) }
+
+    var navBackwardKey: Int
+        get() = prefs.getInt(res.getString(R.string.pref_nav_backward_key), 0)
+        set(value) = prefs.edit { putInt(res.getString(R.string.pref_nav_backward_key), value) }
+
+    var emacsNavInAscii: Boolean
+        get() = prefs.getBoolean(res.getString(R.string.pref_emacs_nav_in_ascii), false)
+        set(value) = prefs.edit {
+            putBoolean(
+                res.getString(R.string.pref_emacs_nav_in_ascii),
+                value
+            )
+        }
+
     // prefs_soft_key
     var useSoftKey: String
         get() = prefs.getString(res.getString(R.string.pref_use_soft_key), null) ?: "auto"
@@ -159,22 +155,6 @@ class SKKPrefs(context: Context) {
     var showStatusIcon: Boolean
         get() = prefs.getBoolean(res.getString(R.string.pref_show_status_icon), true)
         set(value) = prefs.edit { putBoolean(res.getString(R.string.pref_show_status_icon), value) }
-
-    var haptic: Int
-        get() = prefs.getInt(res.getString(R.string.pref_haptic), 1)
-        set(value) = prefs.edit { putInt(res.getString(R.string.pref_haptic), value) }
-
-    var moveOverEdge: Boolean
-        get() = prefs.getBoolean(res.getString(R.string.pref_over_edge), false)
-        set(value) = prefs.edit { putBoolean(res.getString(R.string.pref_over_edge), value) }
-
-    var forbidPaste: Boolean
-        get() = prefs.getBoolean(res.getString(R.string.pref_forbid_paste), false)
-        set(value) = prefs.edit { putBoolean(res.getString(R.string.pref_forbid_paste), value) }
-
-    var useDel: Boolean
-        get() = prefs.getBoolean(res.getString(R.string.pref_use_del), true)
-        set(value) = prefs.edit { putBoolean(res.getString(R.string.pref_use_del), value) }
 
     var preferFlick: Boolean
         get() = prefs.getBoolean(res.getString(R.string.pref_use_flick), true)
@@ -234,13 +214,11 @@ class SKKPrefs(context: Context) {
             putBoolean(res.getString(R.string.pref_exchange_shift_kana), value)
         }
 
-    var flickSensitivity: Int
-        get() = prefs.getInt(res.getString(R.string.pref_flick_sensitivity), 24)
-        set(value) = prefs.edit { putInt(res.getString(R.string.pref_flick_sensitivity), value) }
-
-    var gestureInsets: Boolean
-        get() = prefs.getBoolean(res.getString(R.string.pref_gesture_insets), false)
-        set(value) = prefs.edit { putBoolean(res.getString(R.string.pref_gesture_insets), value) }
+    var longPressTimeout: Int
+        get() = prefs.getInt(res.getString(R.string.pref_long_press_timeout), 500)
+        set(value) = prefs.edit {
+            putInt(res.getString(R.string.pref_long_press_timeout), value)
+        }
 
     var useMiniKey: Boolean
         get() = prefs.getBoolean(res.getString(R.string.pref_mini_keyboard), false)
@@ -248,36 +226,13 @@ class SKKPrefs(context: Context) {
             putBoolean(res.getString(R.string.pref_mini_keyboard), value)
         }
 
-    var longPressTimeout: Int
-        get() = prefs.getInt(res.getString(R.string.pref_long_press_timeout), 500)
-        set(value) = prefs.edit {
-            putInt(res.getString(R.string.pref_long_press_timeout), value)
-        }
+    var flickSensitivity: Int
+        get() = prefs.getInt(res.getString(R.string.pref_flick_sensitivity), 24)
+        set(value) = prefs.edit { putInt(res.getString(R.string.pref_flick_sensitivity), value) }
 
-    var theme: String
-        get() = prefs.getString(res.getString(R.string.pref_theme), null) ?: "default"
-        set(value) = prefs.edit { putString(res.getString(R.string.pref_theme), value) }
-
-    var useInset: Boolean
-        get() = prefs.getBoolean(res.getString(R.string.pref_use_inset), false)
-        set(value) = prefs.edit {
-            putBoolean(res.getString(R.string.pref_use_inset), value)
-        }
-
-    var backgroundAlpha: Int
-        get() = prefs.getInt(res.getString(R.string.pref_background_alpha), 100)
-        set(value) = prefs.edit {
-            putInt(res.getString(R.string.pref_background_alpha), value)
-        }
-
-    val activeAlpha = 255 // いつか可変にしたくなるかもしれないのでここに入れておく
-    val inactiveAlpha = 96 // 不透明度なので、小さいほど薄く、存在感がなくなる
-
-    var originalColor: Boolean
-        get() = prefs.getBoolean(res.getString(R.string.pref_ignore_high_contrast), false)
-        set(value) = prefs.edit {
-            putBoolean(res.getString(R.string.pref_ignore_high_contrast), value)
-        }
+    var gestureInsets: Boolean
+        get() = prefs.getBoolean(res.getString(R.string.pref_gesture_insets), false)
+        set(value) = prefs.edit { putBoolean(res.getString(R.string.pref_gesture_insets), value) }
 
     var keyLabelZoom: Int
         get() = prefs.getInt(res.getString(R.string.pref_key_label_zoom), 100)
@@ -309,6 +264,31 @@ class SKKPrefs(context: Context) {
             putInt(res.getString(R.string.pref_key_width_qwerty_zoom), value)
         }
 
+    var theme: String
+        get() = prefs.getString(res.getString(R.string.pref_theme), null) ?: "default"
+        set(value) = prefs.edit { putString(res.getString(R.string.pref_theme), value) }
+
+    var useInset: Boolean
+        get() = prefs.getBoolean(res.getString(R.string.pref_use_inset), false)
+        set(value) = prefs.edit {
+            putBoolean(res.getString(R.string.pref_use_inset), value)
+        }
+
+    var backgroundAlpha: Int
+        get() = prefs.getInt(res.getString(R.string.pref_background_alpha), 100)
+        set(value) = prefs.edit {
+            putInt(res.getString(R.string.pref_background_alpha), value)
+        }
+
+    val activeAlpha = 255 // いつか可変にしたくなるかもしれないのでここに入れておく
+    val inactiveAlpha = 96 // 不透明度なので、小さいほど薄く、存在感がなくなる
+
+    var originalColor: Boolean
+        get() = prefs.getBoolean(res.getString(R.string.pref_ignore_high_contrast), false)
+        set(value) = prefs.edit {
+            putBoolean(res.getString(R.string.pref_ignore_high_contrast), value)
+        }
+
     var typeURI: String
         get() = prefs.getString(res.getString(R.string.pref_type_uri), null) ?: "ignore"
         set(value) = prefs.edit { putString(res.getString(R.string.pref_type_uri), value) }
@@ -337,6 +317,22 @@ class SKKPrefs(context: Context) {
             putString(res.getString(R.string.pref_type_text), value)
         }
 
+    var haptic: Int
+        get() = prefs.getInt(res.getString(R.string.pref_haptic), 1)
+        set(value) = prefs.edit { putInt(res.getString(R.string.pref_haptic), value) }
+
+    var moveOverEdge: Boolean
+        get() = prefs.getBoolean(res.getString(R.string.pref_over_edge), false)
+        set(value) = prefs.edit { putBoolean(res.getString(R.string.pref_over_edge), value) }
+
+    var forbidPaste: Boolean
+        get() = prefs.getBoolean(res.getString(R.string.pref_forbid_paste), false)
+        set(value) = prefs.edit { putBoolean(res.getString(R.string.pref_forbid_paste), value) }
+
+    var useDel: Boolean
+        get() = prefs.getBoolean(res.getString(R.string.pref_use_del), true)
+        set(value) = prefs.edit { putBoolean(res.getString(R.string.pref_use_del), value) }
+
     // CandidatesViewContainer
     var keyCenterPort: Float
         get() = prefs.getFloat(res.getString(R.string.pref_key_center_port), 0.5f)
@@ -359,5 +355,13 @@ class SKKPrefs(context: Context) {
     var keyWidthLand: Int
         get() = prefs.getInt(res.getString(R.string.pref_key_width_land), -1)
         set(value) = prefs.edit { putInt(res.getString(R.string.pref_key_width_land), value) }
+
+    // 辞書管理
+    val defaultDictOrder =
+        "ユーザー辞書/${res.getString(R.string.dict_name_user)}/絵文字辞書/${res.getString(R.string.dict_name_emoji)}/"
+    var dictOrder: String
+        get() = prefs.getString(res.getString(R.string.pref_dict_order), defaultDictOrder)
+            ?: defaultDictOrder
+        set(value) = prefs.edit { putString(res.getString(R.string.pref_dict_order), value) }
 
 }
