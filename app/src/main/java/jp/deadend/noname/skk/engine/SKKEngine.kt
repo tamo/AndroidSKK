@@ -539,6 +539,7 @@ class SKKEngine(
         return Regex("[a-zA-Z0-9]*$").find(tbc)?.value.orEmpty()
     }
 
+    private val volleyQueue by lazy { Volley.newRequestQueue(mService.applicationContext) }
     internal fun googleTransliterate() {
         if (!mRegister.isOngoing) {
             if (mKanjiKey.isEmpty()) return
@@ -561,7 +562,6 @@ class SKKEngine(
             setComposingTextSKK(mKanjiKey.toString())
             mKanjiKey.toString() // たぶん送り仮名は存在しないはず
         }
-        val volleyQueue = Volley.newRequestQueue(mService)
         volleyQueue.add(
             JsonArrayRequest(
                 "https://www.google.com/transliterate?langpair=ja-Hira|ja&text=${query},",
