@@ -57,7 +57,8 @@ class SKKUserDictionary private constructor(
         getEntry(rawKey)?.candidates?.distinct()
 
     fun addEntry(key: String, value: String, okurigana: String) {
-        val oldVal = mBTree?.find(key) ?: return
+        val btree = mBTree ?: return
+        val oldVal: String? = btree.find(key)
 
         val newVal = getEntry(key, oldVal)?.let { entry ->
             val candidates =
@@ -76,7 +77,7 @@ class SKKUserDictionary private constructor(
 
         safeRun {
             mOldKey = key
-            mOldValue = oldVal
+            mOldValue = oldVal.orEmpty()
             mBTree?.insert(key, newVal, true)
             mRecMan?.commit()
         }
