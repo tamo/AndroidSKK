@@ -322,34 +322,10 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
 
                     val slim = removeAnnotation(s)
                     commitTextSKK(slim) // アプリ側で補完表示していることがあるのでまず上書きしておく
-                    deleteSurroundingASCII(slim)
+                    (state as SKKASCIIState).deleteSurroundingText(this@apply, slim)
                     reset()
                 }
             }
-        }
-    }
-
-    private fun deleteSurroundingASCII(text: String): Boolean {
-        val ic = service.currentInputConnection ?: return false
-        val delimiter = Regex("[^\\p{L}&&[^\\p{IsHan}\\p{IsHiragana}\\p{IsKatakana}]]")
-        ic.beginBatchEdit()
-        try {
-            val tbc = ic.getTextBeforeCursor(text.length * 2, 0) ?: throw Exception()
-            val wbc = tbc.dropLast(text.length).split(delimiter).last()
-            if (ic.deleteSurroundingText(wbc.length + text.length, 0) &&
-                ic.commitText(text, 1)
-            ) dLog("deleted already-typed [$wbc] before [$text]")
-            else throw Exception()
-
-            val tac = ic.getTextAfterCursor(SKKEngine.ASCII_WORD_MAX_LENGTH, 0) ?: throw Exception()
-            val wac = tac.split(delimiter, limit = 2).first()
-            if (!ic.deleteSurroundingText(0, wac.length)) throw Exception()
-            ic.endBatchEdit()
-            return true
-        } catch (_: Exception) {
-            dLog("connection lost while trimming around '$text'")
-            ic.endBatchEdit()
-            return false
         }
     }
 
@@ -464,7 +440,7 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
         if (engine.state !is SKKASCIIState) return
         MainScope().launch(Dispatchers.Default) {
             delay(50) // バックスペースなどの処理が間に合っていないことがあるので
-            complete(engine.getPrefixASCII())
+            complete((engine.state as SKKASCIIState).getPrefix(engine))
         }
     }
 

@@ -1,6 +1,7 @@
 package jp.deadend.noname.skk.engine
 
 import jp.deadend.noname.skk.decodeKey
+import jp.deadend.noname.skk.engine.SKKEngine.Companion.ASCII_WORD_MAX_LENGTH
 
 // ASCIIモード
 object SKKASCIIState : SKKConfirmingState {
@@ -31,11 +32,49 @@ object SKKASCIIState : SKKConfirmingState {
 
     override fun handleCancel(context: SKKEngine): Boolean {
         super.handleCancel(context)
-        return false
+        val prefix = getPrefix(context)
+        val suffix = getSuffix(context)
+        return ((prefix.isNotEmpty() || suffix.isNotEmpty()) &&
+                context.ic?.deleteSurroundingText(prefix.length, suffix.length) == true)
     }
 
     override fun changeToFlick(context: SKKEngine): Boolean {
         context.changeState(context.kanaState, true) // 元の「ひら/カタ」で FlickJP に
         return true
+    }
+
+    private val delimiter = Regex("[^\\p{L}&&[^\\p{IsHan}\\p{IsHiragana}\\p{IsKatakana}]]")
+
+    internal fun getPrefix(context: SKKEngine): String {
+        val ic = context.ic ?: return ""
+        val tbc = ic.getTextBeforeCursor(ASCII_WORD_MAX_LENGTH, 0) ?: return ""
+        return tbc.split(delimiter).last()
+    }
+
+    internal fun getSuffix(context: SKKEngine): String {
+        val ic = context.ic ?: return ""
+        val tbc = ic.getTextAfterCursor(ASCII_WORD_MAX_LENGTH, 0) ?: return ""
+        return tbc.split(delimiter, 2).first()
+    }
+
+    internal fun deleteSurroundingText(context: SKKEngine, text: String): Boolean {
+        val ic = context.ic ?: return false
+        var processed = false
+        ic.beginBatchEdit()
+
+        val tbc = ic.getTextBeforeCursor(text.length * 2, 0) ?: return false
+            .also { ic.endBatchEdit() }
+        val wbc = tbc.dropLast(text.length).split(delimiter).last()
+        if (wbc.isNotEmpty() &&
+            ic.deleteSurroundingText(wbc.length + text.length, 0) &&
+            ic.commitText(text, 1)
+        ) processed = true
+
+        val wac = getSuffix(context)
+        if (wac.isNotEmpty() && ic.deleteSurroundingText(0, wac.length))
+            processed = true
+
+        ic.endBatchEdit()
+        return processed
     }
 }

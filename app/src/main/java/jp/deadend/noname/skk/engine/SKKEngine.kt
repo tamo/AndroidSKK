@@ -63,6 +63,7 @@ class SKKEngine(
     internal var mLastConversion: ConversionInfo? = null
 
     internal var isPersonalizedLearning = true
+    internal val ic get() = mService.currentInputConnection
 
     init {
         setZenkakuPunctuationMarks("en")
@@ -215,8 +216,7 @@ class SKKEngine(
      * @param text
      */
     internal fun commitTextSKK(text: CharSequence) {
-        val ic = mService.currentInputConnection ?: return
-
+        ic ?: return
         val firstEntry = mRegister.mStack.peekFirst()?.entry ?: run {
             ic.commitText(text, 1)
             mComposingText.setLength(0)
@@ -278,7 +278,7 @@ class SKKEngine(
 
     internal fun prepareToMushroom(clip: String): String {
         val str = when {
-            state is SKKASCIIState -> getPrefixASCII().ifEmpty { clip }
+            state is SKKASCIIState -> (state as SKKASCIIState).getPrefix(this).ifEmpty { clip }
             state.canComplete -> mKanjiKey.toString()
             else -> clip
         }
@@ -351,7 +351,7 @@ class SKKEngine(
             }
 
             mComposing.isEmpty() && mKanjiKey.isEmpty() -> {
-                val ic = mService.currentInputConnection ?: return
+                ic ?: return
                 val cs = ic.getTextBeforeCursor(2, 0) ?: return
                 // 0〜2 文字を 0〜3 文字にするので注意!
                 val newLast2Chars = RomajiConverter.convertLastChar(cs.toString(), type)
@@ -461,11 +461,9 @@ class SKKEngine(
             ct.append(" hint: ", SKKNarrowingState.mHint, mComposing)
         }
 
-        // 問題になったことはないが、念のため直前で参照する
-        val ic = mService.currentInputConnection ?: return
         // SpannableStringBuilder SPAN_EXCLUSIVE_EXCLUSIVE spans cannot have a zero length
         // というエラーを防ぐため最初から SpannableString にする
-        ic.setComposingText(ct.ifEmpty { SpannableString("") }, 1)
+        ic?.setComposingText(ct.ifEmpty { SpannableString("") }, 1)
     }
 
     /***
@@ -532,12 +530,6 @@ class SKKEngine(
 
     internal fun completeASCII() =
         mCandidates.completeASCII()
-
-    internal fun getPrefixASCII(): String {
-        val ic = mService.currentInputConnection ?: return ""
-        val tbc = ic.getTextBeforeCursor(ASCII_WORD_MAX_LENGTH, 0) ?: return ""
-        return Regex("[a-zA-Z0-9]*$").find(tbc)?.value.orEmpty()
-    }
 
     private val volleyQueue by lazy { Volley.newRequestQueue(mService.applicationContext) }
     internal fun googleTransliterate() {
@@ -680,8 +672,8 @@ class SKKEngine(
         mCandidates.mList = null
         mCandidates.mQuery = ""
         mService.clearCandidatesView()
-        if (mService.currentInputConnection.getSelectedText(0).isNullOrEmpty()) {
-            mService.currentInputConnection.setComposingText(SpannableString(""), 1)
+        if (ic?.getSelectedText(0).isNullOrEmpty()) {
+            ic?.setComposingText(SpannableString(""), 1)
             // SpannableStringしないと BaseInputConnection の replaceTextInternal() で
             // SpannableStringBuilder SPAN_EXCLUSIVE_EXCLUSIVE spans cannot have a zero length
             // というエラーを出してしまう
