@@ -27,12 +27,6 @@ class SKKPrefs(context: Context) {
             putInt(res.getString(R.string.pref_candidates_size), value)
         }
 
-    var candidatesMinHeight: Boolean
-        get() = prefs.getBoolean(res.getString(R.string.pref_candidates_min_height), false)
-        set(value) = prefs.edit {
-            putBoolean(res.getString(R.string.pref_candidates_min_height), value)
-        }
-
     var fuzzySuggestion: Boolean
         get() = prefs.getBoolean(res.getString(R.string.pref_fuzzy_suggestion), true)
         set(value) = prefs.edit { putBoolean(res.getString(R.string.pref_fuzzy_suggestion), value) }
@@ -59,6 +53,18 @@ class SKKPrefs(context: Context) {
         get() = prefs.getInt(res.getString(R.string.pref_candidates_emoji_lines), 4)
         set(value) = prefs.edit {
             putInt(res.getString(R.string.pref_candidates_emoji_lines), value)
+        }
+
+    var candidatesMinHeight: Boolean
+        get() = prefs.getBoolean(res.getString(R.string.pref_candidates_min_height), false)
+        set(value) = prefs.edit {
+            putBoolean(res.getString(R.string.pref_candidates_min_height), value)
+        }
+
+    var candidatesReserveLines: Boolean
+        get() = prefs.getBoolean(res.getString(R.string.pref_candidates_reserve_lines), true)
+        set(value) = prefs.edit {
+            putBoolean(res.getString(R.string.pref_candidates_reserve_lines), value)
         }
 
     // prefs_hard_key

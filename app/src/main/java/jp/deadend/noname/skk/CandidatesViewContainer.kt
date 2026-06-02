@@ -199,7 +199,7 @@ class CandidatesViewContainer(screen: Context, attrs: AttributeSet) : LinearLayo
         val height = if (lines > 0) lines * binding.candidates.mLineHeight else minHeight
         if (binding.frame.layoutParams.height != height) {
             binding.frame.layoutParams.height = height
-            requestLayout()
+            requestLayout() // この処理中はタッチイベントを取りこぼす!
         }
     }
 }

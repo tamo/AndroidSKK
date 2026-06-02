@@ -34,8 +34,20 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
     private var mJob: Job = Job()
     private var mSuspended: Boolean = false
 
-    internal fun setView(list: List<String>?, kanjiKey: String, viewLines: Int) =
-        service.setCandidates(list, kanjiKey, viewLines)
+    internal fun setView(list: List<String>?, kanjiKey: String) {
+        if (list.isNullOrEmpty()) {
+            service.setCandidates(null)
+            return
+        }
+
+        mJob.cancel()
+        mJob = MainScope().launch(Dispatchers.Default) {
+            val (layout, viewLines) = service.mCandidatesView.buildLayout(list, kanjiKey)
+            withContext(Dispatchers.Main) {
+                service.setCandidates(layout, viewLines)
+            }
+        }
+    }
 
     internal fun updateViewCursor() = service.setCandidatesCursor(mIndex)
 
@@ -115,7 +127,7 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
         val list = mList ?: return
         val rawCandidate = list[index]
         val candidate = StringBuilder(get(index) ?: return)
-        dLog("pickCandidate $candidate from $list (unregister=$unregister)")
+        dLog("pickCandidate $candidate from $list (unregister=$unregister, learn=${engine.isPersonalizedLearning})")
         suspendCompletion()
 
         if (mQuery == "emoji" || mQuery == "/きごう") {
@@ -367,11 +379,7 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
         if (narrowed.isNotEmpty()) {
             mList = narrowed
             mIndex = 0
-            setView(if (mQuery == "emoji") narrowed.map { removeAnnotation(it) } else narrowed,
-                mQuery,
-                if (mQuery == "emoji") skkPrefs.candidatesEmojiLines
-                else skkPrefs.candidatesNormalLines
-            )
+            setView(narrowed, mQuery)
         } else dLog("narrowCandidates: no entries")
         updateComposingText()
     }
@@ -446,17 +454,7 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
 
                 mQuery = str
                 mIndex = 0
-                mList?.let { rawList ->
-                    val displayList =
-                        if (str == "emoji") rawList.map { removeAnnotation(it) } else rawList
-                    withContext(Dispatchers.Main) {
-                        service.setCandidates(
-                            displayList, str,
-                            if (str == "emoji") skkPrefs.candidatesEmojiLines
-                            else skkPrefs.candidatesNormalLines
-                        )
-                    }
-                }
+                setView(mList, str)
             }
             mJob.start()
         }

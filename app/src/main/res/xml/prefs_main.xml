@@ -118,12 +118,6 @@
             app:showSeekBarValue="true"
             app:title="候補表示の文字サイズ" />
         <androidx.preference.CheckBoxPreference
-            app:defaultValue="false"
-            app:iconSpaceReserved="false"
-            app:key="@string/pref_candidates_min_height"
-            app:summary="変換中にアプリがリサイズしませんが一部隠れます"
-            app:title="候補表示をアプリ上に重ねて伸ばす" />
-        <androidx.preference.CheckBoxPreference
             app:defaultValue="true"
             app:iconSpaceReserved="false"
             app:key="@string/pref_fuzzy_suggestion"
@@ -157,6 +151,18 @@
             app:min="1"
             app:showSeekBarValue="true"
             app:title="候補表示の行数 (絵文字)" />
+        <androidx.preference.CheckBoxPreference
+            app:defaultValue="false"
+            app:iconSpaceReserved="false"
+            app:key="@string/pref_candidates_min_height"
+            app:summary="変換中にアプリがリサイズしませんが一部隠れます"
+            app:title="候補表示をアプリ上に重ねて伸ばす" />
+        <androidx.preference.CheckBoxPreference
+            app:defaultValue="true"
+            app:iconSpaceReserved="false"
+            app:key="@string/pref_candidates_reserve_lines"
+            app:summary="候補がないときにオンでは通常行数，オフでは1行になります\nオフのときはタイミングによって一時的に操作が無視されることがあります"
+            app:title="候補表示の保持" />
     </androidx.preference.PreferenceCategory>
     <androidx.preference.PreferenceCategory
         app:icon="@android:drawable/ic_dialog_alert"

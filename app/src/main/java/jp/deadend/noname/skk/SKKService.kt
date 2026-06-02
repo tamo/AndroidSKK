@@ -63,7 +63,8 @@ import android.view.WindowInsets.Type as InsetsType
 class SKKService : InputMethodService() {
     private lateinit var mBinding: InputViewBinding
     private val mCandidatesViewContainer get() = mBinding.candidatesContainer.root
-    private val mCandidatesView get() = mBinding.candidatesContainer.candidates
+    internal val mCandidatesView get() = mBinding.candidatesContainer.candidates
+
     private var mFlickJPInputView: FlickJPKeyboardView? = null
     private var mGodanInputView: GodanKeyboardView? = null
     private var mQwertyInputView: QwertyKeyboardView? = null
@@ -1367,22 +1368,26 @@ class SKKService : InputMethodService() {
 
     fun resumeCompletion() = mEngine.mCandidates.resumeCompletion()
 
-    fun setCandidates(list: List<String>?, kanjiKey: String, viewLines: Int) {
+    internal fun setCandidates(
+        layout: CandidateLayout?,
+        viewLines: Int = skkPrefs.candidatesNormalLines
+    ) {
         mCandidatesViewContainer.apply {
-            if (list.isNullOrEmpty()) {
+            if (layout == null) {
                 setAlpha(skkPrefs.inactiveAlpha)
-                lines = 0
+                lines = if (skkPrefs.candidatesReserveLines) viewLines else 0
+                mCandidatesView.setContents(null)
             } else {
                 setAlpha(skkPrefs.activeAlpha)
                 lines = viewLines
+                mCandidatesView.setContents(layout)
             }
         }
-        mCandidatesView.setContents(list, kanjiKey)
     }
 
-    fun setCandidatesCursor(index: Int) = mCandidatesView.choose(index)
+    internal fun setCandidatesCursor(index: Int) = mCandidatesView.setCursor(index)
 
-    fun clearCandidatesView() = setCandidates(null, "", 0)
+    internal fun clearCandidatesView() = setCandidates(null)
 
     // カーソル直前に引数と同じ文字列があるなら，それを消してtrue なければfalse
     fun prepareReConversion(candidate: String): Boolean {

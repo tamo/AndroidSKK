@@ -493,7 +493,7 @@ class SKKEngine(
             mList = list
             mIndex = 0
             mQuery = str
-            setView(list, mQuery, skkPrefs.candidatesNormalLines)
+            setView(list, mQuery)
             updateComposingText()
         }
     }
@@ -516,7 +516,7 @@ class SKKEngine(
                 mList = lastConv.list
                 mIndex = lastConv.index
                 mQuery = lastConv.kanjiKey
-                setView(mList, mQuery, skkPrefs.candidatesNormalLines)
+                setView(mList, mQuery)
                 updateViewCursor()
                 updateComposingText()
             }
@@ -592,7 +592,7 @@ class SKKEngine(
                             mList = list
                             mIndex = 0
                             mQuery = mKanjiKey.toString()
-                            setView(list, mQuery, skkPrefs.candidatesNormalLines)
+                            setView(list, mQuery)
                             updateComposingText()
                         }
                     }
@@ -616,7 +616,7 @@ class SKKEngine(
             mCompletionList = mList?.map { "/きごう" }
             mIndex = 0
             mQuery = "/きごう"
-            setView(mList, mQuery, skkPrefs.candidatesNormalLines)
+            setView(mList, mQuery)
         }
     }
 
