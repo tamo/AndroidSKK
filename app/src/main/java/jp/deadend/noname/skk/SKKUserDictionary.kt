@@ -1,10 +1,6 @@
 package jp.deadend.noname.skk
 
 import android.util.Log
-import jdbm.RecordManager
-import jdbm.RecordManagerFactory
-import jdbm.btree.BTree
-import jdbm.helper.StringComparator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
@@ -12,8 +8,7 @@ import kotlinx.coroutines.sync.withLock
 import java.io.File
 
 class SKKUserDictionary private constructor(
-    override var mRecMan: RecordManager?,
-    override var mBTree: BTree<String, String>?,
+    override var mStore: SKKDictionaryStore?,
     override val mIsASCII: Boolean,
     private val mDictFile: String,
     private val mBtreeName: String
@@ -29,7 +24,7 @@ class SKKUserDictionary private constructor(
 
     fun getEntry(rawKey: String, rawValue: String? = null): Entry? {
         val key = katakana2hiragana(rawKey) ?: return null
-        val value: String = rawValue ?: mBTree?.find(key) ?: return null
+        val value: String = rawValue ?: mStore?.find(key) ?: return null
 
         // 正規表現で "/送/" と "/[り/送/]/" を拾う
         val (candidates, okuriganaStrings) =
@@ -57,8 +52,8 @@ class SKKUserDictionary private constructor(
         getEntry(rawKey)?.candidates?.distinct()
 
     fun addEntry(key: String, value: String, okurigana: String) {
-        val btree = mBTree ?: return
-        val oldVal: String? = btree.find(key)
+        val store = mStore ?: return
+        val oldVal: String? = store.find(key)
 
         val newVal = getEntry(key, oldVal)?.let { entry ->
             val candidates =
@@ -78,8 +73,8 @@ class SKKUserDictionary private constructor(
         safeRun {
             mOldKey = key
             mOldValue = oldVal.orEmpty()
-            mBTree?.insert(key, newVal, true)
-            mRecMan?.commit()
+            mStore?.insert(key, newVal)
+            mStore?.commit()
         }
     }
 
@@ -106,11 +101,11 @@ class SKKUserDictionary private constructor(
         safeRun {
             // ここは再変換と関係ないので mOldKey / mOldValue を更新しない
             if (value.isEmpty() || Regex("/*").matchEntire(value) != null) {
-                mBTree?.remove(key)
+                mStore?.remove(key)
             } else {
-                mBTree?.insert(key, value, true)
+                mStore?.insert(key, value)
             }
-            mRecMan?.commit()
+            mStore?.commit()
         }
     }
 
@@ -119,11 +114,11 @@ class SKKUserDictionary private constructor(
 
         safeRun {
             if (mOldValue.isEmpty()) {
-                mBTree?.remove(mOldKey)
+                mStore?.remove(mOldKey)
             } else {
-                mBTree?.insert(mOldKey, mOldValue, true)
+                mStore?.insert(mOldKey, mOldValue)
             }
-            mRecMan?.commit()
+            mStore?.commit()
         }
 
         mOldValue = ""
@@ -131,19 +126,17 @@ class SKKUserDictionary private constructor(
     }
 
     override fun close() {
-        safeRun { mRecMan?.commit() }
+        safeRun { mStore?.commit() }
         super.close()
         mOldKey = ""
         mOldValue = ""
-        mRecMan = null
-        mBTree = null
+        mStore = null
     }
 
     fun reopen() {
         close()
         openDB(mDictFile, mBtreeName).let {
-            mRecMan = it.first
-            mBTree = it.second
+            mStore = it
         }
     }
 
@@ -151,38 +144,20 @@ class SKKUserDictionary private constructor(
         runBlocking(Dispatchers.IO) { mMutex.withLock { block() } }
 
     companion object {
-        fun openDB(
-            filename: String,
-            btreeName: String
-        ): Pair<RecordManager, BTree<String, String>> {
-            val props = java.util.Properties().apply {
-                setProperty(jdbm.RecordManagerOptions.DISABLE_TRANSACTIONS, "true")
-            }
-            val recMan = RecordManagerFactory.createRecordManager(filename, props)
-            val recID = recMan.getNamedObject(btreeName)
-            if (recID == 0L) {
-                val btree = BTree<String, String>(recMan, StringComparator())
-                recMan.setNamedObject(btreeName, btree.recordId)
-                recMan.commit()
-                dLog("New user dictionary created")
-                return recMan to btree
-            }
-            return recMan to BTree<String, String>().load(recMan, recID)
-        }
-
         fun newInstance(
             context: SKKService,
             mDictFile: String,
             btreeName: String,
             isASCII: Boolean
         ): SKKUserDictionary? {
+            val mvFile = File("$mDictFile.mv")
             val dbFile = File("$mDictFile.db")
-            if (isASCII && !dbFile.exists()) {
+            if (isASCII && !mvFile.exists() && !dbFile.exists()) {
                 context.extractDictionary(dbFile.nameWithoutExtension)
             }
             try {
-                val (recMan, btree) = openDB(mDictFile, btreeName)
-                return SKKUserDictionary(recMan, btree, isASCII, mDictFile, btreeName)
+                val store = openDB(mDictFile, btreeName)
+                return SKKUserDictionary(store, isASCII, mDictFile, btreeName)
             } catch (e: Exception) {
                 Log.e("SKK", "Error in opening the dictionary: $e")
                 return null

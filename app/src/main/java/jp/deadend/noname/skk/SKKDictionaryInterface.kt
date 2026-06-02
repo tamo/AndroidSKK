@@ -1,10 +1,7 @@
 package jp.deadend.noname.skk
 
 import android.util.Log
-import jdbm.RecordManager
-import jdbm.btree.BTree
-import jdbm.helper.Tuple
-import jdbm.helper.TupleBrowser
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
@@ -12,6 +9,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.BufferedReader
+import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.io.InputStreamReader
@@ -20,17 +18,17 @@ import java.nio.charset.CodingErrorAction
 import kotlin.math.max
 
 @Throws(IOException::class)
-private fun appendToEntry(key: String, value: String, btree: BTree<String, String>) {
-    val oldVal = btree.find(key)
+private fun appendToEntry(key: String, value: String, store: SKKDictionaryStore) {
+    val oldVal = store.find(key)
 
     if (oldVal != null) {
         val valList = value.trim('/').split('/')
         val oldValList = oldVal.trim('/').split('/')
 
         val newValue = valList.union(oldValList).joinToString("/", prefix = "/", postfix = "/")
-        btree.insert(key, newValue, true)
+        store.insert(key, newValue)
     } else {
-        btree.insert(key, value, true)
+        store.insert(key, value)
     }
 }
 
@@ -61,8 +59,7 @@ internal fun loadFromTextDict(
     inputStream: InputStream,
     charset: String,
     isWordList: Boolean,
-    recMan: RecordManager,
-    btree: BTree<String, String>,
+    store: SKKDictionaryStore,
     overwrite: Boolean,
     callback: (count: Int) -> Unit
 ) {
@@ -76,9 +73,9 @@ internal fun loadFromTextDict(
         if (parts.size == 2) {
             val (key, value) = parts
             if (overwrite) {
-                btree.insert(key, value, true)
+                store.insert(key, value)
             } else {
-                appendToEntry(key, value, btree)
+                appendToEntry(key, value, store)
             }
         }
     }
@@ -101,7 +98,7 @@ internal fun loadFromTextDict(
             prevFreq = f
             isShortCut = false
             if ("not_a_word" in csv) {
-                if (overwrite) btree.remove(key)
+                if (overwrite) store.remove(key)
                 return
             }
             f
@@ -115,9 +112,9 @@ internal fun loadFromTextDict(
         } else return
         if (freq == 0) return
         if (!isShortCut && overwrite) {
-            btree.insert(key, "/$freq/$key/", true)
+            store.insert(key, "/$freq/$key/")
         } else {
-            val pairs = (btree.find(prevKey).orEmpty())
+            val pairs = (store.find(prevKey).orEmpty())
                 .split('/').asSequence().filter { it.isNotEmpty() }
                 .zipWithNext().filterIndexed { index, _ -> index % 2 == 0 }
                 .associate { (f, s) ->
@@ -131,7 +128,7 @@ internal fun loadFromTextDict(
             pairs[key] = max(freq, oldFreq)
             pairs.flatMap { (k, v) -> listOf(v.toString(), k) }
                 .reduce { acc, s -> "$acc/$s" }
-                .let { btree.insert(prevKey, "/$it/", true) }
+                .let { store.insert(prevKey, "/$it/") }
         }
     }
 
@@ -142,40 +139,39 @@ internal fun loadFromTextDict(
             loadLine(line)
             callback(count)
             if (++count % 1000 == 0) {
-                recMan.commit()
+                store.commit()
             }
         }
-        recMan.commit()
+        store.commit()
     }
 }
 
 interface SKKDictionaryInterface {
-    val mRecMan: RecordManager?
-    val mBTree: BTree<String, String>?
+    val mStore: SKKDictionaryStore?
     val mIsASCII: Boolean
     val mMutex: Mutex
 
     suspend fun findKeys(scope: CoroutineScope, rawKey: String): List<Pair<String, String>> {
         val key = katakana2hiragana(rawKey) ?: return listOf()
         val list = mutableListOf<Triple<String, String, Int>>()
-        val tuple = Tuple<String, String>()
-        val browser: TupleBrowser<String, String>
+        val browser: SKKDictionaryBrowser
+
         val topFreq = mutableListOf<Int>()
 
         try {
-            browser = mBTree?.browse(key) ?: return listOf()
+            browser = mStore?.browse(key) ?: return listOf()
 
             // 絵文字は1500ほどあるし CandidatesView の行数が可変になったので多めが良さそう
             while (list.size < if (mIsASCII) 1500 else 15) {
                 scope.ensureActive()
 
-                if (!browser.getNext(tuple)) break
-                val str = tuple.key
+                val resultTuple = browser.getNext() ?: break
+                val str = resultTuple.key
                 when {
                     !str.startsWith(key) -> break
 
                     mIsASCII -> {
-                        tuple.value
+                        resultTuple.value
                             .split('/')
                             .filter { it.isNotEmpty() }
                             .zipWithNext()
@@ -204,8 +200,10 @@ interface SKKDictionaryInterface {
                     else -> list.add(Triple(str, str, 0))
                 }
             }
-        } catch (e: IOException) {
-            Log.e("SKK", "Error in findKeys(): $e")
+        } catch (_: CancellationException) {
+            return listOf()
+        } catch (e: Exception) {
+            Log.e("SKK", "Error in findKeys(): ${e.stackTrace}")
             throw RuntimeException(e)
         }
         if (mIsASCII) {
@@ -220,11 +218,50 @@ interface SKKDictionaryInterface {
     fun close() {
         runBlocking(Dispatchers.IO) {
             mMutex.withLock {
-                mRecMan?.let {
+                mStore?.let {
                     it.commit()
                     it.close()
                 }
             }
         }
     }
+}
+
+internal fun openDB(
+    filename: String,
+    btreeName: String
+): SKKDictionaryStore {
+    val mvFile = File("$filename.mv")
+    if (mvFile.exists()) {
+        return MVStoreDictionaryStore.open(mvFile.absolutePath, btreeName)
+    }
+
+    val dbFile = File("$filename.db")
+    if (dbFile.exists()) {
+        // Migrate from JDBM to MVStore
+        dLog("Migrating $filename to MVStore...")
+        val jdbmStore = JDBMDictionaryStore.open(filename, btreeName)
+        val mvStore = MVStoreDictionaryStore.open(mvFile.absolutePath, btreeName)
+
+        val browser = jdbmStore.browse()
+        if (browser != null) {
+            var count = 0
+            while (true) {
+                val result = browser.getNext() ?: break
+                mvStore.insert(result.key, result.value)
+                if (++count % 1000 == 0) mvStore.commit()
+            }
+        }
+        mvStore.commit()
+        jdbmStore.close()
+
+        // Clean up JDBM files
+        dbFile.delete()
+        File("$filename.lg").delete()
+        dLog("Migration finished.")
+        return mvStore
+    }
+
+    // Create new MVStore
+    return MVStoreDictionaryStore.open(mvFile.absolutePath, btreeName)
 }

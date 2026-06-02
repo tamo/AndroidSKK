@@ -48,6 +48,7 @@
 
     <string name="message_extracting_dict">辞書を解凍しています…</string>
     <string name="message_dict_extracted">辞書を解凍しました</string>
+    <string name="message_dict_migrating">辞書を新形式に移行しています</string>
 
     <string name="message_confirm_load_azik_rule">現在の変換ルールを AZIK 風の設定で上書きしますか？</string>
     <string name="message_confirm_clear_kana_rule">ローマ字かな変換ルールをデフォルトに戻しますか？</string>

@@ -1,8 +1,5 @@
 package jp.deadend.noname.skk
 
-import jdbm.RecordManagerFactory
-import jdbm.btree.BTree
-import jdbm.helper.StringComparator
 import java.io.File
 import java.io.FileOutputStream
 import java.util.zip.ZipEntry
@@ -29,13 +26,11 @@ object MakeAssetDict {
 
     fun convertWordList(inputPath: String, outputZipPath: String, noticePath: String) {
         val dbBaseName = File(outputZipPath).nameWithoutExtension
-        File("$dbBaseName.db").delete()
-        File("$dbBaseName.lg").delete()
+        val mvFileName = "$dbBaseName.mv"
+        File(mvFileName).delete()
 
         println("Converting WordList $inputPath to $outputZipPath...")
-        val recMan = RecordManagerFactory.createRecordManager(dbBaseName)
-        val btree = BTree<String, String>(recMan, StringComparator())
-        recMan.setNamedObject("skk_dict", btree.recordId)
+        val store = MVStoreDictionaryStore.open(mvFileName, "skk_dict")
 
         var lastKey: String? = null
         var lastFreq: String? = null
@@ -78,26 +73,25 @@ object MakeAssetDict {
                     }
 
                     else -> {
-                        println(line)
                         return@forEachLine
                     }
                 }
-                val oldValue = btree.find(lastKey) ?: "/"
+                val oldValue = store.find(lastKey) ?: "/"
                 val newValue = "$oldValue$freq/$word/"
-                btree.insert(lastKey, newValue, true)
+                store.insert(lastKey, newValue)
                 count++
 
                 if (count % 5000 == 0) {
-                    recMan.commit()
+                    store.commit()
                     print(".")
                 }
             }
         }
         println("\nProcessed $count word entries.")
-        recMan.commit()
-        recMan.close()
+        store.commit()
+        store.close()
 
-        zipDatabase(outputZipPath, dbBaseName, noticePath)
+        zipDatabase(outputZipPath, mvFileName, noticePath)
     }
 
     fun convertEmoji(inputPath: String, outputZipPath: String, noticePath: String) {
@@ -112,7 +106,6 @@ object MakeAssetDict {
                 val spaceIdx = line.indexOf(' ')
                 if (spaceIdx == -1) return@forEachLine
 
-                //val key = line.substring(0, spaceIdx)
                 val candidatesPart = line.substring(spaceIdx + 1).trim('/')
                 val candidates = candidatesPart.split('/')
 
@@ -139,33 +132,29 @@ object MakeAssetDict {
         }
 
         val dbBaseName = File(outputZipPath).nameWithoutExtension
-        File("$dbBaseName.db").delete()
-        File("$dbBaseName.lg").delete()
+        val mvFileName = "$dbBaseName.mv"
+        File(mvFileName).delete()
 
-        val recMan = RecordManagerFactory.createRecordManager(dbBaseName)
-        val btree = BTree<String, String>(recMan, StringComparator())
-        recMan.setNamedObject("skk_dict", btree.recordId)
+        val store = MVStoreDictionaryStore.open(mvFileName, "skk_dict")
 
         merged.forEach { (key, value) ->
-            btree.insert(key, value, true)
+            store.insert(key, value)
         }
         println("Processed $count emoji entries.")
-        recMan.commit()
-        recMan.close()
+        store.commit()
+        store.close()
 
-        zipDatabase(outputZipPath, dbBaseName, noticePath)
+        zipDatabase(outputZipPath, mvFileName, noticePath)
     }
 
-    private fun zipDatabase(zipPath: String, dbBaseName: String, noticePath: String) {
+    private fun zipDatabase(zipPath: String, mvFileName: String, noticePath: String) {
         ZipOutputStream(FileOutputStream(zipPath)).use { zos ->
-            listOf("$dbBaseName.db", "$dbBaseName.lg").forEach { fileName ->
-                val file = File(fileName)
-                if (file.exists()) {
-                    zos.putNextEntry(ZipEntry(fileName))
-                    file.inputStream().use { it.copyTo(zos) }
-                    zos.closeEntry()
-                    file.delete()
-                }
+            val file = File(mvFileName)
+            if (file.exists()) {
+                zos.putNextEntry(ZipEntry(mvFileName))
+                file.inputStream().use { it.copyTo(zos) }
+                zos.closeEntry()
+                file.delete()
             }
             val noticeFile = File(noticePath)
             if (noticeFile.exists()) {

@@ -274,7 +274,15 @@ class SKKService : InputMethodService() {
                 getString(R.string.dict_name_emoji) -> mEmojiDict
                 else -> SKKDictionary.newInstance(
                     "$dd/$dictPath", getString(R.string.btree_name)
-                ) ?: run {
+                ) {
+                    mHandler.post {
+                        Toast.makeText(
+                            applicationContext,
+                            getText(R.string.message_dict_migrating),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                } ?: run {
                     dLog("failed to open $dictPath")
                     null
                 }

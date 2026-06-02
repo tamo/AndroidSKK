@@ -1,26 +1,18 @@
 package jp.deadend.noname.skk
 
 import android.util.Log
-import jdbm.RecordManager
-import jdbm.btree.BTree
 import kotlinx.coroutines.sync.Mutex
-import java.io.IOException
+import java.io.File
 
 class SKKDictionary private constructor(
-    override val mRecMan: RecordManager,
-    override val mBTree: BTree<String, String>
+    override val mStore: SKKDictionaryStore
 ) : SKKDictionaryInterface {
     override val mIsASCII = false
     override val mMutex = Mutex()
 
     override fun getCandidates(rawKey: String): List<String>? {
         val key = katakana2hiragana(rawKey) ?: return null
-        val value = try {
-            mBTree.find(key)
-        } catch (e: IOException) {
-            Log.e("SKK", "Error in getCandidates(): $e")
-            throw RuntimeException(e)
-        } ?: return null
+        val value = mStore.find(key) ?: return null
 
         val valArray = value.trim('/').split('/')
         if (valArray.isEmpty()) {
@@ -32,25 +24,25 @@ class SKKDictionary private constructor(
     }
 
     companion object {
-        fun newInstance(mDictFile: String, btreeName: String): SKKDictionary? {
-            var recMan: RecordManager? = null
+        fun newInstance(mDictFile: String, btreeName: String, toaster: () -> Unit): SKKDictionary? {
+            var store: SKKDictionaryStore? = null
             return try {
-                val props = java.util.Properties().apply {
-                    setProperty(jdbm.RecordManagerOptions.DISABLE_TRANSACTIONS, "true")
+                val mvFile = File("$mDictFile.mv")
+                if (mvFile.exists()) {
+                    store = MVStoreDictionaryStore.open("$mDictFile.mv", btreeName)
+                } else if (File("$mDictFile.db").exists()) {
+                    toaster.invoke()
+                    store = openDB(mDictFile, btreeName)
                 }
-                recMan = jdbm.RecordManagerFactory.createRecordManager(mDictFile, props)
-                val recID = recMan.getNamedObject(btreeName)
-                val btree = BTree<String, String>().load(recMan, recID)
 
-                SKKDictionary(recMan, btree)
+                if (store != null) {
+                    SKKDictionary(store)
+                } else {
+                    null
+                }
             } catch (e: Exception) {
                 Log.e("SKK", "Error in opening the dictionary: $e")
-                try {
-                    recMan?.close()
-                } catch (ee: Exception) {
-                    Log.e("SKK", "Error in closing the dictionary: $ee")
-                }
-
+                store?.close()
                 null
             }
         }

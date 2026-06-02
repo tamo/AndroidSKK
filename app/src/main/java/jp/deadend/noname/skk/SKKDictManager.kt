@@ -20,11 +20,6 @@ import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import jdbm.RecordManager
-import jdbm.RecordManagerFactory
-import jdbm.btree.BTree
-import jdbm.helper.StringComparator
-import jdbm.helper.Tuple
 import jp.deadend.noname.dialog.ConfirmationDialogFragment
 import jp.deadend.noname.dialog.SimpleMessageDialogFragment
 import jp.deadend.noname.dialog.TextInputDialogFragment
@@ -51,7 +46,7 @@ class SKKDictManager : AppCompatActivity() {
     private lateinit var binding: ActivityDictManagerBinding
     private val mAdapter: TupleAdapter
         get() = binding.dictManagerList.adapter as TupleAdapter
-    private var mDictList = listOf<Tuple<String, String>>()
+    private var mDictList = listOf<SKKDictionaryTuple>()
 
     private val addDictFileLauncher = registerForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -61,16 +56,16 @@ class SKKDictManager : AppCompatActivity() {
         }
     }
 
-    private val commonDictList: List<Tuple<String, String>> by lazy {
+    private val commonDictList: List<SKKDictionaryTuple> by lazy {
         listOf(
-            Tuple("ユーザー辞書", getString(R.string.dict_name_user)),
-            Tuple("絵文字辞書", getString(R.string.dict_name_emoji))
+            SKKDictionaryTuple("ユーザー辞書", getString(R.string.dict_name_user)),
+            SKKDictionaryTuple("絵文字辞書", getString(R.string.dict_name_emoji))
         ) + listOf(
             "lisplike", "L+", "L", "L.unannotated", "S",
             "jinmei", "geo", "station", "propernoun",
             "itaiji", "fullname", "emoji",
             "assoc", "edict2", "okinawa", "JIS2"
-        ).map { type -> Tuple("SKK $type 辞書", "/skk_dict_${type}") }
+        ).map { type -> SKKDictionaryTuple("SKK $type 辞書", "/skk_dict_${type}") }
     }
 
     public override fun onCreate(savedInstanceState: Bundle?) {
@@ -97,22 +92,23 @@ class SKKDictManager : AppCompatActivity() {
             .dropLastWhile { it.isEmpty() }
             .asSequence()
             .chunked(2)
-            .map { Tuple(it[0], it[1]) }
+            .map { SKKDictionaryTuple(it[0], it[1]) }
             .plus(commonDictList) // 一般的な辞書を追加
             .distinctBy { it.value.removePrefix("/") } // 重複を消去
             .toMutableList()
         // インストール済みかどうかチェック
-        Files.newDirectoryStream(filesDir.toPath(), "skk_dict_*.db").use { stream ->
+        Files.newDirectoryStream(filesDir.toPath(), "skk_dict_*.mv").use { stream ->
             stream.forEach { path ->
                 val fullName = path.fileName.toString()
-                val filename = fullName.removeSuffix(".db")
+                val filename = fullName.removeSuffix(".mv")
                 val existing = dictList.find { it.value.removePrefix("/") == filename }
 
                 if (existing == null) {
                     val type = filename.removePrefix("skk_dict_")
-                    dictList.add(Tuple("SKK $type 辞書", filename))
+                    dictList.add(SKKDictionaryTuple("SKK $type 辞書", filename))
                 } else {
-                    existing.value = filename
+                    val index = dictList.indexOf(existing)
+                    dictList[index] = existing.copy(value = filename)
                 }
             }
         }
@@ -152,10 +148,9 @@ class SKKDictManager : AppCompatActivity() {
                         val item = newList[position]
                         val dictName = item.key
                         val dictPath = item.value
-                        deleteFile("$dictPath.db")
-                        deleteFile("$dictPath.lg")
+                        deleteFile("$dictPath.mv")
                         if (dictPath.startsWith("skk_dict_")) {
-                            newList[position] = Tuple(dictName, "/${dictPath}")
+                            newList[position] = SKKDictionaryTuple(dictName, "/${dictPath}")
                         } else {
                             newList.remove(item)
                         }
@@ -275,7 +270,8 @@ class SKKDictManager : AppCompatActivity() {
                                 val size = formatShortFileSize(applicationContext, path.length())
                                 withContext(Dispatchers.Main) {
                                     val newList = mDictList.toMutableList()
-                                    newList[position] = Tuple("${item.key} ($size)", item.value)
+                                    newList[position] =
+                                        SKKDictionaryTuple("${item.key} ($size)", item.value)
                                     mAdapter.submitList(newList)
                                     mDictList = newList
                                 }
@@ -325,7 +321,7 @@ class SKKDictManager : AppCompatActivity() {
 
         if (position != -1) { // 既存のものを loadDict した後の処理
             val newList = mDictList.toMutableList()
-            newList[position] = Tuple(newList[position].key, dictFileBaseName)
+            newList[position] = SKKDictionaryTuple(newList[position].key, dictFileBaseName)
             mAdapter.submitList(newList)
             mDictList = newList
             return
@@ -350,7 +346,7 @@ class SKKDictManager : AppCompatActivity() {
                         suffix++
                         name = "$dictName($suffix)"
                     }
-                    val item = Tuple(name, "/$dictFileBaseName")
+                    val item = SKKDictionaryTuple(name, "/$dictFileBaseName")
                     val newList = mDictList.plus(item)
                     mAdapter.submitList(newList)
                     mDictList = newList
@@ -359,8 +355,7 @@ class SKKDictManager : AppCompatActivity() {
                 }
 
                 override fun onNegativeClick() {
-                    deleteFile("$dictFileBaseName.db")
-                    deleteFile("$dictFileBaseName.lg")
+                    deleteFile("$dictFileBaseName.mv")
                 }
             })
         dialog.show(supportFragmentManager, "dialog")
@@ -395,15 +390,14 @@ class SKKDictManager : AppCompatActivity() {
             ).show(supportFragmentManager, "dialog")
             return
         }
-        if (File(filesDir, "$dictFileBaseName.db").exists()) {
+        if (File(filesDir, "$dictFileBaseName.mv").exists()) {
             val dialog = ConfirmationDialogFragment.newInstance(
                 getString(R.string.error_dict_exists, dictFileBaseName)
             )
             dialog.setListener(
                 object : ConfirmationDialogFragment.Listener {
                     override fun onPositiveClick() {
-                        deleteFile("$dictFileBaseName.db")
-                        deleteFile("$dictFileBaseName.lg")
+                        deleteFile("$dictFileBaseName.mv")
                         loadDict(uri, position, common)
                     }
 
@@ -423,22 +417,17 @@ class SKKDictManager : AppCompatActivity() {
 
         MainScope().launch(Dispatchers.IO) {
             val item = mDictList[position]
-            var recMan: RecordManager? = null
+            var store: SKKDictionaryStore? = null
             var success = false
             try {
-                val props = java.util.Properties().apply {
-                    setProperty(jdbm.RecordManagerOptions.DISABLE_TRANSACTIONS, "true")
-                }
-                recMan = RecordManagerFactory.createRecordManager(
-                    filesDir.absolutePath + "/" + dictFileBaseName, props
+                store = MVStoreDictionaryStore.open(
+                    filesDir.absolutePath + "/" + dictFileBaseName + ".mv",
+                    getString(R.string.btree_name)
                 )
-                val btree = BTree<String, String>(recMan, StringComparator())
-                recMan.setNamedObject(getString(R.string.btree_name), btree.recordId)
-                recMan.commit()
 
                 withContext(Dispatchers.Main) {
                     val newList = mDictList.toMutableList()
-                    newList[position] = Tuple("${item.key} (識別中)", item.value)
+                    newList[position] = SKKDictionaryTuple("${item.key} (識別中)", item.value)
                     mAdapter.submitList(newList)
                     mDictList = newList
                 }
@@ -450,11 +439,12 @@ class SKKDictManager : AppCompatActivity() {
                 contentResolver.openInputStream(uri)?.use { inputStream ->
                     val processedInputStream =
                         if (isGzip) GZIPInputStream(inputStream) else inputStream
-                    loadFromTextDict(processedInputStream, charset, false, recMan!!, btree, false) {
+                    loadFromTextDict(processedInputStream, charset, false, store, false) {
                         if (floor(sqrt(it.toFloat())) % 70 == 0f) {
                             MainScope().launch {
                                 val newList = mDictList.toMutableList()
-                                newList[position] = Tuple("${item.key} ($it 行目)", item.value)
+                                newList[position] =
+                                    SKKDictionaryTuple("${item.key} ($it 行目)", item.value)
                                 mAdapter.submitList(newList)
                                 mDictList = newList
                             }
@@ -485,16 +475,15 @@ class SKKDictManager : AppCompatActivity() {
                 }
                 Log.e("SKK", "SKKDictManager#loadDict() Error: $e")
             } finally {
-                if (recMan != null) {
+                if (store != null) {
                     try {
-                        recMan.close()
-                    } catch (ee: IOException) {
+                        store.close()
+                    } catch (ee: Exception) {
                         Log.e("SKK", "SKKDictManager#loadDict() can't close(): $ee")
                     }
                 }
                 if (!success) {
-                    deleteFile("$dictFileBaseName.db")
-                    deleteFile("$dictFileBaseName.lg")
+                    deleteFile("$dictFileBaseName.mv")
                 }
             }
 
@@ -507,14 +496,14 @@ class SKKDictManager : AppCompatActivity() {
     private fun containsName(s: String) = mDictList.any { s == it.key }
 
     class TupleAdapter(private val onItemClickListener: (Int) -> Unit) :
-        ListAdapter<Tuple<String, String>,
+        ListAdapter<SKKDictionaryTuple,
                 TupleAdapter.TupleViewHolder>(TupleDiffCallback()) {
         class TupleViewHolder(
             binding: ActivityCheckedTextBinding,
             private val onItemClickListener: (Int) -> Unit
         ) : RecyclerView.ViewHolder(binding.root) {
             val view = binding.dictManagerListItem
-            fun bind(item: Tuple<String, String>) {
+            fun bind(item: SKKDictionaryTuple) {
                 view.text = item.key
                 view.isChecked = !item.value.startsWith('/')
                 view.setOnClickListener {
@@ -537,17 +526,17 @@ class SKKDictManager : AppCompatActivity() {
         }
     }
 
-    class TupleDiffCallback : DiffUtil.ItemCallback<Tuple<String, String>>() {
+    class TupleDiffCallback : DiffUtil.ItemCallback<SKKDictionaryTuple>() {
         override fun areItemsTheSame(
-            oldItem: Tuple<String, String>,
-            newItem: Tuple<String, String>
+            oldItem: SKKDictionaryTuple,
+            newItem: SKKDictionaryTuple
         ): Boolean {
             return oldItem.key == newItem.key && oldItem.value == newItem.value
         }
 
         override fun areContentsTheSame(
-            oldItem: Tuple<String, String>,
-            newItem: Tuple<String, String>
+            oldItem: SKKDictionaryTuple,
+            newItem: SKKDictionaryTuple
         ): Boolean {
             return areItemsTheSame(oldItem, newItem)
         }

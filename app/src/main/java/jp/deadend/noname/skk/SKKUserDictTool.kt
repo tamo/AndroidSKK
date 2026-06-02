@@ -19,11 +19,6 @@ import androidx.appcompat.widget.SearchView
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
-import jdbm.RecordManager
-import jdbm.RecordManagerFactory
-import jdbm.btree.BTree
-import jdbm.helper.StringComparator
-import jdbm.helper.Tuple
 import jp.deadend.noname.dialog.ConfirmationDialogFragment
 import jp.deadend.noname.dialog.SimpleMessageDialogFragment
 import jp.deadend.noname.skk.databinding.ActivityUserDictToolBinding
@@ -42,10 +37,9 @@ import kotlin.math.sqrt
 
 class SKKUserDictTool : AppCompatActivity() {
     private lateinit var mDictName: String
-    private var mRecMan: RecordManager? = null
-    private var mBtree: BTree<String, String>? = null
-    private var mEntryList = mutableListOf<Tuple<String, String>>()
-    private var mFoundList = mutableListOf<Tuple<String, String>>()
+    private var mStore: SKKDictionaryStore? = null
+    private var mEntryList = mutableListOf<SKKDictionaryTuple>()
+    private var mFoundList = mutableListOf<SKKDictionaryTuple>()
     private lateinit var mAdapter: EntryAdapter
     private lateinit var mSearchView: SearchView
     private lateinit var mSearchAdapter: EntryAdapter
@@ -98,8 +92,7 @@ class SKKUserDictTool : AppCompatActivity() {
                             processedInputStream,
                             charset,
                             isWordList,
-                            mRecMan!!,
-                            mBtree!!,
+                            mStore!!,
                             false
                         ) {
                             if (floor(sqrt(it.toFloat())) % 50 == 0f) { // 味わい進捗
@@ -164,13 +157,13 @@ class SKKUserDictTool : AppCompatActivity() {
                 var errorMessage = ""
                 try {
                     contentResolver.openOutputStream(uri, "wt")?.bufferedWriter()?.use {
-                        val browser = mBtree!!.browse()
+                        val browser = mStore!!.browse()
                         if (browser == null) withContext(Dispatchers.Main) {
                             throw (IOException("database browser is null"))
                         } else {
-                            val tuple = Tuple<String, String>()
-                            while (browser.getNext(tuple)) {
-                                it.write("${tuple.key} ${tuple.value}\n")
+                            while (true) {
+                                val result = browser.getNext() ?: break
+                                it.write("${result.key} ${result.value}\n")
                             }
                         }
                     }
@@ -247,7 +240,7 @@ class SKKUserDictTool : AppCompatActivity() {
                             dLog("remove $item from $mDictName")
                             try {
                                 if (openUserDict()) {
-                                    mBtree?.remove(item.key)
+                                    mStore?.remove(item.key)
                                     mEntryList.remove(item)
                                     mFoundList.remove(item)
                                     adapter.notifyDataSetChanged()
@@ -402,8 +395,7 @@ class SKKUserDictTool : AppCompatActivity() {
         mAdapter.clear()
 
         MainScope().launch(Dispatchers.IO) {
-            deleteFile("$mDictName.db")
-            deleteFile("$mDictName.lg")
+            deleteFile("$mDictName.mv")
 
             if (extract) {
                 try {
@@ -417,22 +409,17 @@ class SKKUserDictTool : AppCompatActivity() {
                 }
             } else {
                 try {
-                    val props = java.util.Properties().apply {
-                        setProperty(jdbm.RecordManagerOptions.DISABLE_TRANSACTIONS, "true")
-                    }
-                    mRecMan = RecordManagerFactory.createRecordManager(
-                        filesDir.absolutePath + "/" + mDictName, props
+                    mStore = MVStoreDictionaryStore.open(
+                        filesDir.absolutePath + "/" + mDictName + ".mv",
+                        getString(R.string.btree_name)
                     )
-                    mBtree = BTree(mRecMan, StringComparator())
-                    mRecMan!!.setNamedObject(getString(R.string.btree_name), mBtree!!.recordId)
-                    mRecMan!!.commit()
-                    mRecMan!!.close()
-                    mBtree = null
-                    mRecMan = null
-                } catch (e: IOException) {
-                    val recMan = mRecMan
-                    mRecMan = null
-                    recMan?.close()
+                    mStore?.commit()
+                    mStore?.close()
+                    mStore = null
+                } catch (e: Exception) {
+                    val store = mStore
+                    mStore = null
+                    store?.close()
                     throw RuntimeException(e)
                 }
                 dLog("New user dictionary created")
@@ -444,8 +431,7 @@ class SKKUserDictTool : AppCompatActivity() {
     }
 
     private fun onFailToOpenUserDict() {
-        mBtree = null
-        mRecMan = null
+        mStore = null
 
         ConfirmationDialogFragment.newInstance(getString(R.string.error_tools_open_user_dict)).let {
             it.setListener(
@@ -464,7 +450,7 @@ class SKKUserDictTool : AppCompatActivity() {
     }
 
     private fun openUserDict(): Boolean {
-        if (mBtree != null) {
+        if (mStore != null) {
             Log.e("SKK", "openUserDict error: already opened")
             onFailToOpenUserDict()
             return false
@@ -477,50 +463,32 @@ class SKKUserDictTool : AppCompatActivity() {
         // が、実装も面倒だしテストもしづらくなるので放置しておくことにする
         startServiceCommand(SKKService.COMMAND_CLOSE_USER_DICT)
 
-        val recID: Long?
         try {
-            val props = java.util.Properties().apply {
-                setProperty(jdbm.RecordManagerOptions.DISABLE_TRANSACTIONS, "true")
-            }
-            mRecMan = RecordManagerFactory.createRecordManager(
-                filesDir.absolutePath + "/" + mDictName, props
+            mStore = openDB(
+                filesDir.absolutePath + "/" + mDictName,
+                getString(R.string.btree_name)
             )
-            recID = mRecMan!!.getNamedObject(getString(R.string.btree_name))
-        } catch (e: IOException) {
-            Log.e("SKK", "openUserDict error creating mRecMan: ${e.message}")
+        } catch (e: Exception) {
+            Log.e("SKK", "openUserDict error opening mStore: ${e.message}")
             onFailToOpenUserDict()
             return false
         }
 
-        if (recID == 0L) {
-            Log.e("SKK", "openUserDict error: recID==0")
-            onFailToOpenUserDict()
-            return false
-        } else {
-            try {
-                mBtree = BTree<String, String>().load(mRecMan, recID)
-            } catch (e: IOException) {
-                Log.e("SKK", "openUserDict error loading mBtree: ${e.message}")
-                onFailToOpenUserDict()
-                return false
-            }
-        }
         dLog("UserDictTool: opened")
         return true
     }
 
     private fun closeUserDict() {
-        mBtree = null
-        mRecMan?.let { recMan ->
-            mRecMan = null
+        mStore?.let { store ->
+            mStore = null
             try {
-                recMan.commit()
-            } catch (e: IOException) {
+                store.commit()
+            } catch (e: Exception) {
                 Log.e("SKK", "closeUserDict commit error: ${e.message}")
             } finally {
                 try {
-                    recMan.close()
-                } catch (e: IOException) {
+                    store.close()
+                } catch (e: Exception) {
                     startServiceCommand(SKKService.COMMAND_RELOAD_DICT)
                     throw RuntimeException("closeUserDict close error: ${e.message}")
                 }
@@ -543,7 +511,7 @@ class SKKUserDictTool : AppCompatActivity() {
                     }
                 }
                 try {
-                    val browser = mBtree?.browse()
+                    val browser = mStore?.browse()
                     if (browser == null) {
                         Log.e("SKK", "UserDictTool updateListItems: browser=null")
                         withContext(Dispatchers.Main) { onFailToOpenUserDict() }
@@ -551,18 +519,18 @@ class SKKUserDictTool : AppCompatActivity() {
                         return@launch
                     }
 
-                    val tuple = Tuple<String, String>()
-                    val buffer = mutableListOf<Tuple<String, String>>()
+                    val buffer = mutableListOf<SKKDictionaryTuple>()
                     val bufferSize = 1000
-                    while (browser.getNext(tuple)) {
-                        buffer.add(Tuple(tuple.key, tuple.value))
+                    while (true) {
+                        val result = browser.getNext() ?: break
+                        buffer.add(result)
                         if (buffer.size < bufferSize) continue
                         withContext(Dispatchers.Main) {
                             mAdapter.addAll(buffer)
-                            mBtree.let { bt ->
-                                if (bt == null) throw CancellationException()
+                            mStore.let { store ->
+                                if (store == null) throw CancellationException()
                                 mSearchView.queryHint =
-                                    "読み込み中 ${100 * mAdapter.count / bt.size()}%"
+                                    "読み込み中 ${100 * mAdapter.count / store.size()}%"
                             }
                         }
                         buffer.clear()
@@ -603,15 +571,15 @@ class SKKUserDictTool : AppCompatActivity() {
 
     private class EntryAdapter(
         context: Context,
-        items: List<Tuple<String, String>>
-    ) : ArrayAdapter<Tuple<String, String>>(context, 0, items) {
+        items: List<SKKDictionaryTuple>
+    ) : ArrayAdapter<SKKDictionaryTuple>(context, 0, items) {
         private val mLayoutInflater = LayoutInflater.from(context)
 
         override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
             val tv = convertView
                 ?: mLayoutInflater.inflate(android.R.layout.simple_list_item_1, parent, false)
 
-            val item = getItem(position) ?: Tuple("", "")
+            val item = getItem(position) ?: SKKDictionaryTuple("", "")
             (tv as TextView).text =
                 context.getString(R.string.item_tools_entry, item.key, item.value)
 
