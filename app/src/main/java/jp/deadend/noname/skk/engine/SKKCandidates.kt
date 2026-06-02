@@ -440,7 +440,8 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
         if (engine.state !is SKKASCIIState) return
         MainScope().launch(Dispatchers.Default) {
             delay(50) // バックスペースなどの処理が間に合っていないことがあるので
-            complete((engine.state as SKKASCIIState).getPrefix(engine))
+            if (engine.state is SKKASCIIState)
+                complete((engine.state as SKKASCIIState).getPrefix(engine))
         }
     }
 
