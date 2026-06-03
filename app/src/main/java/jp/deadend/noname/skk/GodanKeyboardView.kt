@@ -423,9 +423,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
         if (mFlickState != newState) {
             mFlickState = newState
             performHapticFeedback(skkPrefs.haptic)
-            if (findKeyByCode(keyboard, mLastPressedKey)?.repeatable ?: false) {
-                stopRepeatKey()
-            }
+            stopRepeatKey()
         }
     }
 

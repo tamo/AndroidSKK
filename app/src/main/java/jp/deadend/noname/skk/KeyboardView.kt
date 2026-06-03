@@ -886,7 +886,7 @@ open class KeyboardView @JvmOverloads constructor(
             MotionEvent.ACTION_UP -> { // 最後の指
                 result = if (mActivePointerId == event.getPointerId(0)) {
                     mActivePointerId = -1
-                    stopRepeatKey().let { unrepeatedKey ->
+                    stopRepeatKey(true).let { unrepeatedKey ->
                         if (unrepeatedKey != NOT_A_KEY) { // repeatable なのに repeat しなかったキー
                             detectAndSendKey(unrepeatedKey, event.eventTime)
                         }
@@ -1046,14 +1046,14 @@ open class KeyboardView @JvmOverloads constructor(
     }
 
     // なぜか mHandler.removeMessages(MSG_REPEAT) で止まらないので
-    fun stopRepeatKey(): Int {
+    fun stopRepeatKey(stopLong: Boolean = false): Int {
         val unrepeatedKey = if (!mHasRepeated) mRepeatKeyIndex else NOT_A_KEY
         mHasRepeated = false
 
         releaseKey(mCurrentKey)
         mRepeatKeyIndex = NOT_A_KEY
         mHandler.removeMessages(MSG_REPEAT)
-        mHandler.removeMessages(MSG_LONG_PRESS)
+        if (stopLong) mHandler.removeMessages(MSG_LONG_PRESS)
 
         return unrepeatedKey
     }

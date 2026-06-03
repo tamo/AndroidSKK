@@ -117,6 +117,8 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
             KEYCODE_FLICK_JP_CHAR_TEN_NUM_LEFT to arrayOf("＃", "￥", "＋", "＄", "＊", "", ""),
             KEYCODE_FLICK_JP_MOJI to arrayOf("カナ", "：", "10", "＞", "声", "", ""),
             KEYCODE_FLICK_JP_TO_QWERTY to arrayOf("abc", "絵☻", "全角ａ", "記号", "qwerty", "", ""),
+            KEYCODE_FLICK_JP_LEFT to arrayOf("＜", "←", "↑", "→", "↓", "", ""),
+            KEYCODE_FLICK_JP_RIGHT to arrayOf("＞", "←", "↑", "→", "↓", "", ""),
             KEYCODE_FLICK_JP_SPACE to arrayOf("SPACE", "", "Mush", "", "", "", "")
         ).forEach { (code, labels) -> mFlickGuideLabelList.append(code, labels) }
     }
@@ -509,9 +511,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
         if (mFlickState != newState) {
             mFlickState = newState
             performHapticFeedback(skkPrefs.haptic)
-            if (findKeyByCode(mJPKeyboard, mLastPressedKey)?.repeatable ?: false) {
-                stopRepeatKey()
-            }
+            stopRepeatKey()
         }
     }
 

@@ -1418,7 +1418,7 @@ class SKKService : InputMethodService() {
             mGodanInputView,
             mQwertyInputView
         )) {
-            kv?.stopRepeatKey()
+            kv?.stopRepeatKey(true)
         }
 
         setInputView(
