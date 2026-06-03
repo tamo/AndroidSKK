@@ -94,7 +94,6 @@ internal fun loadFromTextDict(
                 0
             }
             prevKey = key
-            @Suppress("AssignedValueIsNeverRead")
             prevFreq = f
             isShortCut = false
             if ("not_a_word" in csv) {

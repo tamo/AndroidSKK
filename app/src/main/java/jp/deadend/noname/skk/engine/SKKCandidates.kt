@@ -22,6 +22,7 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.measureTime
 
 class SKKCandidates(private val engine: SKKEngine, private val service: SKKService) {
@@ -375,7 +376,7 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
                 }
 
                 if (str.isEmpty()) {
-                    delay(150) // 短時間に連続で実行されると画面がチラつく
+                    delay(150.milliseconds) // 短時間に連続で実行されると画面がチラつく
                     ensureCont()
                     withContext(Dispatchers.Main) { service.clearCandidatesView() }
                     return@launch
@@ -386,7 +387,7 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
                     for (dict in engine.mDictList) {
                         // 字数を増やさずに変換できるものを最優先
                         val fuzzyFurther = if (str == "emoji" || !skkPrefs.fuzzySuggestion) false
-                        else withTimeoutOrNull(1000) {
+                        else withTimeoutOrNull(1000.milliseconds) {
                             // 重い処理: 価値があるので数は少なくてもいいがタイムアウトが必要
                             500 > measureTime {
                                 val goal: Int = skkPrefs.candidatesNormalLines * 7 / str.length
@@ -410,7 +411,7 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
 
                             // あいまい前方一致は意味があまりないので数は多く、最後に短時間だけ
                             val goal: Int = skkPrefs.candidatesNormalLines * 10 / str.length
-                            if (fuzzyFurther) withTimeoutOrNull(500) {
+                            if (fuzzyFurther) withTimeoutOrNull(500.milliseconds) {
                                 for (fuzzyStr in fuzzy(it)) {
                                     if (set.size > goal) break
                                     ensureCont()
@@ -420,7 +421,7 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
                         }
                     }
                 }
-                delay(150 - elapsed.inWholeMilliseconds)
+                delay(150.milliseconds - elapsed)
                 ensureCont() // 短時間に連続で実行されないよう最新のみ有効に
 
                 val uniqueSet = set.distinctBy { it.second }
@@ -439,7 +440,7 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
     internal fun completeASCII() {
         if (engine.state !is SKKASCIIState) return
         MainScope().launch(Dispatchers.Default) {
-            delay(50) // バックスペースなどの処理が間に合っていないことがあるので
+            delay(50.milliseconds) // バックスペースなどの処理が間に合っていないことがあるので
             if (engine.state is SKKASCIIState)
                 complete((engine.state as SKKASCIIState).getPrefix(engine))
         }

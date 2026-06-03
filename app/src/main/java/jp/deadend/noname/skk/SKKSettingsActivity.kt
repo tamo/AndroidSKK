@@ -26,6 +26,7 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.nio.file.Files
+import kotlin.time.Duration.Companion.milliseconds
 
 
 class SKKSettingsActivity : AppCompatActivity() {
@@ -150,7 +151,7 @@ class SKKSettingsActivity : AppCompatActivity() {
         if (pref == null) return super.dispatchKeyEvent(event)
         dLog("dispatchKeyEvent($event)")
         return when (event.keyCode) {
-            KeyEvent.KEYCODE_BACK, KeyEvent.KEYCODE_ENTER -> false
+            KeyEvent.KEYCODE_ENTER -> false
             KeyEvent.KEYCODE_HOME -> true
             KeyEvent.KEYCODE_ESCAPE -> if (event.action == KeyEvent.ACTION_DOWN) {
                 PreferenceManager.getDefaultSharedPreferences(applicationContext).edit {
@@ -158,7 +159,7 @@ class SKKSettingsActivity : AppCompatActivity() {
                 }
                 pref.setSummary(getString(R.string.label_disabled_key))
                 MainScope().launch(Dispatchers.Default) {
-                    delay(500)
+                    delay(500.milliseconds)
                     keyPref = null
                 }
                 true
@@ -173,7 +174,7 @@ class SKKSettingsActivity : AppCompatActivity() {
                 }
                 pref.setSummary(name)
                 MainScope().launch(Dispatchers.Default) {
-                    delay(500) // UP で何か実行されてしまわないように少し待つ
+                    delay(500.milliseconds) // UP で何か実行されてしまわないように少し待つ
                     keyPref = null
                 }
                 true

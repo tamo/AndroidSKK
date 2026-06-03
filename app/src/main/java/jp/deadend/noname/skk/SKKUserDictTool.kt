@@ -34,6 +34,7 @@ import java.io.IOException
 import java.util.zip.GZIPInputStream
 import kotlin.math.floor
 import kotlin.math.sqrt
+import kotlin.time.Duration.Companion.milliseconds
 
 class SKKUserDictTool : AppCompatActivity() {
     private lateinit var mDictName: String
@@ -220,7 +221,7 @@ class SKKUserDictTool : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         MainScope().launch(Dispatchers.Default) {
-            delay(mDelay) // 無駄に一瞬 emptyView が出るのを防ぐための遅延
+            delay(mDelay.milliseconds) // 無駄に一瞬 emptyView が出るのを防ぐための遅延
             withContext(Dispatchers.Main) {
                 binding.userDictToolList.emptyView = binding.EmptyListItem
             }

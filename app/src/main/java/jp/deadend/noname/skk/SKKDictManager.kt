@@ -41,6 +41,7 @@ import java.util.Collections
 import java.util.zip.GZIPInputStream
 import kotlin.math.floor
 import kotlin.math.sqrt
+import kotlin.time.Duration.Companion.milliseconds
 
 class SKKDictManager : AppCompatActivity() {
     private lateinit var binding: ActivityDictManagerBinding
@@ -265,7 +266,7 @@ class SKKDictManager : AppCompatActivity() {
                         val item = mDictList[position]
                         val progressJob = launch { // 先に進捗表示を設置しておく
                             while (true) {
-                                delay(100)
+                                delay(100.milliseconds)
                                 ensureActive()
                                 val size = formatShortFileSize(applicationContext, path.length())
                                 withContext(Dispatchers.Main) {

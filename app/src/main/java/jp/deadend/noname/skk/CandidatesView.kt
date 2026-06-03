@@ -464,7 +464,7 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
     private fun getSelectedIndex(x: Int, y: Int): Int {
         if (mLayout.candidateList.isEmpty()) return -1
         val sx = scrollX
-        for (i in 0 until mLayout.candidateList.size) {
+        for (i in mLayout.candidateList.indices) {
             if (x + sx >= mLayout.wordX[i]
                 && x + sx < mLayout.wordX[i] + mLayout.wordWidth[i]
                 && y in (mLayout.wordL[i] * mLineHeight)..<((mLayout.wordL[i] + 1) * mLineHeight)
