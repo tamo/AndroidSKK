@@ -106,6 +106,12 @@ class SKKEngine(
         }
     }
 
+    internal fun close() {
+        for (dict in mDictList) {
+            dict.close()
+        }
+    }
+
     internal fun closeUserDict() {
         mUserDict.close()
         mASCIIDict.close()
