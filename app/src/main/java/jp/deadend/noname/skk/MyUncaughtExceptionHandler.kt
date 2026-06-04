@@ -51,6 +51,7 @@ internal class MyUncaughtExceptionHandler(val context: Context) : UncaughtExcept
         PrintWriter(FileOutputStream(file).buffered()).use { pw ->
             pw.println("This is a crash report of SKK.")
             pw.println()
+            pw.println("Date:    " + d.toString())
             pw.println("Device:  " + Build.DEVICE)
             pw.println("Model:   " + Build.MODEL)
             pw.println("SDK:     " + Build.VERSION.SDK_INT)
