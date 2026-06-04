@@ -901,7 +901,7 @@ class SKKService : InputMethodService() {
             }
             touchableInsets = Insets.TOUCHABLE_INSETS_REGION
             touchableRegion.set(
-                if (isFloating()) leftOffset else 0, 0,
+                if (isFloating()) leftOffset else mInsets.left, 0,
                 leftOffset + mInputView!!.keyboard.width, mBinding.root.height
             )
         }
@@ -1469,12 +1469,23 @@ class SKKService : InputMethodService() {
             computeLeftOffset()
         }
 
-        // |    insets.left    |    rootWidth    |    insets.right    |
-        // |cutout.left|leftOffset|keyboard|(rightOffset)|cutout.right|
+        // |    insets.left    |   rootWidth   |    insets.right    |
+        // |cutout.left|padding|   rootWidth   |padding|cutout.right|
+        // |cutout.left|leftOffset|keyboard|rightOffset|cutout.right|
         val rightOffset = mInsets.left + mRootWidth + mInsets.right -
                 (mCutout.left + leftOffset + mInputView!!.keyboard.width + mCutout.right)
-        (if (isFloating()) mBinding.root else mBinding.keyboardContainer)
-            .setPadding(leftOffset, 0, rightOffset, bottomOffset)
+        val padding = AGInsets.subtract(mInsets, mCutout)
+        if (isFloating()) {
+            mBinding.root.setPadding(leftOffset, 0, rightOffset, bottomOffset)
+        } else {
+            mBinding.root
+                .setPadding(padding.left, 0, padding.right, bottomOffset)
+            mBinding.keyboardContainer
+                .setPadding(
+                    leftOffset - padding.left, 0,
+                    rightOffset - padding.right, 0
+                )
+        }
         mCandidatesViewContainer.setSize(-1)
     }
 
