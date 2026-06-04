@@ -209,7 +209,7 @@ class SKKEngine(
     }
 
     internal fun handleCancel(): Boolean =
-        state.handleCancel(this)
+        ic != null && state.handleCancel(this)
 
     /**
      * commitTextのラッパー 登録作業中なら登録内容に追加し，表示を更新
