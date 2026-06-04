@@ -1190,7 +1190,7 @@ class SKKService : InputMethodService() {
                 return true
             }
 
-            mEngine.mRegister.isOngoing -> return true
+            mEngine.mRegister.isOngoing -> return true.also { mEngine.mRegister.handleDpad(keyCode) }
 
             mEngine.state.isTransient -> return true
         }
@@ -1276,7 +1276,9 @@ class SKKService : InputMethodService() {
         }
         val cm = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
         val cs = cm.primaryClip?.getItemAt(0)?.text
-        val clip = cs?.toString().orEmpty()
+        val clip = cs?.toString().orEmpty().ifEmpty {
+            if (mEngine.mRegister.isOngoing) mEngine.mRegister.first()!!.key else ""
+        }
         commitTextSKK(clip)
     }
 

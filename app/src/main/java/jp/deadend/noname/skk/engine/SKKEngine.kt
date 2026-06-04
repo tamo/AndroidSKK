@@ -197,9 +197,9 @@ class SKKEngine(
                 changeState(kanaState)
                 return true
             }
-            val firstEntry = mRegister.mStack.peekFirst()?.entry ?: return state.isTransient
-            if (firstEntry.isNotEmpty()) {
-                firstEntry.deleteCharAt(firstEntry.lastIndex)
+            val (regInfo, firstEntry) = mRegister.first() ?: return state.isTransient
+            if (firstEntry.length >= regInfo.cursor && regInfo.cursor > 0) {
+                firstEntry.deleteCharAt(--regInfo.cursor)
                 setComposingTextSKK("")
             } // else 何もしない
         }
@@ -223,12 +223,14 @@ class SKKEngine(
      */
     internal fun commitTextSKK(text: CharSequence) {
         ic ?: return
-        val firstEntry = mRegister.mStack.peekFirst()?.entry ?: run {
+        if (!mRegister.isOngoing) {
             ic.commitText(text, 1)
             mComposingText.setLength(0)
             return
         }
-        firstEntry.append(text)
+        val (regInfo, firstEntry) = mRegister.first()!!
+        firstEntry.insert(regInfo.cursor, text)
+        regInfo.cursor += text.length
         setComposingTextSKK("")
     }
 
@@ -367,12 +369,12 @@ class SKKEngine(
                 val deleteTwo = (cs.length == 2 && newLast2Chars.first.isEmpty())
                 val newLastChar = newLast2Chars.second
 
-                val firstEntry = mRegister.mStack.peekFirst()?.entry
-                if (firstEntry != null) {
-                    if (firstEntry.isEmpty()) return
-                    firstEntry.deleteCharAt(firstEntry.length - 1)
+                if (mRegister.isOngoing) {
+                    val (regInfo, firstEntry) = mRegister.first()!!
+                    if (regInfo.cursor > if (deleteTwo) 1 else 0) return
+                    firstEntry.deleteCharAt(regInfo.cursor--)
                     if (deleteTwo) {
-                        firstEntry.deleteCharAt(firstEntry.length - 2)
+                        firstEntry.deleteCharAt(regInfo.cursor--)
                     }
                     if (type == LAST_CONVERSION_SHIFT) {
                         mKanjiKey.append(katakana2hiragana(newLastChar))
@@ -380,7 +382,8 @@ class SKKEngine(
                         setComposingTextSKK(mKanjiKey)
                         complete(mKanjiKey.toString())
                     } else {
-                        firstEntry.append(newLastChar)
+                        firstEntry.insert(regInfo.cursor, newLastChar)
+                        regInfo.cursor += newLastChar.length
                         setComposingTextSKK("")
                     }
                 } else {
@@ -424,27 +427,32 @@ class SKKEngine(
         val ct = mComposingText
         ct.setLength(0)
 
-        if (mRegister.mStack.isNotEmpty()) {
+        val suffix = if (mRegister.isOngoing) {
             val depth = mRegister.mStack.size
             repeat(depth) { ct.append("[") }
             ct.append("登録")
             repeat(depth) { ct.append("]") }
 
-            mRegister.mStack.peekFirst()?.let { regInfo ->
-                val key =
-                    if (kanaState is SKKHiraganaState) regInfo.key
-                    else hiragana2katakana(regInfo.key).orEmpty()
-                val okurigana =
-                    if (kanaState is SKKHiraganaState) regInfo.okurigana
-                    else hiragana2katakana(regInfo.okurigana).orEmpty()
-                // 半角カナ変換はあとで
-                if (okurigana.isEmpty()) {
-                    ct.append(key)
-                } else {
-                    ct.append(key.dropLast(1), "*", okurigana)
-                }
-                ct.append("：", regInfo.entry) // ここはカナ変換しない
+            val (regInfo, entry) = mRegister.first()!!
+            val key =
+                if (kanaState is SKKHiraganaState) regInfo.key
+                else hiragana2katakana(regInfo.key).orEmpty()
+            val okurigana =
+                if (kanaState is SKKHiraganaState) regInfo.okurigana
+                else hiragana2katakana(regInfo.okurigana).orEmpty()
+            // 半角カナ変換はあとで
+            if (okurigana.isEmpty()) {
+                ct.append(key)
+            } else {
+                ct.append(key.dropLast(1), "*", okurigana)
             }
+            // ここはカナ変換しない
+            ct.append("：", entry.take(regInfo.cursor))
+            entry.drop(regInfo.cursor)
+        } else ""
+        if (suffix.isNotEmpty()) {
+            ic.setSelection(0, 0)
+            ct.append("[")
         }
 
         state.prefix?.let { prefix ->
@@ -465,6 +473,10 @@ class SKKEngine(
         )
         if (state is SKKNarrowingState) {
             ct.append(" hint: ", SKKNarrowingState.mHint, mComposing)
+        }
+
+        if (suffix.isNotEmpty()) {
+            ct.append("]$suffix") // pseudo caret
         }
 
         // SpannableStringBuilder SPAN_EXCLUSIVE_EXCLUSIVE spans cannot have a zero length

@@ -1,5 +1,6 @@
 package jp.deadend.noname.skk.engine
 
+import android.view.KeyEvent
 import jp.deadend.noname.skk.hiragana2katakana
 import jp.deadend.noname.skk.isAlphabet
 import jp.deadend.noname.skk.processConcatAndMore
@@ -13,7 +14,12 @@ class SKKRegister(private val engine: SKKEngine) {
 
     internal class RegistrationInfo(val key: String, val okurigana: String) {
         val entry = StringBuilder()
+        var cursor = 0
+        operator fun component1() = this
+        operator fun component2() = entry
     }
+
+    internal fun first() = mStack.peekFirst()
 
     internal val isOngoing: Boolean
         get() = mStack.isNotEmpty()
@@ -26,9 +32,9 @@ class SKKRegister(private val engine: SKKEngine) {
     }
 
     internal fun finish() {
-        val regInfo = mStack.removeFirst()
-        if (regInfo.entry.isNotEmpty()) {
-            val regEntryStr = regInfo.entry.toString().let {
+        val (regInfo, entry) = mStack.removeFirst()
+        if (entry.isNotEmpty()) {
+            val regEntryStr = entry.toString().let {
                 // セミコロンとスラッシュのエスケープ (なので登録で注釈を付けることはできない)
                 if (it.contains(';') || it.contains('/')) {
                     "(concat \"${
@@ -42,7 +48,7 @@ class SKKRegister(private val engine: SKKEngine) {
             engine.mUserDict.addEntry(
                 regInfo.key, regEntryStr, regInfo.okurigana
             )
-            (processConcatAndMore(regInfo.entry.toString(), regInfo.key) + regInfo.okurigana).let {
+            (processConcatAndMore(entry.toString(), regInfo.key) + regInfo.okurigana).let {
                 engine.commitTextSKK(
                     when (kanaStateBefore) {
                         SKKHiraganaState -> it
@@ -64,7 +70,7 @@ class SKKRegister(private val engine: SKKEngine) {
 
     fun cancel() = engine.apply {
         changeState(kanaStateBefore)
-        val regInfo = mStack.removeFirst()
+        val (regInfo, _) = mStack.removeFirst()
         mKanjiKey.setLength(0)
         mKanjiKey.append(regInfo.key)
         mComposing.setLength(0)
@@ -79,5 +85,17 @@ class SKKRegister(private val engine: SKKEngine) {
         changeState(SKKPreeditState)
         setComposingTextSKK("${mKanjiKey}${mComposing}")
         complete(mKanjiKey.toString())
+    }
+
+    fun handleDpad(keyCode: Int): Boolean {
+        if (engine.mKanjiKey.isNotEmpty() || engine.mComposing.isNotEmpty()) return false
+        val (regInfo, entry) = first() ?: return false
+        regInfo.cursor = when (keyCode) {
+            KeyEvent.KEYCODE_DPAD_LEFT -> regInfo.cursor.dec().coerceAtLeast(0)
+            KeyEvent.KEYCODE_DPAD_RIGHT -> regInfo.cursor.inc().coerceAtMost(entry.length)
+            else -> return false
+        }
+        engine.setComposingTextSKK("")
+        return true
     }
 }
