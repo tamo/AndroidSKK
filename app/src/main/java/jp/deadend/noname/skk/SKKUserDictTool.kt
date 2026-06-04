@@ -239,19 +239,23 @@ class SKKUserDictTool : AppCompatActivity() {
                             val adapter = parent.adapter as EntryAdapter
                             val item = adapter.getItem(position)!!
                             dLog("remove $item from $mDictName")
-                            try {
-                                if (openUserDict()) {
-                                    mStore?.remove(item.key)
-                                    mEntryList.remove(item)
-                                    mFoundList.remove(item)
-                                    adapter.notifyDataSetChanged()
+                            MainScope().launch(Dispatchers.IO) {
+                                try {
+                                    if (openUserDict()) {
+                                        mStore?.remove(item.key)
+                                        withContext(Dispatchers.Main) {
+                                            mEntryList.remove(item)
+                                            mFoundList.remove(item)
+                                            adapter.notifyDataSetChanged()
+                                        }
+                                    }
+                                    closeUserDict()
+                                } catch (e: Exception) {
+                                    Log.e(
+                                        "SKK",
+                                        "UserDictTool error removing ${item.key}: ${e.message}"
+                                    )
                                 }
-                                closeUserDict()
-                            } catch (e: Exception) {
-                                Log.e(
-                                    "SKK",
-                                    "UserDictTool error removing ${item.key}: ${e.message}"
-                                )
                             }
                         }
 
@@ -450,33 +454,48 @@ class SKKUserDictTool : AppCompatActivity() {
         }
     }
 
-    private fun openUserDict(): Boolean {
+    private suspend fun openUserDict(): Boolean {
         if (mStore != null) {
             Log.e("SKK", "openUserDict error: already opened")
-            onFailToOpenUserDict()
+            withContext(Dispatchers.Main) { onFailToOpenUserDict() }
             return false
         }
 
         // onPause() か finish() で reload するまで service / engine から使用できなくする
-        // ただし、この時点で service が開始していなかった場合
-        // この後から開始した service / engine からは使用できるようになってしまう
-        // それを防ぐには、わざわざユーザー辞書の使えない状態で startService する必要がある
-        // が、実装も面倒だしテストもしづらくなるので放置しておくことにする
         startServiceCommand(SKKService.COMMAND_CLOSE_USER_DICT)
 
-        try {
-            mStore = openDB(
-                filesDir.absolutePath + "/" + mDictName,
-                getString(R.string.btree_name)
-            )
-        } catch (e: Exception) {
-            Log.e("SKK", "openUserDict error opening mStore: ${e.message}")
-            onFailToOpenUserDict()
-            return false
+        val dictPath = filesDir.absolutePath + "/" + mDictName
+        val btreeName = getString(R.string.btree_name)
+
+        var retryCount = 0
+        val maxRetries = 10
+        val retryDelay = 200
+
+        while (retryCount < maxRetries) {
+            try {
+                mStore = withContext(Dispatchers.IO) {
+                    openDB(dictPath, btreeName, writable = true)
+                }
+                dLog("UserDictTool: opened after $retryCount retries")
+                return true
+            } catch (e: Exception) {
+                if (e.toString().contains("locked")) {
+                    retryCount++
+                    dLog("UserDictTool: database locked, retrying ($retryCount/$maxRetries)...")
+                    delay(retryDelay.milliseconds)
+                } else {
+                    Log.e("SKK", "openUserDict error opening mStore: ${e.message}")
+                    break
+                }
+            }
         }
 
-        dLog("UserDictTool: opened")
-        return true
+        Log.e(
+            "SKK",
+            "openUserDict error: failed to acquire lock after ${maxRetries * retryDelay}ms"
+        )
+        withContext(Dispatchers.Main) { onFailToOpenUserDict() }
+        return false
     }
 
     private fun closeUserDict() {
@@ -562,11 +581,6 @@ class SKKUserDictTool : AppCompatActivity() {
             val intent = Intent(this@SKKUserDictTool, SKKService::class.java)
             intent.putExtra(SKKService.KEY_COMMAND, command)
             startService(intent)
-            try {
-                Thread.sleep(mDelay) // 本当は結果を待つのが正しい
-            } catch (e: InterruptedException) {
-                dLog("sleep was interrupted: ${e.message}")
-            }
         }
     }
 

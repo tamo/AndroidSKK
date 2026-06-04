@@ -158,13 +158,13 @@ interface SKKDictionaryInterface {
         val topFreq = mutableListOf<Int>()
 
         try {
-            browser = mStore?.browse(key) ?: return listOf()
+            browser = mMutex.withLock { mStore?.browse(key) } ?: return listOf()
 
             // 絵文字は1500ほどあるし CandidatesView の行数が可変になったので多めが良さそう
             while (list.size < if (mIsASCII) 1500 else 15) {
                 scope.ensureActive()
 
-                val resultTuple = browser.getNext() ?: break
+                val resultTuple = mMutex.withLock { browser.getNext() } ?: break
                 val str = resultTuple.key
                 when {
                     !str.startsWith(key) -> break
@@ -228,11 +228,12 @@ interface SKKDictionaryInterface {
 
 internal fun openDB(
     filename: String,
-    btreeName: String
+    btreeName: String,
+    writable: Boolean = true
 ): SKKDictionaryStore {
     val mvFile = File("$filename.mv")
     if (mvFile.exists()) {
-        return MVStoreDictionaryStore.open(mvFile.absolutePath, btreeName)
+        return MVStoreDictionaryStore.open(mvFile.absolutePath, btreeName, writable)
     }
 
     val dbFile = File("$filename.db")
@@ -240,7 +241,7 @@ internal fun openDB(
         // Migrate from JDBM to MVStore
         dLog("Migrating $filename to MVStore...")
         val jdbmStore = JDBMDictionaryStore.open(filename, btreeName)
-        val mvStore = MVStoreDictionaryStore.open(mvFile.absolutePath, btreeName)
+        val mvStore = MVStoreDictionaryStore.open(mvFile.absolutePath, btreeName, writable = true)
 
         val browser = jdbmStore.browse()
         if (browser != null) {
@@ -258,9 +259,14 @@ internal fun openDB(
         dbFile.delete()
         File("$filename.lg").delete()
         dLog("Migration finished.")
-        return mvStore
+
+        // Return a store with requested writability
+        return if (writable) mvStore else {
+            mvStore.close()
+            MVStoreDictionaryStore.open(mvFile.absolutePath, btreeName, writable = false)
+        }
     }
 
     // Create new MVStore
-    return MVStoreDictionaryStore.open(mvFile.absolutePath, btreeName)
+    return MVStoreDictionaryStore.open(mvFile.absolutePath, btreeName, writable)
 }

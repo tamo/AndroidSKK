@@ -88,38 +88,44 @@ class SKKDictManager : AppCompatActivity() {
         setSupportActionBar(binding.dictManagerToolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
-        val dictList = skkPrefs.dictOrder // インストール済み辞書をまず列挙
-            .split("/")
-            .dropLastWhile { it.isEmpty() }
-            .asSequence()
-            .chunked(2)
-            .map { SKKDictionaryTuple(it[0], it[1]) }
-            .plus(commonDictList) // 一般的な辞書を追加
-            .distinctBy { it.value.removePrefix("/") } // 重複を消去
-            .toMutableList()
-        // インストール済みかどうかチェック
-        Files.newDirectoryStream(filesDir.toPath(), "skk_dict_*.mv").use { stream ->
-            stream.forEach { path ->
-                val fullName = path.fileName.toString()
-                val filename = fullName.removeSuffix(".mv")
-                val existing = dictList.find { it.value.removePrefix("/") == filename }
-
-                if (existing == null) {
-                    val type = filename.removePrefix("skk_dict_")
-                    dictList.add(SKKDictionaryTuple("SKK $type 辞書", filename))
-                } else {
-                    val index = dictList.indexOf(existing)
-                    dictList[index] = existing.copy(value = filename)
-                }
-            }
-        }
-
         binding.dictManagerList.apply {
             layoutManager = LinearLayoutManager(this@SKKDictManager)
             adapter = TupleAdapter(::itemClickListener) // 以降は mAdapter としてアクセス可能
         }
-        mAdapter.submitList(dictList)
-        mDictList = dictList
+
+        MainScope().launch {
+            val dictList = withContext(Dispatchers.IO) {
+                val list = skkPrefs.dictOrder // インストール済み辞書をまず列挙
+                    .split("/")
+                    .dropLastWhile { it.isEmpty() }
+                    .asSequence()
+                    .chunked(2)
+                    .map { SKKDictionaryTuple(it[0], it[1]) }
+                    .plus(commonDictList) // 一般的な辞書を追加
+                    .distinctBy { it.value.removePrefix("/") } // 重複を消去
+                    .toMutableList()
+                // インストール済みかどうかチェック
+                Files.newDirectoryStream(filesDir.toPath(), "skk_dict_*.mv").use { stream ->
+                    stream.forEach { path ->
+                        val fullName = path.fileName.toString()
+                        val filename = fullName.removeSuffix(".mv")
+                        val existing = list.find { it.value.removePrefix("/") == filename }
+
+                        if (existing == null) {
+                            val type = filename.removePrefix("skk_dict_")
+                            list.add(SKKDictionaryTuple("SKK $type 辞書", filename))
+                        } else {
+                            val index = list.indexOf(existing)
+                            list[index] = existing.copy(value = filename)
+                        }
+                    }
+                }
+                list
+            }
+
+            mAdapter.submitList(dictList)
+            mDictList = dictList
+        }
 
         val callback = TupleItemTouchHelperCallback { from, to ->
             val newList = mDictList.toMutableList()

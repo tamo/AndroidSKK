@@ -29,10 +29,11 @@ class SKKDictionary private constructor(
             return try {
                 val mvFile = File("$mDictFile.mv")
                 if (mvFile.exists()) {
-                    store = MVStoreDictionaryStore.open("$mDictFile.mv", btreeName)
+                    store =
+                        MVStoreDictionaryStore.open("$mDictFile.mv", btreeName, writable = false)
                 } else if (File("$mDictFile.db").exists()) {
                     toaster.invoke()
-                    store = openDB(mDictFile, btreeName)
+                    store = openDB(mDictFile, btreeName, writable = false)
                 }
 
                 if (store != null) {

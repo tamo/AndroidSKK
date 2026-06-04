@@ -51,12 +51,12 @@ class MVStoreDictionaryStore(
     }
 
     companion object {
-        fun open(filePath: String, mapName: String): MVStoreDictionaryStore {
-            val store = MVStore.Builder()
-                .fileName(filePath)
-                //.cacheSize(32)
-                .open()
-            val map = store.openMap<String, String>(mapName)
+        fun open(path: String, name: String, writable: Boolean = true): MVStoreDictionaryStore {
+            System.setProperty("h2.fileLockMethod", "NO")
+            val builder = MVStore.Builder().fileName(path) //.cacheSize(32)
+            if (!writable) builder.readOnly()
+            val store = builder.open()
+            val map = store.openMap<String, String>(name)
             return MVStoreDictionaryStore(store, map)
         }
     }
