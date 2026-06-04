@@ -302,7 +302,11 @@ fun createTrimmedBuilder(orig: StringBuilder): StringBuilder {
 
 // debug log
 fun dLog(msg: String) {
-    if (BuildConfig.DEBUG) android.util.Log.d("SKK", msg)
+    if (BuildConfig.DEBUG) {
+        val stackTrace = Throwable().stackTrace
+        val caller = stackTrace.getOrNull(1)?.let { "${it.fileName}:${it.lineNumber}: " } ?: ""
+        android.util.Log.d("SKK", caller + msg)
+    }
 }
 
 fun getFileNameFromUri(context: Context, uri: Uri): String? = when (uri.scheme) {
