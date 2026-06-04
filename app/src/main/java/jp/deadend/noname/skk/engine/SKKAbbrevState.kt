@@ -5,13 +5,13 @@ import jp.deadend.noname.skk.decodeKey
 import jp.deadend.noname.skk.hankaku2zenkaku
 import jp.deadend.noname.skk.skkPrefs
 
-// Abbrevモード(▽モード)
+// 日本語辞書で英数を変換するための Preedit (▽モード)
 object SKKAbbrevState : SKKState {
     override val isTransient = true
-    override val icon = R.drawable.ic_abbrev
-    override val isJapanese = false
     override val canComplete = true
     override val prefix = "▽"
+    override val isJapanese = false
+    override val icon = R.drawable.ic_abbrev
 
     override fun handleKanaKey(context: SKKEngine) {
         context.changeState(SKKHiraganaState)
@@ -39,11 +39,11 @@ object SKKAbbrevState : SKKState {
 
             // スペースで変換するかそのままComposingに積む
             when (charCode) {
-                ' '.code -> if (mKanjiKey.isNotEmpty()) startConversion(mKanjiKey)
+                ' '.code -> if (mKanjiKey.isNotEmpty()) startConversion()
 
                 else -> {
-                    mKanjiKey.append(Char(keyCode))
-                    setComposingTextSKK(mKanjiKey)
+                    mKanjiKey.insertAtCursor(Char(keyCode).toString())
+                    setComposingTextSKK()
                     complete(mKanjiKey.toString())
                 }
             }
@@ -52,13 +52,13 @@ object SKKAbbrevState : SKKState {
 
     override fun afterBackspace(context: SKKEngine) {
         context.apply {
-            setComposingTextSKK(mKanjiKey)
+            setComposingTextSKK()
             complete(mKanjiKey.toString())
         }
     }
 
-    override fun handleCancel(context: SKKEngine): Boolean {
-        context.mKanjiKey.setLength(0) // 確定させない
+    override fun handleCancel(context: SKKEngine, reconvert: Boolean): Boolean {
+        context.mKanjiKey.clear() // 確定させない
         context.changeState(SKKHiraganaState)
         return true
     }

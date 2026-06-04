@@ -586,8 +586,8 @@ class SKKService : InputMethodService() {
 
     private val backAnimationCallback = if (Build.VERSION.SDK_INT >= 34) {
         OnBackAnimationCallback {
-            if (!mEngine.handleCancel() && mInputView?.handleBack() != true)
-                requestHideSelf(0)
+            if (mInputView?.handleBack() != true && !mEngine.handleCancel(false))
+                requestHideSelf(0) // onWindowHidden で無効化されるので二重にはならない
         }
     } else Unit
 
@@ -1072,7 +1072,7 @@ class SKKService : InputMethodService() {
                 }
             }
 
-            KeyEvent.KEYCODE_BACK -> if (mEngine.handleCancel()) return true
+            KeyEvent.KEYCODE_BACK -> if (mEngine.handleCancel(false)) return true
 
             KeyEvent.KEYCODE_DEL -> if (handleBackspace()) return true
 
@@ -1180,22 +1180,7 @@ class SKKService : InputMethodService() {
     fun handleDpad(keyCode: Int): Boolean {
         dLog("handleDpad(${KeyEvent.keyCodeToString(keyCode)}) in ${mEngine.state}")
         if (mStickyShift) mShiftKey.useState()
-        val state = mEngine.state
-        when {
-            state.hasCandidates -> {
-                when (keyCode) {
-                    KeyEvent.KEYCODE_DPAD_LEFT -> mEngine.moveCandidateCursor(false)
-                    KeyEvent.KEYCODE_DPAD_RIGHT -> mEngine.moveCandidateCursor(true)
-                }
-                return true
-            }
-
-            mEngine.mRegister.isOngoing -> return true.also { mEngine.mRegister.handleDpad(keyCode) }
-
-            mEngine.state.isTransient -> return true
-        }
-
-        return false
+        return mEngine.handleDpad(keyCode)
     }
 
     /**
@@ -1378,7 +1363,8 @@ class SKKService : InputMethodService() {
 
     internal fun setCandidates(
         layout: CandidateLayout?,
-        viewLines: Int = skkPrefs.candidatesNormalLines
+        viewLines: Int = skkPrefs.candidatesNormalLines,
+        index: Int = 0
     ) {
         mCandidatesViewContainer.apply {
             if (layout == null) {
@@ -1388,7 +1374,7 @@ class SKKService : InputMethodService() {
             } else {
                 setAlpha(skkPrefs.activeAlpha)
                 lines = viewLines
-                mCandidatesView.setContents(layout)
+                mCandidatesView.setContents(layout, index)
             }
         }
     }

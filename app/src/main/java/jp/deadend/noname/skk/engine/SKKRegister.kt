@@ -71,19 +71,17 @@ class SKKRegister(private val engine: SKKEngine) {
     fun cancel() = engine.apply {
         changeState(kanaStateBefore)
         val (regInfo, _) = mStack.removeFirst()
-        mKanjiKey.setLength(0)
-        mKanjiKey.append(regInfo.key)
         mComposing.setLength(0)
-        mKanjiKey.lastOrNull()?.let { maybeComposing ->
+        mKanjiKey.set(regInfo.key).lastOrNull()?.let { maybeComposing ->
             if (isAlphabet(maybeComposing.code)) {
-                mKanjiKey.deleteCharAt(mKanjiKey.lastIndex)
+                mKanjiKey.deleteAtCursor()
                 if (!skkPrefs.preferFlick) { // Flickでアルファベットがあっても困る
                     mComposing.append(maybeComposing)
                 }
             }
         }
         changeState(SKKPreeditState)
-        setComposingTextSKK("${mKanjiKey}${mComposing}")
+        setComposingTextSKK()
         complete(mKanjiKey.toString())
     }
 
@@ -95,7 +93,7 @@ class SKKRegister(private val engine: SKKEngine) {
             KeyEvent.KEYCODE_DPAD_RIGHT -> regInfo.cursor.inc().coerceAtMost(entry.length)
             else -> return false
         }
-        engine.setComposingTextSKK("")
+        engine.setComposingTextSKK()
         return true
     }
 }

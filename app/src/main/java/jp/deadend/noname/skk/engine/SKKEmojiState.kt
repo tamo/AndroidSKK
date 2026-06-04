@@ -3,12 +3,13 @@ package jp.deadend.noname.skk.engine
 import jp.deadend.noname.skk.decodeKey
 
 object SKKEmojiState : SKKConfirmingState {
-    override var isSequential = false
     override val isTransient = true
-    override val icon = 0
-    override val isJapanese = false
     override val canComplete = false
     override val hasCandidates = true
+    override val isJapanese = true
+    override val icon = 0
+    override var isSequential = false
+
     override var pendingLambda: (() -> Unit)? = null
     override var oldComposingText = ""
 
@@ -45,9 +46,9 @@ object SKKEmojiState : SKKConfirmingState {
         context.changeState(context.oldState)
     }
 
-    override fun handleCancel(context: SKKEngine): Boolean {
-        super.handleCancel(context)
-        val ret = context.oldState.handleCancel(context)
+    override fun handleCancel(context: SKKEngine, reconvert: Boolean): Boolean {
+        super.handleCancel(context, reconvert)
+        val ret = context.oldState.handleCancel(context, reconvert)
         context.changeState(context.oldState)
         return ret
     }

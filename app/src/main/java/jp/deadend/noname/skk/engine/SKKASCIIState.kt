@@ -3,12 +3,12 @@ package jp.deadend.noname.skk.engine
 import jp.deadend.noname.skk.decodeKey
 import jp.deadend.noname.skk.engine.SKKEngine.Companion.ASCII_WORD_MAX_LENGTH
 
-// ASCIIモード
 object SKKASCIIState : SKKConfirmingState {
     override val isTransient = false
-    override val icon = 0
-    override val isJapanese = false
     override val canComplete = true
+    override val isJapanese = false
+    override val icon = 0
+
     override var pendingLambda: (() -> Unit)? = null
     override var oldComposingText = ""
 
@@ -30,8 +30,10 @@ object SKKASCIIState : SKKConfirmingState {
         context.completeASCII()
     }
 
-    override fun handleCancel(context: SKKEngine): Boolean {
-        super.handleCancel(context)
+    override fun handleCancel(context: SKKEngine, reconvert: Boolean): Boolean {
+        super.handleCancel(context, reconvert)
+        if (!reconvert) return false
+
         val prefix = getPrefix(context)
         val suffix = getSuffix(context)
         return ((prefix.isNotEmpty() || suffix.isNotEmpty()) &&

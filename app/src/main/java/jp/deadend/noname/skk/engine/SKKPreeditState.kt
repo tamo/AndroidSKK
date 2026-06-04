@@ -11,9 +11,9 @@ import jp.deadend.noname.skk.zenkaku2hankaku
 // 漢字変換のためのひらがな入力中(▽モード)
 object SKKPreeditState : SKKState {
     override val isTransient = true
-    override val icon = 0
     override val canComplete = true
     override val prefix = "▽"
+    override val icon = 0
 
     override fun handleKanaKey(context: SKKEngine) {
         context.apply {
@@ -33,8 +33,8 @@ object SKKPreeditState : SKKState {
             if (mComposing.length == 1) {
                 val hiraganaChar = RomajiConverter.checkSpecialConsonants(mComposing[0], codeLower)
                 if (hiraganaChar != null) {
-                    mKanjiKey.append(hiraganaChar)
-                    setComposingTextSKK(mKanjiKey)
+                    mKanjiKey.insertAtCursor(hiraganaChar)
+                    setComposingTextSKK()
                     mComposing.setLength(0)
                 }
             }
@@ -57,7 +57,7 @@ object SKKPreeditState : SKKState {
                             mKanjiKey.toString() // すでにひらがななのでそのまま
                         }
                         if (str != null) commitTextSKK(str)
-                        mKanjiKey.setLength(0)
+                        mKanjiKey.clear()
                     }
                     changeState(kanaState)
                     return
@@ -72,7 +72,7 @@ object SKKPreeditState : SKKState {
                             zenkaku2hankaku(zenkakuKatakana)
                         }
                         if (str != null) commitTextSKK(str)
-                        mKanjiKey.setLength(0)
+                        mKanjiKey.clear()
                     }
                     changeState(kanaState)
                     return
@@ -84,12 +84,12 @@ object SKKPreeditState : SKKState {
                     // 変換開始
                     // 最後に単体の'n'で終わっている場合、'ん'に変換
                     if (mComposing.length == 1 && mComposing[0] == 'n') {
-                        mKanjiKey.append('ん')
-                        setComposingTextSKK(mKanjiKey)
+                        mKanjiKey.insertAtCursor("ん")
+                        setComposingTextSKK()
                     }
-                    if (codeLower == '>'.code) mKanjiKey.append('>') // 接頭辞入力
+                    if (codeLower == '>'.code) mKanjiKey.insertAtCursor(">") // 接頭辞入力
                     mComposing.setLength(0)
-                    startConversion(mKanjiKey)
+                    startConversion()
                 }
 
                 else -> {
@@ -101,9 +101,9 @@ object SKKPreeditState : SKKState {
                         if (isVowel(codeLower)) { // 母音なら送り仮名決定，変換
                             mComposing.append(Char(codeLower)) // 「OkurI」の composing を ri に
                             mOkurigana = RomajiConverter.convert(mComposing.toString())
-                            mKanjiKey.append(mComposing[0]) //送りありの場合子音文字追加
+                            mKanjiKey.insertAtCursor(mComposing[0].toString()) //送りありの場合子音文字追加
                             mComposing.setLength(0) // 送りがなに消費されたはず
-                            startConversion(mKanjiKey)
+                            startConversion()
                         } else { // それ以外は送り仮名モード
                             if (!RomajiConverter.isIntermediateRomaji(
                                     "${mComposing}${Char(codeLower)}"
@@ -120,9 +120,9 @@ object SKKPreeditState : SKKState {
                                 }
                             }
                             mComposing.append(Char(codeLower)) // ty や ch のように 2 文字の場合あり
-                            mKanjiKey.append(mComposing[0]) //送りありの場合子音文字追加
+                            mKanjiKey.insertAtCursor(mComposing[0].toString()) //送りありの場合子音文字追加
                             setComposingTextSKK(
-                                createTrimmedBuilder(mKanjiKey).append('*').append(mComposing)
+                                createTrimmedBuilder(mKanjiKey.entry).append('*').append(mComposing)
                             )
                             changeState(SKKOkuriganaState)
                         }
@@ -139,20 +139,17 @@ object SKKPreeditState : SKKState {
 
                         if (hiraganaChar != null) {
                             mComposing.setLength(0)
-                            mKanjiKey.append(
-                                if (kanaState is SKKHiraganaState) {
-                                    hiraganaChar
-                                } else {
-                                    katakana2hiragana(hiraganaChar)
-                                }
+                            mKanjiKey.insertAtCursor(
+                                if (kanaState is SKKHiraganaState) hiraganaChar
+                                else katakana2hiragana(hiraganaChar).orEmpty()
                             )
-                            setComposingTextSKK(mKanjiKey)
+                            setComposingTextSKK()
                         } else {
                             if (!RomajiConverter.isIntermediateRomaji(mComposing.toString())) {
                                 mComposing.setLength(0) // これまでの composing は typo とみなす
                                 if (canRetry) return processKey(context, keyCode) // 「ca」などもあるので再突入
                             }
-                            setComposingTextSKK("${mKanjiKey}${mComposing}")
+                            setComposingTextSKK()
                         }
                         complete(mKanjiKey.toString())
                     }
@@ -163,13 +160,13 @@ object SKKPreeditState : SKKState {
 
     override fun afterBackspace(context: SKKEngine) {
         context.apply {
-            setComposingTextSKK("${mKanjiKey}${mComposing}")
+            setComposingTextSKK()
             complete(mKanjiKey.toString())
         }
     }
 
-    override fun handleCancel(context: SKKEngine): Boolean {
-        context.mKanjiKey.setLength(0) // 確定させない
+    override fun handleCancel(context: SKKEngine, reconvert: Boolean): Boolean {
+        context.mKanjiKey.clear() // 確定させない
         context.changeState(context.kanaState)
         return true
     }

@@ -7,9 +7,8 @@ import jp.deadend.noname.skk.hankaku2zenkaku
 // 全角英数モード
 object SKKZenkakuState : SKKState {
     override val isTransient = false
-    override val icon =
-        R.drawable.ic_full_alphabet
     override val isJapanese = false
+    override val icon = R.drawable.ic_full_alphabet
 
     override fun handleKanaKey(context: SKKEngine) {
         context.changeState(SKKHiraganaState)
@@ -25,8 +24,8 @@ object SKKZenkakuState : SKKState {
 
     override fun afterBackspace(context: SKKEngine) {}
 
-    override fun handleCancel(context: SKKEngine): Boolean {
-        return SKKHiraganaState.handleCancel(context)
+    override fun handleCancel(context: SKKEngine, reconvert: Boolean): Boolean {
+        return SKKHiraganaState.handleCancel(context, reconvert)
     }
 
     override fun changeToFlick(context: SKKEngine): Boolean {

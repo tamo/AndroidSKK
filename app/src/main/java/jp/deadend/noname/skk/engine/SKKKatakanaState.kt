@@ -4,11 +4,9 @@ import jp.deadend.noname.skk.R
 import jp.deadend.noname.skk.hiragana2katakana
 import jp.deadend.noname.skk.skkPrefs
 
-// カタカナモード
 object SKKKatakanaState : SKKState {
     override val isTransient = false
-    override val icon =
-        R.drawable.ic_katakana
+    override val icon = R.drawable.ic_katakana
 
     override fun handleKanaKey(context: SKKEngine) {
         if (skkPrefs.toggleKanaKey) {
@@ -31,8 +29,8 @@ object SKKKatakanaState : SKKState {
         SKKHiraganaState.afterBackspace(context)
     }
 
-    override fun handleCancel(context: SKKEngine): Boolean {
-        return SKKHiraganaState.handleCancel(context)
+    override fun handleCancel(context: SKKEngine, reconvert: Boolean): Boolean {
+        return SKKHiraganaState.handleCancel(context, reconvert)
     }
 
     override fun changeToFlick(context: SKKEngine): Boolean {

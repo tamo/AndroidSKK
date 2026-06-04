@@ -7,9 +7,10 @@ import jp.deadend.noname.skk.skkPrefs
 // 変換候補選択中(▼モード)
 object SKKChooseState : SKKConfirmingState {
     override val isTransient = true
-    override val icon = 0
     override val hasCandidates = true
     override val prefix = "▼"
+    override val icon = 0
+
     override var pendingLambda: (() -> Unit)? = null
     override var oldComposingText = ""
 
@@ -47,7 +48,7 @@ object SKKChooseState : SKKConfirmingState {
                     pickCurrentCandidate()
                     changeState(SKKPreeditState) // Abbrevキーボードのことは無視
                     mKanjiKey.append('>')
-                    setComposingTextSKK(mKanjiKey)
+                    setComposingTextSKK()
                 }
 
                 ':'.code -> changeState(SKKNarrowingState) // Abbrevキーボードのことは無視
@@ -68,27 +69,27 @@ object SKKChooseState : SKKConfirmingState {
         }
     }
 
-    override fun handleCancel(context: SKKEngine): Boolean {
-        super.handleCancel(context)
+    override fun handleCancel(context: SKKEngine, reconvert: Boolean): Boolean {
+        super.handleCancel(context, reconvert)
         context.apply {
             if (mKanjiKey.isEmpty()) { // どういうとき？
                 changeState(kanaState)
             } else {
-                if (isAlphabet(mKanjiKey[0].code)) { // Abbrevモード
+                if (isAlphabet(mKanjiKey[0].code)) { // Abbrev モード
                     changeState(SKKAbbrevState)
                 } else { // 漢字変換中
                     mComposing.setLength(0) // 最初から空のはずだけど念のため
                     mOkurigana = "" // これは入っている可能性がある
-                    changeState(SKKPreeditState) // Abbrevの可能性はない
+                    changeState(SKKPreeditState) // Abbrev の可能性はない
                     val maybeComposing = mKanjiKey.lastOrNull() ?: Char(0)
                     if (isAlphabet(maybeComposing.code)) {
-                        mKanjiKey.deleteCharAt(mKanjiKey.lastIndex) // 送りがなのアルファベットを削除
+                        mKanjiKey.deleteLast() // 送りがなのアルファベットを削除
                         if (!skkPrefs.preferFlick) { // Flickではアルファベットが残ると困る
                             mComposing.append(maybeComposing)
                         }
                     }
                 }
-                setComposingTextSKK("${mKanjiKey}${mComposing}")
+                setComposingTextSKK()
                 complete(mKanjiKey.toString())
             }
         }

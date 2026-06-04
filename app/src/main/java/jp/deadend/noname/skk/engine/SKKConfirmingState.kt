@@ -26,7 +26,7 @@ interface SKKConfirmingState : SKKState {
         pendingLambda = null
     }
 
-    override fun handleCancel(context: SKKEngine): Boolean {
+    override fun handleCancel(context: SKKEngine, reconvert: Boolean): Boolean {
         pendingLambda = null
         return false
     }
@@ -34,7 +34,7 @@ interface SKKConfirmingState : SKKState {
     fun confirmUnregister(context: SKKEngine, entryString: String, onConfirm: () -> Unit) {
         oldComposingText = context.mComposingText.toString()
         context.setComposingTextSKK("削除? (y/N) $entryString")
-        context.mCandidates.setView(listOf("削除?", "× [$entryString]"), "")
+        context.mCandidates.setView(listOf("削除?", "× [$entryString]"), "", 0)
         pendingLambda = onConfirm
     }
 }

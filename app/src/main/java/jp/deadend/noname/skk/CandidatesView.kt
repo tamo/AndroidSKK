@@ -344,7 +344,7 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
         ) to viewLines
     }
 
-    internal fun setContents(nullableLayout: CandidateLayout?) {
+    internal fun setContents(nullableLayout: CandidateLayout?, index: Int = 0) {
         val layout = nullableLayout ?: CandidateLayout.EMPTY
         mLayout = layout
 
@@ -360,8 +360,10 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
             -1
         }
 
-        setScrollButtonsEnabled(scrollX)
-        invalidate()
+        if (index != 0) setCursor(index) else {
+            setScrollButtonsEnabled(scrollX)
+            invalidate()
+        }
     }
 
     fun scrollPrev() {

@@ -1,6 +1,7 @@
 package jp.deadend.noname.skk.engine
 
 import android.text.SpannableString
+import android.view.KeyEvent
 import com.android.volley.toolbox.JsonArrayRequest
 import com.android.volley.toolbox.Volley
 import jp.deadend.noname.skk.SKKDictionaryInterface
@@ -16,6 +17,7 @@ import jp.deadend.noname.skk.skkPrefs
 import jp.deadend.noname.skk.zenkaku2hankaku
 import kotlinx.coroutines.runBlocking
 import org.json.JSONException
+import java.util.stream.IntStream
 
 class SKKEngine(
     private val mService: SKKService,
@@ -37,7 +39,31 @@ class SKKEngine(
     internal val mComposing = StringBuilder()
 
     // 漢字変換のキー 送りありの場合最後がアルファベット 変換中は不変
-    internal val mKanjiKey = StringBuilder()
+    internal val mKanjiKey = KanjiKey()
+
+    @Suppress("JavaDefaultMethodsNotOverriddenByDelegation")
+    internal class KanjiKey(val entry: StringBuilder = StringBuilder()) : CharSequence by entry {
+        var cursor = 0
+
+        fun clear(): StringBuilder = entry.apply { setLength(0) }.also { cursor = 0 }
+        fun append(c: Char): StringBuilder = entry.append(c).also { cursor = entry.length }
+        fun append(s: String): StringBuilder = entry.append(s).also { cursor = entry.length }
+        fun set(s: String): StringBuilder = clear().append(s).also { cursor = entry.length }
+
+        fun insertAtCursor(s: String): StringBuilder =
+            entry.insert(cursor, s).also { cursor += s.length }
+
+        fun deleteAtCursor(): StringBuilder =
+            if (cursor > 0) entry.deleteCharAt(--cursor) else entry
+
+        fun deleteAfterCursor(): StringBuilder = entry.delete(cursor, entry.length)
+
+        fun deleteLast(): StringBuilder =
+            (if (entry.isNotEmpty()) entry.deleteCharAt(entry.lastIndex) else entry)
+                .also { cursor = entry.length }
+
+        override fun toString() = entry.toString()
+    }
 
     // 送りがな 「っ」や「ん」が含まれる場合だけ二文字になる
     internal var mOkurigana = ""
@@ -201,21 +227,22 @@ class SKKEngine(
             if (firstEntry.length >= regInfo.cursor && regInfo.cursor > 0) {
                 firstEntry.deleteCharAt(--regInfo.cursor)
                 setComposingTextSKK("")
+                return true
             } // else 何もしない
         }
 
         if (mComposing.isNotEmpty()) {
             mComposing.deleteCharAt(mComposing.lastIndex)
         } else if (mKanjiKey.isNotEmpty()) {
-            mKanjiKey.deleteCharAt(mKanjiKey.lastIndex)
+            mKanjiKey.deleteAtCursor()
         }
         state.afterBackspace(this)
 
         return true
     }
 
-    internal fun handleCancel(): Boolean =
-        ic != null && state.handleCancel(this)
+    internal fun handleCancel(reconvert: Boolean = true): Boolean =
+        ic != null && state.handleCancel(this, reconvert)
 
     /**
      * commitTextのラッパー 登録作業中なら登録内容に追加し，表示を更新
@@ -226,6 +253,9 @@ class SKKEngine(
         if (!mRegister.isOngoing) {
             ic.commitText(text, 1)
             mComposingText.setLength(0)
+            mKanjiKey.clear()
+            mComposing.setLength(0)
+            mOkurigana = ""
             return
         }
         val (regInfo, firstEntry) = mRegister.first()!!
@@ -236,7 +266,7 @@ class SKKEngine(
 
     internal fun resetOnStartInput() {
         mComposing.setLength(0)
-        mKanjiKey.setLength(0)
+        mKanjiKey.clear()
         mOkurigana = ""
         mCandidates.mList = null
         mCandidates.mQuery = ""
@@ -255,6 +285,32 @@ class SKKEngine(
 
     internal fun moveCandidateCursor(isForward: Boolean) =
         mCandidates.moveCandidateCursor(isForward)
+
+    internal fun handleDpad(keyCode: Int): Boolean {
+        when {
+            state.hasCandidates -> when (keyCode) {
+                KeyEvent.KEYCODE_DPAD_LEFT -> moveCandidateCursor(false)
+                KeyEvent.KEYCODE_DPAD_RIGHT -> moveCandidateCursor(true)
+                else -> return false
+            }
+
+            mRegister.isOngoing -> mRegister.handleDpad(keyCode)
+            state.isTransient -> handleDpadTransient(keyCode)
+            else -> return false
+        }
+        return true
+    }
+
+    private fun handleDpadTransient(keyCode: Int): Boolean {
+        mKanjiKey.cursor = when (keyCode) {
+            KeyEvent.KEYCODE_DPAD_LEFT -> mKanjiKey.cursor.dec().coerceAtLeast(0)
+            KeyEvent.KEYCODE_DPAD_RIGHT -> mKanjiKey.cursor.inc().coerceAtMost(mKanjiKey.length)
+            else -> return false
+        }
+        dLog("handleDpadTransient: ${mKanjiKey.take(mKanjiKey.cursor)} | ${mKanjiKey.drop(mKanjiKey.cursor)}")
+        setComposingTextSKK()
+        return true
+    }
 
     internal fun pickCandidatesViewManually(
         index: Int,
@@ -304,21 +360,23 @@ class SKKEngine(
     // 小文字大文字変換，濁音，半濁音に使う
     internal fun changeLastChar(type: String) {
         when {
-            state is SKKPreeditState && mComposing.isEmpty() && mKanjiKey.isNotEmpty() -> {
+            state is SKKPreeditState && mComposing.isEmpty() && mKanjiKey.cursor > 0 -> {
                 val s = mKanjiKey.toString() // ▽あい
-                val idx = s.length - 1
-                if (idx < 1 && type == LAST_CONVERSION_SHIFT) return // ▽あ
-                val newLastChar = RomajiConverter.convertLastChar(s.substring(idx), type).second
+                if (mKanjiKey.cursor < 2 && type == LAST_CONVERSION_SHIFT) return // ▽あ
+                val newLastChar = RomajiConverter.convertLastChar(
+                    s.substring(mKanjiKey.cursor - 1, mKanjiKey.cursor), type
+                ).second
                 // この convertLastChar に 2 文字が渡ることはない
 
-                mKanjiKey.deleteCharAt(idx)
+                mKanjiKey.deleteAtCursor()
                 if (type == LAST_CONVERSION_SHIFT) {
+                    mKanjiKey.deleteAfterCursor()
                     mKanjiKey.append(RomajiConverter.getConsonantForVoiced(newLastChar))
                     mOkurigana = newLastChar
-                    startConversion(mKanjiKey) // ▼合い
+                    startConversion() // ▼合い
                 } else {
-                    mKanjiKey.append(newLastChar)
-                    setComposingTextSKK(mKanjiKey)
+                    mKanjiKey.insertAtCursor(newLastChar)
+                    setComposingTextSKK()
                     complete(mKanjiKey.toString())
                 }
             }
@@ -342,19 +400,19 @@ class SKKEngine(
 
                     if (type == LAST_CONVERSION_SHIFT) {
                         handleCancel() // ▽あ (mOkurigana = null)
-                        mKanjiKey.append(newOkurigana) // ▽あい
-                        setComposingTextSKK(mKanjiKey)
+                        mKanjiKey.insertAtCursor(newOkurigana) // ▽あい
+                        setComposingTextSKK()
                         complete(mKanjiKey.toString())
                         return
                     }
                     // 例外: 送りがなが「っ」になる場合は，どのみち必ずt段の音なのでmKanjiKeyはそのまま
                     // 「ゃゅょ」で送りがなが始まる場合はないはず
                     if (type != LAST_CONVERSION_SMALL) {
-                        mKanjiKey.deleteCharAt(mKanjiKey.length - 1)
+                        mKanjiKey.deleteAtCursor()
                         mKanjiKey.append(RomajiConverter.getConsonantForVoiced(newOkurigana))
                     }
                     mOkurigana = newOkurigana
-                    startConversion(mKanjiKey) //変換やりなおし
+                    startConversion() //変換やりなおし
                 }
             }
 
@@ -377,9 +435,9 @@ class SKKEngine(
                         firstEntry.deleteCharAt(regInfo.cursor--)
                     }
                     if (type == LAST_CONVERSION_SHIFT) {
-                        mKanjiKey.append(katakana2hiragana(newLastChar))
+                        mKanjiKey.append(katakana2hiragana(newLastChar).orEmpty())
                         changeState(SKKPreeditState)
-                        setComposingTextSKK(mKanjiKey)
+                        setComposingTextSKK()
                         complete(mKanjiKey.toString())
                     } else {
                         firstEntry.insert(regInfo.cursor, newLastChar)
@@ -399,9 +457,9 @@ class SKKEngine(
                         else -> ic.deleteSurroundingText(2, 0)
                     }
                     if (type == LAST_CONVERSION_SHIFT) {
-                        mKanjiKey.append(katakana2hiragana(newLastChar))
+                        mKanjiKey.append(katakana2hiragana(newLastChar).orEmpty())
                         changeState(SKKPreeditState) // Abbrevから来ることはないはず
-                        setComposingTextSKK(mKanjiKey)
+                        setComposingTextSKK()
                         complete(mKanjiKey.toString())
                     } else {
                         ic.commitText(
@@ -423,7 +481,7 @@ class SKKEngine(
      * setComposingTextのラッパー 変換モードマーク等を追加する
      * @param text
      */
-    internal fun setComposingTextSKK(text: CharSequence) {
+    internal fun setComposingTextSKK(text: CharSequence? = null) {
         val ct = mComposingText
         ct.setLength(0)
 
@@ -461,13 +519,20 @@ class SKKEngine(
                     ct.append("㊙")
                 }
                 ct.append(prefix)
-            } else if (text.isEmpty()) {
+            } else if (text?.isEmpty() ?: mKanjiKey.isEmpty()) {
                 ct.append(" ")
             }
         }
+
+        val textToProcess = text ?: (if (mKanjiKey.cursor == mKanjiKey.length) {
+            "${mKanjiKey}${mComposing}"
+        } else {
+            "${mKanjiKey.take(mKanjiKey.cursor)}[${mComposing}]${mKanjiKey.drop(mKanjiKey.cursor)}"
+        })
+
         ct.append(
-            if (mService.isHiragana) text else hiragana2katakana(
-                text.toString(),
+            if (mService.isHiragana) textToProcess else hiragana2katakana(
+                textToProcess.toString(),
                 reversed = true
             )
         )
@@ -485,11 +550,11 @@ class SKKEngine(
     }
 
     /***
-     * 変換スタート
+     * mKanjiKey で変換スタート
      * 送りありの場合，事前に送りがなをmOkuriganaにセットしておく
-     * @param key 辞書のキー 送りありの場合最後はアルファベット
      */
-    internal fun startConversion(key: StringBuilder) {
+    internal fun startConversion() {
+        val key = mKanjiKey.entry
         if (key.isEmpty()) {
             changeState(kanaState) // ASCIIには戻れない…
             return
@@ -509,7 +574,7 @@ class SKKEngine(
             mList = list
             mIndex = 0
             mQuery = str
-            setView(list, mQuery)
+            setView(list, mQuery, mIndex)
             updateComposingText()
         }
     }
@@ -525,15 +590,13 @@ class SKKEngine(
             changeState(SKKChooseState)
 
             mComposing.setLength(0)
-            mKanjiKey.setLength(0)
-            mKanjiKey.append(lastConv.kanjiKey)
+            mKanjiKey.set(lastConv.kanjiKey)
             mOkurigana = lastConv.okurigana
             mCandidates.apply {
                 mList = lastConv.list
                 mIndex = lastConv.index
                 mQuery = lastConv.kanjiKey
-                setView(mList, mQuery)
-                updateViewCursor()
+                setView(mList, mQuery, mIndex)
                 updateComposingText()
             }
 
@@ -557,8 +620,7 @@ class SKKEngine(
             // candidate から選択しただけで登録されるので
             val regInfo = mRegister.mStack.removeFirst() ?: return
             mComposing.setLength(0)
-            mKanjiKey.setLength(0)
-            mKanjiKey.append(regInfo.key)
+            mKanjiKey.set(regInfo.key)
             mOkurigana = regInfo.okurigana
         }
         dLog("googleTransliterate mKanjiKey=${mKanjiKey} mOkurigana=${mOkurigana}")
@@ -569,7 +631,7 @@ class SKKEngine(
             setComposingTextSKK("${trimmedKanjiKey}*${mOkurigana}")
             "${trimmedKanjiKey}${mOkurigana}"
         } else {
-            setComposingTextSKK(mKanjiKey.toString())
+            setComposingTextSKK()
             mKanjiKey.toString() // たぶん送り仮名は存在しないはず
         }
         volleyQueue.add(
@@ -602,7 +664,7 @@ class SKKEngine(
                             mList = list
                             mIndex = 0
                             mQuery = mKanjiKey.toString()
-                            setView(list, mQuery)
+                            setView(list, mQuery, mIndex)
                             updateComposingText()
                         }
                     }
@@ -626,7 +688,7 @@ class SKKEngine(
             mCompletionList = mList?.map { "/きごう" }
             mIndex = 0
             mQuery = "/きごう"
-            setView(mList, mQuery)
+            setView(mList, mQuery, mIndex)
         }
     }
 
@@ -685,7 +747,7 @@ class SKKEngine(
 
     internal fun reset() {
         mComposing.setLength(0)
-        mKanjiKey.setLength(0)
+        mKanjiKey.clear()
         mOkurigana = ""
         mCandidates.mList = null
         mCandidates.mQuery = ""
@@ -712,7 +774,7 @@ class SKKEngine(
     internal fun commitComposing() {
         if (mKanjiKey.isNotEmpty()) {
             if (!isAlphabet(mKanjiKey.first().code) && isAlphabet(mKanjiKey.last().code)) {
-                mKanjiKey.deleteCharAt(mKanjiKey.lastIndex)
+                mKanjiKey.deleteLast()
             }
             commitTextSKK(
                 when (kanaState) {
@@ -746,7 +808,7 @@ class SKKEngine(
 
         if (this.state !is SKKEmojiState)
             oldState = this.state
-        else mKanjiKey.setLength(0) // mKanjiKey=="emoji"は基本的に無意味なので
+        else mKanjiKey.clear() // mKanjiKey=="emoji"は基本的に無意味なので
 
         this.state = state
 

@@ -4,18 +4,19 @@ import jp.deadend.noname.skk.decodeKey
 import jp.deadend.noname.skk.skkPrefs
 
 object SKKNarrowingState : SKKConfirmingState {
-    override var isSequential = false
     override val isTransient = true
-    override val icon = 0
     override val hasCandidates = true
     override val prefix = "▼"
+    override val icon = 0
+    override var isSequential = false
+
     override var pendingLambda: (() -> Unit)? = null
     override var oldComposingText = ""
 
     internal val mHint = StringBuilder()
     internal var mOriginalCandidates: List<String>? = null
     internal var mSpaceUsed = false // xを前候補にするためのフラグ
-    internal var isASCII = false
+    internal var isASCII = false // isJapanese とは違って可変な内部フラグ
 
     override fun handleKanaKey(context: SKKEngine) {
         super.handleKanaKey(context)
@@ -87,7 +88,7 @@ object SKKNarrowingState : SKKConfirmingState {
         super.afterBackspace(context)
         context.apply {
             if (mHint.isEmpty()) {
-                startConversion(context.mKanjiKey)
+                startConversion()
             } else {
                 if (mComposing.isNotEmpty()) {
                     mComposing.deleteCharAt(mComposing.lastIndex)
@@ -100,9 +101,9 @@ object SKKNarrowingState : SKKConfirmingState {
         }
     }
 
-    override fun handleCancel(context: SKKEngine): Boolean {
-        super.handleCancel(context)
-        context.startConversion(context.mKanjiKey)
+    override fun handleCancel(context: SKKEngine, reconvert: Boolean): Boolean {
+        super.handleCancel(context, reconvert)
+        context.startConversion()
         return true
     }
 

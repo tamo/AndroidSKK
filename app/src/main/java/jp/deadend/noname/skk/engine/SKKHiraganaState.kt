@@ -6,11 +6,9 @@ import jp.deadend.noname.skk.encodeKey
 import jp.deadend.noname.skk.isAlphabet
 import jp.deadend.noname.skk.skkPrefs
 
-// ひらがなモード
 object SKKHiraganaState : SKKState {
     override val isTransient = false
-    override val icon =
-        R.drawable.ic_hiragana
+    override val icon = R.drawable.ic_hiragana
 
     override fun handleKanaKey(context: SKKEngine) {
         if (skkPrefs.toggleKanaKey) context.changeState(SKKASCIIState, true)
@@ -90,16 +88,15 @@ object SKKHiraganaState : SKKState {
         context.setComposingTextSKK(context.mComposing)
     }
 
-    override fun handleCancel(context: SKKEngine): Boolean {
-        context.apply {
+    override fun handleCancel(context: SKKEngine, reconvert: Boolean): Boolean =
+        context.run {
             if (mRegister.isOngoing) {
                 mRegister.cancel()
-                return true
-            } else {
-                return reConvert()
-            }
+                true
+            } else if (reconvert) {
+                reConvert()
+            } else false
         }
-    }
 
     override fun changeToFlick(context: SKKEngine): Boolean {
         return false

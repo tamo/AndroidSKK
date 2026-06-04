@@ -35,7 +35,7 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
     private var mJob: Job = Job()
     private var mSuspended: Boolean = false
 
-    internal fun setView(list: List<String>?, kanjiKey: String) {
+    internal fun setView(list: List<String>?, kanjiKey: String, index: Int) {
         mJob.cancel()
         mJob = MainScope().launch(Dispatchers.Default) {
             if (list.isNullOrEmpty()) withContext(Dispatchers.Main) {
@@ -43,7 +43,7 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
             } else {
                 val (layout, viewLines) = service.mCandidatesView.buildLayout(list, kanjiKey)
                 withContext(Dispatchers.Main) {
-                    service.setCandidates(layout, viewLines)
+                    service.setCandidates(layout, viewLines, index)
                 }
             }
         }
@@ -84,13 +84,13 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
                     if (mComposing.isEmpty()) {
                         if (mOkurigana.isNotEmpty()) {
                             mOkurigana = ""
-                            mKanjiKey.deleteCharAt(mKanjiKey.length - 1)
+                            mKanjiKey.deleteAtCursor()
                         }
                         changeState(SKKPreeditState)
-                        setComposingTextSKK(mKanjiKey)
+                        setComposingTextSKK()
                         complete(mKanjiKey.toString())
                     } else {
-                        mKanjiKey.setLength(0)
+                        mKanjiKey.clear()
                         changeState(SKKAbbrevState)
                         setComposingTextSKK(mComposing)
                         complete(mComposing.toString())
@@ -250,10 +250,9 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
         engine.apply {
             when (state) {
                 SKKAbbrevState -> {
-                    setComposingTextSKK(s)
-                    mKanjiKey.setLength(0)
-                    mKanjiKey.append(s)
-                    if (commit) startConversion(mKanjiKey)
+                    mKanjiKey.set(s)
+                    setComposingTextSKK()
+                    if (commit) startConversion()
                 }
 
                 SKKPreeditState, SKKOkuriganaState -> {
@@ -263,14 +262,13 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
                     val hasOkuri = hira.isNotEmpty() &&
                             !isAlphabet(hira.first().code) && isAlphabet(last.code)
                     val kanjiKey = if (hasOkuri) hira.dropLast(1) else hira
-                    mKanjiKey.setLength(0)
-                    mKanjiKey.append(kanjiKey)
+                    mKanjiKey.set(kanjiKey)
                     mComposing.setLength(0)
                     if (commit) {
                         if (hasOkuri) {
                             processKey(encodeKey(last.uppercaseChar().code))
                         } else {
-                            startConversion(mKanjiKey)
+                            startConversion()
                         }
                     } else {
                         // ハードウェアキーボードで Tab を押しただけなら送り仮名で conversionStart しない
@@ -355,7 +353,7 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
         if (narrowed.isNotEmpty()) {
             mList = narrowed
             mIndex = 0
-            setView(narrowed, mQuery)
+            setView(narrowed, mQuery, mIndex)
         } else dLog("narrowCandidates: no entries")
         updateComposingText()
     }
@@ -430,7 +428,7 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
 
                 mQuery = str
                 mIndex = 0
-                setView(mList, str)
+                setView(mList, str, mIndex)
             }
             mJob.start()
         }

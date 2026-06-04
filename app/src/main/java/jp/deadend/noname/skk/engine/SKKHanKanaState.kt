@@ -5,11 +5,9 @@ import jp.deadend.noname.skk.hiragana2katakana
 import jp.deadend.noname.skk.skkPrefs
 import jp.deadend.noname.skk.zenkaku2hankaku
 
-// 半角ｶﾀｶﾅモード
 object SKKHanKanaState : SKKState {
     override val isTransient = false
-    override val icon =
-        R.drawable.ic_katakana
+    override val icon = R.drawable.ic_katakana
 
     override fun handleKanaKey(context: SKKEngine) {
         if (skkPrefs.toggleKanaKey) {
@@ -32,8 +30,8 @@ object SKKHanKanaState : SKKState {
         SKKHiraganaState.afterBackspace(context)
     }
 
-    override fun handleCancel(context: SKKEngine): Boolean {
-        return SKKHiraganaState.handleCancel(context)
+    override fun handleCancel(context: SKKEngine, reconvert: Boolean): Boolean {
+        return SKKHiraganaState.handleCancel(context, reconvert)
     }
 
     override fun changeToFlick(context: SKKEngine): Boolean {
