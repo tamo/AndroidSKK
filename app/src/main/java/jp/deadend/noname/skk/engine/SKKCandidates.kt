@@ -36,16 +36,15 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
     private var mSuspended: Boolean = false
 
     internal fun setView(list: List<String>?, kanjiKey: String) {
-        if (list.isNullOrEmpty()) {
-            service.setCandidates(null)
-            return
-        }
-
         mJob.cancel()
         mJob = MainScope().launch(Dispatchers.Default) {
-            val (layout, viewLines) = service.mCandidatesView.buildLayout(list, kanjiKey)
-            withContext(Dispatchers.Main) {
-                service.setCandidates(layout, viewLines)
+            if (list.isNullOrEmpty()) withContext(Dispatchers.Main) {
+                service.setCandidates(null)
+            } else {
+                val (layout, viewLines) = service.mCandidatesView.buildLayout(list, kanjiKey)
+                withContext(Dispatchers.Main) {
+                    service.setCandidates(layout, viewLines)
+                }
             }
         }
     }
@@ -217,7 +216,7 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
                 else -> throw RuntimeException("kanaState: $kanaState")
             } // カナかなは互換性あるけど半角カナと全角かなは互換性ない感覚があるので reverse しない
             commitTextSKK(text)
-            if (mRegister.mStack.isEmpty()) {
+            if (!mRegister.isOngoing) {
                 mLastConversion = SKKEngine.ConversionInfo(
                     text, list, index, mKanjiKey.toString(), mOkurigana
                 )
