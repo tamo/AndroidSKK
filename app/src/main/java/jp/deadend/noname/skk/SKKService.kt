@@ -587,20 +587,25 @@ class SKKService : InputMethodService() {
     private val backAnimationCallback = if (Build.VERSION.SDK_INT >= 34) {
         OnBackAnimationCallback {
             if (mInputView?.handleBack() != true && !mEngine.handleCancel(false))
-                requestHideSelf(0) // onWindowHidden で無効化されるので二重にはならない
+                requestHideSelf(0)
         }
     } else Unit
 
     override fun onWindowShown() = backAnimationCallback.let {
-        if (Build.VERSION.SDK_INT >= 34 && it is OnBackAnimationCallback)
+        if (skkPrefs.gestureInsets && Build.VERSION.SDK_INT >= 34 && it is OnBackAnimationCallback)
             window.onBackInvokedDispatcher
                 .registerOnBackInvokedCallback(OnBackInvokedDispatcher.PRIORITY_DEFAULT, it)
     }
 
     override fun onWindowHidden() = backAnimationCallback.let {
-        if (Build.VERSION.SDK_INT >= 34 && it is OnBackAnimationCallback)
+        if (skkPrefs.gestureInsets && Build.VERSION.SDK_INT >= 34 && it is OnBackAnimationCallback)
             window.onBackInvokedDispatcher
                 .unregisterOnBackInvokedCallback(it)
+    }
+
+    override fun requestHideSelf(flags: Int) {
+        onWindowHidden()
+        super.requestHideSelf(flags)
     }
 
     override fun onCreateInputView(): View {
@@ -841,6 +846,7 @@ class SKKService : InputMethodService() {
         super.onFinishInputView(finishingInput)
         hideStatusIcon()
         clearCandidatesView()
+        onWindowHidden()
     }
 
     /**
@@ -858,6 +864,7 @@ class SKKService : InputMethodService() {
 
         mQwertyInputView?.handleBack()
         mAbbrevKeyboardView?.handleBack()
+        onWindowHidden()
     }
 
     override fun onUnbind(intent: Intent?): Boolean {

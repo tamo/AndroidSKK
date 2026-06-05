@@ -148,7 +148,7 @@
                 app:iconSpaceReserved="false"
                 app:key="@string/pref_gesture_insets"
                 app:summary="「戻る」ジェスチャーのために画面の左右端を少し空けます (対応 OS のみ)"
-                app:title="ジェスチャー幅の確保" />
+                app:title="ジェスチャーでキャンセル" />
             <androidx.preference.SeekBarPreference
                 android:max="200"
                 app:defaultValue="100"
