@@ -57,7 +57,7 @@
     <string name="error_kana_rule_load">ファイルを読み込めませんでした</string>
     <string name="error_access_failed">アクセスできません: %1$s</string>
     <string name="error_open_dict">辞書ファイルを開けません</string>
-    <string name="error_open_user_dict">辞書 %1$s が開けません。設定画面から初期化してみてください</string>
+    <string name="error_open_user_dict">辞書 %1$s が開けませんでした。引き続きキーボードが表示されない場合は設定画面から初期化してみてください</string>
     <string name="error_tools_open_user_dict">辞書を開くときにエラーが発生しました。内容をすべて消去してもよろしいですか？</string>
     <string name="error_file_load">ファイル読みこみに失敗しました: %1$s</string>
     <string name="error_no_mushroom">マッシュルームアプリがひとつもインストールされていません</string>

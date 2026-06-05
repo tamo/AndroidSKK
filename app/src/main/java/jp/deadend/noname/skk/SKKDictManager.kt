@@ -427,8 +427,8 @@ class SKKDictManager : AppCompatActivity() {
             var store: SKKDictionaryStore? = null
             var success = false
             try {
-                store = MVStoreDictionaryStore.open(
-                    filesDir.absolutePath + "/" + dictFileBaseName + ".mv",
+                store = openDB(
+                    filesDir.absolutePath + "/" + dictFileBaseName,
                     getString(R.string.btree_name)
                 )
 

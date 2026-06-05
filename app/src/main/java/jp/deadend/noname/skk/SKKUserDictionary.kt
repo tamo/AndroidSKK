@@ -135,9 +135,7 @@ class SKKUserDictionary private constructor(
 
     fun reopen() {
         close()
-        openDB(mDictFile, mBtreeName, writable = true).let {
-            mStore = it
-        }
+        mStore = runBlocking { openDB(mDictFile, mBtreeName, writable = true) }
     }
 
     private inline fun <T> safeRun(crossinline block: () -> T): T =
@@ -156,7 +154,7 @@ class SKKUserDictionary private constructor(
                 context.extractDictionary(dbFile.nameWithoutExtension)
             }
             try {
-                val store = openDB(mDictFile, btreeName, writable = true)
+                val store = runBlocking { openDB(mDictFile, btreeName, writable = true) }
                 return SKKUserDictionary(store, isASCII, mDictFile, btreeName)
             } catch (e: Exception) {
                 Log.e("SKK", "Error in opening the dictionary: $e")

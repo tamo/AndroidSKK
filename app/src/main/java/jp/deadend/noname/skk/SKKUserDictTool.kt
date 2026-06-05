@@ -414,8 +414,8 @@ class SKKUserDictTool : AppCompatActivity() {
                 }
             } else {
                 try {
-                    mStore = MVStoreDictionaryStore.open(
-                        filesDir.absolutePath + "/" + mDictName + ".mv",
+                    mStore = openDB(
+                        filesDir.absolutePath + "/" + mDictName,
                         getString(R.string.btree_name)
                     )
                     mStore?.commit()
@@ -467,33 +467,14 @@ class SKKUserDictTool : AppCompatActivity() {
         val dictPath = filesDir.absolutePath + "/" + mDictName
         val btreeName = getString(R.string.btree_name)
 
-        var retryCount = 0
-        val maxRetries = 10
-        val retryDelay = 200
-
-        while (retryCount < maxRetries) {
-            try {
-                mStore = withContext(Dispatchers.IO) {
-                    openDB(dictPath, btreeName, writable = true)
-                }
-                dLog("UserDictTool: opened after $retryCount retries")
-                return true
-            } catch (e: Exception) {
-                if (e.toString().contains("locked")) {
-                    retryCount++
-                    dLog("UserDictTool: database locked, retrying ($retryCount/$maxRetries)...")
-                    delay(retryDelay.milliseconds)
-                } else {
-                    Log.e("SKK", "openUserDict error opening mStore: ${e.message}")
-                    break
-                }
-            }
+        try {
+            mStore = openDB(dictPath, btreeName, writable = true)
+            dLog("UserDictTool: opened")
+            return true
+        } catch (e: Exception) {
+            Log.e("SKK", "openUserDict error opening mStore: ${e.message}")
         }
 
-        Log.e(
-            "SKK",
-            "openUserDict error: failed to acquire lock after ${maxRetries * retryDelay}ms"
-        )
         withContext(Dispatchers.Main) { onFailToOpenUserDict() }
         return false
     }

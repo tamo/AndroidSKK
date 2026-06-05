@@ -1,6 +1,7 @@
 package jp.deadend.noname.skk
 
 import android.util.Log
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import java.io.File
 
@@ -25,25 +26,14 @@ class SKKDictionary private constructor(
 
     companion object {
         fun newInstance(mDictFile: String, btreeName: String, toaster: () -> Unit): SKKDictionary? {
-            var store: SKKDictionaryStore? = null
             return try {
-                val mvFile = File("$mDictFile.mv")
-                if (mvFile.exists()) {
-                    store =
-                        MVStoreDictionaryStore.open("$mDictFile.mv", btreeName, writable = false)
-                } else if (File("$mDictFile.db").exists()) {
+                if (File("$mDictFile.db").exists() && !File("$mDictFile.mv").exists()) {
                     toaster.invoke()
-                    store = openDB(mDictFile, btreeName, writable = false)
                 }
-
-                if (store != null) {
-                    SKKDictionary(store)
-                } else {
-                    null
-                }
+                val store = runBlocking { openDB(mDictFile, btreeName, writable = false) }
+                SKKDictionary(store)
             } catch (e: Exception) {
                 Log.e("SKK", "Error in opening the dictionary: $e")
-                store?.close()
                 null
             }
         }
