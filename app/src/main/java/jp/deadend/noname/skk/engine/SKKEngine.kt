@@ -17,7 +17,6 @@ import jp.deadend.noname.skk.skkPrefs
 import jp.deadend.noname.skk.zenkaku2hankaku
 import kotlinx.coroutines.runBlocking
 import org.json.JSONException
-import java.util.stream.IntStream
 
 class SKKEngine(
     private val mService: SKKService,
@@ -135,6 +134,9 @@ class SKKEngine(
     internal fun close() {
         for (dict in mDictList) {
             dict.close()
+            if (dict == mUserDict) {
+                mASCIIDict.close()
+            } // ASCII は mDictList に入れていない
         }
     }
 
