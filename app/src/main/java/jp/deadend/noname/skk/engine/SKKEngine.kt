@@ -270,8 +270,7 @@ class SKKEngine(
         mComposing.setLength(0)
         mKanjiKey.clear()
         mOkurigana = ""
-        mCandidates.mList = null
-        mCandidates.mQuery = ""
+        mCandidates.reset()
         when {
             state.isTransient -> {
                 changeState(kanaState)
@@ -751,8 +750,7 @@ class SKKEngine(
         mComposing.setLength(0)
         mKanjiKey.clear()
         mOkurigana = ""
-        mCandidates.mList = null
-        mCandidates.mQuery = ""
+        mCandidates.reset()
         mService.clearCandidatesView()
         if (ic?.getSelectedText(0).isNullOrEmpty()) {
             ic?.setComposingText(SpannableString(""), 1)

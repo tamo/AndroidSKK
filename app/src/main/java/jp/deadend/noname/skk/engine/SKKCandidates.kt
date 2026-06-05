@@ -483,4 +483,12 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
             }
         }
     }
+
+    fun reset() {
+        mJob.cancel()
+        mList = null
+        mCompletionList = null
+        mIndex = 0
+        mQuery = ""
+    }
 }
