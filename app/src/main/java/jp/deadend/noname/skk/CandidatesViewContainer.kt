@@ -139,12 +139,6 @@ class CandidatesViewContainer(screen: Context, attrs: AttributeSet) : LinearLayo
                             }
                             // DOWN で performClick() しているので else は無視
                         }
-                        // 正常終了し save されたことを伝えたい
-                        performHapticFeedback(skkPrefs.haptic)
-                        foreground =
-                            ResourcesCompat.getColor(resources, R.color.key_checked_color, null)
-                                .toDrawable()
-                        postDelayed({ foreground = null }, 100)
                     }
 
                     else -> dLog(event.toString())
@@ -168,6 +162,7 @@ class CandidatesViewContainer(screen: Context, attrs: AttributeSet) : LinearLayo
             Configuration.ORIENTATION_LANDSCAPE -> skkPrefs.keyCenterLand = centerRate
             else -> skkPrefs.keyCenterPort = centerRate
         }
+        feedback()
     }
 
     private fun saveWidth() {
@@ -181,6 +176,16 @@ class CandidatesViewContainer(screen: Context, attrs: AttributeSet) : LinearLayo
 
             else -> skkPrefs.keyWidthPort = widthToSave.coerceIn(minWidth, mService.mRootWidth)
         }
+        feedback()
+    }
+
+    // 正常終了し save されたことを伝えたい
+    private fun feedback() {
+        performHapticFeedback(skkPrefs.haptic)
+        foreground =
+            ResourcesCompat.getColor(resources, R.color.key_checked_color, null)
+                .toDrawable()
+        postDelayed({ foreground = null }, 100)
     }
 
     fun setAlpha(alpha: Int) {
