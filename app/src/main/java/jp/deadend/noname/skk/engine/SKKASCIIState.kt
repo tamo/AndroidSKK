@@ -32,7 +32,11 @@ object SKKASCIIState : SKKConfirmingState {
 
     override fun handleCancel(context: SKKEngine, reconvert: Boolean): Boolean {
         super.handleCancel(context, reconvert)
-        if (!reconvert) return false
+        if (!reconvert) {
+            if (context.mCandidates.mList?.isEmpty() ?: true) return false
+            context.reset()
+            return true
+        }
 
         val prefix = getPrefix(context)
         val suffix = getSuffix(context)
