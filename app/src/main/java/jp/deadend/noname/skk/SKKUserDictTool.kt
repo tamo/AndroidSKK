@@ -503,9 +503,9 @@ class SKKUserDictTool : AppCompatActivity() {
         mSearchJob.cancel()
         mDatabaseJob.cancel()
         mDatabaseJob.invokeOnCompletion {
-            mSearchView.isEnabled = false
             mDatabaseJob = MainScope().launch(Dispatchers.IO) {
                 withContext(Dispatchers.Main) {
+                    mSearchView.isEnabled = false
                     mAdapter.clear()
                     if (!openUserDict()) {
                         throw CancellationException()
