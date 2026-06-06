@@ -60,7 +60,7 @@ open class KeyboardView @JvmOverloads constructor(
     private val mCoordinates = IntArray(2)  // working variable
     private val mPopupKeyboard = PopupWindow(context)
     var mMiniKeyboardOnScreen = false
-    private var mPopupParent: View
+    private var mPopupParent: View = this
     private var mMiniKeyboardOffsetX = 0
     private var mMiniKeyboardOffsetY = 0
     private val mMiniKeyboardCache: MutableMap<Keyboard.Key, View> = mutableMapOf()
@@ -121,14 +121,10 @@ open class KeyboardView @JvmOverloads constructor(
                 MSG_REPEAT -> if (mRepeatKeyIndex != NOT_A_KEY && !mAbortKey) {
                     detectAndSendKey(mRepeatKeyIndex, mLastTapTime)
                     mHasRepeated = true
-                    if (mAbortKey) {
-                        mRepeatKeyIndex = NOT_A_KEY
-                    } else {
-                        sendMessageDelayed(
-                            Message.obtain(this, MSG_REPEAT),
-                            REPEAT_INTERVAL.toLong()
-                        )
-                    }
+                    if (mAbortKey) mRepeatKeyIndex = NOT_A_KEY
+                    else sendMessageDelayed(
+                        Message.obtain(this, MSG_REPEAT), REPEAT_INTERVAL.toLong()
+                    )
                 }
 
                 MSG_LONG_PRESS -> openPopupIfRequired()
@@ -231,12 +227,14 @@ open class KeyboardView @JvmOverloads constructor(
             mPreviewText =
                 (context.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater)
                     .inflate(previewLayout, null) as TextView
-            mPreviewPopup.contentView = mPreviewText
-            mPreviewPopup.setBackgroundDrawable(null)
-            mPreviewPopup.isClippingEnabled = false
-            mPreviewPopup.animationStyle = 0
-            mPreviewPopup.enterTransition = null
-            mPreviewPopup.exitTransition = null
+            mPreviewPopup.apply {
+                contentView = mPreviewText
+                setBackgroundDrawable(null)
+                isClippingEnabled = false
+                animationStyle = 0
+                enterTransition = null
+                exitTransition = null
+            }
         } else {
             isPreviewEnabled = false
         }
@@ -244,12 +242,13 @@ open class KeyboardView @JvmOverloads constructor(
 
         mPopupKeyboard.setBackgroundDrawable(null)
         mPopupKeyboard.isClippingEnabled = false
-        this.also { mPopupParent = it }
 
-        mPaint.isAntiAlias = true
-        mPaint.textSize = mKeyTextSize.toFloat()
-        mPaint.textAlign = Align.CENTER
-        mPaint.alpha = 255
+        mPaint.apply {
+            isAntiAlias = true
+            textSize = mKeyTextSize.toFloat()
+            textAlign = Align.CENTER
+            alpha = 255
+        }
 
         mKeyBackground?.getPadding(mPadding)
 
@@ -654,12 +653,14 @@ open class KeyboardView @JvmOverloads constructor(
             if (keyIndex < 0 || keyIndex >= mKeyboard.keys.size) return
             val key = mKeyboard.keys[keyIndex]
             if (key.icon != null && key.codes[0] != Keyboard.KEYCODE_SHIFT) return
-            previewText.text = getPreviewText(key)
-            previewText.typeface = Typeface.DEFAULT
-            previewText.measure(
-                MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED),
-                MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED)
-            )
+            previewText.apply {
+                text = getPreviewText(key)
+                typeface = Typeface.DEFAULT
+                measure(
+                    MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED),
+                    MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED)
+                )
+            }
             val popupWidth = previewText.measuredWidth.coerceAtLeast(
                 key.width + previewText.paddingLeft + previewText.paddingRight
             )
@@ -700,12 +701,11 @@ open class KeyboardView @JvmOverloads constructor(
                 mPreviewPopup.dismiss()
             }
 
-            mPreviewPopup.width = popupWidth
-            mPreviewPopup.height = popupHeight
-            mPreviewPopup.showAtLocation(
-                mPopupParent, Gravity.NO_GRAVITY,
-                popupPreviewX, popupPreviewY
-            )
+            mPreviewPopup.apply {
+                width = popupWidth
+                height = popupHeight
+                showAtLocation(mPopupParent, Gravity.NO_GRAVITY, popupPreviewX, popupPreviewY)
+            }
 
             previewText.visibility = VISIBLE
         }
@@ -807,10 +807,12 @@ open class KeyboardView @JvmOverloads constructor(
             miniKeyboardView.setPopupOffset(x.coerceAtLeast(0), y)
             miniKeyboardView.isShifted = isShifted
 
-            mPopupKeyboard.contentView = miniKeyboardContainer
-            mPopupKeyboard.width = miniKeyboardContainer.measuredWidth
-            mPopupKeyboard.height = miniKeyboardContainer.measuredHeight
-            mPopupKeyboard.showAtLocation(this, Gravity.NO_GRAVITY, x, y)
+            mPopupKeyboard.apply {
+                contentView = miniKeyboardContainer
+                width = miniKeyboardContainer.measuredWidth
+                height = miniKeyboardContainer.measuredHeight
+                showAtLocation(this@KeyboardView, Gravity.NO_GRAVITY, x, y)
+            }
             mMiniKeyboardOnScreen = true
             //miniKeyboardView.onTouchEvent(getTranslatedEvent(me));
             invalidateAllKeys()
