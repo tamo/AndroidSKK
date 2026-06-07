@@ -26,10 +26,12 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import java.io.IOException
 import java.util.zip.GZIPInputStream
 import kotlin.math.floor
@@ -38,9 +40,9 @@ import kotlin.time.Duration.Companion.milliseconds
 
 class SKKUserDictTool : AppCompatActivity() {
     private lateinit var mDictName: String
-    private var mStore: SKKDictionaryStore? = null
-    private var mEntryList = mutableListOf<SKKDictionaryTuple>()
-    private var mFoundList = mutableListOf<SKKDictionaryTuple>()
+    private var mStore: SKKStore? = null
+    private var mEntryList = mutableListOf<SKKStoreTuple>()
+    private var mFoundList = mutableListOf<SKKStoreTuple>()
     private lateinit var mAdapter: EntryAdapter
     private lateinit var mSearchView: SearchView
     private lateinit var mSearchAdapter: EntryAdapter
@@ -48,7 +50,6 @@ class SKKUserDictTool : AppCompatActivity() {
     private var mSearchJob: Job = Job()
     private var mDatabaseJob: Job = Job()
     private var mInFileLauncher = false
-    private val mDelay = 500L
 
     private val importFileLauncher = registerForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -64,12 +65,14 @@ class SKKUserDictTool : AppCompatActivity() {
             mDatabaseJob = MainScope().launch(Dispatchers.IO) {
                 withContext(Dispatchers.Main) {
                     mAdapter.clear()
-                    if (!openUserDict()) {
-                        mInFileLauncher = false
-                        throw CancellationException()
-                    }
-                    mMenu.setGroupEnabled(0, false)
+                    mSearchView.queryHint = "辞書に書き込む準備中"
                 }
+                if (!openUserDict()) {
+                    mInFileLauncher = false
+                    throw CancellationException()
+                }
+                withContext(Dispatchers.Main) { mMenu.setGroupEnabled(0, false) }
+
                 val name = getFileNameFromUri(this@SKKUserDictTool, uri)!!
                 val isGzip = name.endsWith(".gz")
                 val isWordList = name.endsWith("combined.gz")
@@ -149,21 +152,19 @@ class SKKUserDictTool : AppCompatActivity() {
         }
         mDatabaseJob.invokeOnCompletion {
             mDatabaseJob = MainScope().launch(Dispatchers.IO) {
-                withContext(Dispatchers.Main) {
-                    if (!openUserDict()) {
-                        mInFileLauncher = false
-                        throw CancellationException()
-                    }
+                if (!openUserDict(writable = false)) {
+                    mInFileLauncher = false
+                    throw CancellationException()
                 }
                 var errorMessage = ""
                 try {
                     contentResolver.openOutputStream(uri, "wt")?.bufferedWriter()?.use {
-                        val browser = mStore!!.browse()
+                        val browser = mStore!!.cursor()
                         if (browser == null) withContext(Dispatchers.Main) {
                             throw (IOException("database browser is null"))
                         } else {
                             while (true) {
-                                val result = browser.getNext() ?: break
+                                val result = browser.next() ?: break
                                 it.write("${result.key} ${result.value}\n")
                             }
                         }
@@ -198,7 +199,6 @@ class SKKUserDictTool : AppCompatActivity() {
     }
 
     public override fun onCreate(savedInstanceState: Bundle?) {
-        startServiceCommand(SKKService.COMMAND_RELOAD_DICT) // commit させる
         super.onCreate(savedInstanceState)
         mDictName = intent.dataString!!
         val binding = ActivityUserDictToolBinding.inflate(layoutInflater)
@@ -220,12 +220,6 @@ class SKKUserDictTool : AppCompatActivity() {
         setSupportActionBar(binding.userDictToolToolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
-        MainScope().launch(Dispatchers.Default) {
-            delay(mDelay.milliseconds) // 無駄に一瞬 emptyView が出るのを防ぐための遅延
-            withContext(Dispatchers.Main) {
-                binding.userDictToolList.emptyView = binding.EmptyListItem
-            }
-        }
         binding.userDictToolList.onItemClickListener =
             AdapterView.OnItemClickListener { parent, _, position, _ ->
                 if (!mSearchView.isEnabled || mDatabaseJob.isActive) { // 読み込み中
@@ -242,7 +236,7 @@ class SKKUserDictTool : AppCompatActivity() {
                             MainScope().launch(Dispatchers.IO) {
                                 try {
                                     if (openUserDict()) {
-                                        mStore?.remove(item.key)
+                                        mStore?.delete(item.key)
                                         withContext(Dispatchers.Main) {
                                             mEntryList.remove(item)
                                             mFoundList.remove(item)
@@ -265,6 +259,7 @@ class SKKUserDictTool : AppCompatActivity() {
             }
 
         mSearchView = binding.userDictToolSearch
+        mSearchView.queryHint = "辞書をキーボード側で閉じています"
         mSearchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
                 mSearchView.clearFocus()
@@ -272,6 +267,8 @@ class SKKUserDictTool : AppCompatActivity() {
             }
 
             override fun onQueryTextChange(newText: String?): Boolean {
+                binding.userDictToolList.emptyView = binding.EmptyListItem // 初回だけでいいけど
+
                 if (!mSearchView.isEnabled) {
                     if (mSearchView.query.isNotEmpty()) {
                         mSearchView.setQuery("", false)
@@ -389,11 +386,11 @@ class SKKUserDictTool : AppCompatActivity() {
     }
 
     public override fun onPause() {
-        closeUserDict()
-        mAdapter.clear()
-        startServiceCommand(SKKService.COMMAND_RELOAD_DICT)
-
-        super.onPause()
+        super.onPause() // 画面は早めに消してしまう
+        runBlocking(Dispatchers.IO) {
+            closeUserDict() // ここで時間がかかる可能性がある
+            startServiceCommand(SKKService.COMMAND_RELOAD_DICT)
+        }
     }
 
     private fun recreateUserDict(extract: Boolean) {
@@ -454,7 +451,7 @@ class SKKUserDictTool : AppCompatActivity() {
         }
     }
 
-    private suspend fun openUserDict(): Boolean {
+    private suspend fun openUserDict(writable: Boolean = true): Boolean {
         if (mStore != null) {
             Log.e("SKK", "openUserDict error: already opened")
             withContext(Dispatchers.Main) { onFailToOpenUserDict() }
@@ -462,13 +459,24 @@ class SKKUserDictTool : AppCompatActivity() {
         }
 
         // onPause() か finish() で reload するまで service / engine から使用できなくする
-        startServiceCommand(SKKService.COMMAND_CLOSE_USER_DICT)
+        if (SKKService.isRunning()) withTimeoutOrNull(500.milliseconds) {
+            val job = launch {
+                SKKService.sharedFlow.first { it == SKKService.EVENT_USER_DICT_CLOSING }
+            } // 先に開始しておく
+            startServiceCommand(SKKService.COMMAND_CLOSE_USER_DICT)
+            job.join()
+        } ?: run {
+            Log.e("SKK", "openUserDict error: service not responding")
+            withContext(Dispatchers.Main) { onFailToOpenUserDict() }
+            return false
+        }
 
         val dictPath = filesDir.absolutePath + "/" + mDictName
         val btreeName = getString(R.string.btree_name)
 
         try {
-            mStore = openDB(dictPath, btreeName, writable = true)
+            mStore = openDB(dictPath, btreeName, writable)
+            withContext(Dispatchers.Main) { mSearchView.queryHint = "" }
             dLog("UserDictTool: opened")
             return true
         } catch (e: Exception) {
@@ -482,17 +490,17 @@ class SKKUserDictTool : AppCompatActivity() {
     private fun closeUserDict() {
         mStore?.let { store ->
             mStore = null
-            try {
+            val commitException = try {
                 store.commit()
             } catch (e: Exception) {
-                Log.e("SKK", "closeUserDict commit error: ${e.message}")
-            } finally {
-                try {
-                    store.close()
-                } catch (e: Exception) {
-                    startServiceCommand(SKKService.COMMAND_RELOAD_DICT)
-                    throw RuntimeException("closeUserDict close error: ${e.message}")
-                }
+                e.also { Log.e("SKK", "closeUserDict commit error: ${e.message}") }
+            }
+            try {
+                store.close()
+            } catch (e: Exception) {
+                startServiceCommand(SKKService.COMMAND_RELOAD_DICT)
+                Log.e("SKK", "closeUserDict close error: ${e.message}")
+                if (commitException is Exception) throw commitException else throw e
             }
         }
         dLog("UserDictTool: closed")
@@ -504,15 +512,13 @@ class SKKUserDictTool : AppCompatActivity() {
         mDatabaseJob.cancel()
         mDatabaseJob.invokeOnCompletion {
             mDatabaseJob = MainScope().launch(Dispatchers.IO) {
+                if (!openUserDict(writable = false)) throw CancellationException()
                 withContext(Dispatchers.Main) {
                     mSearchView.isEnabled = false
                     mAdapter.clear()
-                    if (!openUserDict()) {
-                        throw CancellationException()
-                    }
                 }
                 try {
-                    val browser = mStore?.browse()
+                    val browser = mStore?.cursor()
                     if (browser == null) {
                         Log.e("SKK", "UserDictTool updateListItems: browser=null")
                         withContext(Dispatchers.Main) { onFailToOpenUserDict() }
@@ -520,10 +526,10 @@ class SKKUserDictTool : AppCompatActivity() {
                         return@launch
                     }
 
-                    val buffer = mutableListOf<SKKDictionaryTuple>()
+                    val buffer = mutableListOf<SKKStoreTuple>()
                     val bufferSize = 1000
                     while (true) {
-                        val result = browser.getNext() ?: break
+                        val result = browser.next() ?: break
                         buffer.add(result)
                         if (buffer.size < bufferSize) continue
                         withContext(Dispatchers.Main) {
@@ -567,15 +573,15 @@ class SKKUserDictTool : AppCompatActivity() {
 
     private class EntryAdapter(
         context: Context,
-        items: List<SKKDictionaryTuple>
-    ) : ArrayAdapter<SKKDictionaryTuple>(context, 0, items) {
+        items: List<SKKStoreTuple>
+    ) : ArrayAdapter<SKKStoreTuple>(context, 0, items) {
         private val mLayoutInflater = LayoutInflater.from(context)
 
         override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
             val tv = convertView
                 ?: mLayoutInflater.inflate(android.R.layout.simple_list_item_1, parent, false)
 
-            val item = getItem(position) ?: SKKDictionaryTuple("", "")
+            val item = getItem(position) ?: SKKStoreTuple("", "")
             (tv as TextView).text =
                 context.getString(R.string.item_tools_entry, item.key, item.value)
 

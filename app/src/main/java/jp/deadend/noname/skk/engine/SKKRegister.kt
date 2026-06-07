@@ -6,6 +6,8 @@ import jp.deadend.noname.skk.isAlphabet
 import jp.deadend.noname.skk.processConcatAndMore
 import jp.deadend.noname.skk.skkPrefs
 import jp.deadend.noname.skk.zenkaku2hankaku
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import java.util.ArrayDeque
 
 class SKKRegister(private val engine: SKKEngine) {
@@ -45,9 +47,9 @@ class SKKRegister(private val engine: SKKEngine) {
                 } else it
             }
             // if (isPersonalizedLearning) のチェックはこの場合しないでおく
-            engine.mUserDict.addEntry(
-                regInfo.key, regEntryStr, regInfo.okurigana
-            )
+            runBlocking(Dispatchers.IO) {
+                engine.mUserDict.addEntry(regInfo.key, regEntryStr, regInfo.okurigana)
+            }
             (processConcatAndMore(entry.toString(), regInfo.key) + regInfo.okurigana).let {
                 engine.commitTextSKK(
                     when (kanaStateBefore) {

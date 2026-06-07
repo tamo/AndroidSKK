@@ -20,6 +20,7 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.time.Duration.Companion.milliseconds
@@ -127,30 +128,33 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
         val list = mList ?: return
         val rawCandidate = list[index]
         val candidate = StringBuilder(get(index) ?: return)
-        dLog("pickCandidate $candidate from $list (unregister=$unregister, learn=${engine.isPersonalizedLearning})")
+        dLog("pickCandidate $candidate from $list (unregister=$unregister, learn=${engine.isPersonalizedLearning}, key=${engine.mKanjiKey})")
         suspendCompletion()
 
         if (mQuery == "emoji" || mQuery == "/きごう") {
             if (engine.isPersonalizedLearning || unregister) {
                 val s = removeAnnotation(candidate.toString())
                 var newEntry = "/160/$s"
-                (engine.mASCIIDict.getEntry(mQuery)?.let { entry ->
-                    entry.candidates.asSequence()
-                        .zipWithNext()
-                        .filterIndexed { i, _ -> i % 2 == 0 }
-                        .mapNotNull {
-                            if (it.second == s) {
-                                newEntry = "/${it.first.toInt().coerceAtLeast(160)}/$s"
-                                null
-                            } else it
-                        }
-                        .fold("/") { str, pair -> "$str${pair.first}/${pair.second}/" }
-                }.orEmpty())
-                    .let {
-                        if (unregister) newEntry = ""
-                        dLog("replaceEntry($mQuery, $newEntry$it)")
-                        engine.mASCIIDict.replaceEntry(mQuery, newEntry + it)
+                runBlocking(Dispatchers.IO) {
+                    engine.mASCIIDict.getEntry(mQuery)?.let { entry ->
+                        entry.candidates.asSequence()
+                            .zipWithNext()
+                            .filterIndexed { i, _ -> i % 2 == 0 }
+                            .mapNotNull {
+                                if (it.second == s) {
+                                    newEntry = "/${it.first.toInt().coerceAtLeast(160)}/$s"
+                                    null
+                                } else it
+                            }
+                            .fold("/") { str, pair -> "$str${pair.first}/${pair.second}/" }
                     }
+                }.orEmpty().let { oldEntry ->
+                    if (unregister) newEntry = ""
+                    dLog("replaceEntry($mQuery, $newEntry$oldEntry)")
+                    runBlocking(Dispatchers.IO) {
+                        engine.mASCIIDict.replaceEntry(mQuery, newEntry + oldEntry)
+                    }
+                }
             }
 
             engine.apply {
@@ -181,11 +185,9 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
                     if (mOkurigana.isNotEmpty()) "[$mOkurigana/$unannotated/]/" else ""
                 }"
             ) {
-                mUserDict.removeEntry(
-                    mKanjiKey.toString(),
-                    rawCandidate,
-                    mOkurigana
-                )
+                runBlocking(Dispatchers.IO) {
+                    mUserDict.removeEntry(mKanjiKey.toString(), rawCandidate, mOkurigana)
+                }
                 reset()
                 changeState(kanaState)
             }
@@ -195,11 +197,9 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
 
         engine.apply {
             if (isPersonalizedLearning) {
-                mUserDict.addEntry(
-                    mKanjiKey.toString(),
-                    rawCandidate,
-                    mOkurigana
-                )
+                runBlocking(Dispatchers.IO) {
+                    mUserDict.addEntry(mKanjiKey.toString(), rawCandidate, mOkurigana)
+                }
                 // ユーザー辞書登録時はエスケープや注釈を消さない
             }
 
@@ -285,23 +285,27 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
                     if (isPersonalizedLearning || unregister) {
                         val lambda = {
                             var newEntry = "/160/$s"
-                            (mASCIIDict.getEntry(c)?.let { entry ->
-                                entry.candidates.asSequence() // freq1, val1, freq2, val2
-                                    .zipWithNext() // (freq1, val1), (val1, freq2), (freq2, val2)
-                                    .filterIndexed { i, _ -> i % 2 == 0 } // (freq1, val1), (freq2, val2)
-                                    .mapNotNull {
-                                        if (it.second == s) {
-                                            newEntry = "/${it.first.toInt().coerceAtLeast(160)}/$s"
-                                            null
-                                        } else it
-                                    }
-                                    .fold("/") { str, pair -> "$str${pair.first}/${pair.second}/" }
-                            }.orEmpty())
-                                .let {
-                                    if (unregister) newEntry = ""
-                                    dLog("replaceEntry($c, $newEntry$it)")
-                                    mASCIIDict.replaceEntry(c, newEntry + it)
+                            runBlocking(Dispatchers.IO) {
+                                engine.mASCIIDict.getEntry(c)?.let { entry ->
+                                    entry.candidates.asSequence() // freq1, val1, freq2, val2
+                                        .zipWithNext() // (freq1, val1), (val1, freq2), (freq2, val2)
+                                        .filterIndexed { i, _ -> i % 2 == 0 } // (freq1, val1), (freq2, val2)
+                                        .mapNotNull {
+                                            if (it.second == s) {
+                                                newEntry =
+                                                    "/${it.first.toInt().coerceAtLeast(160)}/$s"
+                                                null
+                                            } else it
+                                        }
+                                        .fold("/") { str, pair -> "$str${pair.first}/${pair.second}/" }
                                 }
+                            }.orEmpty().let { oldEntry ->
+                                if (unregister) newEntry = ""
+                                dLog("replaceEntry($c, $newEntry$oldEntry)")
+                                runBlocking(Dispatchers.IO) {
+                                    engine.mASCIIDict.replaceEntry(c, newEntry + oldEntry)
+                                }
+                            }
                         }
                         if (unregister) {
                             val confirm = state as SKKConfirmingState
@@ -391,7 +395,9 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
                                 for (fuzzyStr in fuzzy(str)) {
                                     if (set.size >= goal) break
                                     ensureCont()
-                                    if (dict.getCandidates(fuzzyStr).isNullOrEmpty()) continue
+                                    if (withContext(Dispatchers.IO) {
+                                            dict.getCandidates(fuzzyStr).isNullOrEmpty()
+                                        }) continue
                                     val shownStr =
                                         if (service.isHiragana) fuzzyStr
                                         else hiragana2katakana(fuzzyStr, reversed = true).orEmpty()

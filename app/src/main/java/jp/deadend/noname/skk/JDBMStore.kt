@@ -9,56 +9,44 @@ import jdbm.helper.TupleBrowser
 import java.io.IOException
 import java.util.Properties
 
-class JDBMDictionaryStore(
+class JDBMStore(
     private val recMan: RecordManager,
     private val btree: BTree<String, String>
-) : SKKDictionaryStore {
+) : SKKStore {
 
-    override fun find(key: String): String? = btree.find(key)
+    override fun get(key: String): String? = btree.find(key)
 
-    override fun insert(key: String, value: String) {
-        btree.insert(key, value, true)
-    }
+    override fun set(key: String, value: String) = this.apply { btree.insert(key, value, true) }
 
-    override fun remove(key: String) {
-        btree.remove(key)
-    }
+    override fun delete(key: String) = this.apply { btree.remove(key) }
 
-    override fun browse(): SKKDictionaryBrowser? {
+    override fun cursor(): SKKStoreCursor? {
         val browser = btree.browse() ?: return null
-        return JDBMBrowser(browser)
+        return JDBMCursor(browser)
     }
 
-    override fun browse(key: String): SKKDictionaryBrowser? {
+    override fun cursor(key: String): SKKStoreCursor? {
         val browser = btree.browse(key) ?: return null
-        return JDBMBrowser(browser)
+        return JDBMCursor(browser)
     }
 
-    override fun commit() {
-        recMan.commit()
-    }
+    override fun commit(): SKKStore = this.apply { recMan.commit() }
 
     override fun size(): Long = btree.size().toLong()
 
-    override fun close() {
-        recMan.close()
-    }
+    override fun close() = recMan.close()
 
-    private class JDBMBrowser(private val browser: TupleBrowser<String, String>) :
-        SKKDictionaryBrowser {
+    private class JDBMCursor(private val browser: TupleBrowser<String, String>) :
+        SKKStoreCursor {
         private val tuple = Tuple<String, String>()
-        override fun getNext(): SKKDictionaryTuple? {
-            return if (browser.getNext(this.tuple)) {
-                SKKDictionaryTuple(this.tuple.key as String, this.tuple.value as String)
-            } else {
-                null
-            }
-        }
+        override fun next(): SKKStoreTuple? = if (browser.getNext(this.tuple))
+            SKKStoreTuple(this.tuple.key as String, this.tuple.value as String)
+        else null
     }
 
     companion object {
         @Throws(IOException::class)
-        fun open(filePath: String, btreeName: String): JDBMDictionaryStore {
+        fun open(filePath: String, btreeName: String): JDBMStore {
             val props = Properties().apply {
                 setProperty(jdbm.RecordManagerOptions.DISABLE_TRANSACTIONS, "true")
             }
@@ -72,7 +60,7 @@ class JDBMDictionaryStore(
             } else {
                 BTree<String, String>().load(recMan, recID)
             }
-            return JDBMDictionaryStore(recMan, btree)
+            return JDBMStore(recMan, btree)
         }
     }
 }

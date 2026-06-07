@@ -47,7 +47,7 @@ class SKKDictManager : AppCompatActivity() {
     private lateinit var binding: ActivityDictManagerBinding
     private val mAdapter: TupleAdapter
         get() = binding.dictManagerList.adapter as TupleAdapter
-    private var mDictList = listOf<SKKDictionaryTuple>()
+    private var mDictList = listOf<SKKStoreTuple>()
 
     private val addDictFileLauncher = registerForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -57,16 +57,16 @@ class SKKDictManager : AppCompatActivity() {
         }
     }
 
-    private val commonDictList: List<SKKDictionaryTuple> by lazy {
+    private val commonDictList: List<SKKStoreTuple> by lazy {
         listOf(
-            SKKDictionaryTuple("ユーザー辞書", getString(R.string.dict_name_user)),
-            SKKDictionaryTuple("絵文字辞書", getString(R.string.dict_name_emoji))
+            SKKStoreTuple("ユーザー辞書", getString(R.string.dict_name_user)),
+            SKKStoreTuple("絵文字辞書", getString(R.string.dict_name_emoji))
         ) + listOf(
             "lisplike", "L+", "L", "L.unannotated", "S",
             "jinmei", "geo", "station", "propernoun",
             "itaiji", "fullname", "emoji",
             "assoc", "edict2", "okinawa", "JIS2"
-        ).map { type -> SKKDictionaryTuple("SKK $type 辞書", "/skk_dict_${type}") }
+        ).map { type -> SKKStoreTuple("SKK $type 辞書", "/skk_dict_${type}") }
     }
 
     public override fun onCreate(savedInstanceState: Bundle?) {
@@ -100,7 +100,7 @@ class SKKDictManager : AppCompatActivity() {
                     .dropLastWhile { it.isEmpty() }
                     .asSequence()
                     .chunked(2)
-                    .map { SKKDictionaryTuple(it[0], it[1]) }
+                    .map { SKKStoreTuple(it[0], it[1]) }
                     .plus(commonDictList) // 一般的な辞書を追加
                     .distinctBy { it.value.removePrefix("/") } // 重複を消去
                     .toMutableList()
@@ -113,7 +113,7 @@ class SKKDictManager : AppCompatActivity() {
 
                         if (existing == null) {
                             val type = filename.removePrefix("skk_dict_")
-                            list.add(SKKDictionaryTuple("SKK $type 辞書", filename))
+                            list.add(SKKStoreTuple("SKK $type 辞書", filename))
                         } else {
                             val index = list.indexOf(existing)
                             list[index] = existing.copy(value = filename)
@@ -157,7 +157,7 @@ class SKKDictManager : AppCompatActivity() {
                         val dictPath = item.value
                         deleteFile("$dictPath.mv")
                         if (dictPath.startsWith("skk_dict_")) {
-                            newList[position] = SKKDictionaryTuple(dictName, "/${dictPath}")
+                            newList[position] = SKKStoreTuple(dictName, "/${dictPath}")
                         } else {
                             newList.remove(item)
                         }
@@ -278,7 +278,7 @@ class SKKDictManager : AppCompatActivity() {
                                 withContext(Dispatchers.Main) {
                                     val newList = mDictList.toMutableList()
                                     newList[position] =
-                                        SKKDictionaryTuple("${item.key} ($size)", item.value)
+                                        SKKStoreTuple("${item.key} ($size)", item.value)
                                     mAdapter.submitList(newList)
                                     mDictList = newList
                                 }
@@ -328,7 +328,7 @@ class SKKDictManager : AppCompatActivity() {
 
         if (position != -1) { // 既存のものを loadDict した後の処理
             val newList = mDictList.toMutableList()
-            newList[position] = SKKDictionaryTuple(newList[position].key, dictFileBaseName)
+            newList[position] = SKKStoreTuple(newList[position].key, dictFileBaseName)
             mAdapter.submitList(newList)
             mDictList = newList
             return
@@ -353,7 +353,7 @@ class SKKDictManager : AppCompatActivity() {
                         suffix++
                         name = "$dictName($suffix)"
                     }
-                    val item = SKKDictionaryTuple(name, "/$dictFileBaseName")
+                    val item = SKKStoreTuple(name, "/$dictFileBaseName")
                     val newList = mDictList.plus(item)
                     mAdapter.submitList(newList)
                     mDictList = newList
@@ -424,7 +424,7 @@ class SKKDictManager : AppCompatActivity() {
 
         MainScope().launch(Dispatchers.IO) {
             val item = mDictList[position]
-            var store: SKKDictionaryStore? = null
+            var store: SKKStore? = null
             var success = false
             try {
                 store = openDB(
@@ -434,7 +434,7 @@ class SKKDictManager : AppCompatActivity() {
 
                 withContext(Dispatchers.Main) {
                     val newList = mDictList.toMutableList()
-                    newList[position] = SKKDictionaryTuple("${item.key} (識別中)", item.value)
+                    newList[position] = SKKStoreTuple("${item.key} (識別中)", item.value)
                     mAdapter.submitList(newList)
                     mDictList = newList
                 }
@@ -451,7 +451,7 @@ class SKKDictManager : AppCompatActivity() {
                             MainScope().launch {
                                 val newList = mDictList.toMutableList()
                                 newList[position] =
-                                    SKKDictionaryTuple("${item.key} ($it 行目)", item.value)
+                                    SKKStoreTuple("${item.key} ($it 行目)", item.value)
                                 mAdapter.submitList(newList)
                                 mDictList = newList
                             }
@@ -503,14 +503,14 @@ class SKKDictManager : AppCompatActivity() {
     private fun containsName(s: String) = mDictList.any { s == it.key }
 
     class TupleAdapter(private val onItemClickListener: (Int) -> Unit) :
-        ListAdapter<SKKDictionaryTuple,
+        ListAdapter<SKKStoreTuple,
                 TupleAdapter.TupleViewHolder>(TupleDiffCallback()) {
         class TupleViewHolder(
             binding: ActivityCheckedTextBinding,
             private val onItemClickListener: (Int) -> Unit
         ) : RecyclerView.ViewHolder(binding.root) {
             val view = binding.dictManagerListItem
-            fun bind(item: SKKDictionaryTuple) {
+            fun bind(item: SKKStoreTuple) {
                 view.text = item.key
                 view.isChecked = !item.value.startsWith('/')
                 view.setOnClickListener {
@@ -533,17 +533,17 @@ class SKKDictManager : AppCompatActivity() {
         }
     }
 
-    class TupleDiffCallback : DiffUtil.ItemCallback<SKKDictionaryTuple>() {
+    class TupleDiffCallback : DiffUtil.ItemCallback<SKKStoreTuple>() {
         override fun areItemsTheSame(
-            oldItem: SKKDictionaryTuple,
-            newItem: SKKDictionaryTuple
+            oldItem: SKKStoreTuple,
+            newItem: SKKStoreTuple
         ): Boolean {
             return oldItem.key == newItem.key && oldItem.value == newItem.value
         }
 
         override fun areContentsTheSame(
-            oldItem: SKKDictionaryTuple,
-            newItem: SKKDictionaryTuple
+            oldItem: SKKStoreTuple,
+            newItem: SKKStoreTuple
         ): Boolean {
             return areItemsTheSame(oldItem, newItem)
         }

@@ -30,7 +30,7 @@ object MakeAssetDict {
         File(mvFileName).delete()
 
         println("Converting WordList $inputPath to $outputZipPath...")
-        val store = MVStoreDictionaryStore.open(mvFileName, "skk_dict")
+        val store = MVStoreStore.open(mvFileName, "skk_dict")
 
         var lastKey: String? = null
         var lastFreq: String? = null
@@ -76,9 +76,9 @@ object MakeAssetDict {
                         return@forEachLine
                     }
                 }
-                val oldValue = store.find(lastKey) ?: "/"
+                val oldValue = store.get(lastKey) ?: "/"
                 val newValue = "$oldValue$freq/$word/"
-                store.insert(lastKey, newValue)
+                store.set(lastKey, newValue)
                 count++
 
                 if (count % 5000 == 0) {
@@ -135,10 +135,10 @@ object MakeAssetDict {
         val mvFileName = "$dbBaseName.mv"
         File(mvFileName).delete()
 
-        val store = MVStoreDictionaryStore.open(mvFileName, "skk_dict")
+        val store = MVStoreStore.open(mvFileName, "skk_dict")
 
         merged.forEach { (key, value) ->
-            store.insert(key, value)
+            store.set(key, value)
         }
         println("Processed $count emoji entries.")
         store.commit()

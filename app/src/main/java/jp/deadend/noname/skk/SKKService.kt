@@ -53,8 +53,12 @@ import jp.deadend.noname.skk.engine.SKKKatakanaState
 import jp.deadend.noname.skk.engine.SKKPreeditState
 import jp.deadend.noname.skk.engine.SKKState
 import jp.deadend.noname.skk.engine.SKKZenkakuState
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import java.io.IOException
 import kotlin.math.max
 import android.graphics.Insets as AGInsets
@@ -195,9 +199,10 @@ class SKKService : InputMethodService() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         dLog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
         when (intent?.getStringExtra(KEY_COMMAND)) {
-            COMMAND_CLOSE_USER_DICT -> {
+            COMMAND_CLOSE_USER_DICT -> MainScope().launch(Dispatchers.IO) {
                 dLog("commit user dictionary!")
                 mEngine.closeUserDict()
+                flow.tryEmit(EVENT_USER_DICT_CLOSING)
             }
 
             COMMAND_READ_PREFS -> {
@@ -206,7 +211,13 @@ class SKKService : InputMethodService() {
                 onInitializeInterface()
             }
 
-            COMMAND_RELOAD_DICT -> mEngine.reopenDictionaries(openDictionaries())
+            COMMAND_RELOAD_DICT -> {
+                mUserDict.reopen()
+                mAsciiDict.reopen()
+                mEmojiDict.reopen()
+                mEngine.reopenDictionaries(openDictionaries())
+            }
+
             COMMAND_MUSHROOM -> {
                 mPendingInput = intent.getStringExtra(SKKMushroom.REPLACE_KEY)
 //                if (mMushroomWord != null) {
@@ -266,29 +277,28 @@ class SKKService : InputMethodService() {
                 "ユーザー辞書/${getString(R.string.dict_name_user)}/絵文字辞書/${getString(R.string.dict_name_emoji)}/"
             )
         dLog("dict pref: $prefVal")
+
+        val oldDictList = if (::mEngine.isInitialized) mEngine.mDictList else emptyList()
+
         prefVal?.split("/")?.chunked(2)?.forEach { chunk ->
             if (chunk.size < 2) return@forEach
-            val dict = when (val dictPath = chunk[1]) {
+            when (val dictPath = chunk[1]) {
                 getString(R.string.dict_name_user) -> mUserDict
-                // getString(R.string.dict_name_ascii) -> mAsciiDict
                 getString(R.string.dict_name_emoji) -> mEmojiDict
-                else -> SKKDictionary.newInstance(
-                    "$dd/$dictPath", getString(R.string.btree_name)
-                ) {
-                    mHandler.post {
-                        Toast.makeText(
-                            applicationContext,
-                            getText(R.string.message_dict_migrating),
+                else -> (if (dictPath.startsWith("/")) dictPath else "$dd/$dictPath").let { fullPath ->
+                    (oldDictList.find { it.mFilePath == fullPath } as? SKKSystemDictionary)?.let {
+                        if (it.mStore != null) it else null
+                    } ?: SKKSystemDictionary.newInstance(
+                        fullPath, getString(R.string.btree_name),
+                        fun() = mHandler.post(fun() = Toast.makeText(
+                            applicationContext, getText(R.string.message_dict_migrating),
                             Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                } ?: run {
-                    dLog("failed to open $dictPath")
-                    null
+                        ).show()).run {}
+                    ) ?: null.also { dLog("failed to open $dictPath") }
                 }
-            }
-            dict?.let { result.add(it) }
+            }?.let { result.add(it) }
         }
+        dLog("dict list: ${result.joinToString { it.mFilePath }}")
 
         return result
     }
@@ -885,7 +895,7 @@ class SKKService : InputMethodService() {
             return
         }
 
-        mEngine.close()
+        runBlocking(Dispatchers.IO) { mEngine.close() }
         mSpeechRecognizer.destroy()
         instance = null
 
@@ -1548,6 +1558,10 @@ class SKKService : InputMethodService() {
                 false
             }
         }
+
+        private val flow = MutableSharedFlow<String>(replay = 1, extraBufferCapacity = 1)
+        internal val sharedFlow = flow.asSharedFlow()
+        internal const val EVENT_USER_DICT_CLOSING = "jp.deadend.noname.skk.EVENT_USER_DICT_CLOSING"
 
         internal const val KEY_COMMAND = "jp.deadend.noname.skk.KEY_COMMAND"
         internal const val COMMAND_CLOSE_USER_DICT = "jp.deadend.noname.skk.COMMAND_CLOSE_USER_DICT"

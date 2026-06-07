@@ -15,6 +15,7 @@ import jp.deadend.noname.skk.katakana2hiragana
 import jp.deadend.noname.skk.removeAnnotation
 import jp.deadend.noname.skk.skkPrefs
 import jp.deadend.noname.skk.zenkaku2hankaku
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.json.JSONException
 
@@ -95,14 +96,9 @@ class SKKEngine(
     }
 
     internal fun reopenDictionaries(dictList: List<SKKDictionaryInterface>) {
-        for (dict in mDictList) when (dict) {
-            mUserDict -> {
-                mUserDict.reopen()
-                mASCIIDict.reopen() // ASCII は mDictList に入れていない
-            }
-
-            mEmojiDict -> mEmojiDict.reopen()
-            else -> dict.close()
+        mCandidates.reset()
+        for (dict in mDictList - dictList.toSet()) {
+            dict.close()
         }
         mDictList = dictList
     }
@@ -582,11 +578,10 @@ class SKKEngine(
 
     internal fun reConvert(): Boolean {
         val lastConv = mLastConversion ?: return false
+        dLog("last conversion: ${lastConv.candidate} from ${lastConv.list} at ${lastConv.index} (key=${lastConv.kanjiKey}, okuri=${lastConv.okurigana})")
 
-        val s = lastConv.candidate
-        dLog("last conversion: $s")
-        if (mService.prepareReConversion(s)) {
-            mUserDict.rollBack()
+        if (mService.prepareReConversion(lastConv.candidate)) {
+            runBlocking(Dispatchers.IO) { mUserDict.rollBack() }
 
             changeState(SKKChooseState)
 
@@ -698,7 +693,7 @@ class SKKEngine(
         complete("emoji")
     }
 
-    internal fun find(key: String): List<String> {
+    internal fun find(key: String): List<String> = runBlocking(Dispatchers.IO) {
         val userEntry = mUserDict.getEntry(key)
         dLog("user dictionary: $key -> ${userEntry?.candidates} with ${userEntry?.okuriganaBlocks}")
         val (userOkList, userRestList) = (userEntry?.candidates ?: listOf()).partition { s ->
@@ -739,7 +734,7 @@ class SKKEngine(
 
         if (list.isEmpty()) dLog("Dictionary: Can't find Kanji for $key")
 
-        return list
+        list
     }
 
     // いわゆる暗黙の確定
