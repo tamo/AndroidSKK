@@ -8,6 +8,7 @@
              possible states: normal, pressed, checkable, checkable+pressed, checkable+checked,
              checkable+checked+pressed. -->
         <attr name="keyBackground" format="reference" />
+        <attr name="keyCornerRadius" format="dimension" />
         <!-- Size of the text for character keys. -->
         <attr name="keyTextSize" format="dimension" />
         <!-- Size of the text for custom keys with some text and no icon. -->

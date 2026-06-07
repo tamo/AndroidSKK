@@ -572,6 +572,7 @@ class SKKService : InputMethodService() {
 
     private fun createInputView() {
         val context = createNightModeContext(applicationContext, skkPrefs.theme)
+        if (skkPrefs.useInset) context.theme.applyStyle(R.style.ThemeOverlay_SKK_RoundedKey, true)
 
         mFlickJPInputView = FlickJPKeyboardView(context, null)
         mFlickJPInputView?.setService(this)
@@ -582,13 +583,18 @@ class SKKService : InputMethodService() {
         mAbbrevKeyboardView = AbbrevKeyboardView(context, null)
         mAbbrevKeyboardView?.setService(this)
 
-        if (skkPrefs.useInset) {
-            ResourcesCompat.getDrawable(context.resources, R.drawable.key_bg_inset, null)?.let {
+        if (skkPrefs.useInset) ResourcesCompat
+            .getDrawable(context.resources, R.drawable.key_bg_inset, context.theme)?.let {
                 mFlickJPInputView?.setKeyBackground(it)
                 mGodanInputView?.setKeyBackground(it)
                 mQwertyInputView?.setKeyBackground(it)
                 mAbbrevKeyboardView?.setKeyBackground(it)
             }
+        mCandidatesViewContainer.apply {
+            background = ResourcesCompat
+                .getDrawable(context.resources, R.drawable.key_bg, context.theme)
+            background.alpha = 0
+            clipToOutline = skkPrefs.useInset
         }
 
         readPrefsForInputView()
@@ -626,6 +632,7 @@ class SKKService : InputMethodService() {
         dLog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
 
         val context = createNightModeContext(applicationContext, skkPrefs.theme)
+        if (skkPrefs.useInset) context.theme.applyStyle(R.style.ThemeOverlay_SKK_RoundedKey, true)
         mBinding = InputViewBinding.inflate(LayoutInflater.from(context))
 
         mCandidatesViewContainer.apply {

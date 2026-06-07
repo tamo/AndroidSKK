@@ -82,7 +82,7 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
         val r = context.resources
 
         mSelectionHighlight =
-            ResourcesCompat.getDrawable(r, R.drawable.candidates_scroll_button_bg, null)
+            ResourcesCompat.getDrawable(r, R.drawable.candidates_scroll_button_bg, context.theme)
         mSelectionHighlight?.state = intArrayOf(
             android.R.attr.state_enabled,
             android.R.attr.state_focused,
@@ -90,11 +90,12 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
             android.R.attr.state_pressed
         )
 
-        setBackgroundColor(ResourcesCompat.getColor(r, R.color.candidate_background, null))
+        setBackgroundColor(ResourcesCompat.getColor(r, R.color.candidate_background, context.theme))
 
-        mColorNormal = ResourcesCompat.getColor(r, R.color.candidate_normal, null)
-        mColorRecommended = ResourcesCompat.getColor(r, R.color.candidate_recommended, null)
-        mColorOther = ResourcesCompat.getColor(r, R.color.candidate_other, null)
+        mColorNormal = ResourcesCompat.getColor(r, R.color.candidate_normal, context.theme)
+        mColorRecommended =
+            ResourcesCompat.getColor(r, R.color.candidate_recommended, context.theme)
+        mColorOther = ResourcesCompat.getColor(r, R.color.candidate_other, context.theme)
         mTextPath = Path()
 
         mScrollPixels = r.getDimensionPixelSize(R.dimen.candidates_scroll_size)

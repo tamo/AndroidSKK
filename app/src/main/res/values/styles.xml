@@ -7,6 +7,7 @@
 
     <style name="KeyboardView" parent="android:Widget">
         <item name="android:background">#FFAAAAAA</item>
+        <item name="keyCornerRadius">2dp</item>
         <item name="keyTextSize">28sp</item>
         <item name="keyTextColor">@color/key_char_color</item>
         <item name="keyBackground">@drawable/key_bg</item>
@@ -16,5 +17,9 @@
         <item name="labelTextSize">18sp</item>
         <item name="popupLayout">@layout/keyboard_popup_keyboard</item>
         <item name="verticalCorrection">-10dp</item>
+    </style>
+
+    <style name="ThemeOverlay.SKK.RoundedKey" parent="">
+        <item name="keyCornerRadius">7dp</item>
     </style>
 </resources>
