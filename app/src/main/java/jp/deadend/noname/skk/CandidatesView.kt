@@ -54,6 +54,7 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
     private lateinit var mService: SKKService
     private var mLayout = CandidateLayout.EMPTY
     private var mTouchedIndex = -1
+    private var mLongPressed = false
 
     private var mCursor = 0
 
@@ -63,8 +64,7 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
     private var mScrollPixels = 0
 
     private var mScrolled = false
-    private val mColorNormal: Int
-    private val mColorRecommended: Int
+    private val mColorCursor: Int
     private val mColorOther: Int
     private val mTextPath: Path
     internal val mPaint = Paint()
@@ -92,16 +92,13 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
 
         setBackgroundColor(ResourcesCompat.getColor(r, R.color.candidate_background, context.theme))
 
-        mColorNormal = ResourcesCompat.getColor(r, R.color.candidate_normal, context.theme)
-        mColorRecommended =
-            ResourcesCompat.getColor(r, R.color.candidate_recommended, context.theme)
+        mColorCursor = ResourcesCompat.getColor(r, R.color.candidate_cursor, context.theme)
         mColorOther = ResourcesCompat.getColor(r, R.color.candidate_other, context.theme)
         mTextPath = Path()
 
         mScrollPixels = r.getDimensionPixelSize(R.dimen.candidates_scroll_size)
 
         mPaint.apply {
-            color = mColorNormal
             isAntiAlias = true
             textSize = r.getDimensionPixelSize(R.dimen.candidate_font_height).toFloat()
             strokeWidth = 0f
@@ -127,8 +124,9 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
 
                 override fun onLongPress(e: MotionEvent) {
                     if (mTouchedIndex >= 0) {
+                        dLog("onLongPress: $mTouchedIndex")
                         performHapticFeedback(skkPrefs.haptic)
-                        mService.pickCandidatesViewManually(mTouchedIndex, unregister = true)
+                        mLongPressed = true
                     }
                 }
             })
@@ -203,7 +201,7 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
             val i = mCursor
             val candidate = mLayout.candidateList[i]
             paint.isFakeBoldText = true
-            paint.color = mColorRecommended
+            paint.color = mColorCursor
             if (skkPrefs.originalColor) { // 高コントラストテキストの設定を無視
                 paint.getTextPath(
                     candidate, 0, candidate.length,
@@ -251,6 +249,7 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
     }
 
     internal fun buildLayout(list: List<String>, kanjiKey: String): Pair<CandidateLayout, Int> {
+        dLog("buildLayout(list=$list, kanjiKey=$kanjiKey)")
         val isEmoji = kanjiKey == "emoji"
         val viewLines =
             if (isEmoji) skkPrefs.candidatesEmojiLines else skkPrefs.candidatesNormalLines
@@ -346,6 +345,7 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
     }
 
     internal fun setContents(nullableLayout: CandidateLayout?, index: Int = 0) {
+        dLog("setContents(index=$index)")
         val layout = nullableLayout ?: CandidateLayout.EMPTY
         mLayout = layout
 
@@ -355,11 +355,9 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
         mCursor = 0
 
         // Preserve selection if finger is down
-        mTouchedIndex = if (mTouchX != OUT_OF_BOUNDS) {
+        mTouchedIndex = (if (mTouchX != OUT_OF_BOUNDS)
             getSelectedIndex(mTouchX, mTouchY)
-        } else {
-            -1
-        }
+        else -1).also { dLog("mTouchedIndex: $mTouchedIndex -> $it") }
 
         if (index != 0) setCursor(index) else {
             setScrollButtonsEnabled(scrollX)
@@ -416,6 +414,7 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
         when (action) {
             MotionEvent.ACTION_DOWN -> {
                 mScrolled = false
+                mLongPressed = false
                 mTouchedIndex = getSelectedIndex(x, y)
                 invalidate()
             }
@@ -425,8 +424,8 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
                 if (y <= 0) {
                     // Fling up!?
                     if (mTouchedIndex >= 0) {
-                        mService.pickCandidatesViewManually(mTouchedIndex)
-                        mTouchedIndex = -1
+                        if (mLongPressed) performLongPress()
+                        else performClick()
                     }
                 }
                 invalidate()
@@ -434,13 +433,21 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
 
             MotionEvent.ACTION_UP -> {
                 // ここは生きている。
-                performClick()
+                if (mLongPressed) performLongPress()
+                else performClick()
             }
         }
         return true
     }
 
+    private fun performLongPress() {
+        performHapticFeedback(skkPrefs.haptic)
+        mService.pickCandidatesViewManually(mTouchedIndex, unregister = true)
+        resetTouchState()
+    }
+
     override fun performClick(): Boolean {
+        dLog("performClick: $mTouchedIndex")
         super.performClick()
 
         val rv = if (!mScrolled && mTouchedIndex >= 0) {
@@ -448,10 +455,15 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
             performHapticFeedback(skkPrefs.haptic)
             true
         } else false
+        resetTouchState()
+        return rv
+    }
+
+    private fun resetTouchState() {
+        mLongPressed = false
         mTouchedIndex = -1
         mTouchX = OUT_OF_BOUNDS
         invalidate()
-        return rv
     }
 
     internal fun setCursor(chosenIndex: Int) {

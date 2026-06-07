@@ -315,7 +315,7 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
                             ) {
                                 lambda()
                                 reset()
-                                changeState(oldState)
+                                // ASCII からは changeState(oldState) 不要
                             }
                             return
                         }

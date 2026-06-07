@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="candidate_normal">#FF000000</color>
-    <color name="candidate_recommended">#FFF9A825</color>
+    <color name="candidate_cursor">#FFF9A825</color>
     <color name="candidate_other">#BBEEEEEE</color>
     <color name="candidate_background">#FF6E6E6E</color>
     <color name="key_background_color">#FF555555</color>

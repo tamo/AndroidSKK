@@ -8,6 +8,7 @@ import jp.deadend.noname.skk.SKKDictionaryInterface
 import jp.deadend.noname.skk.SKKService
 import jp.deadend.noname.skk.SKKUserDictionary
 import jp.deadend.noname.skk.dLog
+import jp.deadend.noname.skk.encodeKey
 import jp.deadend.noname.skk.hankaku2zenkaku
 import jp.deadend.noname.skk.hiragana2katakana
 import jp.deadend.noname.skk.isAlphabet
@@ -314,13 +315,11 @@ class SKKEngine(
         unregister: Boolean = false,
         sequential: Boolean = false
     ) {
+        dLog("pickCandidatesViewManually(index=$index, unregister=$unregister, sequential=$sequential)")
         val state = state
-        if (state is SKKConfirmingState) state.apply {
-            pendingLambda?.let {
-                it.invoke()
-                pendingLambda = null
-                return
-            }
+        if (state is SKKConfirmingState && state.pendingLambda != null) {
+            state.beforeProcessKey(this, encodeKey('y'.code))
+            return
         }
         when {
             state.hasCandidates -> {
