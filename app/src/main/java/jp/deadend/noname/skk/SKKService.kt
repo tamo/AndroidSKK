@@ -600,17 +600,21 @@ class SKKService : InputMethodService() {
                 requestHideSelf(0)
         }
     } else Unit
+    private var isBackAnimationRegistered = false
 
     override fun onWindowShown() = backAnimationCallback.let {
         if (skkPrefs.gestureInsets && Build.VERSION.SDK_INT >= 34 && it is OnBackAnimationCallback)
             window.onBackInvokedDispatcher
                 .registerOnBackInvokedCallback(OnBackInvokedDispatcher.PRIORITY_DEFAULT, it)
+                .also { isBackAnimationRegistered = true }
     }
 
     override fun onWindowHidden() = backAnimationCallback.let {
+        if (!isBackAnimationRegistered) return@let
         if (skkPrefs.gestureInsets && Build.VERSION.SDK_INT >= 34 && it is OnBackAnimationCallback)
             window.onBackInvokedDispatcher
                 .unregisterOnBackInvokedCallback(it)
+                .also { isBackAnimationRegistered = false }
     }
 
     override fun requestHideSelf(flags: Int) {
