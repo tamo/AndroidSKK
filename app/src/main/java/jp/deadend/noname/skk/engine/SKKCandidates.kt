@@ -215,12 +215,12 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
                 SKKHanKanaState -> zenkaku2hankaku(hiragana2katakana(concat)).orEmpty()
                 else -> throw RuntimeException("kanaState: $kanaState")
             } // カナかなは互換性あるけど半角カナと全角かなは互換性ない感覚があるので reverse しない
-            commitTextSKK(text)
             if (!mRegister.isOngoing) {
                 mLastConversion = SKKEngine.ConversionInfo(
                     text, list, index, mKanjiKey.toString(), mOkurigana
                 )
             }
+            commitTextSKK(text)
             resumeCompletion()
 
             if (state.isSequential) return
