@@ -57,7 +57,9 @@ internal class MyUncaughtExceptionHandler(val context: Context) : UncaughtExcept
             pw.println("SDK:     " + Build.VERSION.SDK_INT)
             pw.println("Version: " + mVersionName)
             pw.println()
-
+            pw.println("Recent logs:")
+            printLogs(pw)
+            pw.println()
             e.printStackTrace(pw)
         }
     }

@@ -10,6 +10,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStream
+import java.io.PrintWriter
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.util.zip.ZipInputStream
@@ -301,11 +302,25 @@ fun createTrimmedBuilder(orig: StringBuilder): StringBuilder {
 }
 
 // debug log
+private val logBuffer = ArrayDeque<String>(LOG_BUFFER_SIZE)
+private const val LOG_BUFFER_SIZE = 32
+
+fun printLogs(pw: PrintWriter) = synchronized(logBuffer) {
+    if (logBuffer.isEmpty()) pw.println("(disabled)")
+    else logBuffer.forEach { pw.println(it) }
+}
+
 fun dLog(msg: String) {
+    val stackTrace = Throwable().stackTrace
+    val caller = stackTrace.getOrNull(1)?.let { "${it.fileName}:${it.lineNumber}: " }.orEmpty()
+    val logLine = caller + msg
+
     if (BuildConfig.DEBUG) {
-        val stackTrace = Throwable().stackTrace
-        val caller = stackTrace.getOrNull(1)?.let { "${it.fileName}:${it.lineNumber}: " } ?: ""
-        android.util.Log.d("SKK", caller + msg)
+        android.util.Log.d("SKK", logLine)
+    }
+    if (skkPrefs.logPrivacy) synchronized(logBuffer) {
+        logBuffer.addLast(logLine)
+        if (logBuffer.size > LOG_BUFFER_SIZE) logBuffer.removeFirst()
     }
 }
 

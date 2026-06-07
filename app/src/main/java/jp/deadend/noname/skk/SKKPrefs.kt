@@ -67,6 +67,10 @@ class SKKPrefs(context: Context) {
             putBoolean(res.getString(R.string.pref_candidates_reserve_lines), value)
         }
 
+    var logPrivacy: Boolean
+        get() = prefs.getBoolean(res.getString(R.string.pref_log_privacy), false)
+        set(value) = prefs.edit { putBoolean(res.getString(R.string.pref_log_privacy), value) }
+
     // prefs_hard_key
     var useCandidatesView: Boolean
         get() = prefs.getBoolean(res.getString(R.string.pref_use_candidates_view), true)
