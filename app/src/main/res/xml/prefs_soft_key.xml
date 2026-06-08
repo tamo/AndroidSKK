@@ -143,12 +143,6 @@
                 app:showSeekBarValue="true"
                 app:summary="大きいほど鈍いです"
                 app:title="フリック感度" />
-            <androidx.preference.CheckBoxPreference
-                app:defaultValue="false"
-                app:iconSpaceReserved="false"
-                app:key="@string/pref_gesture_insets"
-                app:summary="「戻る」ジェスチャーのために画面の左右端を少し空けます (対応 OS のみ)"
-                app:title="ジェスチャーでキャンセル" />
             <androidx.preference.SeekBarPreference
                 android:max="200"
                 app:defaultValue="100"
@@ -193,42 +187,6 @@
                 app:showSeekBarValue="true"
                 app:summary="日本語キーボードに対する割合（％）"
                 app:title="英字キーボード幅の倍率" />
-        </androidx.preference.PreferenceCategory>
-
-        <androidx.preference.PreferenceCategory
-            app:iconSpaceReserved="false"
-            app:title="外見">
-            <androidx.preference.DropDownPreference
-                app:defaultValue="default"
-                app:dialogTitle="テーマ"
-                app:entries="@array/theme_entries"
-                app:entryValues="@array/theme_values"
-                app:icon="@android:drawable/ic_dialog_dialer"
-                app:key="@string/pref_theme"
-                app:title="テーマの強制"
-                app:useSimpleSummaryProvider="true" />
-            <androidx.preference.CheckBoxPreference
-                app:defaultValue="false"
-                app:disableDependentsState="false"
-                app:iconSpaceReserved="false"
-                app:key="@string/pref_use_inset"
-                app:summary="キーの間に間隔をあけます"
-                app:title="外枠" />
-            <androidx.preference.SeekBarPreference
-                android:max="100"
-                app:defaultValue="100"
-                app:iconSpaceReserved="false"
-                app:key="@string/pref_background_alpha"
-                app:min="0"
-                app:showSeekBarValue="true"
-                app:summary="0で完全に透明になります"
-                app:title="背景の透明化" />
-            <androidx.preference.CheckBoxPreference
-                app:defaultValue="false"
-                app:iconSpaceReserved="false"
-                app:key="@string/pref_ignore_high_contrast"
-                app:summary="変換候補の文字が白黒になるのを防ぎます"
-                app:title="ハイコントラスト設定の無視" />
         </androidx.preference.PreferenceCategory>
 
         <androidx.preference.PreferenceCategory
@@ -278,15 +236,6 @@
             <androidx.preference.PreferenceCategory
                 app:iconSpaceReserved="false"
                 app:title="その他の動作">
-                <androidx.preference.SeekBarPreference
-                    android:max="27"
-                    app:defaultValue="1"
-                    app:iconSpaceReserved="false"
-                    app:key="@string/pref_haptic"
-                    app:min="-1"
-                    app:showSeekBarValue="true"
-                    app:summary="-1 でオフになり 4 や 27 が弱いです"
-                    app:title="触感フィードバック種類" />
                 <androidx.preference.CheckBoxPreference
                     app:defaultValue="false"
                     app:iconSpaceReserved="false"

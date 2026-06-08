@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <androidx.preference.PreferenceCategory
+        app:iconSpaceReserved="false"
+        app:title="共通設定">
+        <androidx.preference.DropDownPreference
+            app:defaultValue="jp"
+            app:dialogTitle="句読点のタイプ"
+            app:entries="@array/kutouten_entries"
+            app:entryValues="@array/kutouten_values"
+            app:icon="@android:drawable/ic_dialog_dialer"
+            app:key="@string/pref_kutouten_type"
+            app:title="句読点のタイプ"
+            app:useSimpleSummaryProvider="true" />
+        <androidx.preference.CheckBoxPreference
+            app:defaultValue="true"
+            app:iconSpaceReserved="false"
+            app:key="@string/pref_prefix_mark"
+            app:summary="不意にフォーカスが外れて確定されることが多い場合は表示しないことをお勧めします"
+            app:title="変換中の▽や▼を表示" />
+        <androidx.preference.CheckBoxPreference
+            app:defaultValue="false"
+            app:iconSpaceReserved="false"
+            app:key="@string/pref_gesture_insets"
+            app:summary="画面左右端からの「戻る」ジェスチャーのために少し余白を残します (対応 OS のみ)"
+            app:title="ジェスチャーでキャンセル" />
+        <androidx.preference.SeekBarPreference
+            android:max="27"
+            app:defaultValue="1"
+            app:iconSpaceReserved="false"
+            app:key="@string/pref_haptic"
+            app:min="-1"
+            app:showSeekBarValue="true"
+            app:summary="-1 でオフになり 4 や 27 が弱いです"
+            app:title="触感フィードバック種類" />
+
+        <androidx.preference.PreferenceCategory
+            app:iconSpaceReserved="false"
+            app:title="外見">
+            <androidx.preference.DropDownPreference
+                app:defaultValue="default"
+                app:entries="@array/font_entries"
+                app:entryValues="@array/font_values"
+                app:icon="@android:drawable/ic_dialog_dialer"
+                app:key="@string/pref_font"
+                app:title="フォント"
+                app:useSimpleSummaryProvider="true" />
+            <androidx.preference.DropDownPreference
+                app:defaultValue="default"
+                app:dialogTitle="テーマ"
+                app:entries="@array/theme_entries"
+                app:entryValues="@array/theme_values"
+                app:icon="@android:drawable/ic_dialog_dialer"
+                app:key="@string/pref_theme"
+                app:title="テーマの強制"
+                app:useSimpleSummaryProvider="true" />
+            <androidx.preference.CheckBoxPreference
+                app:defaultValue="false"
+                app:disableDependentsState="false"
+                app:iconSpaceReserved="false"
+                app:key="@string/pref_use_inset"
+                app:summary="キーの間に間隔をあけます"
+                app:title="外枠" />
+            <androidx.preference.SeekBarPreference
+                android:max="100"
+                app:defaultValue="100"
+                app:iconSpaceReserved="false"
+                app:key="@string/pref_background_alpha"
+                app:min="0"
+                app:showSeekBarValue="true"
+                app:summary="0で完全に透明になります"
+                app:title="背景の透明化" />
+        </androidx.preference.PreferenceCategory>
+
+        <androidx.preference.PreferenceCategory
+            app:iconSpaceReserved="false"
+            app:title="候補表示">
+            <androidx.preference.SeekBarPreference
+                android:max="60"
+                app:defaultValue="30"
+                app:iconSpaceReserved="false"
+                app:key="@string/pref_candidates_size"
+                app:min="12"
+                app:showSeekBarValue="true"
+                app:title="候補表示の文字サイズ" />
+            <androidx.preference.CheckBoxPreference
+                app:defaultValue="true"
+                app:iconSpaceReserved="false"
+                app:key="@string/pref_fuzzy_suggestion"
+                app:summary="濁音や半濁音にした単語も提案します (「ひんく」で「ぴんぐ」も出る)\n英字ではqwertyの隣接キーも提案します"
+                app:title="あいまい候補" />
+            <androidx.preference.CheckBoxPreference
+                app:defaultValue="false"
+                app:dependency="@string/pref_fuzzy_suggestion"
+                app:key="@string/pref_fuzzier_suggestion"
+                app:summary="ア段は段も変えて検索します (「あたま」で「いとま」も出る)"
+                app:title="もっとあいまい候補" />
+            <androidx.preference.CheckBoxPreference
+                app:defaultValue="false"
+                app:iconSpaceReserved="false"
+                app:key="@string/pref_complete_okuri"
+                app:summary="「おくr」等を提案に含めます (次に「い」で「送り」になり，「り」は「送っり」になるので注意)"
+                app:title="送りありの提案" />
+            <androidx.preference.SeekBarPreference
+                android:max="10"
+                app:defaultValue="2"
+                app:iconSpaceReserved="false"
+                app:key="@string/pref_candidates_normal_lines"
+                app:min="1"
+                app:showSeekBarValue="true"
+                app:title="候補表示の行数 (通常)" />
+            <androidx.preference.SeekBarPreference
+                android:max="10"
+                app:defaultValue="4"
+                app:iconSpaceReserved="false"
+                app:key="@string/pref_candidates_emoji_lines"
+                app:min="1"
+                app:showSeekBarValue="true"
+                app:title="候補表示の行数 (絵文字)" />
+            <androidx.preference.CheckBoxPreference
+                app:defaultValue="false"
+                app:iconSpaceReserved="false"
+                app:key="@string/pref_candidates_min_height"
+                app:summary="変換中にアプリがリサイズしませんが一部隠れます"
+                app:title="候補表示をアプリ上に重ねて伸ばす" />
+            <androidx.preference.CheckBoxPreference
+                app:defaultValue="true"
+                app:iconSpaceReserved="false"
+                app:key="@string/pref_candidates_reserve_lines"
+                app:summary="候補がないときにオンでは通常行数，オフでは1行になります\nオフのときはタイミングによって一時的に操作が無視されることがあります"
+                app:title="候補表示の保持" />
+            <androidx.preference.CheckBoxPreference
+                app:defaultValue="false"
+                app:iconSpaceReserved="false"
+                app:key="@string/pref_ignore_high_contrast"
+                app:summary="変換候補の文字が白黒になるのを防ぎます"
+                app:title="ハイコントラスト設定の無視" />
+        </androidx.preference.PreferenceCategory>
+
+    </androidx.preference.PreferenceCategory>
+</androidx.preference.PreferenceScreen>

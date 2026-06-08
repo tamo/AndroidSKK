@@ -62,6 +62,12 @@ class SKKSettingsActivity : AppCompatActivity() {
     class SettingsSoftKeyFragment : PreferenceFragmentCompat() {
         override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
             setPreferencesFromResource(R.xml.prefs_soft_key, rootKey)
+        }
+    }
+
+    class SettingsCommonFragment : PreferenceFragmentCompat() {
+        override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
+            setPreferencesFromResource(R.xml.prefs_common, rootKey)
 
             // 触感のプレビュー
             findPreference<Preference>(getString(R.string.pref_haptic))
@@ -70,6 +76,7 @@ class SKKSettingsActivity : AppCompatActivity() {
                         requireActivity().window.decorView,
                         haptic as Int
                     )
+                    true
                 }
         }
     }
