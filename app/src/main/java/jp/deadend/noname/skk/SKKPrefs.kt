@@ -15,6 +15,12 @@ class SKKPrefs(context: Context) {
             putString(res.getString(R.string.pref_kutouten_type), value)
         }
 
+    var font: String
+        get() = prefs.getString(res.getString(R.string.pref_font), null) ?: "default"
+        set(value) = prefs.edit {
+            putString(res.getString(R.string.pref_font), value)
+        }
+
     var prefixMark: Boolean
         get() = prefs.getBoolean(res.getString(R.string.pref_prefix_mark), true)
         set(value) = prefs.edit {

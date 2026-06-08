@@ -207,6 +207,10 @@ class CandidatesViewContainer(screen: Context, attrs: AttributeSet) : LinearLayo
             requestLayout() // この処理中はタッチイベントを取りこぼす!
         }
     }
+
+    fun setTypeface(typeface: android.graphics.Typeface?) {
+        binding.candidates.setTypeface(typeface)
+    }
 }
 
 class CandidatesViewImageButton(screen: Context, attrs: AttributeSet?, defStyleAttr: Int) :

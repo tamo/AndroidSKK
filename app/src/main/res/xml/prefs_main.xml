@@ -26,6 +26,14 @@
             app:key="@string/pref_kutouten_type"
             app:title="句読点のタイプ"
             app:useSimpleSummaryProvider="true" />
+        <androidx.preference.DropDownPreference
+            app:defaultValue="default"
+            app:entries="@array/font_entries"
+            app:entryValues="@array/font_values"
+            app:icon="@android:drawable/ic_dialog_dialer"
+            app:key="@string/pref_font"
+            app:title="フォント"
+            app:useSimpleSummaryProvider="true" />
         <androidx.preference.CheckBoxPreference
             app:defaultValue="true"
             app:iconSpaceReserved="false"

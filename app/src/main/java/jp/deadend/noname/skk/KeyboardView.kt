@@ -333,6 +333,11 @@ open class KeyboardView @JvmOverloads constructor(
         mKeyBackground = d
     }
 
+    fun setTypeface(typeface: Typeface?) {
+        mPaint.typeface = typeface
+        invalidateAllKeys()
+    }
+
     override fun onClick(v: View) {
         dismissPopupKeyboard()
     }
@@ -459,6 +464,7 @@ open class KeyboardView @JvmOverloads constructor(
                         val totalHeight = lineHeights.sum()
                         val centerX = (key.width + mPadding.left - mPadding.right) / 2f
                         val centerY = (key.height + mPadding.top - mPadding.bottom) / 2f
+                        val currentTypeface = mPaint.typeface
 
                         lines.forEachIndexed { i, line ->
                             val offsetSum = lineHeights.take(numLines - 1 - i).sum()
@@ -468,9 +474,9 @@ open class KeyboardView @JvmOverloads constructor(
 
                             mPaint.textSize = sizeDefault * sizeFactors[i]
                             mPaint.typeface = if (i.toFloat() == (numLines - 1) / 2f) {
-                                Typeface.DEFAULT_BOLD // 中央の行 (1行だけならその行)
+                                Typeface.create(currentTypeface, Typeface.BOLD) // 中央の行 (1行だけならその行)
                             } else {
-                                Typeface.DEFAULT
+                                currentTypeface
                             }
 
                             if (isGodanKey && i == 1) {
@@ -478,7 +484,7 @@ open class KeyboardView @JvmOverloads constructor(
                                 canvas.drawText(centerText, centerX, drawY, mPaint)
 
                                 // 左右フリックのキー
-                                mPaint.typeface = Typeface.DEFAULT
+                                mPaint.typeface = currentTypeface
                                 mPaint.textSize *= .6f
                                 canvas.drawText(
                                     "${line.first()}${
@@ -500,7 +506,7 @@ open class KeyboardView @JvmOverloads constructor(
                         ) {
                             mPaint.textAlign = Align.LEFT
                             mPaint.textSize = mLabelTextSize * .5f * labelZoom
-                            mPaint.typeface = Typeface.DEFAULT
+                            mPaint.typeface = currentTypeface
                             canvas.drawText(
                                 shiftedLabel,
                                 mPadding.left + mPaint.textSize * .4f,
@@ -511,7 +517,7 @@ open class KeyboardView @JvmOverloads constructor(
                         if (key.downLabel.isNotEmpty()) {
                             mPaint.textAlign = Align.RIGHT
                             mPaint.textSize = mLabelTextSize * .5f * labelZoom
-                            mPaint.typeface = Typeface.DEFAULT
+                            mPaint.typeface = currentTypeface
                             canvas.drawText(
                                 key.downLabel,
                                 key.width - mPadding.right - mPaint.textSize * .4f,
@@ -655,7 +661,7 @@ open class KeyboardView @JvmOverloads constructor(
             if (key.icon != null && key.codes[0] != Keyboard.KEYCODE_SHIFT) return
             previewText.apply {
                 text = getPreviewText(key)
-                typeface = Typeface.DEFAULT
+                typeface = mPaint.typeface
                 measure(
                     MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED),
                     MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED)

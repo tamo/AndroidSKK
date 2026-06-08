@@ -44,4 +44,16 @@
         <item>qwerty</item>
         <item>symbols</item>
     </string-array>
+    <string-array name="font_entries">
+        <item>デフォルト</item>
+        <item>ゴシック</item>
+        <item>明朝</item>
+        <item>等幅</item>
+    </string-array>
+    <string-array name="font_values">
+        <item>default</item>
+        <item>sans_serif</item>
+        <item>serif</item>
+        <item>monospace</item>
+    </string-array>
 </resources>

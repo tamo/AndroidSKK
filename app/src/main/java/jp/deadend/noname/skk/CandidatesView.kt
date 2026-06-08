@@ -153,6 +153,11 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
         mPaint.textSize = px.toFloat()
     }
 
+    fun setTypeface(typeface: android.graphics.Typeface?) {
+        mPaint.typeface = typeface
+        invalidate()
+    }
+
     public override fun computeHorizontalScrollRange() = mLayout.totalWidth
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {

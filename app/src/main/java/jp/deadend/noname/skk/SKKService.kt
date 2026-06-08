@@ -444,6 +444,7 @@ class SKKService : InputMethodService() {
                     context.resources.displayMetrics
                 ).toInt()
             )
+            mCandidatesViewContainer.setTypeface(getTypeface(skkPrefs.font))
         }
     }
 
@@ -457,17 +458,22 @@ class SKKService : InputMethodService() {
         val context = createNightModeContext(applicationContext, skkPrefs.theme)
         val keyHeight = keyboardHeight()
         val alpha = skkPrefs.backgroundAlpha
+        val typeface = getTypeface(skkPrefs.font)
 
         val flickWidth = keyboardWidth(flick)
         flick.prepareNewKeyboard(context, flickWidth, keyHeight)
         flick.backgroundAlpha = 255 * alpha / 100
+        flick.setTypeface(typeface)
         godan.prepareNewKeyboard(context, flickWidth, keyHeight)
         godan.backgroundAlpha = 255 * alpha / 100
+        godan.setTypeface(typeface)
 
         val qwertyWidth = keyboardWidth(qwerty)
         qwerty.keyboard.resize(qwertyWidth, keyHeight)
         qwerty.mSymbolsKeyboard.resize(qwertyWidth, keyHeight)
+        qwerty.setTypeface(typeface)
         abbrev.keyboard.resize(qwertyWidth, keyHeight)
+        abbrev.setTypeface(typeface)
 
         val density = context.resources.displayMetrics.density
         val sensitivity = (skkPrefs.flickSensitivity * density + 0.5f).toInt()
@@ -1380,6 +1386,13 @@ class SKKService : InputMethodService() {
     }
 
     fun completeASCII() = mEngine.mCandidates.completeASCII()
+
+    private fun getTypeface(fontName: String) = when (fontName) {
+        "sans_serif" -> android.graphics.Typeface.SANS_SERIF
+        "serif" -> android.graphics.Typeface.SERIF
+        "monospace" -> android.graphics.Typeface.MONOSPACE
+        else -> android.graphics.Typeface.DEFAULT
+    }
 
     fun suspendCompletion() = mEngine.mCandidates.suspendCompletion()
 

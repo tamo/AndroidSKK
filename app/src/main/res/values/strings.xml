@@ -68,6 +68,7 @@
     <string name="error_pasting_forbidden">貼り付け機能はソフトウェアキーボードの設定で無効化されています</string>
 
     <string name="pref_kutouten_type" translatable="false">PrefKeyKutoutenType</string>
+    <string name="pref_font" translatable="false">PrefKeyFont</string>
     <string name="pref_prefix_mark" translatable="false">PrefKeyPrefixMark</string>
     <string name="pref_candidates_size" translatable="false">PrefKeyCandidatesSize</string>
     <string name="pref_fuzzy_suggestion" translatable="false">PrefKeyFuzzySuggestion</string>
