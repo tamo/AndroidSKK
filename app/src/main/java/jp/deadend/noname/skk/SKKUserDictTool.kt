@@ -18,6 +18,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.get
 import androidx.core.view.updatePadding
 import jp.deadend.noname.dialog.ConfirmationDialogFragment
 import jp.deadend.noname.dialog.SimpleMessageDialogFragment
@@ -37,7 +38,6 @@ import java.util.zip.GZIPInputStream
 import kotlin.math.floor
 import kotlin.math.sqrt
 import kotlin.time.Duration.Companion.milliseconds
-import androidx.core.view.get
 
 class SKKUserDictTool : AppCompatActivity() {
     private lateinit var mDictName: String
@@ -260,7 +260,6 @@ class SKKUserDictTool : AppCompatActivity() {
             }
 
         mSearchView = binding.userDictToolSearch
-        mSearchView.queryHint = "辞書をキーボード側で閉じています"
         mSearchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
                 mSearchView.clearFocus()
@@ -439,6 +438,7 @@ class SKKUserDictTool : AppCompatActivity() {
 
     private fun onFailToOpenUserDict() {
         mStore = null
+        mSearchView.queryHint = ""
 
         ConfirmationDialogFragment.newInstance(getString(R.string.error_tools_open_user_dict)).let {
             it.setListener(
@@ -465,6 +465,9 @@ class SKKUserDictTool : AppCompatActivity() {
 
         // onPause() か finish() で reload するまで service / engine から使用できなくする
         if (SKKService.isRunning()) withTimeoutOrNull(500.milliseconds) {
+            withContext(Dispatchers.Main) {
+                mSearchView.queryHint = "辞書をキーボード側で閉じています"
+            }
             val job = launch {
                 SKKService.sharedFlow.first { it == SKKService.EVENT_USER_DICT_CLOSING }
             } // 先に開始しておく
