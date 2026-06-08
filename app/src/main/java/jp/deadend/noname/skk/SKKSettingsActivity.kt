@@ -17,6 +17,7 @@ import androidx.core.content.edit
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
+import androidx.fragment.app.commit
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.PreferenceManager
@@ -29,7 +30,8 @@ import java.nio.file.Files
 import kotlin.time.Duration.Companion.milliseconds
 
 
-class SKKSettingsActivity : AppCompatActivity() {
+class SKKSettingsActivity : AppCompatActivity(),
+    PreferenceFragmentCompat.OnPreferenceStartFragmentCallback {
     private lateinit var binding: ActivitySettingsBinding
     var keyPref: Preference? = null
 
@@ -112,6 +114,26 @@ class SKKSettingsActivity : AppCompatActivity() {
         }
     }
 
+    override fun onPreferenceStartFragment(caller: PreferenceFragmentCompat, pref: Preference)
+            : Boolean {
+        val fragment = supportFragmentManager.fragmentFactory
+            .instantiate(classLoader, pref.fragment!!)
+            .apply { arguments = pref.extras }
+
+        supportFragmentManager.commit {
+            setReorderingAllowed(true)
+            setCustomAnimations(
+                android.R.anim.slide_in_left, android.R.anim.slide_out_right,
+                android.R.anim.slide_in_left, android.R.anim.slide_out_right
+            )
+            replace(binding.content.id, fragment)
+            addToBackStack(null)
+        }
+
+        title = pref.title
+        return true
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Thread.setDefaultUncaughtExceptionHandler(MyUncaughtExceptionHandler(applicationContext))
@@ -133,9 +155,16 @@ class SKKSettingsActivity : AppCompatActivity() {
         setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
-        supportFragmentManager.beginTransaction()
-            .replace(binding.content.id, SettingsMainFragment())
-            .commit()
+        if (savedInstanceState == null) {
+            supportFragmentManager.commit {
+                replace(binding.content.id, SettingsMainFragment())
+            }
+        }
+        supportFragmentManager.addOnBackStackChangedListener {
+            if (supportFragmentManager.backStackEntryCount == 0) {
+                setTitle(R.string.label_pref_activity)
+            }
+        }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ActivityCompat.checkSelfPermission(
