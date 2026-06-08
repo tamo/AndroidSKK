@@ -37,6 +37,7 @@ import java.util.zip.GZIPInputStream
 import kotlin.math.floor
 import kotlin.math.sqrt
 import kotlin.time.Duration.Companion.milliseconds
+import androidx.core.view.get
 
 class SKKUserDictTool : AppCompatActivity() {
     private lateinit var mDictName: String
@@ -317,6 +318,9 @@ class SKKUserDictTool : AppCompatActivity() {
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         mMenu = menu
         menuInflater.inflate(R.menu.menu_user_dict_tool, menu)
+        if (mDictName == getString(R.string.dict_name_user)) {
+            menu[2].isEnabled = false
+        }
         return true
     }
 
@@ -334,6 +338,7 @@ class SKKUserDictTool : AppCompatActivity() {
                 return true
             }
 
+            R.id.menu_user_dict_tool_initialize,
             R.id.menu_user_dict_tool_clear -> {
                 val cfDialog = ConfirmationDialogFragment.newInstance(
                     getString(R.string.message_tools_confirm_clear)
@@ -341,7 +346,7 @@ class SKKUserDictTool : AppCompatActivity() {
                 cfDialog.setListener(
                     object : ConfirmationDialogFragment.Listener {
                         override fun onPositiveClick() {
-                            recreateUserDict(extract = false)
+                            recreateUserDict(item.itemId == R.id.menu_user_dict_tool_initialize)
                         }
 
                         override fun onNegativeClick() {}

@@ -21,6 +21,7 @@
 
     <string name="label_tools_import">インポート</string>
     <string name="label_tools_export">エクスポート</string>
+    <string name="label_tools_initialize">初期辞書に戻す</string>
     <string name="label_tools_clear">全消去</string>
     <string name="label_tools_no_entry_found">エントリがありません</string>
 

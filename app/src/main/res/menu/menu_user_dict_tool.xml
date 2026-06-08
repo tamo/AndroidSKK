@@ -11,6 +11,10 @@
             android:title="@string/label_tools_export"
             app:showAsAction="never" />
         <item
+            android:id="@+id/menu_user_dict_tool_initialize"
+            android:title="@string/label_tools_initialize"
+            app:showAsAction="never" />
+        <item
             android:id="@+id/menu_user_dict_tool_clear"
             android:title="@string/label_tools_clear"
             app:showAsAction="never" />
