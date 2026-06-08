@@ -101,7 +101,6 @@
             app:summary="オンにすると変換内容など個人情報を含むクラッシュログを残します"
             app:title="詳細なデバッグ情報の記録" />
         <androidx.preference.Preference
-            app:iconSpaceReserved="false"
             app:icon="@android:drawable/ic_dialog_alert"
             app:key="@string/pref_log_viewer"
             app:summary="最新のクラッシュ記録があれば表示され，再度タップでコピーできます"

@@ -45,6 +45,7 @@ class SKKSettingsActivity : AppCompatActivity() {
                         Files.newDirectoryStream(dir.toPath(), "SKK_strace_*").use { stream ->
                             stream.map { it.toFile() }.maxByOrNull { it.lastModified() }
                         } ?: return@setOnPreferenceClickListener false
+                    icon = null
                     isIconSpaceReserved = false
                     isSingleLineTitle = false
                     title = latest.readText()
