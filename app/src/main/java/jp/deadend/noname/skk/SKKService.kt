@@ -9,6 +9,10 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Configuration
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.ImageDecoder
+import android.graphics.drawable.BitmapDrawable
 import android.hardware.display.DisplayManager
 import android.inputmethodservice.InputMethodService
 import android.media.AudioManager
@@ -30,6 +34,7 @@ import android.view.Display.DEFAULT_DISPLAY
 import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import android.view.WindowManager
 import android.view.inputmethod.EditorInfo
 import android.widget.Toast
@@ -40,6 +45,8 @@ import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.res.ResourcesCompat
+import androidx.core.graphics.withClip
+import androidx.core.net.toUri
 import androidx.preference.PreferenceManager
 import jp.deadend.noname.skk.databinding.InputViewBinding
 import jp.deadend.noname.skk.engine.RomajiConverter
@@ -148,6 +155,7 @@ class SKKService : InputMethodService() {
     internal var mRootWidth = 0
     internal var mCutout = AGInsets.NONE // カメラ穴などで、すでに消えている部分
     internal var mInsets = AGInsets.NONE // mCutout に gesture 用の空間を加えたもの
+    internal var mScreenWidth = 0
     internal var mScreenHeight = 0
 
     // 入力中かどうか
@@ -534,6 +542,7 @@ class SKKService : InputMethodService() {
         mOrientation = conf.orientation
         val density = resources.displayMetrics.density
         mRootWidth = (conf.screenWidthDp * density + 0.5f).toInt()
+        mScreenWidth = mRootWidth
         mScreenHeight = (conf.screenHeightDp * density + 0.5f).toInt()
         dLog("updateDimensions: legacy width=$mRootWidth height=$mScreenHeight")
 
@@ -541,6 +550,7 @@ class SKKService : InputMethodService() {
             val manager = getSystemService(WindowManager::class.java)
             val metrics = manager.currentWindowMetrics
             mRootWidth = metrics.bounds.width()
+            mScreenWidth = mRootWidth
             mScreenHeight = metrics.bounds.height()
             dLog("updateDimensions: modern width=$mRootWidth height=$mScreenHeight")
 
@@ -673,7 +683,7 @@ class SKKService : InputMethodService() {
             }
         })!!.setKeyState(engineState)
 
-        (keyboardView.parent as? android.view.ViewGroup)?.removeView(keyboardView)
+        (keyboardView.parent as? ViewGroup)?.removeView(keyboardView)
         mBinding.keyboardContainer.addView(keyboardView)
         mInputView = keyboardView
 
@@ -1486,7 +1496,7 @@ class SKKService : InputMethodService() {
             mBinding.keyboardContainer.apply {
                 if (getChildAt(0) != inputView) {
                     removeAllViews()
-                    (inputView.parent as? android.view.ViewGroup)?.removeView(inputView)
+                    (inputView.parent as? ViewGroup)?.removeView(inputView)
                     addView(inputView)
                 }
             }
@@ -1497,21 +1507,73 @@ class SKKService : InputMethodService() {
         // |    insets.left    |   rootWidth   |    insets.right    |
         // |cutout.left|padding|   rootWidth   |padding|cutout.right|
         // |cutout.left|leftOffset|keyboard|rightOffset|cutout.right|
+        val padding = AGInsets.subtract(mInsets, mCutout)
         val rightOffset = mInsets.left + mRootWidth + mInsets.right -
                 (mCutout.left + leftOffset + mInputView!!.keyboard.width + mCutout.right)
-        val padding = AGInsets.subtract(mInsets, mCutout)
-        if (isFloating()) {
-            mBinding.root.setPadding(leftOffset, 0, rightOffset, bottomOffset)
-        } else {
-            mBinding.root
-                .setPadding(padding.left, 0, padding.right, bottomOffset)
-            mBinding.keyboardContainer
-                .setPadding(
-                    leftOffset - padding.left, 0,
-                    rightOffset - padding.right, 0
-                )
+        (mBinding.container.layoutParams as ViewGroup.MarginLayoutParams).apply {
+            leftMargin = if (isFloating()) leftOffset else padding.left
+            rightMargin = if (isFloating()) rightOffset else padding.right
+            mBinding.container.layoutParams = this
         }
+
+        mBinding.keyboardContainer.setPadding(
+            if (isFloating()) 0 else leftOffset - padding.left, 0,
+            if (isFloating()) 0 else rightOffset - padding.right, bottomOffset
+        )
+
         mCandidatesViewContainer.setSize(-1)
+
+        (if (isFloating()) mBinding.container else mBinding.root)
+            .background = skkPrefs.backgroundImage?.let { uriString ->
+            runCatching {
+                val source = ImageDecoder.createSource(contentResolver, uriString.toUri())
+                val bitmap = ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
+                    decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
+                    val maxDimension = max(mScreenWidth, mScreenHeight)
+                    val (w, h) = info.size.run { width.toFloat() to height.toFloat() }
+                    val scale = max(maxDimension / w, maxDimension / h)
+                    decoder.setTargetSize((w * scale).toInt(), (h * scale).toInt())
+                }
+                CroppedDrawable(resources, bitmap)
+            }.getOrElse {
+                Log.e("SKK", "Failed to load background image", it)
+                null
+            }
+        }
+        (if (isFloating()) mBinding.root else mBinding.container).background = null
+    }
+
+    private inner class CroppedDrawable(res: android.content.res.Resources, bitmap: Bitmap) :
+        BitmapDrawable(res, bitmap) {
+        private val dstRect = android.graphics.RectF()
+        override fun getIntrinsicWidth() = -1
+        override fun getIntrinsicHeight() = -1
+        override fun draw(canvas: Canvas) {
+            val (bitmapW, bitmapH) = bitmap?.run { width to height } ?: return
+            // 実際の出力サイズではなく最大の高さで計算し、諸々の変化にかかわらず一貫した拡大率にする
+            val (boundsW, maxH) = bounds.width() to
+                    keyboardHeight() + mCandidatesViewContainer.maxHeight + mInsets.bottom
+            if (bitmapW <= 0 || bitmapH <= 0 || boundsW <= 0 || maxH <= 0) return
+
+            val scale: Float
+            val (dx, dy) = if (bitmapW.toLong() * maxH > boundsW.toLong() * bitmapH) {
+                scale = maxH.toFloat() / bitmapH.toFloat()
+                (boundsW - bitmapW * scale) * 0.5f to 0f
+            } else {
+                scale = boundsW.toFloat() / bitmapW.toFloat()
+                0f to (maxH - bitmapH * scale) * 0.5f
+            }
+            val offset = maxH - bounds.height() // 底面を合わせて補正する
+            val (dstLeft, dstTop) = dx + bounds.left to dy + bounds.top - offset
+            val (dstRight, dstBottom) = dstLeft + bitmapW * scale to dstTop + bitmapH * scale
+            dstRect.set(dstLeft, dstTop, dstRight, dstBottom)
+
+            val varHeight = if (skkPrefs.candidatesMinHeight)
+                mCandidatesViewContainer.run { (height - minHeight) } else 0
+            canvas.withClip(bounds.left, bounds.top + varHeight, bounds.right, bounds.bottom) {
+                drawBitmap(bitmap!!, null, dstRect, paint)
+            }
+        }
     }
 
     private fun keyboardWidth(view: KeyboardView? = mInputView): Int {

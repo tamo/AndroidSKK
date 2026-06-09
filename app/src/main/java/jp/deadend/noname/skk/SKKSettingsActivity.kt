@@ -5,15 +5,24 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.ImageDecoder
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.util.Log
+import android.util.Size
 import android.view.KeyEvent
 import android.view.MenuItem
 import android.view.inputmethod.InputMethodManager
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.edit
+import androidx.core.graphics.drawable.toDrawable
+import androidx.core.net.toUri
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
@@ -27,6 +36,7 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.nio.file.Files
+import kotlin.math.max
 import kotlin.time.Duration.Companion.milliseconds
 
 
@@ -71,6 +81,7 @@ class SKKSettingsActivity : AppCompatActivity(),
     class SettingsCommonFragment : PreferenceFragmentCompat() {
         override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
             setPreferencesFromResource(R.xml.prefs_common, rootKey)
+            updateThumbnail()
 
             // 触感のプレビュー
             findPreference<Preference>(getString(R.string.pref_haptic))
@@ -81,6 +92,74 @@ class SKKSettingsActivity : AppCompatActivity(),
                     )
                     true
                 }
+
+            findPreference<Preference>(getString(R.string.pref_background_image))?.apply {
+                setOnPreferenceClickListener {
+                    if (skkPrefs.backgroundImage == null)
+                        pickMedia()
+                    else AlertDialog.Builder(requireContext())
+                        .setTitle(title).setItems(arrayOf("選択", "無効化")) { _, which ->
+                            when (which) {
+                                0 -> pickMedia()
+                                1 -> {
+                                    skkPrefs.backgroundImage = null
+                                    updateThumbnail()
+                                }
+                            }
+                        }.show()
+                    true
+                }
+            }
+        }
+
+        private fun pickMedia() =
+            pickMediaLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+
+        private val pickMediaLauncher =
+            registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+                uri ?: return@registerForActivityResult
+                requireContext().contentResolver
+                    .takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                skkPrefs.backgroundImage = uri.toString()
+                updateThumbnail()
+            }
+
+        private fun updateThumbnail() {
+            findPreference<Preference>(getString(R.string.pref_background_image))?.apply {
+                skkPrefs.backgroundImage?.let { uriString ->
+                    val uri = uriString.toUri()
+                    summary = getFileName(uri)
+                    runCatching {
+                        val resolver = requireContext().contentResolver
+                        val size = (48 * resources.displayMetrics.density).toInt()
+                        val bitmap = runCatching {
+                            resolver.loadThumbnail(uri, Size(size, size), null)
+                        }.getOrElse {
+                            Log.w("SKK", "loadThumbnail failed", it)
+                            val source = ImageDecoder.createSource(resolver, uri)
+                            ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
+                                val factor = max(info.size.width / size, info.size.height / size)
+                                if (factor > 1) decoder.setTargetSize(
+                                    info.size.width / factor, info.size.height / factor
+                                )
+                            }
+                        }
+                        icon = bitmap.toDrawable(resources)
+                        return
+                    }.onFailure { Log.e("SKK", "Failed to load thumbnail", it) }
+                } ?: run { summary = "未設定" }
+                icon = null
+            }
+        }
+
+        private fun getFileName(uri: Uri): String {
+            val cursor = requireContext().contentResolver.query(uri, null, null, null, null)
+            return cursor?.use {
+                if (it.moveToFirst()) {
+                    val index = it.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                    if (index != -1) it.getString(index) else null
+                } else null
+            } ?: uri.lastPathSegment ?: uri.toString()
         }
     }
 

@@ -28,6 +28,7 @@ import androidx.core.util.isEmpty
 import androidx.core.util.size
 import jp.deadend.noname.skk.databinding.ViewCandidatesBinding
 import kotlin.math.abs
+import kotlin.math.max
 
 class CandidatesViewContainer(screen: Context, attrs: AttributeSet) : LinearLayout(screen, attrs) {
     internal lateinit var binding: ViewCandidatesBinding
@@ -39,6 +40,12 @@ class CandidatesViewContainer(screen: Context, attrs: AttributeSet) : LinearLayo
             }
         }
     internal val minHeight = resources.getDimensionPixelSize(R.dimen.candidates_scroll_button_width)
+    internal val maxHeight
+        get() = binding.candidates.mLineHeight * max(
+            skkPrefs.candidatesNormalLines,
+            skkPrefs.candidatesEmojiLines
+        )
+
     private lateinit var mService: SKKService
 
     private val mActivePointers = SparseArray<Float>()
