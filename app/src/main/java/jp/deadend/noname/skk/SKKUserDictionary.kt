@@ -1,6 +1,5 @@
 package jp.deadend.noname.skk
 
-import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import java.io.File
@@ -30,14 +29,14 @@ class SKKUserDictionary private constructor(
                 .partition { !it.contains("/") }
 
         if (candidates.isEmpty()) {
-            Log.e("SKK", "Invalid value found: Key=$key value=$value")
+            SKKLog.e("Invalid value found: Key=$key value=$value")
             return null
         }
 
         val okuriganaBlocks = okuriganaStrings.mapNotNull { block ->
             block.split('/').let { pair ->
                 if (pair.size == 2) pair[0] to pair[1]
-                else null.also { Log.e("SKK", "Invalid: Key=$key okuriganaBlock=$block in $value") }
+                else null.also { SKKLog.e("Invalid: Key=$key okuriganaBlock=$block in $value") }
             }
         }
 
@@ -138,17 +137,14 @@ class SKKUserDictionary private constructor(
     }
 
     fun reopen() {
-        try {
+        runCatching {
             close()
             runBlocking(Dispatchers.IO) {
                 openDB(mFilePath, mBtreeName, writable = true).let { newStore ->
                     mLock.withLock { mStore = newStore }
                 }
             }
-        } catch (e: Exception) {
-            Log.e("SKK", "Error in reopening the dictionary $mFilePath: $e")
-            if (BuildConfig.DEBUG) throw e
-        }
+        }.onFailure { SKKLog.e("Error in reopening the dictionary $mFilePath", it) }
     }
 
     companion object {
@@ -163,15 +159,12 @@ class SKKUserDictionary private constructor(
             if (isASCII && !mvFile.exists() && !dbFile.exists()) {
                 context.extractDictionary(dbFile.nameWithoutExtension)
             }
-            return try {
+            return runCatching {
                 val store = runBlocking(Dispatchers.IO) {
                     openDB(filePath, btreeName, writable = true)
                 }
                 SKKUserDictionary(store, isASCII, filePath, btreeName)
-            } catch (e: Exception) {
-                Log.e("SKK", "Error in opening the dictionary: $e")
-                null
-            }
+            }.onFailure { SKKLog.e("Error in opening the dictionary", it) }.getOrNull()
         }
     }
 }

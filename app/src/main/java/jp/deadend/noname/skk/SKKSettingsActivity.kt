@@ -10,7 +10,6 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
-import android.util.Log
 import android.util.Size
 import android.view.KeyEvent
 import android.view.MenuItem
@@ -135,7 +134,7 @@ class SKKSettingsActivity : AppCompatActivity(),
                         val bitmap = runCatching {
                             resolver.loadThumbnail(uri, Size(size, size), null)
                         }.getOrElse {
-                            Log.w("SKK", "loadThumbnail failed", it)
+                            SKKLog.w("loadThumbnail failed", it)
                             val source = ImageDecoder.createSource(resolver, uri)
                             ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
                                 val factor = max(info.size.width / size, info.size.height / size)
@@ -146,7 +145,7 @@ class SKKSettingsActivity : AppCompatActivity(),
                         }
                         icon = bitmap.toDrawable(resources)
                         return
-                    }.onFailure { Log.e("SKK", "Failed to load thumbnail", it) }
+                    }.onFailure { SKKLog.e("Failed to load thumbnail", it) }
                 } ?: run { summary = "未設定" }
                 icon = null
             }
@@ -215,7 +214,6 @@ class SKKSettingsActivity : AppCompatActivity(),
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Thread.setDefaultUncaughtExceptionHandler(MyUncaughtExceptionHandler(applicationContext))
 
         binding = ActivitySettingsBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -265,7 +263,7 @@ class SKKSettingsActivity : AppCompatActivity(),
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean = keyPref.let { pref ->
         if (pref == null) return super.dispatchKeyEvent(event)
-        dLog("dispatchKeyEvent($event)")
+        SKKLog.d("dispatchKeyEvent($event)")
         return when (event.keyCode) {
             KeyEvent.KEYCODE_ENTER -> false
             KeyEvent.KEYCODE_HOME -> true

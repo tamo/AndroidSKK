@@ -2,7 +2,6 @@ package jp.deadend.noname.skk
 
 import android.content.Context
 import android.net.Uri
-import android.util.Log
 import java.io.File
 import java.io.IOException
 
@@ -48,15 +47,12 @@ object SKKKanaRule {
     fun loadFromInternalStorage(context: Context): Map<String, String>? {
         val file = getInternalFile(context)
         if (file.length() > MAX_FILE_SIZE) {
-            Log.e("SKK", "SKKKanaRule#loadFromInternalStorage() Error: File is too large")
+            SKKLog.e("loadFromInternalStorage() Error: File is too large")
             return null
         }
-        return try {
+        return runCatching {
             parse(file.bufferedReader(Charsets.UTF_8).use { it.readText() })
-        } catch (e: IOException) {
-            Log.e("SKK", "SKKKanaRule#loadFromInternalStorage() Error: $e")
-            null
-        }
+        }.onFailure { SKKLog.e("loadFromInternalStorage() Error", it) }.getOrNull()
     }
 
     /**
@@ -65,35 +61,31 @@ object SKKKanaRule {
      */
     fun saveFromUri(context: Context, uri: Uri): Boolean {
         // Check size first to prevent OOM
-        try {
+        runCatching {
             context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
                 val sizeIndex = cursor.getColumnIndex(android.provider.OpenableColumns.SIZE)
                 if (sizeIndex != -1 && cursor.moveToFirst()) {
                     val size = cursor.getLong(sizeIndex)
                     if (size > MAX_FILE_SIZE) {
-                        Log.e(
-                            "SKK",
-                            "SKKKanaRule#saveFromUri() Error: File is too large ($size bytes)"
-                        )
+                        SKKLog.e("saveFromUri() Error: File is too large ($size bytes)")
                         return false
                     }
                 }
             }
-        } catch (e: Exception) {
-            Log.w("SKK", "Failed to check file size: $e")
-        }
+        }.onFailure { SKKLog.w("Failed to check file size", it) }
 
-        return try {
+        return runCatching {
             val text = context.contentResolver.openInputStream(uri)?.use { stream ->
                 stream.bufferedReader(Charsets.UTF_8).use { it.readText() }
             } ?: return false
             getInternalFile(context).writeText(text, Charsets.UTF_8)
             true
-        } catch (e: IOException) {
-            Log.e("SKK", "SKKKanaRule#saveFromUri() Error: $e")
-            false
-        } catch (e: SecurityException) {
-            Log.e("SKK", "SKKKanaRule#saveFromUri() Security Error: $e")
+        }.getOrElse { e ->
+            when (e) {
+                is IOException -> SKKLog.e("saveFromUri() Error", e)
+                is SecurityException -> SKKLog.e("saveFromUri() Security Error", e)
+                else -> throw e
+            }
             false
         }
     }

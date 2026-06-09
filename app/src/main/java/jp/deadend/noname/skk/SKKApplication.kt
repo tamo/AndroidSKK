@@ -11,6 +11,7 @@ class SKKApplication : Application() {
 
     override fun onCreate() {
         prefs = SKKPrefs(applicationContext)
+        SKKLog.init(applicationContext)
         super.onCreate()
     }
 }

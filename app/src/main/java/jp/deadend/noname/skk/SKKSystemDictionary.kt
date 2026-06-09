@@ -1,6 +1,5 @@
 package jp.deadend.noname.skk
 
-import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import java.io.File
@@ -20,7 +19,7 @@ class SKKSystemDictionary private constructor(
 
         val valArray = value.trim('/').split('/')
         if (valArray.isEmpty()) {
-            Log.e("SKK", "Invalid value found: Key=$key value=$value")
+            SKKLog.e("Invalid value found: Key=$key value=$value")
             return null
         }
 
@@ -36,7 +35,7 @@ class SKKSystemDictionary private constructor(
         fun newInstance(
             filePath: String, btreeName: String, migrationNotifier: () -> Unit
         ): SKKSystemDictionary? {
-            return try {
+            return runCatching {
                 if (File("$filePath.db").exists() && !File("$filePath.mv").exists()) {
                     migrationNotifier.invoke()
                 }
@@ -44,10 +43,7 @@ class SKKSystemDictionary private constructor(
                     openDB(filePath, btreeName, writable = false)
                 }
                 SKKSystemDictionary(store, filePath)
-            } catch (e: Exception) {
-                Log.e("SKK", "Error in opening the dictionary: $e")
-                null
-            }
+            }.onFailure { SKKLog.e("Error in opening the dictionary", it) }.getOrNull()
         }
     }
 }

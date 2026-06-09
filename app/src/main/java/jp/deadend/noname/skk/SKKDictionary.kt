@@ -1,6 +1,5 @@
 package jp.deadend.noname.skk
 
-import android.util.Log
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -42,16 +41,16 @@ internal fun isTextDictInEucJp(inputStream: InputStream): Boolean {
     BufferedReader(InputStreamReader(inputStream, decoder)).use { bufferedReader ->
         var count = 0
         var prevLine = "0: (nothing has been read)"
-        try {
+        runCatching {
             bufferedReader.forEachLine { line ->
                 prevLine = "${++count}: $line"
                 // if (count > 1000) { return@forEachLine }
             }
-        } catch (_: CharacterCodingException) {
-            dLog("euc checker: failed after $prevLine")
+        }.onFailure {
+            SKKLog.d("euc checker: failed after $prevLine")
             failed = true
         }
-        dLog("euc checker: read $count lines")
+        SKKLog.d("euc checker: read $count lines")
     }
     return !failed
 }
@@ -90,11 +89,7 @@ internal fun loadFromTextDict(
         if (csv.size < 4) return
         val key = csv[1]
         val freq = if (csv[0] == " word" && csv[2] == "f") {
-            val f = try {
-                csv[3].toInt()
-            } catch (_: NumberFormatException) {
-                0
-            }
+            val f = runCatching { csv[3].toInt() }.getOrDefault(0)
             prevKey = key
             prevFreq = f
             isShortCut = false
@@ -105,11 +100,7 @@ internal fun loadFromTextDict(
             f
         } else if (csv[0] == "  shortcut" && csv[2] == "f") {
             isShortCut = true
-            try {
-                csv[3].toInt()
-            } catch (_: NumberFormatException) {
-                prevFreq
-            }
+            runCatching { csv[3].toInt() }.getOrDefault(prevFreq)
         } else return
         if (freq == 0) return
         if (!isShortCut && overwrite) {
@@ -119,11 +110,7 @@ internal fun loadFromTextDict(
                 .split('/').asSequence().filter { it.isNotEmpty() }
                 .zipWithNext().filterIndexed { index, _ -> index % 2 == 0 }
                 .associate { (f, s) ->
-                    s to try {
-                        f.toInt()
-                    } catch (_: NumberFormatException) {
-                        0
-                    }
+                    s to runCatching { f.toInt() }.getOrDefault(0)
                 }.toMutableMap()
             val oldFreq = pairs[key] ?: 0
             pairs[key] = max(freq, oldFreq)
@@ -158,12 +145,11 @@ interface SKKDictionaryInterface {
         val store = mStore ?: return@withContext listOf()
         val key = katakana2hiragana(rawKey) ?: return@withContext listOf()
         val list = mutableListOf<Triple<String, String, Int>>()
-        val browser: SKKStoreCursor
 
         val topFreq = mutableListOf<Int>()
 
-        try {
-            browser = mLock.withLock { store.cursor(key) } ?: return@withContext listOf()
+        runCatching {
+            val browser = mLock.withLock { store.cursor(key) } ?: return@withContext listOf()
 
             // 絵文字は1500ほどあるし CandidatesView の行数が可変になったので多めが良さそう
             while (list.size < if (mIsASCII) 1500 else 15) {
@@ -205,10 +191,8 @@ interface SKKDictionaryInterface {
                     else -> list.add(Triple(str, str, 0))
                 }
             }
-        } catch (_: CancellationException) {
-            return@withContext listOf()
-        } catch (e: Exception) {
-            Log.e("SKK", "Error in findKeys(): ${e.stackTrace}")
+        }.onFailure { e ->
+            if (e !is CancellationException) SKKLog.e("Error in findKeys()", e)
             return@withContext listOf()
         }
         if (mIsASCII) {
@@ -246,7 +230,7 @@ internal suspend fun openDB(
             val dbFile = File("$filePath.db")
             if (dbFile.exists()) {
                 // Migrate from JDBM to MVStore
-                dLog("Migrating $filePath to MVStore...")
+                SKKLog.d("Migrating $filePath to MVStore...")
                 val jdbmStore = JDBMStore.open(filePath, btreeName)
                 val mvStore =
                     MVStoreStore.open(mvFile.absolutePath, btreeName, writable = true)
@@ -266,7 +250,7 @@ internal suspend fun openDB(
                 // Clean up JDBM files
                 dbFile.delete()
                 File("$filePath.lg").delete()
-                dLog("Migration finished.")
+                SKKLog.d("Migration finished.")
 
                 // Return a store with requested writability
                 if (writable) return@withContext mvStore else {
@@ -284,7 +268,7 @@ internal suspend fun openDB(
         } catch (e: Exception) {
             if (e.toString().contains("locked") && retryCount < maxRetries) {
                 retryCount++
-                dLog("openDB: database locked, retrying ($retryCount/$maxRetries)...")
+                SKKLog.d("openDB: database locked, retrying ($retryCount/$maxRetries)...")
                 delay(retryDelay.milliseconds)
             } else {
                 throw e

@@ -16,7 +16,7 @@ private var charMap = KeyCharacterMap.load(deviceId)
 
 fun encodeKey(event: KeyEvent): Int {
     if (deviceId != event.deviceId) {
-        android.util.Log.d("SKK", "encodeKey switched charMap to device $deviceId")
+        SKKLog.d("encodeKey switched charMap to device $deviceId")
         deviceId = event.deviceId
         charMap = event.keyCharacterMap
     }

@@ -67,7 +67,7 @@ class CandidatesViewContainer(screen: Context, attrs: AttributeSet) : LinearLayo
 
     fun initViews() {
         val onTouchListener = OnTouchListener { view, event ->
-            try {
+            runCatching {
                 val id = event.getPointerId(event.actionIndex)
                 val x = event.getRawX(event.findPointerIndex(id))
                 when (event.actionMasked) {
@@ -148,11 +148,11 @@ class CandidatesViewContainer(screen: Context, attrs: AttributeSet) : LinearLayo
                         }
                     }
 
-                    else -> dLog(event.toString())
+                    else -> SKKLog.d("Unknown motion event: $event")
                 }
                 true
-            } catch (e: Exception) {
-                dLog(e.stackTraceToString())
+            }.getOrElse {
+                SKKLog.d("Error in motion event", it)
                 false
             }
         }

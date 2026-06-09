@@ -4,7 +4,6 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.text.format.Formatter.formatShortFileSize
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
@@ -480,14 +479,11 @@ class SKKDictManager : AppCompatActivity() {
                     mAdapter.submitList(newList)
                     mDictList = newList
                 }
-                Log.e("SKK", "SKKDictManager#loadDict() Error: $e")
+                SKKLog.e("loadDict() Error", e)
             } finally {
-                if (store != null) {
-                    try {
-                        store.close()
-                    } catch (ee: Exception) {
-                        Log.e("SKK", "SKKDictManager#loadDict() can't close(): $ee")
-                    }
+                store?.let { s ->
+                    runCatching { s.close() }
+                        .onFailure { SKKLog.e("loadDict() can't close()", it) }
                 }
                 if (!success) {
                     deleteFile("$dictFileBaseName.mv")

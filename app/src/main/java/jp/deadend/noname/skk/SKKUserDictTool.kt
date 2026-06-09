@@ -3,7 +3,6 @@ package jp.deadend.noname.skk
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
@@ -59,7 +58,7 @@ class SKKUserDictTool : AppCompatActivity() {
             mInFileLauncher = false
             return@registerForActivityResult
         }
-        dLog("importing $uri")
+        SKKLog.d("importing $uri")
         mSearchJob.cancel()
         mDatabaseJob.cancel()
         mDatabaseJob.invokeOnCompletion {
@@ -143,7 +142,7 @@ class SKKUserDictTool : AppCompatActivity() {
             mInFileLauncher = false
             return@registerForActivityResult
         }
-        dLog("exporting $uri")
+        SKKLog.d("exporting $uri")
         if (mDatabaseJob.isActive) {
             Toast.makeText(
                 applicationContext,
@@ -157,22 +156,15 @@ class SKKUserDictTool : AppCompatActivity() {
                     mInFileLauncher = false
                     throw CancellationException()
                 }
-                var errorMessage = ""
-                try {
+                val errorMessage = runCatching {
                     contentResolver.openOutputStream(uri, "wt")?.bufferedWriter()?.use {
-                        val browser = mStore!!.cursor()
-                        if (browser == null) withContext(Dispatchers.Main) {
-                            throw (IOException("database browser is null"))
-                        } else {
-                            while (true) {
-                                val result = browser.next() ?: break
-                                it.write("${result.key} ${result.value}\n")
-                            }
+                        val browser =
+                            mStore?.cursor() ?: throw (IOException("database browser is null"))
+                        generateSequence { browser.next() }.forEach { (key, value) ->
+                            it.write("$key $value\n")
                         }
-                    }
-                } catch (e: Exception) {
-                    errorMessage = e.message ?: "(null)"
-                }
+                    } ?: throw IOException("Failed to open output stream")
+                }.exceptionOrNull()?.let { e -> e.message ?: e.toString() } ?: ""
                 closeUserDict()
 
                 mDatabaseJob.invokeOnCompletion {
@@ -233,9 +225,9 @@ class SKKUserDictTool : AppCompatActivity() {
                         override fun onPositiveClick() {
                             val adapter = parent.adapter as EntryAdapter
                             val item = adapter.getItem(position)!!
-                            dLog("remove $item from $mDictName")
+                            SKKLog.d("remove $item from $mDictName")
                             MainScope().launch(Dispatchers.IO) {
-                                try {
+                                runCatching {
                                     if (openUserDict()) {
                                         mStore?.delete(item.key)
                                         withContext(Dispatchers.Main) {
@@ -245,12 +237,7 @@ class SKKUserDictTool : AppCompatActivity() {
                                         }
                                     }
                                     closeUserDict()
-                                } catch (e: Exception) {
-                                    Log.e(
-                                        "SKK",
-                                        "UserDictTool error removing ${item.key}: ${e.message}"
-                                    )
-                                }
+                                }.onFailure { SKKLog.e("error removing ${item.key}", it) }
                             }
                         }
 
@@ -281,13 +268,7 @@ class SKKUserDictTool : AppCompatActivity() {
                     binding.userDictToolList.adapter = mAdapter
                     return true
                 }
-                val regex: Regex? by lazy {
-                    try {
-                        Regex(newText)
-                    } catch (_: Exception) {
-                        null
-                    }
-                }
+                val regex: Regex? by lazy { runCatching { Regex(newText) }.getOrNull() }
                 mFoundList.clear()
                 mSearchJob.invokeOnCompletion {
                     mSearchJob = MainScope().launch(Dispatchers.Default) {
@@ -404,17 +385,15 @@ class SKKUserDictTool : AppCompatActivity() {
             deleteFile("$mDictName.mv")
 
             if (extract) {
-                try {
+                runCatching {
                     unzipFile(resources.assets.open("$mDictName.zip"), filesDir)
-                    dLog("$mDictName.zip extracted")
-                } catch (e: IOException) {
-                    Log.e("SKK", "I/O error in extracting $mDictName.zip: $e")
-                }
+                    SKKLog.d("$mDictName.zip extracted")
+                }.onFailure { SKKLog.e("I/O error in extracting $mDictName.zip", it) }
                 withContext(Dispatchers.Main) {
                     updateListItems()
                 }
             } else {
-                try {
+                runCatching {
                     mStore = openDB(
                         filesDir.absolutePath + "/" + mDictName,
                         getString(R.string.btree_name)
@@ -422,13 +401,13 @@ class SKKUserDictTool : AppCompatActivity() {
                     mStore?.commit()
                     mStore?.close()
                     mStore = null
-                } catch (e: Exception) {
+                }.onFailure { e ->
                     val store = mStore
                     mStore = null
                     store?.close()
                     throw RuntimeException(e)
                 }
-                dLog("New user dictionary created")
+                SKKLog.d("New user dictionary created")
                 withContext(Dispatchers.Main) {
                     mAdapter.clear() // どうせ空なので updateListItems() 不要
                 }
@@ -458,7 +437,7 @@ class SKKUserDictTool : AppCompatActivity() {
 
     private suspend fun openUserDict(writable: Boolean = true): Boolean {
         if (mStore != null) {
-            Log.e("SKK", "openUserDict error: already opened")
+            SKKLog.e("openUserDict error: already opened")
             withContext(Dispatchers.Main) { onFailToOpenUserDict() }
             return false
         }
@@ -474,7 +453,7 @@ class SKKUserDictTool : AppCompatActivity() {
             startServiceCommand(SKKService.COMMAND_CLOSE_USER_DICT)
             job.join()
         } ?: run {
-            Log.e("SKK", "openUserDict error: service not responding")
+            SKKLog.e("openUserDict error: service not responding")
             withContext(Dispatchers.Main) { onFailToOpenUserDict() }
             return false
         }
@@ -482,40 +461,35 @@ class SKKUserDictTool : AppCompatActivity() {
         val dictPath = filesDir.absolutePath + "/" + mDictName
         val btreeName = getString(R.string.btree_name)
 
-        try {
+        runCatching {
             mStore = openDB(dictPath, btreeName, writable)
             withContext(Dispatchers.Main) { mSearchView.queryHint = "" }
-            dLog("UserDictTool: opened")
+            SKKLog.d("openUserDict finished")
             return true
-        } catch (e: Exception) {
-            Log.e("SKK", "openUserDict error opening mStore: ${e.message}")
-        }
+        }.onFailure { SKKLog.e("openUserDict error opening mStore", it) }
 
         withContext(Dispatchers.Main) { onFailToOpenUserDict() }
         return false
     }
 
     private fun closeUserDict() {
-        mStore?.let { store ->
-            mStore = null
-            val commitException = try {
-                store.commit()
-            } catch (e: Exception) {
-                e.also { Log.e("SKK", "closeUserDict commit error: ${e.message}") }
-            }
-            try {
-                store.close()
-            } catch (e: Exception) {
-                startServiceCommand(SKKService.COMMAND_RELOAD_DICT)
-                Log.e("SKK", "closeUserDict close error: ${e.message}")
-                if (commitException is Exception) throw commitException else throw e
-            }
-        }
-        dLog("UserDictTool: closed")
+        val store = mStore ?: return
+        mStore = null
+
+        val commitException = runCatching { store.commit() }.exceptionOrNull()
+        val closeException = runCatching { store.close() }.exceptionOrNull()
+
+        commitException?.let { SKKLog.e("closeUserDict commit error", it) }
+        closeException?.let {
+            SKKLog.e("closeUserDict close error", it)
+            startServiceCommand(SKKService.COMMAND_RELOAD_DICT)
+        } ?: SKKLog.d("closeUserDict finished")
+
+        (commitException ?: closeException)?.let { throw it }
     }
 
     private fun updateListItems() {
-        dLog("updateListItems")
+        SKKLog.d("updateListItems")
         mSearchJob.cancel()
         mDatabaseJob.cancel()
         mDatabaseJob.invokeOnCompletion {
@@ -525,10 +499,9 @@ class SKKUserDictTool : AppCompatActivity() {
                     mSearchView.isEnabled = false
                     mAdapter.clear()
                 }
-                try {
-                    val browser = mStore?.cursor()
-                    if (browser == null) {
-                        Log.e("SKK", "UserDictTool updateListItems: browser=null")
+                runCatching {
+                    val browser = mStore?.cursor() ?: run {
+                        SKKLog.e("updateListItems: browser=null")
                         withContext(Dispatchers.Main) { onFailToOpenUserDict() }
                         closeUserDict()
                         return@launch
@@ -556,16 +529,18 @@ class SKKUserDictTool : AppCompatActivity() {
                         mSearchView.isEnabled = true
                         mSearchView.queryHint = ""
                     }
-                } catch (e: CancellationException) {
-                    dLog("UserDictTool updateListItems: canceled")
-                    closeUserDict()
-                    throw e
-                } catch (e: Exception) {
-                    Log.e("SKK", "UserDictTool updateListItems: ${e.message}")
-                    withContext(Dispatchers.Main) { onFailToOpenUserDict() }
+                }.onFailure { e ->
+                    if (e is CancellationException) {
+                        SKKLog.d("updateListItems: canceled")
+                        closeUserDict()
+                        throw e
+                    } else {
+                        SKKLog.e("updateListItems", e)
+                        withContext(Dispatchers.Main) { onFailToOpenUserDict() }
+                    }
                 }
                 closeUserDict()
-                dLog("UserDictTool updateListItems: finished")
+                SKKLog.d("updateListItems: finished")
             }
             mDatabaseJob.start()
         }

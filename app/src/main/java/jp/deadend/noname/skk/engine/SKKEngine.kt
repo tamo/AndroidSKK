@@ -5,9 +5,9 @@ import android.view.KeyEvent
 import com.android.volley.toolbox.JsonArrayRequest
 import com.android.volley.toolbox.Volley
 import jp.deadend.noname.skk.SKKDictionaryInterface
+import jp.deadend.noname.skk.SKKLog
 import jp.deadend.noname.skk.SKKService
 import jp.deadend.noname.skk.SKKUserDictionary
-import jp.deadend.noname.skk.dLog
 import jp.deadend.noname.skk.encodeKey
 import jp.deadend.noname.skk.hankaku2zenkaku
 import jp.deadend.noname.skk.hiragana2katakana
@@ -248,6 +248,7 @@ class SKKEngine(
      * @param text
      */
     internal fun commitTextSKK(text: CharSequence) {
+        SKKLog.d("commit text='$text' registering=${mRegister.isOngoing}")
         ic ?: return
         if (!mRegister.isOngoing) {
             ic.commitText(text, 1)
@@ -305,7 +306,10 @@ class SKKEngine(
             KeyEvent.KEYCODE_DPAD_RIGHT -> mKanjiKey.cursor.inc().coerceAtMost(mKanjiKey.length)
             else -> return false
         }
-        dLog("handleDpadTransient: ${mKanjiKey.take(mKanjiKey.cursor)} | ${mKanjiKey.drop(mKanjiKey.cursor)}")
+        SKKLog.d(
+            "mKanjiKey: " + mKanjiKey.take(mKanjiKey.cursor) +
+                    " | " + mKanjiKey.drop(mKanjiKey.cursor)
+        )
         setComposingTextSKK()
         return true
     }
@@ -315,7 +319,7 @@ class SKKEngine(
         unregister: Boolean = false,
         sequential: Boolean = false
     ) {
-        dLog("pickCandidatesViewManually(index=$index, unregister=$unregister, sequential=$sequential)")
+        SKKLog.d("pickCandidatesViewManually(index=$index, unregister=$unregister, sequential=$sequential)")
         val state = state
         if (state is SKKConfirmingState && state.pendingLambda != null) {
             state.beforeProcessKey(this, encodeKey('y'.code))
@@ -417,7 +421,7 @@ class SKKEngine(
                 val cs = ic.getTextBeforeCursor(2, 0) ?: return
                 // 0〜2 文字を 0〜3 文字にするので注意!
                 val newLast2Chars = RomajiConverter.convertLastChar(cs.toString(), type)
-                dLog("changeLastChar: 2chars=$newLast2Chars")
+                SKKLog.d("changeLastChar: 2chars=$newLast2Chars")
                 if (newLast2Chars.first.isEmpty() && newLast2Chars.second.isEmpty()) return
 
                 val deleteTwo = (cs.length == 2 && newLast2Chars.first.isEmpty())
@@ -577,7 +581,7 @@ class SKKEngine(
 
     internal fun reConvert(): Boolean {
         val lastConv = mLastConversion ?: return false
-        dLog("last conversion: ${lastConv.candidate} from ${lastConv.list} at ${lastConv.index} (key=${lastConv.kanjiKey}, okuri=${lastConv.okurigana})")
+        SKKLog.d("last conversion: ${lastConv.candidate} from ${lastConv.list} at ${lastConv.index} (key=${lastConv.kanjiKey}, okuri=${lastConv.okurigana})")
 
         if (mService.prepareReConversion(lastConv.candidate)) {
             runBlocking(Dispatchers.IO) { mUserDict.rollBack() }
@@ -618,7 +622,7 @@ class SKKEngine(
             mKanjiKey.set(regInfo.key)
             mOkurigana = regInfo.okurigana
         }
-        dLog("googleTransliterate mKanjiKey=${mKanjiKey} mOkurigana=${mOkurigana}")
+        SKKLog.d("googleTransliterate mKanjiKey=${mKanjiKey} mOkurigana=${mOkurigana}")
 
         changeState(SKKPreeditState)
         val query = if (mKanjiKey.isNotEmpty() && isAlphabet(mKanjiKey.last().code)) {
@@ -633,7 +637,7 @@ class SKKEngine(
             JsonArrayRequest(
                 "https://www.google.com/transliterate?langpair=ja-Hira|ja&text=${query},",
                 { response ->
-                    dLog(" googleTransliterate response=${response.toString(4)}")
+                    SKKLog.d(" googleTransliterate response=${response.toString(4)}")
                     val list = mutableListOf<String>()
                     try {
                         val jsonArray = response.getJSONArray(0).getJSONArray(1)
@@ -646,7 +650,7 @@ class SKKEngine(
                         }
                         list.addAll(candidates)
                     } catch (e: JSONException) {
-                        dLog(" googleTransliterate JSON error: ${e.message}")
+                        SKKLog.d(" googleTransliterate JSON error: ${e.message}")
                         list.addAll(
                             arrayListOf(
                                 "(エラー)",
@@ -664,7 +668,7 @@ class SKKEngine(
                         }
                     }
                 },
-                { e -> dLog(" googleTransliterate API error: ${e.message}") }
+                { e -> SKKLog.d(" googleTransliterate API error: ${e.message}") }
             )
         )
     }
@@ -694,7 +698,7 @@ class SKKEngine(
 
     internal fun find(key: String): List<String> = runBlocking(Dispatchers.IO) {
         val userEntry = mUserDict.getEntry(key)
-        dLog("user dictionary: $key -> ${userEntry?.candidates} with ${userEntry?.okuriganaBlocks}")
+        SKKLog.d("user dictionary: $key -> ${userEntry?.candidates} with ${userEntry?.okuriganaBlocks}")
         val (userOkList, userRestList) = (userEntry?.candidates ?: listOf()).partition { s ->
             mOkurigana.isEmpty() || userEntry?.okuriganaBlocks?.any {
                 it.first == katakana2hiragana(hankaku2zenkaku(mOkurigana)) && it.second == s
@@ -731,7 +735,7 @@ class SKKEngine(
             candidate + if (newAnnotations.isNotEmpty()) ";$newAnnotations" else ""
         }.toMutableList()
 
-        if (list.isEmpty()) dLog("Dictionary: Can't find Kanji for $key")
+        if (list.isEmpty()) SKKLog.d("Dictionary: Can't find Kanji for $key")
 
         list
     }
@@ -795,6 +799,7 @@ class SKKEngine(
     }
 
     internal fun changeState(state: SKKState, force: Boolean = false) {
+        SKKLog.d("changeState ${this.state::class.simpleName} -> ${state::class.simpleName} (force=$force)")
         val willBeTemporaryView = state is SKKAbbrevState || state is SKKZenkakuState
         val wasTemporaryView = mService.isTemporaryView
         val inCompatibleStates = (this.state.isTransient && this.state.canComplete &&

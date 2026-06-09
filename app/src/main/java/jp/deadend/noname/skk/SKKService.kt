@@ -28,7 +28,6 @@ import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.text.InputType
 import android.text.SpannableString
-import android.util.Log
 import android.util.TypedValue
 import android.view.Display.DEFAULT_DISPLAY
 import android.view.KeyEvent
@@ -205,10 +204,10 @@ class SKKService : InputMethodService() {
     private var mPendingInput: String? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        dLog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
+        SKKLog.d("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
         when (intent?.getStringExtra(KEY_COMMAND)) {
             COMMAND_CLOSE_USER_DICT -> MainScope().launch(Dispatchers.IO) {
-                dLog("commit user dictionary!")
+                SKKLog.d("commit user dictionary!")
                 mEngine.closeUserDict()
                 flow.tryEmit(EVENT_USER_DICT_CLOSING)
             }
@@ -238,8 +237,8 @@ class SKKService : InputMethodService() {
     }
 
     internal fun extractDictionary(dictName: String): Boolean {
-        try {
-            dLog("dict extract start")
+        return runCatching {
+            SKKLog.d("dict extract start")
             mHandler.post {
                 Toast.makeText(
                     applicationContext,
@@ -255,36 +254,38 @@ class SKKService : InputMethodService() {
                     applicationContext, getText(R.string.message_dict_extracted), Toast.LENGTH_SHORT
                 ).show()
             }
-            return true
-        } catch (e: IOException) {
-            Log.e("SKK", "I/O error in extracting dictionary files: $e")
-            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-                .setData(Uri.fromParts("package", packageName, null))
-                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            val pendingIntent = PendingIntent.getActivity(
-                applicationContext, 0, intent, PendingIntent.FLAG_IMMUTABLE
-            )
-            notify(
-                NOTIFY_ID_DETAILS,
-                "深刻なエラー",
-                getText(R.string.error_extracting_dict_failed).toString(),
-                pendingIntent
-            )
-            return false
+            true
+        }.getOrElse { e ->
+            if (e is IOException) {
+                SKKLog.e("I/O error in extracting dictionary files", e)
+                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                    .setData(Uri.fromParts("package", packageName, null))
+                    .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                val pendingIntent = PendingIntent.getActivity(
+                    applicationContext, 0, intent, PendingIntent.FLAG_IMMUTABLE
+                )
+                notify(
+                    NOTIFY_ID_DETAILS,
+                    "深刻なエラー",
+                    getText(R.string.error_extracting_dict_failed).toString(),
+                    pendingIntent
+                )
+                false
+            } else throw e
         }
     }
 
     private fun openDictionaries(): List<SKKDictionaryInterface> {
         val result = mutableListOf<SKKDictionaryInterface>()
         val dd = filesDir.absolutePath
-        dLog("dict dir: $dd")
+        SKKLog.d("dict dir: $dd")
 
         val prefVal = PreferenceManager.getDefaultSharedPreferences(this)
             .getString(
                 getString(R.string.pref_dict_order),
                 "ユーザー辞書/${getString(R.string.dict_name_user)}/絵文字辞書/${getString(R.string.dict_name_emoji)}/"
             )
-        dLog("dict pref: $prefVal")
+        SKKLog.d("dict pref: $prefVal")
 
         val oldDictList = if (::mEngine.isInitialized) mEngine.mDictList else emptyList()
 
@@ -302,17 +303,17 @@ class SKKService : InputMethodService() {
                             applicationContext, getText(R.string.message_dict_migrating),
                             Toast.LENGTH_SHORT
                         ).show()).run {}
-                    ) ?: null.also { dLog("failed to open $dictPath") }
+                    ) ?: null.also { SKKLog.d("failed to open $dictPath") }
                 }
             }?.let { result.add(it) }
         }
-        dLog("dict list: ${result.joinToString { it.mFilePath }}")
+        SKKLog.d("dict list: ${result.joinToString { it.mFilePath }}")
 
         return result
     }
 
     override fun onCreate() {
-        dLog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
+        SKKLog.d("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
         if (BuildConfig.DEBUG) {
             StrictMode.setThreadPolicy(
                 StrictMode.ThreadPolicy.Builder()
@@ -330,8 +331,6 @@ class SKKService : InputMethodService() {
             )
         }
         super.onCreate()
-
-        Thread.setDefaultUncaughtExceptionHandler(MyUncaughtExceptionHandler(applicationContext))
 
         val channel =
             NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_DEFAULT)
@@ -496,13 +495,13 @@ class SKKService : InputMethodService() {
     private fun checkUseSoftKeyboard(
         default: Boolean = super.onEvaluateInputViewShown()
     ): Boolean = when (skkPrefs.useSoftKey) {
-        "on" -> true.also { dLog("software keyboard forced") }
-        "off" -> false.also { dLog("software keyboard disabled") }
+        "on" -> true.also { SKKLog.d("software keyboard forced") }
+        "off" -> false.also { SKKLog.d("software keyboard disabled") }
         else -> default
     }
 
     override fun onBindInput() {
-        dLog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
+        SKKLog.d("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
         super.onBindInput()
 
         if (!mPendingInput.isNullOrEmpty()) {
@@ -516,14 +515,14 @@ class SKKService : InputMethodService() {
      * is called after creation and any configuration change.
      */
     override fun onInitializeInterface() {
-        dLog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
+        SKKLog.d("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
         setInputView(onCreateInputView())
         readPrefs()
         updateInputViewShown()
     }
 
     override fun onEvaluateInputViewShown(): Boolean {
-        dLog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
+        SKKLog.d("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
         // candidatesView は inputViewShown に依存するはず
         val atLeastCandidatesAreShown = skkPrefs.useCandidatesView ||
                 checkUseSoftKeyboard(super.onEvaluateInputViewShown())
@@ -532,7 +531,7 @@ class SKKService : InputMethodService() {
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
-        dLog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
+        SKKLog.d("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
         updateDimensions(newConfig)
         super.onConfigurationChanged(newConfig) // これが onInitializeInterface を呼ぶ
     }
@@ -544,7 +543,7 @@ class SKKService : InputMethodService() {
         mRootWidth = (conf.screenWidthDp * density + 0.5f).toInt()
         mScreenWidth = mRootWidth
         mScreenHeight = (conf.screenHeightDp * density + 0.5f).toInt()
-        dLog("updateDimensions: legacy width=$mRootWidth height=$mScreenHeight")
+        SKKLog.d("updateDimensions: legacy width=$mRootWidth height=$mScreenHeight")
 
         if (Build.VERSION.SDK_INT >= 34) {
             val manager = getSystemService(WindowManager::class.java)
@@ -552,7 +551,7 @@ class SKKService : InputMethodService() {
             mRootWidth = metrics.bounds.width()
             mScreenWidth = mRootWidth
             mScreenHeight = metrics.bounds.height()
-            dLog("updateDimensions: modern width=$mRootWidth height=$mScreenHeight")
+            SKKLog.d("updateDimensions: modern width=$mRootWidth height=$mScreenHeight")
 
             mCutout = metrics.windowInsets.getInsetsIgnoringVisibility(
                 InsetsType.systemBars() or InsetsType.displayCutout()
@@ -561,12 +560,12 @@ class SKKService : InputMethodService() {
                 InsetsType.systemBars() or InsetsType.displayCutout() or
                         if (skkPrefs.gestureInsets) InsetsType.systemGestures() else 0
             )
-            dLog("updateDimensions: cutout=$mCutout (systemBars|displayCutout)")
-            dLog("updateDimensions: insets=$mInsets (systemBars|displayCutout|systemGestures)")
+            SKKLog.d("updateDimensions: cutout=$mCutout (systemBars|displayCutout)")
+            SKKLog.d("updateDimensions: insets=$mInsets (systemBars|displayCutout|systemGestures)")
 
             mRootWidth -= mInsets.run { left + right }
             mScreenHeight -= mInsets.run { top + bottom }
-            dLog("updateDimensions: rootWidth=$mRootWidth screenHeight=$mScreenHeight")
+            SKKLog.d("updateDimensions: rootWidth=$mRootWidth screenHeight=$mScreenHeight")
         }
     }
 
@@ -641,7 +640,7 @@ class SKKService : InputMethodService() {
     }
 
     override fun onCreateInputView(): View {
-        dLog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
+        SKKLog.d("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
 
         val context = createNightModeContext(applicationContext, skkPrefs.theme)
         if (skkPrefs.useInset) context.theme.applyStyle(R.style.ThemeOverlay_SKK_RoundedKey, true)
@@ -669,7 +668,7 @@ class SKKService : InputMethodService() {
         val wasFlick = mInputView?.equals(mFlickJPInputView) == true
         createInputView()
 
-        dLog("onCreateInputView: wasFlick=$wasFlick wasGodan=$wasGodan engineState=$engineState")
+        SKKLog.d("onCreateInputView: wasFlick=$wasFlick wasGodan=$wasGodan engineState=$engineState")
         val keyboardView = (if (
             wasGodan || (skkPrefs.preferFlick && skkPrefs.preferGodan && !skkPrefs.godanQwerty)
         ) mGodanInputView else when (engineState) {
@@ -697,7 +696,7 @@ class SKKService : InputMethodService() {
      * all the detailed information about the target of our edits.
      */
     override fun onStartInput(attribute: EditorInfo, restarting: Boolean) {
-        dLog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
+        SKKLog.d("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
         /* 以前ここで requestHideSelf(0) しないとホーム画面に candidatesView が残ったり
          * 色々と問題があったはずなのだが、今は何もせずに return しても大丈夫みたい
          * 以前はホーム画面で即座に検索できるよう TYPE_NULL の不可視フィールドがあったのかも
@@ -709,10 +708,11 @@ class SKKService : InputMethodService() {
             requestHideSelf(0)
             return
         }
+        SKKLog.d("onStartInput pkg=${attribute.packageName} type=${attribute.inputType} restarting=$restarting")
         super.onStartInput(attribute, restarting)
 
         mPendingInput?.let { pending ->
-            dLog("commiting pending input: $pending")
+            SKKLog.d("commiting pending input: $pending")
             currentInputConnection.commitText(pending, 1)
             mPendingInput = null
         }
@@ -758,7 +758,7 @@ class SKKService : InputMethodService() {
             if (restarting) {
                 if (mEngine.mComposingText.isNotEmpty()) {
                     val composingText = mEngine.mComposingText.toString()
-                    dLog("restarting: setComposingText(${mEngine.mComposingText})")
+                    SKKLog.d("restarting: setComposingText(${mEngine.mComposingText})")
                     currentInputConnection.apply {
                         getTextBeforeCursor(composingText.length, 0).let {
                             if (it == composingText) {
@@ -863,7 +863,7 @@ class SKKService : InputMethodService() {
     }
 
     override fun onStartInputView(editorInfo: EditorInfo?, restarting: Boolean) {
-        dLog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
+        SKKLog.d("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
         super.onStartInputView(editorInfo, restarting)
 
         // シフト等の状態を同期
@@ -874,7 +874,7 @@ class SKKService : InputMethodService() {
     }
 
     override fun onFinishInputView(finishingInput: Boolean) {
-        dLog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
+        SKKLog.d("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
         mEngine.commitComposing()
         super.onFinishInputView(finishingInput)
         hideStatusIcon()
@@ -887,7 +887,7 @@ class SKKService : InputMethodService() {
      * this to reset our state.
      */
     override fun onFinishInput() {
-        dLog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
+        SKKLog.d("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
         mEngine.commitComposing()
         restorePrevStates()
         super.onFinishInput()
@@ -901,7 +901,7 @@ class SKKService : InputMethodService() {
     }
 
     override fun onUnbind(intent: Intent?): Boolean {
-        dLog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
+        SKKLog.d("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
         super.onUnbind(intent)
 
         // このあと onDestroy() が呼ばれないことがあるので強制終了しておく
@@ -912,9 +912,9 @@ class SKKService : InputMethodService() {
     }
 
     override fun onDestroy() {
-        dLog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
+        SKKLog.d("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
         if (instance == null) {
-            dLog("skip onDestroy(): instance is null")
+            SKKLog.d("skip onDestroy(): instance is null")
             return
         }
 
@@ -929,7 +929,7 @@ class SKKService : InputMethodService() {
     override fun onEvaluateFullscreenMode() = false
 
     override fun onComputeInsets(outInsets: Insets?) {
-        //dLog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
+        //SKKLog.d("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
         super.onComputeInsets(outInsets)
         if (outInsets == null || mInputView == null) return
         outInsets.apply {
@@ -939,6 +939,7 @@ class SKKService : InputMethodService() {
                 skkPrefs.candidatesMinHeight -> visibleTopInsets + variableHeight
                 else -> visibleTopInsets // 変動する CandidatesView の高さも確保
             }
+            SKKLog.d("outInsets contentTop=$contentTopInsets visibleTop=$visibleTopInsets")
             touchableInsets = Insets.TOUCHABLE_INSETS_REGION
             touchableRegion.set(
                 if (isFloating()) leftOffset else mInsets.left, 0,
@@ -948,7 +949,7 @@ class SKKService : InputMethodService() {
     }
 
     override fun onUpdateEditorToolType(toolType: Int) {
-        dLog("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
+        SKKLog.d("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
         super.onUpdateEditorToolType(toolType)
         completeASCII()
     }
@@ -1218,7 +1219,7 @@ class SKKService : InputMethodService() {
     }
 
     fun handleDpad(keyCode: Int): Boolean {
-        dLog("handleDpad(${KeyEvent.keyCodeToString(keyCode)}) in ${mEngine.state}")
+        SKKLog.d("handleDpad(${KeyEvent.keyCodeToString(keyCode)}) in ${mEngine.state}")
         if (mStickyShift) mShiftKey.useState()
         return mEngine.handleDpad(keyCode)
     }
@@ -1262,7 +1263,7 @@ class SKKService : InputMethodService() {
         val ic = currentInputConnection ?: return
         val editorInfo = currentInputEditorInfo
 
-        dLog("pressEnter(): NO_ENTER=${0 != (editorInfo.imeOptions and EditorInfo.IME_FLAG_NO_ENTER_ACTION)} label=${editorInfo.actionLabel} action=${editorInfo.imeOptions and EditorInfo.IME_MASK_ACTION}")
+        SKKLog.d("pressEnter(): NO_ENTER=${0 != (editorInfo.imeOptions and EditorInfo.IME_FLAG_NO_ENTER_ACTION)} label=${editorInfo.actionLabel} action=${editorInfo.imeOptions and EditorInfo.IME_MASK_ACTION}")
         when {
             editorInfo.imeOptions and EditorInfo.IME_FLAG_NO_ENTER_ACTION != 0 ->
                 ic.commitText("\n", 1) // 古いAndroidでは keyDownUp(KeyEvent.KEYCODE_ENTER)
@@ -1445,7 +1446,7 @@ class SKKService : InputMethodService() {
     // engineState とは違うものが指定されることもある
     // (FlickJP から、ひらがなモードのまま Qwerty に変更する場合など)
     fun changeSoftKeyboard(state: SKKState) {
-        dLog("changeSoftKeyboard($state)")
+        SKKLog.d("changeSoftKeyboard($state)")
         // 長押しリピートの message が残っている可能性があるので止める
         for (kv in listOf(
             mAbbrevKeyboardView,
@@ -1490,7 +1491,7 @@ class SKKService : InputMethodService() {
     override fun setInputView(view: View?) {
         // view が null のときはここをスキップして再描画だけする (ドラッグで位置調整のとき使う)
         (view as? KeyboardView)?.let { inputView ->
-            dLog("setInputView($view)")
+            SKKLog.d("setInputView($view)")
             mInputView = inputView // keyboardWidth と keyboardHeight で参照されるので早く代入
             inputView.keyboard.resize(keyboardWidth(), keyboardHeight())
             mBinding.keyboardContainer.apply {
@@ -1536,7 +1537,7 @@ class SKKService : InputMethodService() {
                 }
                 CroppedDrawable(resources, bitmap)
             }.getOrElse {
-                Log.e("SKK", "Failed to load background image", it)
+                SKKLog.e("Failed to load background image", it)
                 null
             }
         }

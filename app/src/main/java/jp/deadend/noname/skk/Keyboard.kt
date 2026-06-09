@@ -5,7 +5,6 @@ import android.content.res.Resources
 import android.content.res.TypedArray
 import android.content.res.XmlResourceParser
 import android.graphics.drawable.Drawable
-import android.util.Log
 import android.util.TypedValue
 import android.util.Xml
 import kotlin.math.roundToInt
@@ -314,7 +313,7 @@ open class Keyboard {
     fun resize(newWidth: Int, newHeight: Int) {
         if ((newWidth == width) && (newHeight == height)) return
         if (newWidth < 1) return // newHeight はハードキーボード接続時に 0 許容
-        dLog("Keyboard.resize($newWidth, $newHeight) <- ($width, $height)")
+        SKKLog.d("Keyboard.resize($newWidth, $newHeight) <- ($width, $height)")
 
         var totalHeight = 0
         var maxWidth = 0
@@ -431,7 +430,7 @@ open class Keyboard {
         var key: Key? = null
         var currentRow: Row? = null
         val res = context.resources
-        try {
+        runCatching {
             var event: Int
             while (parser.next().also { event = it } != XmlResourceParser.END_DOCUMENT) {
                 when (event) {
@@ -501,10 +500,7 @@ open class Keyboard {
                     }
                 }
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "Parse error:$e")
-            e.printStackTrace()
-        }
+        }.onFailure { SKKLog.e("Parse error", it) }
 
         height = y - defaultVerticalGap
     }
@@ -553,8 +549,6 @@ open class Keyboard {
     }
 
     companion object {
-        const val TAG = "Keyboard"
-
         // Keyboard XML Tags
         private const val TAG_KEYBOARD = "Keyboard"
         private const val TAG_ROW = "Row"

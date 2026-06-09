@@ -124,7 +124,7 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
 
                 override fun onLongPress(e: MotionEvent) {
                     if (mTouchedIndex >= 0) {
-                        dLog("onLongPress: $mTouchedIndex")
+                        SKKLog.d("onLongPress: $mTouchedIndex")
                         performHapticFeedback(skkPrefs.haptic)
                         mLongPressed = true
                     }
@@ -254,7 +254,7 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
     }
 
     internal fun buildLayout(list: List<String>, kanjiKey: String): Pair<CandidateLayout, Int> {
-        dLog("buildLayout(list=$list, kanjiKey=$kanjiKey)")
+        SKKLog.d("buildLayout(list=$list, kanjiKey=$kanjiKey)")
         val isEmoji = kanjiKey == "emoji"
         val viewLines =
             if (isEmoji) skkPrefs.candidatesEmojiLines else skkPrefs.candidatesNormalLines
@@ -350,7 +350,7 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
     }
 
     internal fun setContents(nullableLayout: CandidateLayout?, index: Int = 0) {
-        dLog("setContents(index=$index)")
+        SKKLog.d("setContents(index=$index)")
         val layout = nullableLayout ?: CandidateLayout.EMPTY
         mLayout = layout
 
@@ -362,7 +362,7 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
         // Preserve selection if finger is down
         mTouchedIndex = (if (mTouchX != OUT_OF_BOUNDS)
             getSelectedIndex(mTouchX, mTouchY)
-        else -1).also { dLog("mTouchedIndex: $mTouchedIndex -> $it") }
+        else -1).also { SKKLog.d("mTouchedIndex: $mTouchedIndex -> $it") }
 
         if (index != 0) setCursor(index) else {
             setScrollButtonsEnabled(scrollX)
@@ -452,7 +452,7 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
     }
 
     override fun performClick(): Boolean {
-        dLog("performClick: $mTouchedIndex")
+        SKKLog.d("performClick: $mTouchedIndex")
         super.performClick()
 
         val rv = if (!mScrolled && mTouchedIndex >= 0) {

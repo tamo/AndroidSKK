@@ -1,7 +1,7 @@
 package jp.deadend.noname.skk.engine
 
 import jp.deadend.noname.skk.SKKApplication
-import jp.deadend.noname.skk.dLog
+import jp.deadend.noname.skk.SKKLog
 import jp.deadend.noname.skk.hankaku2zenkaku
 import jp.deadend.noname.skk.isAlNum
 import jp.deadend.noname.skk.isAnyKana
@@ -110,7 +110,7 @@ object RomajiConverter {
         map.entries.associate { (r, k) -> k to r.last() }
 
     fun convertLastChar(str: String, type: String): Pair<String, String> {
-        dLog("convertLastChar(str=$str, type=$type)")
+        SKKLog.d("convertLastChar(str=$str, type=$type)")
 
         if (str.isEmpty()) return "" to "" // str が 0 文字の場合
         var first = if (str.lastIndex > 0) str[str.lastIndex - 1].toString() else "" // 1 文字の場合
@@ -132,10 +132,10 @@ object RomajiConverter {
             type != SKKEngine.LAST_CONVERSION_SHIFT // SHIFTは英数でも可
             && !isAnyKana(kanaLast)
         ) {
-            dLog("last is not convertible: $last")
+            SKKLog.d("last is not convertible: $last")
             return first to last.toString()
         }
-        dLog("first=$first (last=$last), kana=$kana")
+        SKKLog.d("first=$first (last=$last), kana=$kana")
 
         return first to (when (type) {
             SKKEngine.LAST_CONVERSION_SMALL -> (mSmallKanaMap + mSmallKMap + mReversedSmallKanaMap)[kana]

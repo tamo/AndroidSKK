@@ -1,6 +1,6 @@
 package jp.deadend.noname.skk.engine
 
-import jp.deadend.noname.skk.dLog
+import jp.deadend.noname.skk.SKKLog
 import jp.deadend.noname.skk.decodeKey
 
 interface SKKConfirmingState : SKKState {
@@ -14,7 +14,7 @@ interface SKKConfirmingState : SKKState {
     fun beforeProcessKey(context: SKKEngine, keyCode: Int): Boolean {
         val (lowerCode, _) = decodeKey(keyCode)
         pendingLambda?.let {
-            dLog("SKKConfirmingState.pendingLambda: $lowerCode (oldComposingText=$oldComposingText)")
+            SKKLog.d("SKKConfirmingState.pendingLambda: $lowerCode (oldComposingText=$oldComposingText)")
             pendingLambda = null
             if (lowerCode == 'y'.code) {
                 it.invoke()

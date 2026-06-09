@@ -1,8 +1,8 @@
 package jp.deadend.noname.skk.engine
 
 import jp.deadend.noname.skk.SKKDictionaryInterface
+import jp.deadend.noname.skk.SKKLog
 import jp.deadend.noname.skk.SKKService
-import jp.deadend.noname.skk.dLog
 import jp.deadend.noname.skk.encodeKey
 import jp.deadend.noname.skk.fuzzy
 import jp.deadend.noname.skk.hiragana2katakana
@@ -128,7 +128,7 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
         val list = mList ?: return
         val rawCandidate = list[index]
         val candidate = StringBuilder(get(index) ?: return)
-        dLog("pickCandidate $candidate from $list (unregister=$unregister, learn=${engine.isPersonalizedLearning}, key=${engine.mKanjiKey})")
+        SKKLog.d("pickCandidate $candidate from $list (unregister=$unregister, learn=${engine.isPersonalizedLearning}, key=${engine.mKanjiKey})")
         suspendCompletion()
 
         if (mQuery == "emoji" || mQuery == "/きごう") {
@@ -150,7 +150,7 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
                     }
                 }.orEmpty().let { oldEntry ->
                     if (unregister) newEntry = ""
-                    dLog("replaceEntry($mQuery, $newEntry$oldEntry)")
+                    SKKLog.d("replaceEntry($mQuery, $newEntry$oldEntry)")
                     runBlocking(Dispatchers.IO) {
                         engine.mASCIIDict.replaceEntry(mQuery, newEntry + oldEntry)
                     }
@@ -241,9 +241,9 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
                 v
             } ?: "#"
         }
-        dLog("pickCompletion s=$s from $mList (unregister=$unregister)")
+        SKKLog.d("pickCompletion s=$s from $mList (unregister=$unregister)")
         val c = mCompletionList?.get(index) ?: return
-        dLog("pickCompletion c=$c from $mCompletionList")
+        SKKLog.d("pickCompletion c=$c from $mCompletionList")
         // c を入力して s になるイメージなので基本的に両者は同じだが
         // c が ill で s が I'll になるような、入力した文字まで変化する場合がある
 
@@ -301,7 +301,7 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
                                 }
                             }.orEmpty().let { oldEntry ->
                                 if (unregister) newEntry = ""
-                                dLog("replaceEntry($c, $newEntry$oldEntry)")
+                                SKKLog.d("replaceEntry($c, $newEntry$oldEntry)")
                                 runBlocking(Dispatchers.IO) {
                                     engine.mASCIIDict.replaceEntry(c, newEntry + oldEntry)
                                 }
@@ -332,7 +332,7 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
     }
 
     internal fun narrow(hint: String) {
-        dLog("narrowCandidates: hint: $hint, mKanjiKey: $mQuery")
+        SKKLog.d("narrowCandidates: hint: $hint, mKanjiKey: $mQuery")
         if (SKKNarrowingState.mOriginalCandidates == null) {
             SKKNarrowingState.mOriginalCandidates = mList
         }
@@ -342,7 +342,7 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
             val hintKanjiList = engine.find(hint).map {
                 processConcatAndMore(removeAnnotation(it), "")
             }
-            dLog("narrowCandidates: hintKanjiList: $hintKanjiList")
+            SKKLog.d("narrowCandidates: hintKanjiList: $hintKanjiList")
             // hint("おとこ") -> hintKanjiList(["男", "漢", "♂"]) 注釈なし
             // mQuery("かんじ") -> candidates("漢字; 注釈も含む", "幹事", "監事", "感じ")
             // -> narrowed(["漢字; 注釈も含む"]) 「漢」で合致
@@ -358,7 +358,7 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
             mList = narrowed
             mIndex = 0
             setView(narrowed, mQuery, mIndex)
-        } else dLog("narrowCandidates: no entries")
+        } else SKKLog.d("narrowCandidates: no entries")
         updateComposingText()
     }
 
@@ -428,6 +428,8 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
                 ensureCont() // 短時間に連続で実行されないよう最新のみ有効に
 
                 val uniqueSet = set.distinctBy { it.second }
+                SKKLog.d("complete query='$str' found=${uniqueSet.size} in ${elapsed.inWholeMilliseconds}ms")
+
                 val (completionList, list) = uniqueSet.unzip()
                 mCompletionList = completionList
                 mList = list
