@@ -7,6 +7,10 @@ class MVStoreStore(
     private val store: MVStore,
     private val map: MVMap<String, String>
 ) : SKKStore {
+    override fun get(index: Long): SKKStoreTuple? {
+        val key = map.getKey(index) ?: return null
+        return SKKStoreTuple(key, map[key] ?: "")
+    }
 
     override fun get(key: String): String? = map[key]
 

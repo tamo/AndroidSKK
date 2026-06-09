@@ -7,6 +7,7 @@ interface SKKStoreCursor {
 }
 
 interface SKKStore : AutoCloseable {
+    fun get(index: Long): SKKStoreTuple? = null
     fun get(key: String): String?
     fun set(key: String, value: String): SKKStore
     fun delete(key: String): SKKStore

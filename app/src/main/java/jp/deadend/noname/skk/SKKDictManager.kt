@@ -47,6 +47,7 @@ class SKKDictManager : AppCompatActivity() {
     private val mAdapter: TupleAdapter
         get() = binding.dictManagerList.adapter as TupleAdapter
     private var mDictList = listOf<SKKStoreTuple>()
+    private var mCurrentPreviewingItem: SKKStoreTuple? = null
 
     private val addDictFileLauncher = registerForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -134,41 +135,102 @@ class SKKDictManager : AppCompatActivity() {
         }
         ItemTouchHelper(callback)
             .attachToRecyclerView(binding.dictManagerList)
+
+        binding.dictManagerUninstallButton.setOnClickListener {
+            val position = mDictList.indexOf(mCurrentPreviewingItem)
+            if (position != -1) {
+                confirmUninstall(mCurrentPreviewingItem!!, position)
+            }
+        }
+        binding.dictManagerPreviewText.movementMethod =
+            android.text.method.ScrollingMovementMethod()
+        binding.dictManagerPreviewText.setHorizontallyScrolling(true)
     }
 
     private fun itemClickListener(position: Int) {
-        val newList = mDictList.toMutableList()
-        val item = newList[position]
+        val item = mDictList[position]
         if (item.value.startsWith("/skk_dict_")) {
             downloadDict(item.value.removePrefix("/skk_dict_"), position)
         } else {
-            when (newList[position].value) {
-                getString(R.string.dict_name_user) -> return
-                getString(R.string.dict_name_emoji) -> return
-            }
-            val dialog =
-                ConfirmationDialogFragment.newInstance(getString(R.string.message_dict_manager_confirm_remove_dict))
-            dialog.setListener(
-                object : ConfirmationDialogFragment.Listener {
-                    override fun onPositiveClick() {
-                        val item = newList[position]
-                        val dictName = item.key
-                        val dictPath = item.value
-                        deleteFile("$dictPath.mv")
-                        if (dictPath.startsWith("skk_dict_")) {
-                            newList[position] = SKKStoreTuple(dictName, "/${dictPath}")
-                        } else {
-                            newList.remove(item)
-                        }
-                        mAdapter.submitList(newList)
-                        mDictList = newList
-                    }
-
-                    override fun onNegativeClick() {}
-                })
-            dialog.show(supportFragmentManager, "dialog")
+            showPreview(item)
         }
     }
+
+    private fun showPreview(item: SKKStoreTuple) {
+        if (mCurrentPreviewingItem == item) {
+            hidePreview()
+            return
+        }
+
+        mCurrentPreviewingItem = item
+        binding.dictManagerPreviewLayout.visibility = android.view.View.VISIBLE
+        binding.dictManagerPreviewTitle.text = item.key
+        binding.dictManagerPreviewText.text = "読み込み中..."
+
+        val isCore = item.value == getString(R.string.dict_name_user) ||
+                item.value == getString(R.string.dict_name_emoji)
+        binding.dictManagerUninstallButton.visibility =
+            if (isCore) android.view.View.GONE else android.view.View.VISIBLE
+
+        MainScope().launch(Dispatchers.IO) {
+            val filePath = filesDir.absolutePath + "/" + item.value
+            val previewText = runCatching {
+                openDB(filePath, getString(R.string.btree_name), false).use { store ->
+                    val sb = StringBuilder()
+                    val maxSamples = binding.dictManagerPreviewText.maxLines
+                    val storeSize = store.size()
+                    val step = (storeSize / maxSamples).coerceAtLeast(1)
+                    val padLen = storeSize.toString().length
+                    for (i in 0 until maxSamples) {
+                        ensureActive()
+                        val index = i * step
+                        if (index >= storeSize) break
+                        val paddedIndex = index.toString().padStart(padLen, '0')
+                        store.get(index)?.let { sb.append("$paddedIndex: ${it.key} ${it.value}\n") }
+                    }
+
+                    if (sb.isNotEmpty()) sb.toString() else getString(R.string.label_tools_no_entry_found)
+                }
+            }.getOrElse { "Error: ${it.message}" }
+
+            withContext(Dispatchers.Main) {
+                binding.dictManagerPreviewText.apply {
+                    text = previewText
+                    scrollX = 0
+                    scrollY = 0
+                }
+            }
+        }
+    }
+
+    private fun hidePreview() {
+        mCurrentPreviewingItem = null
+        binding.dictManagerPreviewLayout.visibility = android.view.View.GONE
+    }
+
+    private fun confirmUninstall(item: SKKStoreTuple, position: Int) = ConfirmationDialogFragment
+        .newInstance(getString(R.string.message_dict_manager_confirm_remove_dict)).let {
+            it.setListener(object : ConfirmationDialogFragment.Listener {
+                override fun onNegativeClick() {}
+                override fun onPositiveClick() {
+                    val dictName = item.key
+                    val dictPath = item.value
+                    deleteFile("$dictPath.mv")
+                    val newList = mDictList.toMutableList()
+                    if (dictPath.startsWith("skk_dict_")) {
+                        newList[position] = SKKStoreTuple(dictName, "/${dictPath}")
+                    } else {
+                        newList.removeAt(position)
+                    }
+                    mAdapter.submitList(newList)
+                    mDictList = newList
+                    if (mCurrentPreviewingItem == item) {
+                        hidePreview()
+                    }
+                }
+            })
+            it.show(supportFragmentManager, "dialog")
+        }
 
     override fun onPause() {
         val dictListString = mDictList
@@ -312,11 +374,7 @@ class SKKDictManager : AppCompatActivity() {
                     }
                 }
 
-                override fun onNegativeClick() {
-                    if (path.exists()) {
-                        loadCommonDict(path, position)
-                    }
-                }
+                override fun onNegativeClick() {}
             }
         )
         dialog.show(supportFragmentManager, "dialog")
@@ -492,6 +550,7 @@ class SKKDictManager : AppCompatActivity() {
 
             if (success) withContext(Dispatchers.Main) {
                 addDict(dictFileBaseName.removePrefix("/"), position)
+                showPreview(mDictList[position])
             }
         }
     }
