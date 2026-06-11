@@ -418,14 +418,6 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
         return super.onModifiedTouchEvent(me, possiblePoly)
     }
 
-    private fun diamondAngle(x: Float, y: Float): Float {
-        return if (y >= 0) {
-            if (x >= 0) y / (x + y) else 1 - x / (-x + y)
-        } else {
-            if (x < 0) 2 - y / (-x - y) else 3 + x / (x - y)
-        }
-    }
-
     private fun processFirstFlick(dx: Float, dy: Float) {
         val hasLeftCurve = mCurrentPopupLabels[5].isNotEmpty()
         val hasRightCurve = mCurrentPopupLabels[6].isNotEmpty()

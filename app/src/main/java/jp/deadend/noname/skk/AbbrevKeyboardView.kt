@@ -170,9 +170,6 @@ class AbbrevKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
         // private const val KEYCODE_ABBREV_CANCEL   = -1009
         private const val KEYCODE_ABBREV_ZENKAKU = -1010
         private const val KEYCODE_ABBREV_ENTER = -1011
-        private const val FLICK_UP = 1
-        private const val FLICK_NONE = 0
-        private const val FLICK_DOWN = -1
     }
 
 }

@@ -39,8 +39,8 @@ fun encodeKey(event: KeyEvent): Int {
     return meta or c
 }
 
-fun encodeKey(charCode: Int): Int {
-    val meta = if (Character.isUpperCase(charCode)) SHIFT_PRESSED else 0
+fun encodeKey(charCode: Int, metaState: Int = 0): Int {
+    val meta = metaState or if (Character.isUpperCase(charCode)) SHIFT_PRESSED else 0
     val codeLower = if (meta and SHIFT_PRESSED != 0) Character.toLowerCase(charCode) else charCode
     return meta or codeLower
 }

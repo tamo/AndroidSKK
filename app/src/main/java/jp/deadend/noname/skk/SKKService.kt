@@ -1184,7 +1184,30 @@ class SKKService : InputMethodService() {
         return true
     }
 
-    fun processKey(code: Int) = mEngine.processKey(code)
+    fun processKey(code: Int) {
+        val isCtrl = code and CTRL_PRESSED != 0
+        val isAlt = code and ALT_PRESSED != 0
+        if (isCtrl || isAlt) {
+            val downTime = System.currentTimeMillis()
+            currentInputConnection.sendKeyEvent(
+                KeyEvent(
+                    downTime, System.currentTimeMillis(), KeyEvent.ACTION_DOWN,
+                    KeyEvent.keyCodeFromString(code.toChar().uppercaseChar().toString()),
+                    0, if (isCtrl) KeyEvent.META_CTRL_ON else KeyEvent.META_ALT_ON
+                )
+            )
+            currentInputConnection.sendKeyEvent(
+                KeyEvent(
+                    downTime, System.currentTimeMillis(), KeyEvent.ACTION_UP,
+                    KeyEvent.keyCodeFromString(code.toChar().uppercaseChar().toString()),
+                    0, 0
+                )
+            )
+            return
+        }
+        return mEngine.processKey(code)
+    }
+
     fun processKey(char: Char) = mEngine.processKey(encodeKey(char.code))
 
     fun processKeyIn(state: SKKState, char: Char) = state.processKey(mEngine, encodeKey(char.code))

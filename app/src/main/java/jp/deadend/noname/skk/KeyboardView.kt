@@ -299,11 +299,11 @@ open class KeyboardView @JvmOverloads constructor(
             mKeyboard.isCapsLocked = value
         }
 
-    var isFlicked = 0
+    var isFlicked = FLICK_NONE
         set(value) {
             if (field != value) {
                 performHapticFeedback(skkPrefs.haptic)
-                if (value != 0) mHandler.removeMessages(MSG_LONG_PRESS)
+                if (value != FLICK_NONE) mHandler.removeMessages(MSG_LONG_PRESS)
                 else if (mCurrentKey != NOT_A_KEY) {
                     mHandler.sendMessageDelayed(
                         mHandler.obtainMessage(MSG_LONG_PRESS), skkPrefs.longPressTimeout.toLong()
@@ -411,8 +411,9 @@ open class KeyboardView @JvmOverloads constructor(
                     keyBackground?.state = key.currentDrawableState
 
                     // Switch the character to uppercase if shift is pressed
-                    val useDown = isFlicked == -1 && key.labels.down.isNotEmpty()
-                    val useShift = isShifted xor (isFlicked == 1) && key.labels.shifted.isNotEmpty()
+                    val useDown = isFlicked == FLICK_DOWN && key.labels.down.isNotEmpty()
+                    val useShift =
+                        isShifted xor (isFlicked == FLICK_UP) && key.labels.shifted.isNotEmpty()
                     val lines = when {
                         useDown -> key.labels.splitDown()
                         useShift -> key.labels.splitShifted()
@@ -614,16 +615,20 @@ open class KeyboardView @JvmOverloads constructor(
 
     private fun getPreviewText(key: Keyboard.Key): String = when {
         key.codes.main[0] == Keyboard.KEYCODE_SHIFT -> when (isFlicked) {
-            0 -> "SHIFT"
+            FLICK_NONE -> "SHIFT"
             else -> "CAPSLOCK"
         }
 //        mInMultiTap -> {
 //            Char(key.codes[mTapCount.coerceAtLeast(0)]).toString()
 //            // シフト時の toUpper とか必要ならするけど今はアルファベットの multiTap がない
 //        }
-        else -> when {
-            isFlicked == -1 && key.labels.down.isNotEmpty() -> key.labels.splitDown()
-            isShifted xor (isFlicked == 1) && key.labels.shifted.isNotEmpty() -> key.labels.splitShifted()
+        else -> when (isFlicked) {
+            FLICK_LEFT -> "Ctrl-"
+            FLICK_RIGHT -> "Alt-"
+            else -> ""
+        } + when {
+            isFlicked == FLICK_DOWN && key.labels.down.isNotEmpty() -> key.labels.splitDown()
+            isShifted xor (isFlicked == FLICK_UP) && key.labels.shifted.isNotEmpty() -> key.labels.splitShifted()
             else -> key.labels.split()
         }[0]
     }
@@ -949,6 +954,18 @@ open class KeyboardView @JvmOverloads constructor(
         return result
     }
 
+    /**
+     * 計算負荷の低い擬似的な角度を計算します (0.0 から 4.0)
+     * 0: 右, 1: 下, 2: 左, 3: 上
+     */
+    internal fun diamondAngle(x: Float, y: Float): Float {
+        return if (y >= 0) {
+            if (x >= 0) y / (x + y) else 1 - x / (-x + y)
+        } else {
+            if (x < 0) 2 - y / (-x - y) else 3 + x / (x - y)
+        }
+    }
+
     open fun onModifiedTouchEvent(me: MotionEvent, possiblePoly: Boolean): Boolean {
         val touchX = me.x.toInt() - paddingLeft
         var touchY = me.y.toInt() - paddingTop
@@ -1235,6 +1252,12 @@ open class KeyboardView @JvmOverloads constructor(
     }
 
     companion object {
+        const val FLICK_LEFT = 3
+        const val FLICK_RIGHT = 2
+        const val FLICK_UP = 1
+        const val FLICK_NONE = 0
+        const val FLICK_DOWN = -1
+
         private const val NOT_A_KEY = -1
 
         // private val KEY_DELETE = intArrayOf(Keyboard.KEYCODE_DELETE)

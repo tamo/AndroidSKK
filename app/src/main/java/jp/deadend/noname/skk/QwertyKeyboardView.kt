@@ -91,6 +91,11 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                             return true
                         }
 
+                        dx2 > dy2 && dx2 > mFlickSensitivitySquared -> {
+                            isFlicked = if (dx < 0) FLICK_LEFT else FLICK_RIGHT
+                            return true
+                        }
+
                         dy < 0 && dx2 < dy2 -> {
                             isFlicked = FLICK_UP
                             return true
@@ -208,17 +213,21 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                 }
 
                 val primaryKey = findKeyByCode(primaryCode)
-                val code = when {
-                    primaryKey == null -> primaryCode
-                    isFlicked == FLICK_DOWN ->
+                val code = if (primaryKey == null) primaryCode else when (isFlicked) {
+                    FLICK_DOWN ->
                         if (primaryKey.codes.down > 0) primaryKey.codes.down else primaryCode
 
-                    isFlicked == flickUp ->
+                    flickUp ->
                         if (primaryKey.codes.shifted > 0) primaryKey.codes.shifted else primaryCode
 
                     else -> primaryCode
                 }
-                mService.processKey(encodeKey(code))
+                val meta = when (isFlicked) {
+                    FLICK_LEFT -> CTRL_PRESSED
+                    FLICK_RIGHT -> ALT_PRESSED
+                    else -> 0
+                }
+                mService.processKey(encodeKey(code, meta))
             }
         }
         when (primaryCode) {
@@ -277,9 +286,6 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
         private const val KEYCODE_QWERTY_TO_SYM = -1009
         private const val KEYCODE_QWERTY_TO_LATIN = -1010
         private const val KEYCODE_QWERTY_ENTER = -1011
-        private const val FLICK_UP = 1
-        private const val FLICK_NONE = 0
-        private const val FLICK_DOWN = -1
     }
 
 }

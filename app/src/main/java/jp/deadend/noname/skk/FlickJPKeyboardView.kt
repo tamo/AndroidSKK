@@ -500,18 +500,6 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
         return super.onModifiedTouchEvent(me, possiblePoly)
     }
 
-    /**
-     * 計算負荷の低い擬似的な角度を計算します (0.0 から 4.0)
-     * 0: 右, 1: 下, 2: 左, 3: 上
-     */
-    private fun diamondAngle(x: Float, y: Float): Float {
-        return if (y >= 0) {
-            if (x >= 0) y / (x + y) else 1 - x / (-x + y)
-        } else {
-            if (x < 0) 2 - y / (-x - y) else 3 + x / (x - y)
-        }
-    }
-
     private fun processFirstFlick(dx: Float, dy: Float) {
         val dAngle = diamondAngle(dx, dy)
         var hasLeftCurve = mCurrentPopupLabels[5].isNotEmpty()
