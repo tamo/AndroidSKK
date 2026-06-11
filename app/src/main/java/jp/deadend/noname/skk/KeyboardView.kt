@@ -1054,6 +1054,7 @@ open class KeyboardView @JvmOverloads constructor(
                     detectAndSendKey(mCurrentKey, eventTime) // マルチタップのために必要
                 }
                 mRepeatKeyIndex = NOT_A_KEY
+                isFlicked = FLICK_NONE
             }
 
             MotionEvent.ACTION_CANCEL -> {
@@ -1061,6 +1062,7 @@ open class KeyboardView @JvmOverloads constructor(
                 dismissPopupKeyboard()
                 mAbortKey = true
                 releaseKey(mCurrentKey)
+                isFlicked = FLICK_NONE
             }
         }
         return true
