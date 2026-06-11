@@ -1,5 +1,6 @@
 package jp.deadend.noname.skk.engine
 
+import jp.deadend.noname.skk.SKKLog
 import jp.deadend.noname.skk.decodeKey
 import jp.deadend.noname.skk.engine.SKKEngine.Companion.ASCII_WORD_MAX_LENGTH
 
@@ -68,7 +69,7 @@ object SKKASCIIState : SKKConfirmingState {
         var processed = false
         ic.beginBatchEdit()
 
-        val tbc = ic.getTextBeforeCursor(text.length * 2, 0) ?: return false
+        val tbc = ic.getTextBeforeCursor(ASCII_WORD_MAX_LENGTH, 0) ?: return false
             .also { ic.endBatchEdit() }
         val wbc = tbc.dropLast(text.length).split(delimiter).last()
         if (wbc.isNotEmpty() &&
@@ -81,6 +82,8 @@ object SKKASCIIState : SKKConfirmingState {
             processed = true
 
         ic.endBatchEdit()
+
+        SKKLog.d("deleteSurroundingText [${tbc.dropLast(text.length + wbc.length)}[$wbc[$text]$wac]] processed=$processed")
         return processed
     }
 }

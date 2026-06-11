@@ -3,6 +3,7 @@ package jp.deadend.noname.skk.engine
 import android.text.SpannableString
 import android.view.KeyEvent
 import com.android.volley.toolbox.JsonArrayRequest
+import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.Volley
 import jp.deadend.noname.skk.SKKDictionaryInterface
 import jp.deadend.noname.skk.SKKLog
@@ -614,6 +615,7 @@ class SKKEngine(
     private val volleyQueue by lazy { Volley.newRequestQueue(mService.applicationContext) }
     internal fun googleTransliterate() {
         if (!mRegister.isOngoing) {
+            if (state is SKKASCIIState) return googleTranslate()
             if (mKanjiKey.isEmpty()) return
         } else {
             // candidate から選択しただけで登録されるので
@@ -638,38 +640,74 @@ class SKKEngine(
                 "https://www.google.com/transliterate?langpair=ja-Hira|ja&text=${query},",
                 { response ->
                     SKKLog.d(" googleTransliterate response=${response.toString(4)}")
-                    val list = mutableListOf<String>()
-                    try {
-                        val jsonArray = response.getJSONArray(0).getJSONArray(1)
-                        if (jsonArray.length() == 0) {
-                            throw JSONException("no array")
-                        }
-                        val candidates = (0 until jsonArray.length()).map { index ->
-                            val item = jsonArray.get(index).toString()
+                    val list = try {
+                        val jsonArray = response.optJSONArray(0)
+                            ?.optJSONArray(1) ?: throw JSONException("no array")
+                        (0 until jsonArray.length()).map { index ->
+                            val item = jsonArray.getString(index)
                             if (mOkurigana.isNotEmpty()) item.removeSuffix(mOkurigana) else item
                         }
-                        list.addAll(candidates)
                     } catch (e: JSONException) {
-                        SKKLog.d(" googleTransliterate JSON error: ${e.message}")
-                        list.addAll(
-                            arrayListOf(
-                                "(エラー)",
-                                hiragana2katakana(mKanjiKey.toString()) ?: mKanjiKey.toString()
-                            )
-                        )
-                    } finally {
-                        changeState(SKKChooseState)
-                        mCandidates.apply {
-                            mList = list
-                            mIndex = 0
-                            mQuery = mKanjiKey.toString()
-                            setView(list, mQuery, mIndex)
-                            updateComposingText()
-                        }
+                        SKKLog.w(" googleTransliterate JSON error", e)
+                        listOf("(エラー)", hiragana2katakana(mKanjiKey.toString())!!)
+                    }
+                    changeState(SKKChooseState)
+                    mCandidates.apply {
+                        mList = list
+                        mIndex = 0
+                        mQuery = mKanjiKey.toString()
+                        setView(mList, mQuery, mIndex)
+                        updateComposingText()
                     }
                 },
-                { e -> SKKLog.d(" googleTransliterate API error: ${e.message}") }
+                { e -> SKKLog.w(" googleTransliterate API error", e) }
             )
+        )
+    }
+
+    private fun googleTranslate() {
+        val query = state.let { ascii ->
+            if (ascii !is SKKASCIIState) return
+            ascii.getPrefix(this) + ascii.getSuffix(this) // Uri.encode() すべき?
+        }
+        SKKLog.d("googleTranslate query=$query")
+        if (query.isEmpty()) return
+
+        volleyQueue.add(
+            object : JsonObjectRequest(
+                "https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ja&dt=bd&dj=1&q=${query}",
+                { response ->
+                    SKKLog.d(" googleTranslate response=${response.toString(4)}")
+                    val list = try {
+                        val jsonArray = response.optJSONArray("dict")?.optJSONObject(0)
+                            ?.optJSONArray("entry") ?: throw JSONException("no entry")
+                        (0 until jsonArray.length()).map { index ->
+                            val item = jsonArray.getJSONObject(index)
+                            val word = item.getString("word")
+                            word + item.optJSONArray("reverse_translation")?.let { synonyms ->
+                                val annotation = (0 until synonyms.length()).mapNotNull { i ->
+                                    synonyms.getString(i).takeIf { it != word }
+                                }.joinToString()
+                                if (annotation.isNotEmpty()) "; $annotation" else ""
+                            }.orEmpty()
+                        }
+                    } catch (e: JSONException) {
+                        SKKLog.w(" googleTranslate JSON error", e)
+                        listOf("(エラー)", query)
+                    }
+                    mCandidates.apply {
+                        mCompletionList = list.map { query }
+                        mList = list
+                        mIndex = 0
+                        mQuery = query
+                        setView(mList, mQuery, mIndex)
+                    }
+                },
+                { e -> SKKLog.w(" googleTranslate API error", e) }
+            ) {
+                // User-Agent を設定しないと 429 エラーになる
+                override fun getHeaders() = mutableMapOf("User-Agent" to "Volley/1.2.1")
+            }
         )
     }
 
