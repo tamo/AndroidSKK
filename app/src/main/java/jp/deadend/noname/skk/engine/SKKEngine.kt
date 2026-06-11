@@ -302,12 +302,16 @@ class SKKEngine(
     }
 
     private fun handleDpadTransient(keyCode: Int): Boolean {
+        val oldCursor = mKanjiKey.cursor
         mKanjiKey.cursor = when (keyCode) {
             KeyEvent.KEYCODE_DPAD_LEFT -> mKanjiKey.cursor.dec().coerceAtLeast(0)
             KeyEvent.KEYCODE_DPAD_RIGHT -> mKanjiKey.cursor.inc().coerceAtMost(mKanjiKey.length)
             else -> return false
         }
-        SKKLog.d(
+        if (mKanjiKey.cursor == oldCursor) {
+            mCandidates.cycleCompletionCursor(keyCode == KeyEvent.KEYCODE_DPAD_RIGHT)
+            if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT) mKanjiKey.cursor = 0
+        } else SKKLog.d(
             "mKanjiKey: " + mKanjiKey.take(mKanjiKey.cursor) +
                     " | " + mKanjiKey.drop(mKanjiKey.cursor)
         )
