@@ -1,9 +1,9 @@
 package jp.deadend.noname.skk.engine
 
 import jp.deadend.noname.skk.createTrimmedBuilder
-import jp.deadend.noname.skk.decodeKey
 import jp.deadend.noname.skk.encodeKey
 import jp.deadend.noname.skk.isAlphabet
+import jp.deadend.noname.skk.lowerCode
 import jp.deadend.noname.skk.skkPrefs
 
 // 送り仮名入力中(▽モード，*つき)
@@ -25,7 +25,7 @@ object SKKOkuriganaState : SKKState {
     }
 
     override fun processKey(context: SKKEngine, keyCode: Int) {
-        val (codeLower, _) = decodeKey(keyCode)
+        val codeLower = keyCode.lowerCode
 
         context.apply {
             // l, L, q, / による暗黙の確定

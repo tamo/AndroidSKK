@@ -45,10 +45,8 @@ fun encodeKey(charCode: Int): Int {
     return meta or codeLower
 }
 
-// returns Pair<lowerCharCode, isShifted>
-fun decodeKey(keyCode: Int): Pair<Int, Boolean> {
-    return keyCode and CHAR_CODE_MASK to ((keyCode and SHIFT_PRESSED) != 0)
-}
+internal inline val Int.lowerCode: Int get() = this and CHAR_CODE_MASK
+internal inline val Int.isShifted: Boolean get() = (this and SHIFT_PRESSED) != 0
 
 fun getKeyName(key: Int): String {
     val charCode = key and CHAR_CODE_MASK

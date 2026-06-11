@@ -1,6 +1,7 @@
 package jp.deadend.noname.skk.engine
 
-import jp.deadend.noname.skk.decodeKey
+import jp.deadend.noname.skk.isShifted
+import jp.deadend.noname.skk.lowerCode
 import jp.deadend.noname.skk.skkPrefs
 
 object SKKNarrowingState : SKKConfirmingState {
@@ -25,8 +26,8 @@ object SKKNarrowingState : SKKConfirmingState {
 
     override fun processKey(context: SKKEngine, keyCode: Int) {
         if (super.beforeProcessKey(context, keyCode)) return
-        val (lower, shifted) = decodeKey(keyCode)
-        val charCode = if (shifted) Character.toUpperCase(lower) else lower
+        val lower = keyCode.lowerCode
+        val charCode = if (keyCode.isShifted) Character.toUpperCase(lower) else lower
         context.apply {
             when (keyCode) {
                 skkPrefs.zenkakuKey, skkPrefs.abbrevKey -> {

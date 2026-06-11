@@ -1,7 +1,7 @@
 package jp.deadend.noname.skk.engine
 
 import jp.deadend.noname.skk.SKKLog
-import jp.deadend.noname.skk.decodeKey
+import jp.deadend.noname.skk.lowerCode
 
 interface SKKConfirmingState : SKKState {
     var pendingLambda: (() -> Unit)?
@@ -12,7 +12,7 @@ interface SKKConfirmingState : SKKState {
     }
 
     fun beforeProcessKey(context: SKKEngine, keyCode: Int): Boolean {
-        val (lowerCode, _) = decodeKey(keyCode)
+        val lowerCode = keyCode.lowerCode
         pendingLambda?.let {
             SKKLog.d("SKKConfirmingState.pendingLambda: $lowerCode (oldComposingText=$oldComposingText)")
             pendingLambda = null

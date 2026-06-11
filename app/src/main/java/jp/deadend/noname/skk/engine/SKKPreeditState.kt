@@ -1,10 +1,11 @@
 package jp.deadend.noname.skk.engine
 
 import jp.deadend.noname.skk.createTrimmedBuilder
-import jp.deadend.noname.skk.decodeKey
 import jp.deadend.noname.skk.hiragana2katakana
+import jp.deadend.noname.skk.isShifted
 import jp.deadend.noname.skk.isVowel
 import jp.deadend.noname.skk.katakana2hiragana
+import jp.deadend.noname.skk.lowerCode
 import jp.deadend.noname.skk.skkPrefs
 import jp.deadend.noname.skk.zenkaku2hankaku
 
@@ -26,7 +27,8 @@ object SKKPreeditState : SKKState {
     }
 
     override fun processKey(context: SKKEngine, keyCode: Int) {
-        val (codeLower, isUpper) = decodeKey(keyCode)
+        val codeLower = keyCode.lowerCode
+        val isUpper = keyCode.isShifted
 
         context.apply {
             val canRetry = mComposing.isNotEmpty() // 無限ループ防止

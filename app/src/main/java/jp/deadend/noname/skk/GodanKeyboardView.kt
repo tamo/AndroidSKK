@@ -2,6 +2,8 @@ package jp.deadend.noname.skk
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.Canvas
+import android.graphics.Paint
 import android.util.AttributeSet
 import android.util.SparseArray
 import android.view.KeyEvent
@@ -16,6 +18,7 @@ import jp.deadend.noname.skk.engine.SKKEngine
 import jp.deadend.noname.skk.engine.SKKState
 import jp.deadend.noname.skk.engine.SKKZenkakuState
 import java.util.EnumSet
+import kotlin.math.ceil
 
 class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(context, attrs),
     KeyboardView.OnKeyboardActionListener {
@@ -106,18 +109,18 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
             defaultCancelKey to defaultShiftKey
         }
 
-        shiftKey.codes[0] = Keyboard.KEYCODE_SHIFT
-        shiftKey.codes[1] = Keyboard.KEYCODE_CAPSLOCK
-        shiftKey.label = ""
+        shiftKey.codes.main[0] = Keyboard.KEYCODE_SHIFT
+        shiftKey.codes.main[1] = Keyboard.KEYCODE_CAPSLOCK
+        shiftKey.labels.main = ""
         shiftKey.icon = ResourcesCompat.getDrawable(
             resources, R.drawable.ic_keyboard_shift, null
         )?.also {
             it.setBounds(0, 0, it.intrinsicWidth, it.intrinsicHeight)
         }
 
-        cancelKey.codes[0] = KEYCODE_GODAN_CANCEL
-        cancelKey.codes[1] = KEYCODE_GODAN_NONE
-        cancelKey.label = /* if (!mIsASCII && skkPrefs.simpleGodan) "cxl" else */
+        cancelKey.codes.main[0] = KEYCODE_GODAN_CANCEL
+        cancelKey.codes.main[1] = KEYCODE_GODAN_NONE
+        cancelKey.labels.main = /* if (!mIsASCII && skkPrefs.simpleGodan) "cxl" else */
             "貼付\n：cxl＞\ngoogle"
         cancelKey.icon = null
 
@@ -136,12 +139,12 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
             oldCancelKey to oldQKey
         }
 
-        cancelKey.codes[0] = KEYCODE_GODAN_CANCEL
-        cancelKey.label = /* if (!mIsASCII && skkPrefs.simpleGodan) "cxl" else */
+        cancelKey.codes.main[0] = KEYCODE_GODAN_CANCEL
+        cancelKey.labels.main = /* if (!mIsASCII && skkPrefs.simpleGodan) "cxl" else */
             "貼付\n：cxl＞\ngoogle"
 
-        qKey.codes[0] = KEYCODE_GODAN_CHAR_Q
-        qKey.label = /* if (!mIsASCII && skkPrefs.simpleGodan) "Q" else */ "^J\n☻Q記\n半ｶﾅ"
+        qKey.codes.main[0] = KEYCODE_GODAN_CHAR_Q
+        qKey.labels.main = /* if (!mIsASCII && skkPrefs.simpleGodan) "Q" else */ "^J\n☻Q記\n半ｶﾅ"
     }
 
     override fun setKeyState(state: SKKState): GodanKeyboardView {
@@ -160,9 +163,10 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                 ).forEach { keyCode ->
                     val key =
                         checkNotNull(findKeyByCode(keyboard, keyCode)) { "BUG: no $keyCode key" }
-                    key.label = if (isKatakana)
-                        hiragana2katakana(key.label).orEmpty()
-                    else katakana2hiragana(key.label).orEmpty()
+                    val label = key.labels.main
+                    key.labels.main = if (isKatakana)
+                        hiragana2katakana(label) ?: label
+                    else katakana2hiragana(label) ?: label
                 }
             }
 
@@ -176,12 +180,12 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
     }
 
     private fun findKeyByCode(keyboard: Keyboard, code: Int) =
-        keyboard.keys.find { it.codes[0] == code }
+        keyboard.keys.find { it.codes.main[0] == code }
 
     private fun onSetShifted(isShifted: Boolean) {
         val spaceKey =
             checkNotNull(findKeyByCode(keyboard, KEYCODE_GODAN_SPACE)) { "BUG: no space key" }
-        spaceKey.label = if (isShifted) "設定" else ""
+        spaceKey.labels.main = if (isShifted) "設定" else ""
     }
 
     internal fun prepareNewKeyboard(
@@ -203,6 +207,30 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
         readPrefs(context)
     }
 
+    override fun drawCenterLabel(
+        lines: List<String>, lineIndex: Int,
+        canvas: Canvas, x: Float, y: Float, paint: Paint
+    ): Boolean {
+        if (lineIndex == 1 && lines.size == 3 && lines[1].length > 2) {
+            val currentTypeface = paint.typeface
+            paint.typeface = mBoldTypeface
+
+            val line = lines[lineIndex]
+            val centerText = line.substring(1, line.length - 1)
+            val ascii = centerText.count { it.code < 0x7F }
+            val spaces = "　".repeat(1 + ceil((centerText.length - ascii * 0.5)).toInt())
+            val sideText = "${line.first()}$spaces${line.last()}"
+
+            canvas.drawText(centerText, x, y, paint)
+
+            paint.typeface = currentTypeface
+            paint.textSize *= 0.67f
+            canvas.drawText(sideText, x, y, paint)
+            return true
+        }
+        return false
+    }
+
     private fun readPrefs(context: Context) {
         // シフトかな交換
         setShiftPosition()
@@ -211,7 +239,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
 
         when {
             skkPrefs.useSoftCancelKey -> {
-                findKeyByCode(keyboard, KEYCODE_GODAN_KOMOJI)?.label = "小\n ◻゙cxl◻゚ \n▽"
+                findKeyByCode(keyboard, KEYCODE_GODAN_KOMOJI)?.labels?.main = "小\n ◻゙cxl◻゚ \n▽"
                 mFlickGuideLabelList.put(
                     KEYCODE_GODAN_KOMOJI,
                     arrayOf("CXL", "◻゙", "小", "◻゚", "▽") + POPUP_LABELS_NULL
@@ -219,7 +247,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
             }
 
             skkPrefs.useSoftTransKey -> {
-                findKeyByCode(keyboard, KEYCODE_GODAN_KOMOJI)?.label = "cxl\n ◻゙□゚ \n▽"
+                findKeyByCode(keyboard, KEYCODE_GODAN_KOMOJI)?.labels?.main = "cxl\n ◻゙□゚ \n▽"
                 mFlickGuideLabelList.put(
                     KEYCODE_GODAN_KOMOJI,
                     arrayOf("◻゙□゚", "◻゙", "CXL", "◻゚", "▽") + POPUP_LABELS_NULL
@@ -227,7 +255,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
             }
 
             else -> {
-                findKeyByCode(keyboard, KEYCODE_GODAN_KOMOJI)?.label = "cxl\n ◻゙小◻゚ \n▽"
+                findKeyByCode(keyboard, KEYCODE_GODAN_KOMOJI)?.labels?.main = "cxl\n ◻゙小◻゚ \n▽"
                 mFlickGuideLabelList.put(
                     KEYCODE_GODAN_KOMOJI,
                     arrayOf("小", "◻゙", "CXL", "◻゚", "▽") + POPUP_LABELS_NULL
@@ -478,7 +506,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
     }
 
     override fun onLongPress(key: Keyboard.Key): Boolean {
-        val code = key.codes[0]
+        val code = key.codes.main[0]
         if (code == KEYCODE_GODAN_ENTER) {
             mService.pressSearch()
             return true

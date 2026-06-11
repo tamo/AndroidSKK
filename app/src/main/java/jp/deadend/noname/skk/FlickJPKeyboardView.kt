@@ -2,6 +2,8 @@ package jp.deadend.noname.skk
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.Canvas
+import android.graphics.Paint
 import android.util.AttributeSet
 import android.util.SparseArray
 import android.view.KeyEvent
@@ -20,6 +22,7 @@ import jp.deadend.noname.skk.engine.SKKKatakanaState
 import jp.deadend.noname.skk.engine.SKKState
 import jp.deadend.noname.skk.engine.SKKZenkakuState
 import java.util.EnumSet
+import kotlin.math.ceil
 
 class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(context, attrs),
     KeyboardView.OnKeyboardActionListener {
@@ -148,12 +151,12 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
         }
 
         for (shiftKey in shiftKeys) {
-            shiftKey.codes[0] = 0
-            shiftKey.label = ""
+            shiftKey.codes.main[0] = 0
+            shiftKey.labels.main = ""
             shiftKey.icon = null
         }
         shiftKeys[0].apply {
-            codes[0] = Keyboard.KEYCODE_SHIFT
+            codes.main[0] = Keyboard.KEYCODE_SHIFT
             icon = ResourcesCompat.getDrawable(
                 resources, R.drawable.ic_keyboard_shift, null
             )?.also {
@@ -162,11 +165,11 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
         }
 
         for (kanaKey in kanaKeys) {
-            kanaKey.codes[0] = KEYCODE_FLICK_JP_TO_KANA
-            kanaKey.label = "\n かな \n"
+            kanaKey.codes.main[0] = KEYCODE_FLICK_JP_TO_KANA
+            kanaKey.labels.main = "\n かな \n"
             kanaKey.icon = null
         }
-        kanaKeys[0].codes[0] = KEYCODE_FLICK_JP_MOJI
+        kanaKeys[0].codes.main[0] = KEYCODE_FLICK_JP_MOJI
 
         for (keyboard in arrayOf(mJPKeyboard, mNumKeyboard, mVoiceKeyboard)) {
             keyboard.reloadShiftKeys()
@@ -188,26 +191,27 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
             KEYCODE_FLICK_JP_CHAR_RA to "ら", KEYCODE_FLICK_JP_CHAR_WA to "ん\nをわー\n〜"
         )
         for (key in keyboard.keys) {
-            val label = labels[key.codes[0]] ?: continue
-            key.label = if (state !== SKKHiraganaState) hiragana2katakana(label) ?: label else label
+            val label = labels[key.codes.main[0]] ?: continue
+            key.labels.main = if (state is SKKHiraganaState) label else
+                hiragana2katakana(label) ?: label
         }
         invalidateAllKeys()
         return this
     }
 
     private fun findKeyByCode(keyboard: Keyboard, code: Int) =
-        keyboard.keys.find { it.codes[0] == code }
+        keyboard.keys.find { it.codes.main[0] == code }
 
     private fun onSetShifted() {
         val shifted = isShifted
-        mKutoutenKey.codes[0] =
+        mKutoutenKey.codes.main[0] =
             if (shifted) KEYCODE_FLICK_JP_CHAR_TEN_SHIFTED else KEYCODE_FLICK_JP_CHAR_TEN
-        mKutoutenKey.label = if (shifted) "「\n（□）\n」" else mKutoutenLabel
-        mSpaceKey.label = if (shifted) "設定" else ""
-        mQwertyKey.label = if (shifted) "全角ａ\n☻略記\nqwerty" else "全角ａ\n☻abc記\nqwerty"
+        mKutoutenKey.labels.main = if (shifted) "「\n（□）\n」" else mKutoutenLabel
+        mSpaceKey.labels.main = if (shifted) "設定" else ""
+        mQwertyKey.labels.main = if (shifted) "全角ａ\n☻略記\nqwerty" else "全角ａ\n☻abc記\nqwerty"
 
         findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_MOJI)?.let { key ->
-            key.label = when {
+            key.labels.main = when {
                 shifted -> if (mService.kanaState is SKKHanKanaState) "10\n：カナ>\n声" else "10\n：ｶﾅ>\n声"
                 else -> if (mService.kanaState is SKKHiraganaState) "10\n：カナ>\n声" else "10\n：かな>\n声"
             }
@@ -219,8 +223,8 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
         )
         lr.forEach { (normalCode, shiftedCode) ->
             findKeyByCode(mJPKeyboard, if (shifted) normalCode else shiftedCode)?.let { key ->
-                key.codes[0] = if (shifted) shiftedCode else normalCode
-                key.label = if (shifted)
+                key.codes.main[0] = if (shifted) shiftedCode else normalCode
+                key.labels.main = if (shifted)
                     (if (shiftedCode == KEYCODE_FLICK_JP_PASTE) "貼付" else "Google")
                 else ""
             }
@@ -239,6 +243,30 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
         invalidateAllKeys()
 
         readPrefs(context)
+    }
+
+    override fun drawCenterLabel(
+        lines: List<String>, lineIndex: Int,
+        canvas: Canvas, x: Float, y: Float, paint: Paint
+    ): Boolean {
+        if (lineIndex == 1 && lines.size == 3 && lines[1].length > 2) {
+            val currentTypeface = paint.typeface
+            paint.typeface = mBoldTypeface
+
+            val line = lines[lineIndex]
+            val centerText = line.substring(1, line.length - 1)
+            val ascii = centerText.count { it.code < 0x7F }
+            val spaces = "　".repeat(1 + ceil((centerText.length - ascii * 0.5)).toInt())
+            val sideText = "${line.first()}$spaces${line.last()}"
+
+            canvas.drawText(centerText, x, y, paint)
+
+            paint.typeface = currentTypeface
+            paint.textSize *= 0.67f
+            canvas.drawText(sideText, x, y, paint)
+            return true
+        }
+        return false
     }
 
     private fun readPrefs(context: Context) {
@@ -268,24 +296,27 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
                 )
             }
         }
-        mKutoutenKey.label = mKutoutenLabel
+        mKutoutenKey.labels.main = mKutoutenLabel
         when {
             skkPrefs.useSoftCancelKey -> {
-                findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_KOMOJI)?.label = "小\n ◻゙CXL◻゚ \n▽"
+                findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_KOMOJI)
+                    ?.labels?.main = "小\n ◻゙CXL◻゚ \n▽"
                 mFlickGuideLabelList.put(
                     KEYCODE_FLICK_JP_KOMOJI, arrayOf("CXL", "◻゙", "小", "◻゚", "▽", "", "")
                 )
             }
 
             skkPrefs.useSoftTransKey -> {
-                findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_KOMOJI)?.label = "CXL\n ◻゙□゚ \n▽"
+                findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_KOMOJI)
+                    ?.labels?.main = "CXL\n ◻゙□゚ \n▽"
                 mFlickGuideLabelList.put(
                     KEYCODE_FLICK_JP_KOMOJI, arrayOf("◻゙□゚", "◻゙", "CXL", "◻゚", "▽", "", "")
                 )
             }
 
             else -> {
-                findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_KOMOJI)?.label = "CXL\n ◻゙小◻゚ \n▽"
+                findKeyByCode(mJPKeyboard, KEYCODE_FLICK_JP_KOMOJI)
+                    ?.labels?.main = "CXL\n ◻゙小◻゚ \n▽"
                 mFlickGuideLabelList.put(
                     KEYCODE_FLICK_JP_KOMOJI, arrayOf("小", "◻゙", "CXL", "◻゚", "▽", "", "")
                 )
@@ -720,7 +751,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
     }
 
     override fun onLongPress(key: Keyboard.Key): Boolean {
-        val code = key.codes[0]
+        val code = key.codes.main[0]
         if (code == KEYCODE_FLICK_JP_ENTER) {
             mService.pressSearch()
             return true

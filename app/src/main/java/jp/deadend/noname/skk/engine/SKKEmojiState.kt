@@ -1,6 +1,7 @@
 package jp.deadend.noname.skk.engine
 
-import jp.deadend.noname.skk.decodeKey
+import jp.deadend.noname.skk.isShifted
+import jp.deadend.noname.skk.lowerCode
 
 object SKKEmojiState : SKKConfirmingState {
     override val isTransient = true
@@ -20,8 +21,8 @@ object SKKEmojiState : SKKConfirmingState {
 
     override fun processKey(context: SKKEngine, keyCode: Int) {
         if (super.beforeProcessKey(context, keyCode)) return
-        val (lower, shifted) = decodeKey(keyCode)
-        val charCode = if (shifted) Character.toUpperCase(lower) else lower
+        val lower = keyCode.lowerCode
+        val charCode = if (keyCode.isShifted) Character.toUpperCase(lower) else lower
         when (charCode) {
             ' '.code -> context.moveCandidateCursor(true)
             'x'.code -> context.moveCandidateCursor(false)

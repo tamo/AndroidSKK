@@ -36,8 +36,6 @@ open class Keyboard {
     private var bottom = 0
 
     val keys: MutableList<Key> = mutableListOf()
-    val shiftedCodes = mutableMapOf<Int, Int>() // code から shiftedCode への逆引き
-    val downCodes = mutableMapOf<Int, Int>() // code から downCode への逆引き
     private val rows: MutableList<Row> = mutableListOf()
     private val modifierKeys: MutableList<Key> = mutableListOf()
 
@@ -87,12 +85,26 @@ open class Keyboard {
     }
 
     class Key(parent: Row) {
-        var codes: IntArray = intArrayOf()
-        var label = ""
-        private var shiftedCode = 0
-        var shiftedLabel = ""
-        private var downCode = 0
-        var downLabel = ""
+        class Labels(var main: String = "", var shifted: String = "", var down: String = "") {
+            fun split(): List<String> = if (main.isEmpty()) emptyList() else
+                main.split('\n')
+
+            fun splitShifted(): List<String> = if (shifted.isEmpty()) emptyList() else
+                shifted.split('\n')
+
+            fun splitDown(): List<String> = if (down.isEmpty()) emptyList() else
+                down.split('\n')
+        }
+
+        class Codes {
+            var main: IntArray = intArrayOf()
+            var shifted = 0
+            var down = 0
+        }
+
+        val labels = Labels()
+        val codes = Codes()
+
         var icon: Drawable? = null
         private var iconPreview: Drawable? = null
         var width: Int
@@ -152,13 +164,13 @@ open class Keyboard {
             val codesValue = TypedValue()
             a.getValue(R.styleable.Keyboard_Key_codes, codesValue)
             if (codesValue.type == TypedValue.TYPE_INT_DEC || codesValue.type == TypedValue.TYPE_INT_HEX) {
-                codes = intArrayOf(codesValue.data)
+                codes.main = intArrayOf(codesValue.data)
             } else if (codesValue.type == TypedValue.TYPE_STRING) {
-                codes = codesValue.string.toString()
+                codes.main = codesValue.string.toString()
                     .split(",").map { it.trim().toInt() }.toIntArray()
             }
-            shiftedCode = a.getInt(R.styleable.Keyboard_Key_shiftedCode, 0)
-            downCode = a.getInt(R.styleable.Keyboard_Key_downCode, 0)
+            codes.shifted = a.getInt(R.styleable.Keyboard_Key_shiftedCode, 0)
+            codes.down = a.getInt(R.styleable.Keyboard_Key_downCode, 0)
             iconPreview = a.getDrawable(R.styleable.Keyboard_Key_iconPreview)
             iconPreview?.let {
                 iconPreview?.setBounds(0, 0, it.intrinsicWidth, it.intrinsicHeight)
@@ -174,21 +186,19 @@ open class Keyboard {
             icon?.let {
                 it.setBounds(0, 0, it.intrinsicWidth, it.intrinsicHeight)
             }
-            label = a.getText(R.styleable.Keyboard_Key_keyLabel)?.toString().orEmpty()
-            shiftedLabel = a.getText(R.styleable.Keyboard_Key_shiftedLabel)?.toString().orEmpty()
-            downLabel = a.getText(R.styleable.Keyboard_Key_downLabel)?.toString().orEmpty()
+            labels.main = a.getText(R.styleable.Keyboard_Key_keyLabel)?.toString().orEmpty()
+            labels.shifted = a.getText(R.styleable.Keyboard_Key_shiftedLabel)?.toString().orEmpty()
+            labels.down = a.getText(R.styleable.Keyboard_Key_downLabel)?.toString().orEmpty()
             text = a.getText(R.styleable.Keyboard_Key_keyOutputText)?.toString()
-            if (codes.isEmpty() && label.isNotEmpty()) {
-                codes = intArrayOf(label[0].code)
+            if (codes.main.isEmpty() && labels.main.isNotEmpty()) {
+                codes.main = intArrayOf(labels.main[0].code)
             }
-            if (shiftedCode == 0 && shiftedLabel.isNotEmpty()) {
-                shiftedCode = shiftedLabel[0].code
+            if (codes.shifted == 0 && labels.shifted.isNotEmpty()) {
+                codes.shifted = labels.shifted[0].code
             }
-            if (downCode == 0 && downLabel.isNotEmpty()) {
-                downCode = downLabel[0].code
+            if (codes.down == 0 && labels.down.isNotEmpty()) {
+                codes.down = labels.down[0].code
             }
-            keyboard.shiftedCodes[codes[0]] = shiftedCode
-            keyboard.downCodes[codes[0]] = downCode
             a.recycle()
         }
 
@@ -296,8 +306,8 @@ open class Keyboard {
             val key = Key(row)
             key.x = x
             key.y = y
-            key.label = c.toString()
-            key.codes = intArrayOf(c.code)
+            key.labels.main = c.toString()
+            key.codes.main = intArrayOf(c.code)
             column++
             x += key.width + key.horizontalGap
             keys.add(key)
@@ -448,7 +458,7 @@ open class Keyboard {
                                     key = createKeyFromXml(res, crow, x, y, parser)
                                     key.let {
                                         keys.add(it)
-                                        when (it.codes[0]) {
+                                        when (it.codes.main[0]) {
                                             KEYCODE_SHIFT -> {
                                                 // Find available shift key slot and put this shift key in it
                                                 for (i in mShiftKeys.indices) {
@@ -528,7 +538,7 @@ open class Keyboard {
             modifierKeys.remove(key)
             mShiftKeys[index] = null
         }
-        keys.filter { it.codes[0] == KEYCODE_SHIFT }
+        keys.filter { it.codes.main[0] == KEYCODE_SHIFT }
             .forEach {
                 for (i in mShiftKeys.indices) {
                     if (mShiftKeys[i] == null) {

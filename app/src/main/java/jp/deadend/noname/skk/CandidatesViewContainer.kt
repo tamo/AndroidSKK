@@ -165,6 +165,7 @@ class CandidatesViewContainer(screen: Context, attrs: AttributeSet) : LinearLayo
         val centerRate =
             if (mService.mRootWidth <= currentWidth) 0.5f
             else (leftOffset - mService.mInsets.left + currentWidth / 2.0f) / mService.mRootWidth
+        SKKLog.d("saveLeft($leftOffset): centerRate=$centerRate")
         when (resources.configuration.orientation) {
             Configuration.ORIENTATION_LANDSCAPE -> skkPrefs.keyCenterLand = centerRate
             else -> skkPrefs.keyCenterPort = centerRate
@@ -174,8 +175,9 @@ class CandidatesViewContainer(screen: Context, attrs: AttributeSet) : LinearLayo
 
     private fun saveWidth() {
         setSize(-1)
-        val widthToSave = width * 100 /
+        val widthToSave = mService.inputViewWidth * 100 /
                 if (mService.isFlickWidth()) 100 else skkPrefs.keyWidthQwertyZoom
+        SKKLog.d("saveWidth: widthToSave=$widthToSave")
         val minWidth = resources.getDimensionPixelSize(R.dimen.keyboard_minimum_width)
         when (resources.configuration.orientation) {
             Configuration.ORIENTATION_LANDSCAPE ->

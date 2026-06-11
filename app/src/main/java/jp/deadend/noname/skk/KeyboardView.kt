@@ -26,7 +26,6 @@ import androidx.core.graphics.createBitmap
 import androidx.core.graphics.withSave
 import jp.deadend.noname.skk.engine.SKKState
 import kotlin.math.abs
-import kotlin.math.ceil
 
 open class KeyboardView @JvmOverloads constructor(
     context: Context,
@@ -312,6 +311,7 @@ open class KeyboardView @JvmOverloads constructor(
                 }
                 field = value
                 showKeyInPreview(mCurrentPreviewKeyIndex)
+                invalidateAllKeys()
             }
         }
     var flickStartX = -1f
@@ -331,28 +331,20 @@ open class KeyboardView @JvmOverloads constructor(
 
     fun setKeyBackground(d: Drawable) {
         mKeyBackground = d
+        invalidateAllKeys()
     }
 
+    internal var mBoldTypeface: Typeface = Typeface.DEFAULT_BOLD
     fun setTypeface(typeface: Typeface?) {
         mPaint.typeface = typeface
+        mBoldTypeface =
+            if (typeface == null) Typeface.DEFAULT_BOLD
+            else Typeface.create(typeface, Typeface.BOLD)
         invalidateAllKeys()
     }
 
     override fun onClick(v: View) {
         dismissPopupKeyboard()
-    }
-
-    private fun adjustCase(
-        label: String,
-        shiftedLabel: String,
-        downLabel: String,
-        flicked: Int
-    ): String {
-        return if (flicked == -1 && downLabel.isNotEmpty()) {
-            downLabel
-        } else if (isShifted xor (flicked == 1) && shiftedLabel.isNotEmpty()) {
-            shiftedLabel
-        } else label
     }
 
     public override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -419,12 +411,14 @@ open class KeyboardView @JvmOverloads constructor(
                     keyBackground?.state = key.currentDrawableState
 
                     // Switch the character to uppercase if shift is pressed
-                    val label = if (key.label.isEmpty()) null else {
-                        adjustCase(key.label, key.shiftedLabel, "", 0)
+                    val useDown = isFlicked == -1 && key.labels.down.isNotEmpty()
+                    val useShift = isShifted xor (isFlicked == 1) && key.labels.shifted.isNotEmpty()
+                    val lines = when {
+                        useDown -> key.labels.splitDown()
+                        useShift -> key.labels.splitShifted()
+                        else -> key.labels.split()
                     }
-                    val shiftedLabel = if (key.shiftedLabel.isEmpty()) null else {
-                        adjustCase(key.shiftedLabel, key.label, "", 0)
-                    }
+
                     val icon = key.icon
                     keyBackground?.bounds?.let {
                         if (key.width != it.right || key.height != it.bottom) {
@@ -436,11 +430,11 @@ open class KeyboardView @JvmOverloads constructor(
                         (key.y + kbdPaddingTop).toFloat()
                     )
                     keyBackground?.draw(canvas)
-                    if (label != null) {
-                        val lines = label.split("\n")
+
+                    if (lines.isNotEmpty()) {
                         val numLines = lines.size
                         // For characters, use large font. For labels like "Done", use small font.
-                        if (label.length > 1 && numLines == 1 && key.codes.size < 2) {
+                        if (numLines == 1 && lines[0].length > 1 && key.codes.main.size < 2) {
                             mPaint.textSize = mLabelTextSize.toFloat()
                             mPaint.textScaleX = 1.0f
                         } else {
@@ -451,77 +445,97 @@ open class KeyboardView @JvmOverloads constructor(
                                 else -> 1.0f
                             }
                         }
-                        val isGodanKey = numLines == 3 &&
-                                lines[1].length > 2
-                        val sizeFactors = when (numLines) {
-                            3 -> listOf(.27f, .7f, .27f) // Godan以外でも中央の行を大きくする (「わ」「abc」等)
-                            1 -> listOf(1f)
-                            else -> throw IndexOutOfBoundsException("key label has $numLines lines")
-                        }.map { it * labelZoom }
+
                         val sizeDefault = mPaint.textSize
                         val lineScale = 1.05f // 行間
-                        val lineHeights = sizeFactors.map { it * sizeDefault }
-                        val totalHeight = lineHeights.sum()
                         val centerX = (key.width + mPadding.left - mPadding.right) / 2f
                         val centerY = (key.height + mPadding.top - mPadding.bottom) / 2f
                         val currentTypeface = mPaint.typeface
 
-                        lines.forEachIndexed { i, line ->
-                            val offsetSum = lineHeights.take(numLines - 1 - i).sum()
-                            val yOffset =
-                                lineScale * ((totalHeight - mPaint.descent()) / 2f - offsetSum)
-                            val drawY = centerY + yOffset
+                        when (numLines) {
+                            3 -> {
+                                val h0 = 0.4f * labelZoom * sizeDefault
+                                val h1 = 0.6f * labelZoom * sizeDefault
+                                val h2 = 0.4f * labelZoom * sizeDefault
+                                val totalHeight = h0 + h1 + h2
 
-                            mPaint.textSize = sizeDefault * sizeFactors[i]
-                            mPaint.typeface = if (i.toFloat() == (numLines - 1) / 2f) {
-                                Typeface.create(currentTypeface, Typeface.BOLD) // 中央の行 (1行だけならその行)
-                            } else {
-                                currentTypeface
+                                mPaint.textSize = h0
+                                mPaint.typeface = currentTypeface
+                                canvas.drawText(
+                                    lines[0],
+                                    centerX,
+                                    centerY + lineScale * ((totalHeight - mPaint.descent()) / 2f - (h1 + h2)),
+                                    mPaint
+                                )
+
+                                mPaint.textSize = h1
+                                mPaint.typeface = currentTypeface
+                                val drawY1 =
+                                    centerY + lineScale * ((totalHeight - mPaint.descent()) / 2f - h2)
+                                if (!drawCenterLabel(lines, 1, canvas, centerX, drawY1, mPaint)) {
+                                    mPaint.typeface = mBoldTypeface
+                                    canvas.drawText(lines[1], centerX, drawY1, mPaint)
+                                }
+
+                                mPaint.textSize = h2
+                                mPaint.typeface = currentTypeface
+                                canvas.drawText(
+                                    lines[2],
+                                    centerX,
+                                    centerY + lineScale * ((totalHeight - mPaint.descent()) / 2f),
+                                    mPaint
+                                )
                             }
 
-                            if (isGodanKey && i == 1) {
-                                val centerText = line.drop(1).dropLast(1)
-                                canvas.drawText(centerText, centerX, drawY, mPaint)
-
-                                // 左右フリックのキー
-                                mPaint.typeface = currentTypeface
-                                mPaint.textSize *= .6f
+                            1 -> {
+                                val h0 = labelZoom * sizeDefault
+                                mPaint.textSize = h0
+                                mPaint.typeface = mBoldTypeface
                                 canvas.drawText(
-                                    "${line.first()}${
-                                        centerText.filter { it.code < 0x7F }.length.let { ascii ->
-                                            "　".repeat(1 + ceil(centerText.length - ascii * 0.5).toInt())
-                                        }
-                                    }${line.last()}", centerX, drawY, mPaint
+                                    lines[0],
+                                    centerX,
+                                    centerY + lineScale * ((h0 - mPaint.descent()) / 2f),
+                                    mPaint
                                 )
-                            } else {
-                                canvas.drawText(line, centerX, drawY, mPaint)
+                            }
+
+                            else -> {
+                                // ここには到達しないはず
+                                mPaint.typeface = mBoldTypeface
+                                lines.forEach { line ->
+                                    canvas.drawText(line, centerX, centerY, mPaint)
+                                }
                             }
                         }
 
                         // 英数キーボードの上下フリックやシフトを上下に小さく表示
                         val savedAlign = mPaint.textAlign
-                        if (!shiftedLabel.isNullOrEmpty()
-                            && shiftedLabel != label.uppercase()
-                            && shiftedLabel != label.lowercase()
+                        val altLines =
+                            if (useShift) key.labels.split() else key.labels.splitShifted()
+                        val hasAlt =
+                            if (useShift) key.labels.main.isNotEmpty() else key.labels.shifted.isNotEmpty()
+                        if (hasAlt
+                            && altLines.getOrNull(0) != lines[0].uppercase()
+                            && altLines.getOrNull(0) != lines[0].lowercase()
                         ) {
                             mPaint.textAlign = Align.LEFT
-                            mPaint.textSize = mLabelTextSize * .5f * labelZoom
+                            mPaint.textSize = mLabelTextSize * .7f * labelZoom
                             mPaint.typeface = currentTypeface
                             canvas.drawText(
-                                shiftedLabel,
-                                mPadding.left + mPaint.textSize * .4f,
+                                altLines[0],
+                                mPadding.left + mPaint.textSize * .5f,
                                 mPadding.top + mPaint.textSize * 1.5f,
                                 mPaint
                             )
                         }
-                        if (key.downLabel.isNotEmpty()) {
+                        if (key.labels.down.isNotEmpty()) {
                             mPaint.textAlign = Align.RIGHT
-                            mPaint.textSize = mLabelTextSize * .5f * labelZoom
-                            mPaint.typeface = currentTypeface
+                            mPaint.textSize = mLabelTextSize * .7f * labelZoom
+                            mPaint.typeface = mBoldTypeface
                             canvas.drawText(
-                                key.downLabel,
-                                key.width - mPadding.right - mPaint.textSize * .4f,
-                                key.height - mPadding.bottom - mPaint.textSize * .5f,
+                                key.labels.splitDown()[0],
+                                key.width - mPadding.right - mPaint.textSize * .5f,
+                                key.height - mPadding.bottom - mPaint.textSize * .6f,
                                 mPaint
                             )
                         }
@@ -556,6 +570,11 @@ open class KeyboardView @JvmOverloads constructor(
         }
     }
 
+    protected open fun drawCenterLabel(
+        lines: List<String>, @Suppress("SameParameterValue") lineIndex: Int,
+        canvas: Canvas, x: Float, y: Float, paint: Paint
+    ): Boolean = false
+
     private fun getKeyIndex(x: Int, y: Int): Int {
         return mKeyboard.getNearestKeys(x, y).findLast {
             mKeyboard.keys[it].isInside(x, y)
@@ -570,20 +589,20 @@ open class KeyboardView @JvmOverloads constructor(
                 onKeyboardActionListener?.onText(text)
                 onKeyboardActionListener?.onRelease(NOT_A_KEY)
             } else {
-                var code = key.codes[0]
+                var code = key.codes.main[0]
                 // Multi-tap
                 if (mInMultiTap) {
                     if (mTapCount != -1) { // 前回の入力を取り消す
-                        val codesLength = key.codes.size
+                        val codesLength = key.codes.main.size
                         val prevCount = (mTapCount + codesLength - 1) % codesLength
-                        val prevCode = mKeyboard.keys[mLastSentIndex].codes[prevCount]
+                        val prevCode = mKeyboard.keys[mLastSentIndex].codes.main[prevCount]
                         if (prevCode > 0) {
                             onKeyboardActionListener?.onKey(Keyboard.KEYCODE_DELETE)
                         }
                     } else {
                         mTapCount = 0
                     }
-                    code = key.codes[mTapCount]
+                    code = key.codes.main[mTapCount]
                 }
                 onKeyboardActionListener?.onKey(code)
                 onKeyboardActionListener?.onRelease(code)
@@ -594,7 +613,7 @@ open class KeyboardView @JvmOverloads constructor(
     }
 
     private fun getPreviewText(key: Keyboard.Key): String = when {
-        key.codes[0] == Keyboard.KEYCODE_SHIFT -> when (isFlicked) {
+        key.codes.main[0] == Keyboard.KEYCODE_SHIFT -> when (isFlicked) {
             0 -> "SHIFT"
             else -> "CAPSLOCK"
         }
@@ -602,9 +621,11 @@ open class KeyboardView @JvmOverloads constructor(
 //            Char(key.codes[mTapCount.coerceAtLeast(0)]).toString()
 //            // シフト時の toUpper とか必要ならするけど今はアルファベットの multiTap がない
 //        }
-        else -> {
-            adjustCase(key.label, key.shiftedLabel, key.downLabel, isFlicked)
-        }
+        else -> when {
+            isFlicked == -1 && key.labels.down.isNotEmpty() -> key.labels.splitDown()
+            isShifted xor (isFlicked == 1) && key.labels.shifted.isNotEmpty() -> key.labels.splitShifted()
+            else -> key.labels.split()
+        }[0]
     }
 
     private fun pressKey(keyIndex: Int) {
@@ -658,7 +679,7 @@ open class KeyboardView @JvmOverloads constructor(
         mPreviewText?.let { previewText ->
             if (keyIndex < 0 || keyIndex >= mKeyboard.keys.size) return
             val key = mKeyboard.keys[keyIndex]
-            if (key.icon != null && key.codes[0] != Keyboard.KEYCODE_SHIFT) return
+            if (key.icon != null && key.codes.main[0] != Keyboard.KEYCODE_SHIFT) return
             previewText.apply {
                 text = getPreviewText(key)
                 typeface = mPaint.typeface
@@ -971,10 +992,10 @@ open class KeyboardView @JvmOverloads constructor(
                 mDownKey = mCurrentKey
                 checkMultiTap(eventTime, mCurrentKey)
 
-                val key = mKeyboard.keys.getOrNull(mCurrentKey)
-                onKeyboardActionListener?.onPress(key?.codes?.getOrNull(0) ?: 0)
+                val key = mKeyboard.keys[mCurrentKey]
+                onKeyboardActionListener?.onPress(key.codes.main.getOrNull(0) ?: 0)
 
-                if (key?.repeatable == true) {
+                if (key.repeatable) {
                     mRepeatKeyIndex = mCurrentKey
                     mHandler.sendMessageDelayed(
                         mHandler.obtainMessage(MSG_REPEAT), REPEAT_START_DELAY.toLong()
@@ -1105,11 +1126,11 @@ open class KeyboardView @JvmOverloads constructor(
         if (keyIndex == NOT_A_KEY) return
 
         val key = mKeyboard.keys[keyIndex]
-        if (key.codes.size > 1) {
+        if (key.codes.main.size > 1) {
             mInMultiTap = true
             mTapCount =
                 if (eventTime < mLastTapTime + MULTI_TAP_INTERVAL && keyIndex == mLastSentIndex) {
-                    (mTapCount + 1) % key.codes.size
+                    (mTapCount + 1) % key.codes.main.size
                 } else {
                     -1
                 }

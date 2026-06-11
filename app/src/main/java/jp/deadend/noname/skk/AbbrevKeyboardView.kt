@@ -123,14 +123,14 @@ class AbbrevKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
             }
 
             else -> {
-                val shiftedCode = keyboard.shiftedCodes[primaryCode] ?: 0
-                val downCode = keyboard.downCodes[primaryCode] ?: 0
+                val key = keyboard.keys.find { it.codes.main[0] == primaryCode }
                 val code = when {
+                    key == null -> primaryCode
                     isFlicked == FLICK_DOWN ->
-                        if (downCode > 0) downCode else primaryCode
+                        if (key.codes.down > 0) key.codes.down else primaryCode
 
                     isShifted xor (isFlicked == FLICK_UP) ->
-                        if (shiftedCode > 0) shiftedCode else primaryCode
+                        if (key.codes.shifted > 0) key.codes.shifted else primaryCode
 
                     else -> primaryCode
                 }
@@ -143,9 +143,10 @@ class AbbrevKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
     }
 
     override fun setKeyState(state: SKKState): AbbrevKeyboardView {
-        val kanaKey = keyboard.keys.find { it.codes[0] == KEYCODE_ABBREV_TO_JP }
-        kanaKey?.label = if (skkPrefs.preferFlick) "確定" else "かな"
-        kanaKey?.downLabel = if (skkPrefs.preferFlick) "かな" else "確定"
+        keyboard.keys.find { it.codes.main[0] == KEYCODE_ABBREV_TO_JP }?.labels.let {
+            it?.main = if (skkPrefs.preferFlick) "確定" else "かな"
+            it?.down = if (skkPrefs.preferFlick) "かな" else "確定"
+        }
 
         invalidateAllKeys()
         return this

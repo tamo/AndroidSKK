@@ -1,8 +1,9 @@
 package jp.deadend.noname.skk.engine
 
 import jp.deadend.noname.skk.R
-import jp.deadend.noname.skk.decodeKey
 import jp.deadend.noname.skk.hankaku2zenkaku
+import jp.deadend.noname.skk.isShifted
+import jp.deadend.noname.skk.lowerCode
 import jp.deadend.noname.skk.skkPrefs
 
 // 日本語辞書で英数を変換するための Preedit (▽モード)
@@ -18,8 +19,8 @@ object SKKAbbrevState : SKKState {
     }
 
     override fun processKey(context: SKKEngine, keyCode: Int) {
-        val (lower, shifted) = decodeKey(keyCode)
-        val charCode = if (shifted) Character.toUpperCase(lower) else lower
+        val lower = keyCode.lowerCode
+        val charCode = if (keyCode.isShifted) Character.toUpperCase(lower) else lower
         context.apply {
             when (keyCode) {
                 skkPrefs.hankakuKanaKey -> {

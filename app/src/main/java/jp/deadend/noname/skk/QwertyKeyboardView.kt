@@ -45,7 +45,7 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
     }
 
     override fun onLongPress(key: Keyboard.Key): Boolean {
-        if (key.codes[0] == KEYCODE_QWERTY_ENTER) {
+        if (key.codes.main[0] == KEYCODE_QWERTY_ENTER) {
             mService.pressSearch()
             return true
         }
@@ -207,14 +207,14 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                     return
                 }
 
-                val shiftedCode = keyboard.shiftedCodes[primaryCode] ?: 0
-                val downCode = keyboard.downCodes[primaryCode] ?: 0
-                val code = when (isFlicked) {
-                    FLICK_DOWN ->
-                        if (downCode > 0) downCode else primaryCode
+                val primaryKey = findKeyByCode(primaryCode)
+                val code = when {
+                    primaryKey == null -> primaryCode
+                    isFlicked == FLICK_DOWN ->
+                        if (primaryKey.codes.down > 0) primaryKey.codes.down else primaryCode
 
-                    flickUp ->
-                        if (shiftedCode > 0) shiftedCode else primaryCode
+                    isFlicked == flickUp ->
+                        if (primaryKey.codes.shifted > 0) primaryKey.codes.shifted else primaryCode
 
                     else -> primaryCode
                 }
@@ -230,16 +230,17 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
     }
 
     private fun findKeyByCode(code: Int) =
-        keyboard.keys.find { it.codes[0] == code }
+        keyboard.keys.find { it.codes.main[0] == code }
 
     override fun setKeyState(state: SKKState): QwertyKeyboardView {
-        val kanaKey = findKeyByCode(KEYCODE_QWERTY_TO_JP)
-        val kanaLabel = if (state.isTransient) "確定" else "かな"
-        val flickLabel = if (skkPrefs.preferGodan) "Godan" else "Flick"
-        kanaKey?.label = if (skkPrefs.preferFlick) flickLabel else kanaLabel
-        kanaKey?.downLabel = if (skkPrefs.preferFlick) kanaLabel else flickLabel
-        kanaKey?.on = state is SKKHiraganaState // Kanji とか Choose とかで消えるのがイヤなら以下にする
-        // kanaKey?.on = (state.isJapanese && mService.isHiragana)
+        findKeyByCode(KEYCODE_QWERTY_TO_JP)?.let { kanaKey ->
+            val kanaLabel = if (state.isTransient) "確定" else "かな"
+            val flickLabel = if (skkPrefs.preferGodan) "Godan" else "Flick"
+            kanaKey.labels.main = if (skkPrefs.preferFlick) flickLabel else kanaLabel
+            kanaKey.labels.down = if (skkPrefs.preferFlick) kanaLabel else flickLabel
+            kanaKey.on = state is SKKHiraganaState // Kanji とか Choose とかで消えるのがイヤなら以下にする
+            // kanaKey.on = (state.isJapanese && mService.isHiragana)
+        }
 
         val qKey = findKeyByCode('q'.code)
         qKey?.on = (state.isJapanese && !mService.isHiragana)

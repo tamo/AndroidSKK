@@ -1,8 +1,9 @@
 package jp.deadend.noname.skk.engine
 
 import jp.deadend.noname.skk.SKKLog
-import jp.deadend.noname.skk.decodeKey
 import jp.deadend.noname.skk.engine.SKKEngine.Companion.ASCII_WORD_MAX_LENGTH
+import jp.deadend.noname.skk.isShifted
+import jp.deadend.noname.skk.lowerCode
 
 object SKKASCIIState : SKKConfirmingState {
     override val isTransient = false
@@ -20,8 +21,8 @@ object SKKASCIIState : SKKConfirmingState {
 
     override fun processKey(context: SKKEngine, keyCode: Int) {
         if (beforeProcessKey(context, keyCode)) return
-        val (lower, shifted) = decodeKey(keyCode)
-        val c = if (shifted) Character.toUpperCase(lower) else lower
+        val lower = keyCode.lowerCode
+        val c = if (keyCode.isShifted) Character.toUpperCase(lower) else lower
         context.commitTextSKK(Char(c).toString())
         context.completeASCII()
     }

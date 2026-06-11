@@ -1,9 +1,10 @@
 package jp.deadend.noname.skk.engine
 
 import jp.deadend.noname.skk.R
-import jp.deadend.noname.skk.decodeKey
 import jp.deadend.noname.skk.encodeKey
 import jp.deadend.noname.skk.isAlphabet
+import jp.deadend.noname.skk.isShifted
+import jp.deadend.noname.skk.lowerCode
 import jp.deadend.noname.skk.skkPrefs
 
 object SKKHiraganaState : SKKState {
@@ -19,8 +20,8 @@ object SKKHiraganaState : SKKState {
         keyCode: Int, commitAlphabet: Boolean = true, commitFunc:
             (SKKEngine, String) -> Unit
     ) {
-        val (lower, shifted) = decodeKey(keyCode)
-        val charCode = if (shifted) Character.toUpperCase(lower) else lower
+        val lower = keyCode.lowerCode
+        val charCode = if (keyCode.isShifted) Character.toUpperCase(lower) else lower
         val converted = RomajiConverter.convert(Character.toString(charCode))
         val isShift = converted.startsWith("<shift>")
         // シフトキーの状態をチェック
