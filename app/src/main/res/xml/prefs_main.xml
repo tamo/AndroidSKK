@@ -98,12 +98,12 @@
             app:defaultValue="false"
             app:icon="@android:drawable/ic_lock_lock"
             app:key="@string/pref_log_privacy"
-            app:summary="オンにすると変換内容など個人情報を含むクラッシュログを残します"
+            app:summary="オンにすると変換内容など個人情報を含むログを残します"
             app:title="詳細なデバッグ情報の記録" />
         <androidx.preference.Preference
             app:icon="@android:drawable/ic_dialog_alert"
             app:key="@string/pref_log_viewer"
-            app:summary="最新のクラッシュ記録があれば表示され，再度タップでコピーできます"
+            app:summary="最新のクラッシュ記録や現在の詳細デバッグ情報があれば表示され，再度タップでコピーできます"
             app:title="ここをタップ" />
     </androidx.preference.PreferenceCategory>
 </androidx.preference.PreferenceScreen>

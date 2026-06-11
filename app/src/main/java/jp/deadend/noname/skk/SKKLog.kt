@@ -37,7 +37,7 @@ object SKKLog {
         val stackTrace = throwable.stackTrace
         val caller = stackTrace.find {
             val name = it.className
-            name != SKKLog::class.java.name && !name.startsWith("${SKKLog::class.java.name}\$")
+            !name.startsWith(SKKLog.javaClass.name)
         }?.let { "${it.fileName}:${it.lineNumber}: " }.orEmpty()
 
         val isAutoThrowable = (tr == null || tr.javaClass == Throwable::class.java) &&
@@ -86,5 +86,10 @@ object SKKLog {
             pw.println()
             e.printStackTrace(pw)
         }
+    }
+
+    internal fun recentLog() = synchronized(logBuffer) {
+        if (logBuffer.isNotEmpty()) logBuffer.joinToString("\n", "\n-- 現在のログ --\n")
+        else ""
     }
 }

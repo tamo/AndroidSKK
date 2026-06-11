@@ -34,7 +34,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.nio.file.Files
+import kotlinx.coroutines.withContext
 import kotlin.math.max
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -50,20 +50,35 @@ class SKKSettingsActivity : AppCompatActivity(),
 
             findPreference<Preference>(getString(R.string.pref_log_viewer))?.apply {
                 setOnPreferenceClickListener {
-                    val dir = context.getExternalFilesDir(null)
-                        ?: return@setOnPreferenceClickListener false
-                    val latest =
-                        Files.newDirectoryStream(dir.toPath(), "SKK_strace_*").use { stream ->
-                            stream.map { it.toFile() }.maxByOrNull { it.lastModified() }
-                        } ?: return@setOnPreferenceClickListener false
-                    icon = null
-                    isIconSpaceReserved = false
-                    isSingleLineTitle = false
-                    title = latest.readText()
-                    setOnPreferenceClickListener {
-                        val cm = context.getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
-                        cm.setPrimaryClip(ClipData.newPlainText("SKK crash log", title))
-                        true
+                    val loadLogListener = onPreferenceClickListener
+                    val oldIcon = icon
+                    val oldTitle = title
+                    MainScope().launch {
+                        val text = withContext(Dispatchers.IO) {
+                            val dir = context.getExternalFilesDir(null)
+                                ?: return@withContext "ログの場所が開けません"
+                            dir.listFiles { _, name ->
+                                name.startsWith("SKK_strace_")
+                            }?.maxByOrNull { it.lastModified() }?.let { latest ->
+                                runCatching { latest.readText() }.getOrNull()
+                            }.orEmpty() + SKKLog.recentLog()
+                        }
+                        if (text.isEmpty()) return@launch
+
+                        icon = null
+                        isIconSpaceReserved = false
+                        isSingleLineTitle = false
+                        title = text
+                        setOnPreferenceClickListener {
+                            (context.getSystemService(CLIPBOARD_SERVICE) as ClipboardManager)
+                                .setPrimaryClip(ClipData.newPlainText("SKK log", title))
+                            onPreferenceClickListener = loadLogListener
+                            icon = oldIcon
+                            isIconSpaceReserved = true
+                            isSingleLineTitle = true
+                            title = oldTitle
+                            true
+                        }
                     }
                     true
                 }

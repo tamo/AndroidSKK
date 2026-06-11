@@ -349,10 +349,11 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
         ) to viewLines
     }
 
-    internal fun setContents(nullableLayout: CandidateLayout?, index: Int = 0) {
-        SKKLog.d("setContents(index=$index)")
-        val layout = nullableLayout ?: CandidateLayout.EMPTY
-        mLayout = layout
+    internal fun setContents(layout: CandidateLayout?, index: Int = 0) {
+        layout?.candidateList?.let {
+            if (it.isNotEmpty()) SKKLog.d("setContents($it, index=$index)")
+        }
+        mLayout = layout ?: CandidateLayout.EMPTY
 
         scrollTo(0, 0)
         mScrollX = 0
@@ -362,7 +363,9 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
         // Preserve selection if finger is down
         mTouchedIndex = (if (mTouchX != OUT_OF_BOUNDS)
             getSelectedIndex(mTouchX, mTouchY)
-        else -1).also { SKKLog.d("mTouchedIndex: $mTouchedIndex -> $it") }
+        else -1).also {
+            if (it != mTouchedIndex) SKKLog.d("mTouchedIndex: $mTouchedIndex -> $it")
+        }
 
         if (index != 0) setCursor(index) else {
             setScrollButtonsEnabled(scrollX)

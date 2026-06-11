@@ -837,7 +837,7 @@ class SKKEngine(
     }
 
     internal fun changeState(state: SKKState, force: Boolean = false) {
-        SKKLog.d("changeState ${this.state::class.simpleName} -> ${state::class.simpleName} (force=$force)")
+        SKKLog.d("changeState ${this.state.name} -> ${state.name} (force=$force)")
         val willBeTemporaryView = state is SKKAbbrevState || state is SKKZenkakuState
         val wasTemporaryView = mService.isTemporaryView
         val inCompatibleStates = (this.state.isTransient && this.state.canComplete &&

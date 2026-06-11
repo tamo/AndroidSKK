@@ -313,7 +313,6 @@ open class Keyboard {
     fun resize(newWidth: Int, newHeight: Int) {
         if ((newWidth == width) && (newHeight == height)) return
         if (newWidth < 1) return // newHeight はハードキーボード接続時に 0 許容
-        SKKLog.d("Keyboard.resize($newWidth, $newHeight) <- ($width, $height)")
 
         var totalHeight = 0
         var maxWidth = 0

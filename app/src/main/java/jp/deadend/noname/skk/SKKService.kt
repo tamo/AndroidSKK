@@ -468,6 +468,7 @@ class SKKService : InputMethodService() {
         val typeface = getTypeface(skkPrefs.font)
 
         val flickWidth = keyboardWidth(flick)
+        SKKLog.d("prepare flick and godan ($flickWidth, $keyHeight)")
         flick.prepareNewKeyboard(context, flickWidth, keyHeight)
         flick.backgroundAlpha = 255 * alpha / 100
         flick.setTypeface(typeface)
@@ -476,6 +477,7 @@ class SKKService : InputMethodService() {
         godan.setTypeface(typeface)
 
         val qwertyWidth = keyboardWidth(qwerty)
+        SKKLog.d("prepare qwerty and abbrev ($qwertyWidth, $keyHeight)")
         qwerty.keyboard.resize(qwertyWidth, keyHeight)
         qwerty.mSymbolsKeyboard.resize(qwertyWidth, keyHeight)
         qwerty.setTypeface(typeface)
@@ -668,7 +670,7 @@ class SKKService : InputMethodService() {
         val wasFlick = mInputView?.equals(mFlickJPInputView) == true
         createInputView()
 
-        SKKLog.d("onCreateInputView: wasFlick=$wasFlick wasGodan=$wasGodan engineState=$engineState")
+        SKKLog.d("onCreateInputView: wasFlick=$wasFlick wasGodan=$wasGodan engineState=${engineState.name}")
         val keyboardView = (if (
             wasGodan || (skkPrefs.preferFlick && skkPrefs.preferGodan && !skkPrefs.godanQwerty)
         ) mGodanInputView else when (engineState) {
@@ -939,7 +941,7 @@ class SKKService : InputMethodService() {
                 skkPrefs.candidatesMinHeight -> visibleTopInsets + variableHeight
                 else -> visibleTopInsets // 変動する CandidatesView の高さも確保
             }
-            SKKLog.d("outInsets contentTop=$contentTopInsets visibleTop=$visibleTopInsets")
+            //SKKLog.d("outInsets contentTop=$contentTopInsets visibleTop=$visibleTopInsets")
             touchableInsets = Insets.TOUCHABLE_INSETS_REGION
             touchableRegion.set(
                 if (isFloating()) leftOffset else mInsets.left, 0,
@@ -1219,7 +1221,7 @@ class SKKService : InputMethodService() {
     }
 
     fun handleDpad(keyCode: Int): Boolean {
-        SKKLog.d("handleDpad(${KeyEvent.keyCodeToString(keyCode)}) in ${mEngine.state}")
+        SKKLog.d("handleDpad(${KeyEvent.keyCodeToString(keyCode)}) in ${mEngine.state.name}")
         if (mStickyShift) mShiftKey.useState()
         return mEngine.handleDpad(keyCode)
     }
@@ -1446,7 +1448,7 @@ class SKKService : InputMethodService() {
     // engineState とは違うものが指定されることもある
     // (FlickJP から、ひらがなモードのまま Qwerty に変更する場合など)
     fun changeSoftKeyboard(state: SKKState) {
-        SKKLog.d("changeSoftKeyboard($state)")
+        SKKLog.d("changeSoftKeyboard(${state.name})")
         // 長押しリピートの message が残っている可能性があるので止める
         for (kv in listOf(
             mAbbrevKeyboardView,
@@ -1491,7 +1493,7 @@ class SKKService : InputMethodService() {
     override fun setInputView(view: View?) {
         // view が null のときはここをスキップして再描画だけする (ドラッグで位置調整のとき使う)
         (view as? KeyboardView)?.let { inputView ->
-            SKKLog.d("setInputView($view)")
+            SKKLog.d("setInputView(${view.javaClass.simpleName})")
             mInputView = inputView // keyboardWidth と keyboardHeight で参照されるので早く代入
             inputView.keyboard.resize(keyboardWidth(), keyboardHeight())
             mBinding.keyboardContainer.apply {
