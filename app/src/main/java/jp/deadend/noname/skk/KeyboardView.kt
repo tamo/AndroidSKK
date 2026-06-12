@@ -457,6 +457,8 @@ open class KeyboardView @JvmOverloads constructor(
                         val centerX = (key.width + mPadding.left - mPadding.right) / 2f
                         val centerY = (key.height + mPadding.top - mPadding.bottom) / 2f
                         val currentTypeface = mPaint.typeface
+                        fun shrinkFactor(line: String): Float =
+                            if (line.length > 4) 5f / (line.length + 1) else 1.0f
 
                         when (numLines) {
                             3 -> {
@@ -494,11 +496,12 @@ open class KeyboardView @JvmOverloads constructor(
                             }
 
                             1 -> {
-                                val h0 = labelZoom * sizeDefault
+                                val line = lines[0]
+                                val h0 = labelZoom * sizeDefault * shrinkFactor(line)
                                 mPaint.textSize = h0
                                 mPaint.typeface = mBoldTypeface
                                 canvas.drawText(
-                                    lines[0],
+                                    line,
                                     centerX,
                                     centerY + lineScale * ((h0 - mPaint.descent()) / 2f),
                                     mPaint
@@ -516,30 +519,32 @@ open class KeyboardView @JvmOverloads constructor(
 
                         // 英数キーボードの上下フリックやシフトを上下に小さく表示
                         val savedAlign = mPaint.textAlign
-                        val altLines =
+                        val upLines =
                             if (useShift) key.labels.split() else key.labels.splitShifted()
-                        val hasAlt =
+                        val hasUp =
                             if (useShift) key.labels.main.isNotEmpty() else key.labels.shifted.isNotEmpty()
-                        if (hasAlt
-                            && altLines.getOrNull(0) != lines[0].uppercase()
-                            && altLines.getOrNull(0) != lines[0].lowercase()
+                        if (hasUp
+                            && upLines.getOrNull(0) != lines[0].uppercase()
+                            && upLines.getOrNull(0) != lines[0].lowercase()
                         ) {
+                            val upLine = upLines[0]
                             mPaint.textAlign = Align.LEFT
-                            mPaint.textSize = mLabelTextSize * .7f * labelZoom
+                            mPaint.textSize = mLabelTextSize * .7f * labelZoom * shrinkFactor(upLine)
                             mPaint.typeface = currentTypeface
                             canvas.drawText(
-                                altLines[0],
+                                upLine,
                                 mPadding.left + mPaint.textSize * .5f,
                                 mPadding.top + mPaint.textSize * 1.5f,
                                 mPaint
                             )
                         }
                         if (key.labels.down.isNotEmpty()) {
+                            val downLine = key.labels.splitDown()[0]
                             mPaint.textAlign = Align.RIGHT
-                            mPaint.textSize = mLabelTextSize * .7f * labelZoom
+                            mPaint.textSize = mLabelTextSize * .7f * labelZoom * shrinkFactor(downLine)
                             mPaint.typeface = mBoldTypeface
                             canvas.drawText(
-                                key.labels.splitDown()[0],
+                                downLine,
                                 key.width - mPadding.right - mPaint.textSize * .5f,
                                 key.height - mPadding.bottom - mPaint.textSize * .6f,
                                 mPaint
