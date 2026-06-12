@@ -1059,6 +1059,7 @@ open class KeyboardView @JvmOverloads constructor(
                     detectAndSendKey(mCurrentKey, eventTime) // マルチタップのために必要
                 }
                 mRepeatKeyIndex = NOT_A_KEY
+                mCurrentKey = NOT_A_KEY
                 isFlicked = FLICK_NONE
             }
 
@@ -1067,6 +1068,7 @@ open class KeyboardView @JvmOverloads constructor(
                 dismissPopupKeyboard()
                 mAbortKey = true
                 releaseKey(mCurrentKey)
+                mCurrentKey = NOT_A_KEY
                 isFlicked = FLICK_NONE
             }
         }
