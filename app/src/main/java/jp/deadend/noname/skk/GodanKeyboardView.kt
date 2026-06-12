@@ -199,8 +199,6 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
             mService.mRootWidth,
             mService.mScreenHeight
         )
-        keyboard.isShifted = isShifted
-        keyboard.isCapsLocked = isCapsLocked
         keyboard.resize(widthPixel, heightPixel)
         invalidateAllKeys()
 

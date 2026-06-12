@@ -273,8 +273,13 @@ open class KeyboardView @JvmOverloads constructor(
         get() = mKeyboard
         set(keyboard) {
             removeMessages()
-            mKeyboard = keyboard
-            mKeyboard.resetKeys()
+            val wasShifted = if (::mKeyboard.isInitialized) isShifted else false
+            val wasLocked = if (::mKeyboard.isInitialized) isCapsLocked else false
+            mKeyboard = keyboard.apply {
+                resetKeys()
+                isShifted = wasShifted
+                isCapsLocked = wasLocked
+            }
             requestLayout()
             // Hint to reallocate the buffer if the size changed
             mKeyboardChanged = true
