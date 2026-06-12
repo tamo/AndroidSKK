@@ -208,9 +208,6 @@ open class Keyboard {
 
         fun release() {
             pressed = false
-            if (sticky) {
-                on != on
-            }
         }
 
         fun isInside(x: Int, y: Int): Boolean {
