@@ -32,7 +32,7 @@ import kotlin.math.max
 
 class CandidatesViewContainer(screen: Context, attrs: AttributeSet) : LinearLayout(screen, attrs) {
     internal lateinit var binding: ViewCandidatesBinding
-    internal var lines = 0
+    internal var lines = if (skkPrefs.candidatesReserveLines) skkPrefs.candidatesNormalLines else 0
         set(value) {
             if (field != value) {
                 field = value
