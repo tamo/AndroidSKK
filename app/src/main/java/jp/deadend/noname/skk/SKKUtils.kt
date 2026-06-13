@@ -483,20 +483,44 @@ private val KANA_VARIANTS: Pair<Map<Char, List<Char>>, Map<Char, List<Char>>> by
 
 internal fun fuzzy(str: String): Sequence<String> {
     if (str.isEmpty()) return sequenceOf()
-    val conservative: List<List<Char>> = str.map { char ->
-        KANA_VARIANTS.first[char] ?: listOf(char)
+    val isFuzzier = runCatching { skkPrefs.fuzzierSuggestion }.getOrDefault(false)
+
+    fun withCaps(s: String, force: Boolean = false) = sequence {
+        yield(s) // そのまま出力
+        if (force || isFuzzier) {
+            val capitalized = s.replaceFirstChar { it.uppercase() }
+            if (capitalized != s) yield(capitalized) // 最初だけ大文字で出力
+            val upper = s.uppercase()
+            if (upper != s && upper != capitalized) yield(upper) // ぜんぶ大文字にして出力
+        }
     }
-    val progressive: List<List<Char>> = str.map { char ->
-        KANA_VARIANTS.second[char] ?: listOf(char)
+
+    val conservativeVariants = str.map { KANA_VARIANTS.first[it] ?: listOf(it) }
+    val progressiveVariants = str.map { KANA_VARIANTS.second[it] ?: listOf(it) }
+
+    val fuzzyVariations = sequence {
+        yieldAll(withCaps(str, force = true)) // まず typo を探さず大文字だけ調整
+
+        for (typos in 1..str.length) {
+            yieldAll(kanaCombo(conservativeVariants, typos).flatMap { withCaps(it) })
+            if (isFuzzier)
+                yieldAll(kanaCombo(progressiveVariants, typos).flatMap { withCaps(it) })
+        }
     }
-    return kanaCombo(conservative) + if (skkPrefs.fuzzierSuggestion)
-        kanaCombo(progressive) else emptySequence()
+
+    return fuzzyVariations.distinct()
 }
 
-private fun kanaCombo(lists: List<List<Char>>): Sequence<String> {
-    return lists.fold(sequenceOf("")) { acc, list ->
-        acc.flatMap { prefix ->
-            list.asSequence().map { char -> prefix + char }
+private fun kanaCombo(lists: List<List<Char>>, tolerance: Int): Sequence<String> {
+    if (tolerance == 0) return sequenceOf(lists.map { it[0] }.joinToString(""))
+    if (lists.isEmpty()) return sequenceOf()
+
+    return sequence {
+        // 最初を変更しないで検索してから、最初を変更して検索
+        yieldAll(kanaCombo(lists.drop(1), tolerance).map { lists[0][0] + it })
+        if (lists[0].size > 1) for (i in 1 until lists[0].size) {
+            val head = lists[0][i] // 最初だけ変更
+            yieldAll(kanaCombo(lists.drop(1), tolerance - 1).map { head + it })
         }
     }
 }

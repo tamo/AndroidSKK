@@ -61,77 +61,72 @@ class SKKUserDictTool : AppCompatActivity() {
         SKKLog.d("importing $uri")
         mSearchJob.cancel()
         mDatabaseJob.cancel()
-        mDatabaseJob.invokeOnCompletion {
-            mDatabaseJob = MainScope().launch(Dispatchers.IO) {
-                withContext(Dispatchers.Main) {
-                    mAdapter.clear()
-                    mSearchView.queryHint = "辞書に書き込む準備中"
-                }
-                if (!openUserDict()) {
-                    mInFileLauncher = false
-                    throw CancellationException()
-                }
-                withContext(Dispatchers.Main) { mMenu.setGroupEnabled(0, false) }
+        mDatabaseJob = MainScope().launch(Dispatchers.IO) {
+            withContext(Dispatchers.Main) {
+                mAdapter.clear()
+                mSearchView.queryHint = "辞書に書き込む準備中"
+            }
+            if (!openUserDict()) {
+                mInFileLauncher = false
+                return@launch
+            }
+            withContext(Dispatchers.Main) { mMenu.setGroupEnabled(0, false) }
 
-                val name = getFileNameFromUri(this@SKKUserDictTool, uri)!!
-                val isGzip = name.endsWith(".gz")
-                val isWordList = name.endsWith("combined.gz")
+            val name = getFileNameFromUri(this@SKKUserDictTool, uri)!!
+            val isGzip = name.endsWith(".gz")
+            val isWordList = name.endsWith("combined.gz")
 
-                try {
-                    withContext(Dispatchers.Main) { mSearchView.queryHint = "文字セット識別中" }
-                    val charset = if (!isWordList &&
-                        contentResolver.openInputStream(uri)!!.use { inputStream ->
-                            val processedInputStream =
-                                if (isGzip) GZIPInputStream(inputStream) else inputStream
-                            isTextDictInEucJp(processedInputStream)
-                        }
-                    ) "EUC-JP"
-                    else "UTF-8"
-
-                    withContext(Dispatchers.Main) { mSearchView.queryHint = "インポート中" }
-                    contentResolver.openInputStream(uri)?.use { inputStream ->
+            try {
+                withContext(Dispatchers.Main) { mSearchView.queryHint = "文字セット識別中" }
+                val charset = if (!isWordList &&
+                    contentResolver.openInputStream(uri)!!.use { inputStream ->
                         val processedInputStream =
                             if (isGzip) GZIPInputStream(inputStream) else inputStream
-                        loadFromTextDict(
-                            processedInputStream,
-                            charset,
-                            isWordList,
-                            mStore!!,
-                            false
-                        ) {
-                            if (floor(sqrt(it.toFloat())) % 50 == 0f) { // 味わい進捗
-                                MainScope().launch(Dispatchers.Main) {
-                                    mSearchView.queryHint = "インポート中 ${it}行目"
-                                }
+                        isTextDictInEucJp(processedInputStream)
+                    }
+                ) "EUC-JP"
+                else "UTF-8"
+
+                withContext(Dispatchers.Main) { mSearchView.queryHint = "インポート中" }
+                contentResolver.openInputStream(uri)?.use { inputStream ->
+                    val processedInputStream =
+                        if (isGzip) GZIPInputStream(inputStream) else inputStream
+                    loadFromTextDict(
+                        processedInputStream,
+                        charset,
+                        isWordList,
+                        mStore!!,
+                        false
+                    ) {
+                        if (floor(sqrt(it.toFloat())) % 50 == 0f) { // 味わい進捗
+                            MainScope().launch(Dispatchers.Main) {
+                                mSearchView.queryHint = "インポート中 ${it}行目"
                             }
                         }
                     }
-                } catch (e: IOException) {
-                    withContext(Dispatchers.Main) {
-                        if (e is CharacterCodingException) {
-                            SimpleMessageDialogFragment.newInstance(
-                                getString(R.string.error_text_dict_coding)
-                            ).show(supportFragmentManager, "dialog")
-                        } else {
-                            SimpleMessageDialogFragment.newInstance(
-                                getString(
-                                    R.string.error_file_load,
-                                    getFileNameFromUri(this@SKKUserDictTool, uri)
-                                )
-                            ).show(supportFragmentManager, "dialog")
-                        }
-                    }
                 }
-                closeUserDict()
-                mDatabaseJob.invokeOnCompletion {
-                    mInFileLauncher = false
-                    MainScope().launch(Dispatchers.Main) {
-                        mMenu.setGroupEnabled(0, true)
-                        updateListItems()
+            } catch (e: IOException) {
+                withContext(Dispatchers.Main) {
+                    if (e is CharacterCodingException) {
+                        SimpleMessageDialogFragment.newInstance(
+                            getString(R.string.error_text_dict_coding)
+                        ).show(supportFragmentManager, "dialog")
+                    } else {
+                        SimpleMessageDialogFragment.newInstance(
+                            getString(
+                                R.string.error_file_load,
+                                getFileNameFromUri(this@SKKUserDictTool, uri)
+                            )
+                        ).show(supportFragmentManager, "dialog")
                     }
                 }
             }
-            mDatabaseJob.start()
+            closeUserDict()
+            mInFileLauncher = false
+            withContext(Dispatchers.Main) {
+                mMenu.setGroupEnabled(0, true)
+                updateListItems()
+            }
         }
     }
 
@@ -150,44 +145,40 @@ class SKKUserDictTool : AppCompatActivity() {
                 Toast.LENGTH_SHORT
             ).show()
         }
-        mDatabaseJob.invokeOnCompletion {
-            mDatabaseJob = MainScope().launch(Dispatchers.IO) {
-                if (!openUserDict(writable = false)) {
-                    mInFileLauncher = false
-                    throw CancellationException()
-                }
-                val errorMessage = runCatching {
-                    contentResolver.openOutputStream(uri, "wt")?.bufferedWriter()?.use {
-                        val browser =
-                            mStore?.cursor() ?: throw (IOException("database browser is null"))
-                        generateSequence { browser.next() }.forEach { (key, value) ->
-                            it.write("$key $value\n")
-                        }
-                    } ?: throw IOException("Failed to open output stream")
-                }.exceptionOrNull()?.let { e -> e.message ?: e.toString() } ?: ""
-                closeUserDict()
-
-                mDatabaseJob.invokeOnCompletion {
-                    mInFileLauncher = false
-                    MainScope().launch(Dispatchers.Main) {
-                        updateListItems()
-                        SimpleMessageDialogFragment.newInstance(
-                            if (errorMessage.isEmpty()) {
-                                getString(
-                                    R.string.message_tools_written_to_external_storage,
-                                    getFileNameFromUri(this@SKKUserDictTool, uri)
-                                )
-                            } else {
-                                getString(
-                                    R.string.error_write_to_external_storage,
-                                    errorMessage
-                                )
-                            }
-                        ).show(supportFragmentManager, "dialog")
-                    }
-                }
+        mDatabaseJob.cancel()
+        mDatabaseJob = MainScope().launch(Dispatchers.IO) {
+            if (!openUserDict(writable = false)) {
+                mInFileLauncher = false
+                return@launch
             }
-            mDatabaseJob.start()
+            val errorMessage = runCatching {
+                contentResolver.openOutputStream(uri, "wt")?.bufferedWriter()?.use {
+                    val browser =
+                        mStore?.cursor() ?: throw (IOException("database browser is null"))
+                    generateSequence { browser.next() }.forEach { (key, value) ->
+                        it.write("$key $value\n")
+                    }
+                } ?: throw IOException("Failed to open output stream")
+            }.exceptionOrNull()?.let { e -> e.message ?: e.toString() } ?: ""
+            closeUserDict()
+
+            mInFileLauncher = false
+            withContext(Dispatchers.Main) {
+                updateListItems()
+                SimpleMessageDialogFragment.newInstance(
+                    if (errorMessage.isEmpty()) {
+                        getString(
+                            R.string.message_tools_written_to_external_storage,
+                            getFileNameFromUri(this@SKKUserDictTool, uri)
+                        )
+                    } else {
+                        getString(
+                            R.string.error_write_to_external_storage,
+                            errorMessage
+                        )
+                    }
+                ).show(supportFragmentManager, "dialog")
+            }
         }
     }
 
@@ -270,21 +261,18 @@ class SKKUserDictTool : AppCompatActivity() {
                 }
                 val regex: Regex? by lazy { runCatching { Regex(newText) }.getOrNull() }
                 mFoundList.clear()
-                mSearchJob.invokeOnCompletion {
-                    mSearchJob = MainScope().launch(Dispatchers.Default) {
-                        mFoundList.addAll(mEntryList.filter {
-                            ensureActive() // ここでキャンセルされる
-                            if (regex != null) {
-                                regex!!.containsMatchIn(it.key) || regex!!.containsMatchIn(it.value)
-                            } else {
-                                newText in it.key || newText in it.value
-                            }
-                        })
-                        withContext(Dispatchers.Main) {
-                            binding.userDictToolList.adapter = mSearchAdapter
+                mSearchJob = MainScope().launch(Dispatchers.Default) {
+                    mFoundList.addAll(mEntryList.filter {
+                        ensureActive() // ここでキャンセルされる
+                        if (regex != null) {
+                            regex!!.containsMatchIn(it.key) || regex!!.containsMatchIn(it.value)
+                        } else {
+                            newText in it.key || newText in it.value
                         }
+                    })
+                    withContext(Dispatchers.Main) {
+                        binding.userDictToolList.adapter = mSearchAdapter
                     }
-                    mSearchJob.start()
                 }
                 return true
             }
@@ -492,57 +480,54 @@ class SKKUserDictTool : AppCompatActivity() {
         SKKLog.d("updateListItems")
         mSearchJob.cancel()
         mDatabaseJob.cancel()
-        mDatabaseJob.invokeOnCompletion {
-            mDatabaseJob = MainScope().launch(Dispatchers.IO) {
-                if (!openUserDict(writable = false)) throw CancellationException()
-                withContext(Dispatchers.Main) {
-                    mSearchView.isEnabled = false
-                    mAdapter.clear()
+        mDatabaseJob = MainScope().launch(Dispatchers.IO) {
+            if (!openUserDict(writable = false)) return@launch
+            withContext(Dispatchers.Main) {
+                mSearchView.isEnabled = false
+                mAdapter.clear()
+            }
+            runCatching {
+                val browser = mStore?.cursor() ?: run {
+                    SKKLog.e("updateListItems: browser=null")
+                    withContext(Dispatchers.Main) { onFailToOpenUserDict() }
+                    closeUserDict()
+                    return@launch
                 }
-                runCatching {
-                    val browser = mStore?.cursor() ?: run {
-                        SKKLog.e("updateListItems: browser=null")
-                        withContext(Dispatchers.Main) { onFailToOpenUserDict() }
-                        closeUserDict()
-                        return@launch
-                    }
 
-                    val buffer = mutableListOf<SKKStoreTuple>()
-                    val bufferSize = 1000
-                    while (true) {
-                        val result = browser.next() ?: break
-                        buffer.add(result)
-                        if (buffer.size < bufferSize) continue
-                        withContext(Dispatchers.Main) {
-                            mAdapter.addAll(buffer)
-                            mStore.let { store ->
-                                if (store == null) throw CancellationException()
-                                mSearchView.queryHint =
-                                    "読み込み中 ${100 * mAdapter.count / store.size()}%"
-                            }
-                        }
-                        buffer.clear()
-                        ensureActive()
-                    }
+                val buffer = mutableListOf<SKKStoreTuple>()
+                val bufferSize = 1000
+                while (true) {
+                    val result = browser.next() ?: break
+                    buffer.add(result)
+                    if (buffer.size < bufferSize) continue
                     withContext(Dispatchers.Main) {
                         mAdapter.addAll(buffer)
-                        mSearchView.isEnabled = true
-                        mSearchView.queryHint = ""
+                        mStore.let { store ->
+                            if (store == null) throw CancellationException()
+                            mSearchView.queryHint =
+                                "読み込み中 ${100 * mAdapter.count / store.size()}%"
+                        }
                     }
-                }.onFailure { e ->
-                    if (e is CancellationException) {
-                        SKKLog.d("updateListItems: canceled")
-                        closeUserDict()
-                        throw e
-                    } else {
-                        SKKLog.e("updateListItems", e)
-                        withContext(Dispatchers.Main) { onFailToOpenUserDict() }
-                    }
+                    buffer.clear()
+                    ensureActive()
                 }
-                closeUserDict()
-                SKKLog.d("updateListItems: finished")
+                withContext(Dispatchers.Main) {
+                    mAdapter.addAll(buffer)
+                    mSearchView.isEnabled = true
+                    mSearchView.queryHint = ""
+                }
+            }.onFailure { e ->
+                if (e is CancellationException) {
+                    SKKLog.d("updateListItems: canceled")
+                    closeUserDict()
+                    throw e
+                } else {
+                    SKKLog.e("updateListItems", e)
+                    withContext(Dispatchers.Main) { onFailToOpenUserDict() }
+                }
             }
-            mDatabaseJob.start()
+            closeUserDict()
+            SKKLog.d("updateListItems: finished")
         }
     }
 

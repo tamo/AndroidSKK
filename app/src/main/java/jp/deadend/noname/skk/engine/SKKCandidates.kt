@@ -12,7 +12,6 @@ import jp.deadend.noname.skk.processConcatAndMore
 import jp.deadend.noname.skk.removeAnnotation
 import jp.deadend.noname.skk.skkPrefs
 import jp.deadend.noname.skk.zenkaku2hankaku
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -36,17 +35,21 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
     private var mJob: Job = Job()
     private var mSuspended: Boolean = false
 
+    private suspend fun updateView(list: List<String>?, kanjiKey: String, index: Int) {
+        if (list.isNullOrEmpty()) withContext(Dispatchers.Main) {
+            service.clearCandidatesView()
+        } else {
+            val (layout, viewLines) = service.mCandidatesView.buildLayout(list, kanjiKey)
+            withContext(Dispatchers.Main) {
+                service.setCandidates(layout, viewLines, index)
+            }
+        }
+    }
+
     internal fun setView(list: List<String>?, kanjiKey: String, index: Int) {
         mJob.cancel()
         mJob = MainScope().launch(Dispatchers.Default) {
-            if (list.isNullOrEmpty()) withContext(Dispatchers.Main) {
-                service.setCandidates(null)
-            } else {
-                val (layout, viewLines) = service.mCandidatesView.buildLayout(list, kanjiKey)
-                withContext(Dispatchers.Main) {
-                    service.setCandidates(layout, viewLines, index)
-                }
-            }
+            updateView(list, kanjiKey, index)
         }
     }
 
@@ -98,9 +101,7 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
                     }
 
                     mIndex = 0
-                    mJob.invokeOnCompletion {
-                        updateComposingText()
-                    }
+                    updateComposingText()
                     return
                 }
 
@@ -364,81 +365,69 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
 
     internal fun complete(str: String) {
         if (mSuspended) return
-        val oldComList = mCompletionList?.toList()
-        val oldCanList = mList?.toList()
         mJob.cancel()
-        mJob.invokeOnCompletion {
-            mJob = MainScope().launch(Dispatchers.Default) {
-                @Throws(CancellationException::class)
-                fun ensureCont() {
-                    if (oldComList != mCompletionList || oldCanList != mList)
-                        throw CancellationException()
-                    ensureActive()
-                }
+        mJob = MainScope().launch(Dispatchers.Default) {
+            if (str.isEmpty()) {
+                delay(150.milliseconds) // 短時間に連続で実行されると画面がチラつく
+                ensureActive()
+                withContext(Dispatchers.Main) { service.clearCandidatesView() }
+                return@launch
+            }
 
-                if (str.isEmpty()) {
-                    delay(150.milliseconds) // 短時間に連続で実行されると画面がチラつく
-                    ensureCont()
-                    withContext(Dispatchers.Main) { service.clearCandidatesView() }
-                    return@launch
-                }
+            val set = mutableSetOf<Pair<String, String>>()
+            val elapsed = measureTime {
+                for (dict in engine.mDictList) {
+                    // 字数を増やさずに変換できるものを最優先
+                    val fuzzyFurther = if (str == "emoji" || !skkPrefs.fuzzySuggestion) false
+                    else withTimeoutOrNull(1000.milliseconds) {
+                        // 重い処理: 価値があるので数は少なくてもいいがタイムアウトが必要
+                        500 > measureTime {
+                            val goal: Int = skkPrefs.candidatesNormalLines * 7 / str.length
+                            for (fuzzyStr in fuzzy(str)) {
+                                if (set.size >= goal) break
+                                ensureActive()
+                                if (withContext(Dispatchers.IO) {
+                                        dict.getCandidates(fuzzyStr).isNullOrEmpty()
+                                    }) continue
+                                val shownStr =
+                                    if (service.isHiragana) fuzzyStr
+                                    else hiragana2katakana(fuzzyStr, reversed = true).orEmpty()
+                                set.add(fuzzyStr to shownStr)
+                            }
+                        }.inWholeMilliseconds || set.isEmpty()
+                    } ?: set.isEmpty() // タイムアウトしても未発見なら前方一致あいまい検索してみる
 
-                val set = mutableSetOf<Pair<String, String>>()
-                val elapsed = measureTime {
-                    for (dict in engine.mDictList) {
-                        // 字数を増やさずに変換できるものを最優先
-                        val fuzzyFurther = if (str == "emoji" || !skkPrefs.fuzzySuggestion) false
-                        else withTimeoutOrNull(1000.milliseconds) {
-                            // 重い処理: 価値があるので数は少なくてもいいがタイムアウトが必要
-                            500 > measureTime {
-                                val goal: Int = skkPrefs.candidatesNormalLines * 7 / str.length
-                                for (fuzzyStr in fuzzy(str)) {
-                                    if (set.size >= goal) break
-                                    ensureCont()
-                                    if (withContext(Dispatchers.IO) {
-                                            dict.getCandidates(fuzzyStr).isNullOrEmpty()
-                                        }) continue
-                                    val shownStr =
-                                        if (service.isHiragana) fuzzyStr
-                                        else hiragana2katakana(fuzzyStr, reversed = true).orEmpty()
-                                    set.add(fuzzyStr to shownStr)
-                                }
-                            }.inWholeMilliseconds || set.isEmpty()
-                        } ?: set.isEmpty() // タイムアウトしても未発見なら前方一致あいまい検索してみる
+                    // 前方一致は軽いので無条件で実行 (数字ありと数字マスク状態で)
+                    addFound(this@launch, set, str, dict)
 
-                        // 前方一致は軽いので無条件で実行 (数字ありと数字マスク状態で)
-                        addFound(this@launch, set, str, dict)
+                    str.replace(Regex("\\d+(\\.\\d+)?"), "#").let {
+                        if (it != str) addFound(this@launch, set, it, dict)
 
-                        str.replace(Regex("\\d+(\\.\\d+)?"), "#").let {
-                            if (it != str) addFound(this@launch, set, it, dict)
-
-                            // あいまい前方一致は意味があまりないので数は多く、最後に短時間だけ
-                            val goal: Int = skkPrefs.candidatesNormalLines * 10 / str.length
-                            if (fuzzyFurther) withTimeoutOrNull(500.milliseconds) {
-                                for (fuzzyStr in fuzzy(it)) {
-                                    if (set.size > goal) break
-                                    ensureCont()
-                                    addFound(this@launch, set, fuzzyStr, dict)
-                                }
+                        // あいまい前方一致は意味があまりないので数は多く、最後に短時間だけ
+                        val goal: Int = skkPrefs.candidatesNormalLines * 10 / str.length
+                        if (fuzzyFurther) withTimeoutOrNull(500.milliseconds) {
+                            for (fuzzyStr in fuzzy(it)) {
+                                if (set.size > goal) break
+                                ensureActive()
+                                addFound(this@launch, set, fuzzyStr, dict)
                             }
                         }
                     }
                 }
-                delay(150.milliseconds - elapsed)
-                ensureCont() // 短時間に連続で実行されないよう最新のみ有効に
-
-                val uniqueSet = set.distinctBy { it.second }
-                SKKLog.d("complete query='$str' found=${uniqueSet.size} in ${elapsed.inWholeMilliseconds}ms")
-
-                val (completionList, list) = uniqueSet.unzip()
-                mCompletionList = completionList
-                mList = list
-
-                mQuery = str
-                mIndex = 0
-                setView(mList, str, mIndex)
             }
-            mJob.start()
+            delay(150.milliseconds - elapsed)
+            ensureActive() // 短時間に連続で実行されないよう最新のみ有効に
+
+            val uniqueSet = set.distinctBy { it.second }
+            SKKLog.d("complete query='$str' found=${uniqueSet.size} in ${elapsed.inWholeMilliseconds}ms")
+
+            val (completionList, list) = uniqueSet.unzip()
+            mCompletionList = completionList
+            mList = list
+
+            mQuery = str
+            mIndex = 0
+            updateView(mList, str, mIndex)
         }
     }
 
