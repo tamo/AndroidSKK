@@ -1553,32 +1553,31 @@ class SKKService : InputMethodService() {
 
         mCandidatesViewContainer.setSize(-1)
 
-        (if (isFloating()) mBinding.container else mBinding.root).let { l ->
-            val uri = skkPrefs.backgroundImage ?: run { l.background = null }
-            if ((l.background as? CroppedDrawable)?.uri == uri) return@let
-
-            MainScope().launch {
-                l.background = skkPrefs.backgroundImage?.let { uri ->
-                    withContext(Dispatchers.IO) {
-                        runCatching {
-                            val src = ImageDecoder.createSource(contentResolver, uri.toUri())
-                            val bitmap = ImageDecoder.decodeBitmap(src) { decoder, info, _ ->
-                                decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
-                                val maxDimension = max(mScreenWidth, mScreenHeight)
-                                val (w, h) = info.size.run { width.toFloat() to height.toFloat() }
-                                val scale = max(maxDimension / w, maxDimension / h)
-                                decoder.setTargetSize((w * scale).toInt(), (h * scale).toInt())
-                            }
-                            CroppedDrawable(resources, bitmap, uri)
-                        }.getOrElse { tr ->
-                            SKKLog.e("Failed to load background image", tr)
-                            null
+        val opaque = if (isFloating()) mBinding.container else mBinding.root
+        val trans = if (isFloating()) mBinding.root else mBinding.container
+        trans.background = null
+        val uri = skkPrefs.backgroundImage ?: run { opaque.background = null }
+        if ((opaque.background as? CroppedDrawable)?.uri == uri) return
+        MainScope().launch {
+            opaque.background = skkPrefs.backgroundImage?.let { uri ->
+                withContext(Dispatchers.IO) {
+                    runCatching {
+                        val src = ImageDecoder.createSource(contentResolver, uri.toUri())
+                        val bitmap = ImageDecoder.decodeBitmap(src) { decoder, info, _ ->
+                            decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
+                            val maxDimension = max(mScreenWidth, mScreenHeight)
+                            val (w, h) = info.size.run { width.toFloat() to height.toFloat() }
+                            val scale = max(maxDimension / w, maxDimension / h)
+                            decoder.setTargetSize((w * scale).toInt(), (h * scale).toInt())
                         }
+                        CroppedDrawable(resources, bitmap, uri)
+                    }.getOrElse { tr ->
+                        SKKLog.e("Failed to load background image", tr)
+                        null
                     }
                 }
             }
         }
-        (if (isFloating()) mBinding.root else mBinding.container).background = null
     }
 
     private inner class CroppedDrawable(
@@ -1600,13 +1599,13 @@ class SKKService : InputMethodService() {
         override fun getIntrinsicHeight() = -1
         override fun draw(canvas: Canvas) {
             val b = bounds
+            val boundsW = b.width()
+            val boundsH = b.height()
             val maxH = keyboardHeight() + mCandidatesViewContainer.maxHeight + mInsets.bottom
-            if (bitmapW <= 0 || bitmapH <= 0 || b.width() <= 0 || maxH <= 0) return
+            if (bitmapW <= 0 || bitmapH <= 0 || boundsW <= 0 || maxH <= 0) return
 
             if (b != lastBounds || maxH != lastMaxH) {
                 SKKLog.d("background: bounds=$b (last=$lastBounds) maxH=$maxH (last=$lastMaxH)")
-                val boundsW = b.width()
-                val boundsH = b.height()
                 val scale: Float
                 val dx: Float
                 val dy: Float

@@ -112,7 +112,7 @@ class SKKSettingsActivity : AppCompatActivity(),
                     if (skkPrefs.backgroundImage == null)
                         pickMedia()
                     else AlertDialog.Builder(requireContext())
-                        .setTitle(title).setItems(arrayOf("選択", "無効化")) { _, which ->
+                        .setTitle(title).setItems(arrayOf("選択", "なし")) { _, which ->
                             when (which) {
                                 0 -> pickMedia()
                                 1 -> {
@@ -138,31 +138,32 @@ class SKKSettingsActivity : AppCompatActivity(),
                 updateThumbnail()
             }
 
-        private fun updateThumbnail() {
+        private fun updateThumbnail() = MainScope().launch {
             findPreference<Preference>(getString(R.string.pref_background_image))?.apply {
-                skkPrefs.backgroundImage?.let { uriString ->
-                    val uri = uriString.toUri()
-                    summary = getFileName(uri)
-                    runCatching {
-                        val resolver = requireContext().contentResolver
-                        val size = (48 * resources.displayMetrics.density).toInt()
-                        val bitmap = runCatching {
-                            resolver.loadThumbnail(uri, Size(size, size), null)
-                        }.getOrElse {
-                            SKKLog.w("loadThumbnail failed", it)
-                            val source = ImageDecoder.createSource(resolver, uri)
-                            ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
-                                val factor = max(info.size.width / size, info.size.height / size)
-                                if (factor > 1) decoder.setTargetSize(
-                                    info.size.width / factor, info.size.height / factor
-                                )
+                icon = skkPrefs.backgroundImage?.toUri()?.let { uri ->
+                    summary = withContext(Dispatchers.IO) { getFileName(uri) }
+                    withContext(Dispatchers.IO) {
+                        runCatching {
+                            val resolver = requireContext().contentResolver
+                            val size = (48 * resources.displayMetrics.density).toInt()
+                            runCatching {
+                                resolver.loadThumbnail(uri, Size(size, size), null)
+                            }.getOrElse { tr ->
+                                SKKLog.w("loadThumbnail failed", tr)
+                                val source = ImageDecoder.createSource(resolver, uri)
+                                ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
+                                    val src = info.size
+                                    val factor = max(src.width / size, src.height / size)
+                                    decoder.setTargetSize(src.width / factor, src.height / factor)
+                                }
                             }
-                        }
-                        icon = bitmap.toDrawable(resources)
-                        return
-                    }.onFailure { SKKLog.e("Failed to load thumbnail", it) }
-                } ?: run { summary = "未設定" }
-                icon = null
+                        }.getOrElse { tr ->
+                            SKKLog.e("Failed to load thumbnail", tr)
+                            null
+                        }?.toDrawable(resources)
+                    }
+                }
+                if (icon == null) summary = "なし"
             }
         }
 
