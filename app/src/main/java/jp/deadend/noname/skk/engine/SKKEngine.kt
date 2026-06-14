@@ -690,7 +690,7 @@ class SKKEngine(
                             val word = item.getString("word")
                             word + item.optJSONArray("reverse_translation")?.let { synonyms ->
                                 val annotation = (0 until synonyms.length()).mapNotNull { i ->
-                                    synonyms.getString(i).takeIf { it != word }
+                                    synonyms.getString(i).takeIf { it != query }
                                 }.joinToString()
                                 if (annotation.isNotEmpty()) "; $annotation" else ""
                             }.orEmpty()
