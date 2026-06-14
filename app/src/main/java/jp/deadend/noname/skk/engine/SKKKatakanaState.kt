@@ -20,7 +20,7 @@ object SKKKatakanaState : SKKState {
         if (context.changeInputMode(keyCode)) return
         SKKHiraganaState.processKana(context, keyCode) { engine, hiraganaChar ->
             val str = hiragana2katakana(hiraganaChar)
-            if (str != null) engine.commitTextSKK(str)
+            engine.commitTextSKK(str)
             engine.mComposing.setLength(0)
         }
     }

@@ -58,7 +58,7 @@ object SKKPreeditState : SKKState {
                         } else {
                             mKanjiKey.toString() // すでにひらがななのでそのまま
                         }
-                        if (str != null) commitTextSKK(str)
+                        commitTextSKK(str)
                         mKanjiKey.clear()
                     }
                     changeState(kanaState)

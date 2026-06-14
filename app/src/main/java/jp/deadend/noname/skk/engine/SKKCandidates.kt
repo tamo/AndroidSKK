@@ -220,7 +220,7 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
             val concat = candidate.toString() + mOkurigana
             val text = when (kanaState) {
                 SKKHiraganaState -> concat
-                SKKKatakanaState -> hiragana2katakana(concat, reversed = true).orEmpty()
+                SKKKatakanaState -> hiragana2katakana(concat, reversed = true)
                 SKKHanKanaState -> zenkaku2hankaku(hiragana2katakana(concat)).orEmpty()
                 else -> throw RuntimeException("kanaState: $kanaState")
             } // カナかなは互換性あるけど半角カナと全角かなは互換性ない感覚があるので reverse しない
@@ -349,18 +349,21 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
         val candidates = SKKNarrowingState.mOriginalCandidates ?: return
 
         val narrowed = if (hint.isEmpty()) candidates else {
-            val hintKanjiList = engine.find(hint).map {
-                processConcatAndMore(removeAnnotation(it), "")
-            }
-            SKKLog.d("narrowCandidates: hintKanjiList: $hintKanjiList")
-            // hint("おとこ") -> hintKanjiList(["男", "漢", "♂"]) 注釈なし
+            val katakanaHint = hiragana2katakana(hint)
+            val hintKanjiSet = engine.find(hint).asSequence()
+                .flatMap { processConcatAndMore(removeAnnotation(it), "").asSequence() }
+                .toSet()
+            SKKLog.d("narrowCandidates: hintKanjiSet: $hintKanjiSet")
             // mQuery("かんじ") -> candidates("漢字; 注釈も含む", "幹事", "監事", "感じ")
+            // hint("おとこ") -> hintKanjiSet(['男', '漢', '♂']) 注釈なし
             // -> narrowed(["漢字; 注釈も含む"]) 「漢」で合致
+            //
+            // mQuery("じゅ") -> candidates("受", "授", "樹", "寿")
+            // hint("じゅもく") -> hintKanjiSet(['樹', '木']) "樹木" から単漢字セットに
+            // -> narrowed(["樹"])
             candidates.filter { str ->
-                hintKanjiList.any { unannotated -> str.contains(unannotated) }
-                        // ひらがなかカタカナでヒントを含むstrもOK
-                        || str.contains(hint)
-                        || hiragana2katakana(hint).let { !it.isNullOrEmpty() && str.contains(it) }
+                str.any { it in hintKanjiSet } ||
+                        str.contains(hint) || str.contains(katakanaHint)
             }
         }
 
@@ -408,7 +411,7 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
                                         }) continue
                                     val shownStr =
                                         if (service.isHiragana) fuzzyStr
-                                        else hiragana2katakana(fuzzyStr, reversed = true).orEmpty()
+                                        else hiragana2katakana(fuzzyStr, reversed = true)
                                     synchronized(set) { set.add(fuzzyStr to shownStr) }
                                     foundCount++
                                 }
@@ -509,7 +512,7 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
             target.addAll(keys)
         } else {
             keys.mapTo(target) { (first, second) ->
-                first to hiragana2katakana(second, reversed = true).orEmpty()
+                first to hiragana2katakana(second, reversed = true)
             }
         }
     }

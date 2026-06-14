@@ -499,10 +499,10 @@ class SKKEngine(
             val (regInfo, entry) = mRegister.first()!!
             val key =
                 if (kanaState is SKKHiraganaState) regInfo.key
-                else hiragana2katakana(regInfo.key).orEmpty()
+                else hiragana2katakana(regInfo.key)
             val okurigana =
                 if (kanaState is SKKHiraganaState) regInfo.okurigana
-                else hiragana2katakana(regInfo.okurigana).orEmpty()
+                else hiragana2katakana(regInfo.okurigana)
             // 半角カナ変換はあとで
             if (okurigana.isEmpty()) {
                 ct.append(key)
@@ -653,7 +653,7 @@ class SKKEngine(
                         }
                     } catch (e: JSONException) {
                         SKKLog.w(" googleTransliterate JSON error", e)
-                        listOf("(エラー)", hiragana2katakana(mKanjiKey.toString())!!)
+                        listOf("(エラー)", hiragana2katakana(mKanjiKey.toString()))
                     }
                     changeState(SKKChooseState)
                     mCandidates.apply {
@@ -819,7 +819,7 @@ class SKKEngine(
             commitTextSKK(
                 when (kanaState) {
                     SKKKatakanaState ->
-                        hiragana2katakana(mKanjiKey.toString()).orEmpty()
+                        hiragana2katakana(mKanjiKey.toString())
 
                     SKKHanKanaState ->
                         zenkaku2hankaku(hiragana2katakana(mKanjiKey.toString())).orEmpty()

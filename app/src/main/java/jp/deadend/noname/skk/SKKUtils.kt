@@ -17,6 +17,17 @@ import kotlin.math.max
 
 private val PAT_QUOTED = "\"(.+?)\"".toRegex()
 private val PAT_ESCAPE_NUM = """\\\d{1,3}""".toRegex()
+private val PAT_NUMBER_LIST = Regex("\\d+(\\.\\d+)?")
+private val PAT_HASH_NUM = Regex("#[0-3]")
+private val PAT_HASH_NUM_OPT = Regex("#[0-3]?")
+private val PAT_CAL = Regex(
+    "^\\(cal-" +
+            "(arg([-+*=]+)([\\d.]*)?([ymd])?-)?" +
+            "(year([-+]\\d+)-)?" +
+            "(month([-+]\\d+)-)?" +
+            "(date([-+]\\d+)-)?" +
+            "format (.+)\\)"
+)
 
 // 半角から全角 (UNICODE)
 fun hankaku2zenkaku(str: String?): String? = str?.let { s ->
@@ -68,9 +79,7 @@ fun zenkaku2hankaku(str: String?): String? = str?.let { s ->
 }
 
 // ひらがなを全角カタカナにする
-fun hiragana2katakana(str: String?, reversed: Boolean = false): String? {
-    if (str == null) return null
-
+fun hiragana2katakana(str: String, reversed: Boolean = false): String {
     var skipNext = false // 「う゛」を「ヴ」にして文字数が減るときのフラグ
     return str.mapIndexedNotNull { index, it ->
         if (skipNext) {
@@ -123,11 +132,11 @@ fun removeAnnotation(str: String): String = str.substringBefore(';')
 private fun processNumber(str: String, numberList: List<String>): String {
     var result = str
     numberList.forEach { result = processSingleNumber(result, it) }
-    return result.replace(Regex("#[0-3]"), "#")
+    return result.replace(PAT_HASH_NUM, "#")
 }
 
 private fun processSingleNumber(str: String, number: String): String {
-    return when (val target = Regex("#[0-3]?").find(str)?.value) {
+    return when (val target = PAT_HASH_NUM_OPT.find(str)?.value) {
         "#0", "#" -> str.replaceFirst(target, number)
         "#1" -> str.replaceFirst(
             target, number // 全角
@@ -210,8 +219,7 @@ private fun unescapeOctal(str: String): String = PAT_ESCAPE_NUM.replace(str) {
 } // emacs-lispのリテラルは8進数
 
 fun processConcatAndMore(rawStr: String, kanjiKey: String): String {
-    val numberList = Regex("\\d+(\\.\\d+)?")
-        .findAll(kanjiKey)
+    val numberList = PAT_NUMBER_LIST.findAll(kanjiKey)
         .map { it.value }.toMutableList()
 
     if (rawStr.startsWith("(concat ") && rawStr.endsWith(")")) {
@@ -220,14 +228,7 @@ fun processConcatAndMore(rawStr: String, kanjiKey: String): String {
 
     operator fun MatchResult.Destructured.component11(): String =
         this.toList()[10] // 不足を拡張
-    Regex(
-        "^\\(cal-" +
-                "(arg([-+*=]+)([\\d.]*)?([ymd])?-)?" +
-                "(year([-+]\\d+)-)?" +
-                "(month([-+]\\d+)-)?" +
-                "(date([-+]\\d+)-)?" +
-                "format (.+)\\)"
-    ).matchEntire(rawStr)?.destructured
+    PAT_CAL.matchEntire(rawStr)?.destructured
         ?.let { (hasArg, argOpts, argTimes, argUnit, _, yearDelta, _, monthDelta, _, dateDelta, raw) ->
             val isDelta = !argOpts.contains('=')
             val sign = if (argOpts.contains('-')) -1 else 1

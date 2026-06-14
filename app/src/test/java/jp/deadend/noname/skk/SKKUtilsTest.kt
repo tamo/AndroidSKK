@@ -43,7 +43,6 @@ class SKKUtilsTest {
         assertEquals("アイウあいう", hiragana2katakana("あいうアイウ", true))
         assertEquals("ヴゔ", hiragana2katakana("う゛ヴ", true))
         assertEquals("ー", hiragana2katakana("ー")) // かなカナの区別なし
-        assertEquals(null, hiragana2katakana(null))
     }
 
     @Test
