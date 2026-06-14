@@ -3,6 +3,7 @@ package jp.deadend.noname.skk.engine
 import jp.deadend.noname.skk.SKKDictionaryInterface
 import jp.deadend.noname.skk.SKKLog
 import jp.deadend.noname.skk.SKKService
+import jp.deadend.noname.skk.SKKUserDictionary
 import jp.deadend.noname.skk.encodeKey
 import jp.deadend.noname.skk.fuzzy
 import jp.deadend.noname.skk.hiragana2katakana
@@ -16,6 +17,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
@@ -34,6 +37,11 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
     internal var mQuery = ""
     private var mJob: Job = Job()
     private var mSuspended: Boolean = false
+
+    private val mNumberRegex = Regex("\\d+(\\.\\d+)?")
+    private val mFoundKeys = mutableMapOf<SKKDictionaryInterface, DictCache>()
+
+    private data class DictCache(val key: String, val results: List<Pair<String, String>>)
 
     private suspend fun updateView(list: List<String>?, kanjiKey: String, index: Int) {
         if (list.isNullOrEmpty()) withContext(Dispatchers.Main) {
@@ -233,32 +241,33 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
     private fun updateCompletionCursor() = pickCompletion(mIndex, commit = false)
 
     fun pickCompletion(index: Int, unregister: Boolean = false, commit: Boolean = true) {
-        var number = Regex("\\d+(\\.\\d+)?").find(engine.mKanjiKey)
+        var number = mNumberRegex.find(engine.mKanjiKey)
         val rawCompletion = mList?.get(index) ?: return
-        val s = rawCompletion.replace(Regex("#")) {
-            number?.let { n ->
-                val v = n.value
-                number = n.next()
-                v
-            } ?: "#"
+        val conv = buildString {
+            for (char in rawCompletion) {
+                if (number != null && char == '#') {
+                    append(number.value)
+                    number = number.next()
+                } else append(char)
+            }
         }
-        SKKLog.d("pickCompletion s=$s from $mList (unregister=$unregister)")
-        val c = mCompletionList?.get(index) ?: return
-        SKKLog.d("pickCompletion c=$c from $mCompletionList")
-        // c を入力して s になるイメージなので基本的に両者は同じだが
-        // c が ill で s が I'll になるような、入力した文字まで変化する場合がある
+        SKKLog.d("pickCompletion conv=$conv from $mList (unregister=$unregister)")
+        val comp = mCompletionList?.get(index) ?: return
+        SKKLog.d("pickCompletion comp=$comp from $mCompletionList")
+        // comp を入力して conv になるイメージなので基本的に両者は同じだが
+        // comp が ill で conv が I'll になるような、入力した文字まで変化する場合がある
 
         engine.apply {
             when (state) {
                 SKKAbbrevState -> {
-                    mKanjiKey.set(s)
+                    mKanjiKey.set(conv)
                     setComposingTextSKK()
                     if (commit) startConversion()
                 }
 
                 SKKPreeditState, SKKOkuriganaState -> {
                     val hira =
-                        if (kanaState is SKKHiraganaState) s else katakana2hiragana(s).orEmpty()
+                        if (kanaState is SKKHiraganaState) conv else katakana2hiragana(conv).orEmpty()
                     val last = hira.lastOrNull() ?: ' '
                     val hasOkuri = hira.isNotEmpty() &&
                             !isAlphabet(hira.first().code) && isAlphabet(last.code)
@@ -285,16 +294,16 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
                     if (!commit) return
                     if (isPersonalizedLearning || unregister) {
                         val lambda = {
-                            var newEntry = "/160/$s"
+                            var newEntry = "/160/$conv"
                             runBlocking(Dispatchers.IO) {
-                                engine.mASCIIDict.getEntry(c)?.let { entry ->
+                                engine.mASCIIDict.getEntry(comp)?.let { entry ->
                                     entry.candidates.asSequence() // freq1, val1, freq2, val2
                                         .zipWithNext() // (freq1, val1), (val1, freq2), (freq2, val2)
                                         .filterIndexed { i, _ -> i % 2 == 0 } // (freq1, val1), (freq2, val2)
                                         .mapNotNull {
-                                            if (it.second == s) {
+                                            if (it.second == conv) {
                                                 newEntry =
-                                                    "/${it.first.toInt().coerceAtLeast(160)}/$s"
+                                                    "/${it.first.toInt().coerceAtLeast(160)}/$conv"
                                                 null
                                             } else it
                                         }
@@ -302,9 +311,9 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
                                 }
                             }.orEmpty().let { oldEntry ->
                                 if (unregister) newEntry = ""
-                                SKKLog.d("replaceEntry($c, $newEntry$oldEntry)")
+                                SKKLog.d("replaceEntry($comp, $newEntry$oldEntry)")
                                 runBlocking(Dispatchers.IO) {
-                                    engine.mASCIIDict.replaceEntry(c, newEntry + oldEntry)
+                                    engine.mASCIIDict.replaceEntry(comp, newEntry + oldEntry)
                                 }
                             }
                         }
@@ -323,7 +332,7 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
                         lambda()
                     }
 
-                    val slim = removeAnnotation(s)
+                    val slim = removeAnnotation(conv)
                     commitTextSKK(slim) // アプリ側で補完表示していることがあるのでまず上書きしておく
                     (state as SKKASCIIState).deleteSurroundingText(this@apply, slim)
                     reset()
@@ -376,44 +385,56 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
 
             val set = mutableSetOf<Pair<String, String>>()
             val elapsed = measureTime {
-                for (dict in engine.mDictList) {
-                    // 字数を増やさずに変換できるものを最優先
-                    val fuzzyFurther = if (str == "emoji" || !skkPrefs.fuzzySuggestion) false
-                    else withTimeoutOrNull(1000.milliseconds) {
-                        // 重い処理: 価値があるので数は少なくてもいいがタイムアウトが必要
-                        500 > measureTime {
-                            val goal: Int = skkPrefs.candidatesNormalLines * 7 / str.length
-                            for (fuzzyStr in fuzzy(str)) {
-                                if (set.size >= goal) break
-                                ensureActive()
-                                if (withContext(Dispatchers.IO) {
-                                        dict.getCandidates(fuzzyStr).isNullOrEmpty()
-                                    }) continue
-                                val shownStr =
-                                    if (service.isHiragana) fuzzyStr
-                                    else hiragana2katakana(fuzzyStr, reversed = true).orEmpty()
-                                set.add(fuzzyStr to shownStr)
-                            }
-                        }.inWholeMilliseconds || set.isEmpty()
-                    } ?: set.isEmpty() // タイムアウトしても未発見なら前方一致あいまい検索してみる
+                val isEmoji = str == "emoji"
+                val maskedStr = str.replace(mNumberRegex, "#")
+                val isFuzzyEnabled = skkPrefs.fuzzySuggestion && !isEmoji
 
-                    // 前方一致は軽いので無条件で実行 (数字ありと数字マスク状態で)
-                    addFound(this@launch, set, str, dict)
+                engine.mDictList.map { dict ->
+                    async {
+                        if (engine.state is SKKASCIIState &&
+                            if (isEmoji) dict !is SKKUserDictionary else dict != engine.mUserDict
+                        ) return@async
+                        // 字数を増やさずに変換できるものを最優先
+                        val fuzzyFurther = isFuzzyEnabled && withTimeoutOrNull(1000.milliseconds) {
+                            // 重い処理: 価値があるので数は少なくてもいいがタイムアウトが必要
+                            var foundCount = 0
+                            500 > measureTime {
+                                val goal: Int = skkPrefs.candidatesNormalLines * 7 / str.length
+                                for (fuzzyStr in fuzzy(str)) {
+                                    if (foundCount >= goal) break
+                                    ensureActive()
+                                    if (withContext(Dispatchers.IO) {
+                                            dict.getCandidates(fuzzyStr).isNullOrEmpty()
+                                        }) continue
+                                    val shownStr =
+                                        if (service.isHiragana) fuzzyStr
+                                        else hiragana2katakana(fuzzyStr, reversed = true).orEmpty()
+                                    synchronized(set) { set.add(fuzzyStr to shownStr) }
+                                    foundCount++
+                                }
+                            }.inWholeMilliseconds || foundCount == 0
+                        } ?: true // タイムアウトしても未発見なら前方一致あいまい検索してみる
 
-                    str.replace(Regex("\\d+(\\.\\d+)?"), "#").let {
-                        if (it != str) addFound(this@launch, set, it, dict)
+                        // 前方一致は軽いので無条件で実行 (数字ありと数字マスク状態で)
+                        val dictFound = mutableSetOf<Pair<String, String>>()
+                        addFound(this, dictFound, str, dict)
+
+                        if (maskedStr != str) {
+                            addFound(this, dictFound, maskedStr, dict)
+                        }
 
                         // あいまい前方一致は意味があまりないので数は多く、最後に短時間だけ
                         val goal: Int = skkPrefs.candidatesNormalLines * 10 / str.length
                         if (fuzzyFurther) withTimeoutOrNull(500.milliseconds) {
-                            for (fuzzyStr in fuzzy(it)) {
-                                if (set.size > goal) break
+                            for (fuzzyStr in fuzzy(maskedStr)) {
+                                if (dictFound.size > goal) break
                                 ensureActive()
-                                addFound(this@launch, set, fuzzyStr, dict)
+                                addFound(this, dictFound, fuzzyStr, dict)
                             }
                         }
+                        synchronized(set) { set.addAll(dictFound) }
                     }
-                }
+                }.awaitAll()
             }
             delay(150.milliseconds - elapsed)
             ensureActive() // 短時間に連続で実行されないよう最新のみ有効に
@@ -471,7 +492,19 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
 
             else -> dict
         }
-        val keys = dictionary.findKeys(scope, key)
+
+        val cached = mFoundKeys[dictionary]
+        val limit = if (dictionary.mIsASCII) SKKDictionaryInterface.MAX_FIND_KEYS_ASCII
+        else SKKDictionaryInterface.MAX_FIND_KEYS
+        val keys =
+            if (cached != null && key.startsWith(cached.key) && cached.results.size < limit) {
+                cached.results.filter { it.first.startsWith(key) }
+            } else {
+                dictionary.findKeys(scope, key).also {
+                    mFoundKeys[dictionary] = DictCache(key, it)
+                }
+            }
+
         if (engine.kanaState is SKKHiraganaState) {
             target.addAll(keys)
         } else {
@@ -487,5 +520,6 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
         mCompletionList = null
         mIndex = 0
         mQuery = ""
+        mFoundKeys.clear()
     }
 }

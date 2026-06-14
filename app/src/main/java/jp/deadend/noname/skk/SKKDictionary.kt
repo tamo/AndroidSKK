@@ -135,6 +135,11 @@ internal fun loadFromTextDict(
 }
 
 interface SKKDictionaryInterface {
+    companion object {
+        const val MAX_FIND_KEYS = 15
+        const val MAX_FIND_KEYS_ASCII = 1500
+    }
+
     val mStore: SKKStore?
     val mFilePath: String
     val mIsASCII: Boolean
@@ -152,7 +157,7 @@ interface SKKDictionaryInterface {
             val browser = mLock.withLock { store.cursor(key) } ?: return@withContext listOf()
 
             // 絵文字は1500ほどあるし CandidatesView の行数が可変になったので多めが良さそう
-            while (list.size < if (mIsASCII) 1500 else 15) {
+            while (list.size < if (mIsASCII) MAX_FIND_KEYS_ASCII else MAX_FIND_KEYS) {
                 scope.ensureActive()
                 if (mStore !== store) throw CancellationException()
 
