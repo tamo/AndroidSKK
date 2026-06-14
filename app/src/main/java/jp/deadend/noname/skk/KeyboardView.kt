@@ -529,7 +529,8 @@ open class KeyboardView @JvmOverloads constructor(
                         ) {
                             val upLine = upLines[0]
                             mPaint.textAlign = Align.LEFT
-                            mPaint.textSize = mLabelTextSize * .7f * labelZoom * shrinkFactor(upLine)
+                            mPaint.textSize =
+                                mLabelTextSize * .7f * labelZoom * shrinkFactor(upLine)
                             mPaint.typeface = currentTypeface
                             canvas.drawText(
                                 upLine,
@@ -541,7 +542,8 @@ open class KeyboardView @JvmOverloads constructor(
                         if (key.labels.down.isNotEmpty()) {
                             val downLine = key.labels.splitDown()[0]
                             mPaint.textAlign = Align.RIGHT
-                            mPaint.textSize = mLabelTextSize * .7f * labelZoom * shrinkFactor(downLine)
+                            mPaint.textSize =
+                                mLabelTextSize * .7f * labelZoom * shrinkFactor(downLine)
                             mPaint.typeface = mBoldTypeface
                             canvas.drawText(
                                 downLine,
