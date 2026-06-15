@@ -29,18 +29,15 @@ import android.view.View
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.graphics.withTranslation
 
-@Suppress("ArrayInDataClass")
+internal data class CandidateInfo(val text: String, val w: Int, val x: Int, val l: Int)
 internal data class CandidateLayout(
-    val candidateList: List<String>,
-    val wordWidth: IntArray,
-    val wordX: IntArray,
-    val wordL: IntArray,
+    val candidates: List<CandidateInfo>,
     val totalWidth: Int,
     val kanjiKey: String,
     val picture: Picture? = null
 ) {
     companion object {
-        val EMPTY = CandidateLayout(emptyList(), IntArray(0), IntArray(0), IntArray(0), 0, "")
+        val EMPTY = CandidateLayout(emptyList(), 0, "")
     }
 }
 
@@ -67,6 +64,7 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
     private val mColorCursor: Int
     private val mColorOther: Int
     private val mTextPath: Path
+    private val mWorkPaint = Paint()
     internal val mPaint = Paint()
     internal val mLineHeight
         get() = (mPaint.textSize * LINE_SCALE).toInt()
@@ -187,43 +185,24 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
-        val paint = mPaint
-        val y = (paint.textSize * (LINE_SCALE - 1) / 2 - paint.ascent()).toInt()
-
         if (mTouchedIndex >= 0 && !mScrolled) {
-            canvas.withTranslation(
-                mLayout.wordX[mTouchedIndex].toFloat(),
-                (mLayout.wordL[mTouchedIndex] * mLineHeight).toFloat()
-            ) {
-                mSelectionHighlight?.setBounds(0, 0, mLayout.wordWidth[mTouchedIndex], mLineHeight)
+            val ci = mLayout.candidates[mTouchedIndex]
+            canvas.withTranslation(ci.x.toFloat(), (ci.l * mLineHeight).toFloat()) {
+                mSelectionHighlight?.setBounds(0, 0, ci.w, mLineHeight)
                 mSelectionHighlight?.draw(this)
             }
         }
 
         mLayout.picture?.let { canvas.drawPicture(it) }
 
-        if (mCursor >= 0 && mCursor < mLayout.candidateList.size) {
-            val i = mCursor
-            val candidate = mLayout.candidateList[i]
-            paint.isFakeBoldText = true
-            paint.color = mColorCursor
-            if (skkPrefs.originalColor) { // 高コントラストテキストの設定を無視
-                paint.getTextPath(
-                    candidate, 0, candidate.length,
-                    (mLayout.wordX[i] + X_GAP).toFloat(),
-                    (y + mLayout.wordL[i] * mLineHeight).toFloat(),
-                    mTextPath
-                )
-                canvas.drawPath(mTextPath, paint)
-            } else {
-                canvas.drawText(
-                    candidate,
-                    (mLayout.wordX[i] + X_GAP).toFloat(),
-                    (y + mLayout.wordL[i] * mLineHeight).toFloat(),
-                    paint
-                )
+        if (mCursor >= 0 && mCursor < mLayout.candidates.size) {
+            mWorkPaint.set(mPaint)
+            mWorkPaint.apply {
+                isFakeBoldText = true
+                color = mColorCursor
+                textAlign = Paint.Align.CENTER
             }
-            paint.isFakeBoldText = false
+            canvas.drawCandidate(mLayout.candidates[mCursor], mWorkPaint, mTextPath)
         }
 
         if (mScrolled && mTargetScrollX != scrollX) scrollToTarget()
@@ -274,11 +253,7 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
             }
         }
 
-        val wordWidth = IntArray(displayList.size)
-        val wordX = IntArray(displayList.size)
-        val wordL = IntArray(displayList.size)
-
-        val paint = Paint(mPaint)
+        val candidates = mutableListOf<CandidateInfo>()
         val viewWidth = width.coerceAtLeast(1)
 
         // Compute the total width
@@ -286,9 +261,9 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
         var lineX = 0
         var lineW = 0
         var totalLineW = 0
-        val totalWidth = displayList.mapIndexed { i, candidate ->
+        displayList.forEach { candidate ->
             val ww = if (viewLines == 0) 1f else
-                paint.measureText(candidate).coerceAtLeast(mLineHeight * 0.7f) + X_GAP * 2
+                mPaint.measureText(candidate).coerceAtLeast(mLineHeight * 0.7f) + X_GAP * 2
 
             // 改行
             if (viewLines != 0 && lineW != 0 && lineW + ww > viewWidth) {
@@ -303,54 +278,38 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
             }
 
             // 登録
-            wordWidth[i] = ww.toInt()
-            wordX[i] = lineX + lineW
-            wordL[i] = lineN
+            candidates.add(CandidateInfo(candidate, ww.toInt(), lineX + lineW, lineN))
             lineW += ww.toInt()
             totalLineW = lineW.coerceAtLeast(totalLineW)
-            lineX + totalLineW
-        }.lastOrNull() ?: 0
+        }
+        val totalWidth = if (candidates.isEmpty()) 0 else lineX + totalLineW
 
         val picture = Picture()
         if (totalWidth > 0) {
             val canvas = picture.beginRecording(totalWidth, mLineHeight * viewLines)
-            val y = (paint.textSize * (LINE_SCALE - 1) / 2 - paint.ascent()).toInt()
             val textPath = Path()
-            val paintCopy = Paint(paint).apply { color = mColorOther }
+            mWorkPaint.set(mPaint)
+            mWorkPaint.apply {
+                color = mColorOther
+                textAlign = Paint.Align.CENTER
+            }
 
-            displayList.forEachIndexed { i, candidate ->
-                if (skkPrefs.originalColor) {
-                    paintCopy.getTextPath(
-                        candidate, 0, candidate.length,
-                        (wordX[i] + X_GAP).toFloat(), (y + wordL[i] * mLineHeight).toFloat(),
-                        textPath
-                    )
-                    canvas.drawPath(textPath, paintCopy)
-                } else {
-                    canvas.drawText(
-                        candidate,
-                        (wordX[i] + X_GAP).toFloat(), (y + wordL[i] * mLineHeight).toFloat(),
-                        paintCopy
-                    )
-                }
+            candidates.forEach { ci ->
+                canvas.drawCandidate(ci, mWorkPaint, textPath)
                 canvas.drawLine(
-                    wordX[i] + wordWidth[i] + 0.5f,
-                    (wordL[i] + 0f) * mLineHeight + 1f,
-                    wordX[i] + wordWidth[i] + 0.5f,
-                    (wordL[i] + 1f) * mLineHeight - 1f,
-                    paintCopy
+                    ci.x + ci.w + 0.5f, (ci.l + 0f) * mLineHeight + 1f,
+                    ci.x + ci.w + 0.5f, (ci.l + 1f) * mLineHeight - 1f,
+                    mWorkPaint
                 )
             }
             picture.endRecording()
         }
 
-        return CandidateLayout(
-            displayList, wordWidth, wordX, wordL, totalWidth, kanjiKey, picture
-        ) to viewLines
+        return CandidateLayout(candidates, totalWidth, kanjiKey, picture) to viewLines
     }
 
     internal fun setContents(layout: CandidateLayout?, index: Int = 0) {
-        layout?.candidateList?.let {
+        layout?.candidates?.let {
             if (it.isNotEmpty()) SKKLog.d("setContents($it, index=$index)")
         }
         mLayout = layout ?: CandidateLayout.EMPTY
@@ -405,7 +364,7 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
         })
         if (me.y < 0 || height < me.y) return false
 
-        if (mLayout.candidateList.isEmpty()) { // ドラッグで位置調整
+        if (mLayout.candidates.isEmpty()) { // ドラッグで位置調整
             return mContainer.binding.candidatesLeft.dispatchTouchEvent(me)
         }
         // スクロールした時にはここで処理されて終わりのようだ。ソースの頭で定義している。
@@ -475,7 +434,7 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
     }
 
     internal fun setCursor(chosenIndex: Int) {
-        val targetX = mLayout.wordX[chosenIndex]
+        val targetX = mLayout.candidates[chosenIndex].x
         val leftEdge = targetX - (targetX % width)
         scrollTo(leftEdge, scrollY)
         setScrollButtonsEnabled(leftEdge)
@@ -485,17 +444,30 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
     }
 
     private fun getSelectedIndex(x: Int, y: Int): Int {
-        if (mLayout.candidateList.isEmpty()) return -1
+        if (mLayout.candidates.isEmpty()) return -1
         val sx = scrollX
-        for (i in mLayout.candidateList.indices) {
-            if (x + sx >= mLayout.wordX[i]
-                && x + sx < mLayout.wordX[i] + mLayout.wordWidth[i]
-                && y in (mLayout.wordL[i] * mLineHeight)..<((mLayout.wordL[i] + 1) * mLineHeight)
+        for (i in mLayout.candidates.indices) {
+            val ci = mLayout.candidates[i]
+            if (x + sx >= ci.x
+                && x + sx < ci.x + ci.w
+                && y in (ci.l * mLineHeight)..<((ci.l + 1) * mLineHeight)
             ) {
                 return i
             }
         }
         return -1
+    }
+
+    private fun Canvas.drawCandidate(ci: CandidateInfo, paint: Paint, path: Path) {
+        val y = (paint.textSize * (LINE_SCALE - 1) / 2 - paint.ascent()).toInt()
+        val drawX = ci.x + ci.w / 2f
+        val drawY = (y + ci.l * mLineHeight).toFloat()
+        if (skkPrefs.originalColor) {
+            paint.getTextPath(ci.text, 0, ci.text.length, drawX, drawY, path)
+            drawPath(path, paint)
+        } else {
+            drawText(ci.text, drawX, drawY, paint)
+        }
     }
 
     companion object {
