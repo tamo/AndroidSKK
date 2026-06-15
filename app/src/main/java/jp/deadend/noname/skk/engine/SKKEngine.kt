@@ -138,12 +138,6 @@ class SKKEngine(
         }
     }
 
-    internal fun closeUserDict() {
-        mUserDict.close()
-        mASCIIDict.close()
-        mEmojiDict.close()
-    }
-
     internal fun processKey(keyCode: Int) =
         state.processKey(this, keyCode)
 

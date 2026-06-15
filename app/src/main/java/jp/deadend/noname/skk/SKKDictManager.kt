@@ -29,8 +29,10 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -175,6 +177,19 @@ class SKKDictManager : AppCompatActivity() {
         MainScope().launch(Dispatchers.IO) {
             val filePath = filesDir.absolutePath + "/" + item.value
             val previewText = runCatching {
+                if (SKKService.isRunning()) withTimeoutOrNull(500.milliseconds) {
+                    val job = launch {
+                        SKKService.sharedFlow.first { it == SKKService.EVENT_DICT_CLOSING }
+                    } // 先に開始しておく
+                    val intent = Intent(this@SKKDictManager, SKKService::class.java)
+                    intent.putExtra(SKKService.KEY_COMMAND, SKKService.COMMAND_CLOSE_DICT)
+                    startService(intent)
+                    job.join()
+                } ?: run {
+                    SKKLog.e("showPreview error: service not responding")
+                    return@runCatching "Error: service not responding"
+                }
+
                 openDB(filePath, getString(R.string.btree_name), false).use { store ->
                     val sb = StringBuilder()
                     val maxSamples = binding.dictManagerPreviewText.maxLines
@@ -233,18 +248,10 @@ class SKKDictManager : AppCompatActivity() {
         }
 
     override fun onPause() {
-        val dictListString = mDictList
-            .filterNot { it.value.startsWith('/') }
-            .joinToString("") { "${it.key}/${it.value}/" }
-
-        if (skkPrefs.dictOrder != dictListString) {
-            skkPrefs.dictOrder = dictListString
-
-            if (SKKService.isRunning()) { // まだ起動していないなら不要
-                val intent = Intent(this@SKKDictManager, SKKService::class.java)
-                    .putExtra(SKKService.KEY_COMMAND, SKKService.COMMAND_RELOAD_DICT)
-                startService(intent)
-            }
+        if (SKKService.isRunning()) { // まだ起動していないなら不要
+            val intent = Intent(this@SKKDictManager, SKKService::class.java)
+                .putExtra(SKKService.KEY_COMMAND, SKKService.COMMAND_RELOAD_DICT)
+            startService(intent)
         }
 
         super.onPause()

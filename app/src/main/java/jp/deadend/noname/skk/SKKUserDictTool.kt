@@ -436,9 +436,9 @@ class SKKUserDictTool : AppCompatActivity() {
                 mSearchView.queryHint = "辞書をキーボード側で閉じています"
             }
             val job = launch {
-                SKKService.sharedFlow.first { it == SKKService.EVENT_USER_DICT_CLOSING }
+                SKKService.sharedFlow.first { it == SKKService.EVENT_DICT_CLOSING }
             } // 先に開始しておく
-            startServiceCommand(SKKService.COMMAND_CLOSE_USER_DICT)
+            startServiceCommand(SKKService.COMMAND_CLOSE_DICT)
             job.join()
         } ?: run {
             SKKLog.e("openUserDict error: service not responding")

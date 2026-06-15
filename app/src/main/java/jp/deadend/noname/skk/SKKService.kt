@@ -210,10 +210,10 @@ class SKKService : InputMethodService() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         SKKLog.d("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
         when (intent?.getStringExtra(KEY_COMMAND)) {
-            COMMAND_CLOSE_USER_DICT -> MainScope().launch(Dispatchers.IO) {
-                SKKLog.d("commit user dictionary!")
-                mEngine.closeUserDict()
-                flow.tryEmit(EVENT_USER_DICT_CLOSING)
+            COMMAND_CLOSE_DICT -> MainScope().launch(Dispatchers.IO) {
+                SKKLog.d("closing the dictionaries")
+                mEngine.close()
+                flow.tryEmit(EVENT_DICT_CLOSING)
             }
 
             COMMAND_READ_PREFS -> {
@@ -1702,10 +1702,10 @@ class SKKService : InputMethodService() {
 
         private val flow = MutableSharedFlow<String>(replay = 1, extraBufferCapacity = 1)
         internal val sharedFlow = flow.asSharedFlow()
-        internal const val EVENT_USER_DICT_CLOSING = "jp.deadend.noname.skk.EVENT_USER_DICT_CLOSING"
+        internal const val EVENT_DICT_CLOSING = "jp.deadend.noname.skk.EVENT_DICT_CLOSING"
 
         internal const val KEY_COMMAND = "jp.deadend.noname.skk.KEY_COMMAND"
-        internal const val COMMAND_CLOSE_USER_DICT = "jp.deadend.noname.skk.COMMAND_CLOSE_USER_DICT"
+        internal const val COMMAND_CLOSE_DICT = "jp.deadend.noname.skk.COMMAND_CLOSE_DICT"
         internal const val COMMAND_READ_PREFS = "jp.deadend.noname.skk.COMMAND_READ_PREFS"
         internal const val COMMAND_RELOAD_DICT = "jp.deadend.noname.skk.COMMAND_RELOAD_DICT"
         internal const val COMMAND_MUSHROOM = "jp.deadend.noname.skk.COMMAND_MUSHROOM"

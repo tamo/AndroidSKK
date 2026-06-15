@@ -43,7 +43,6 @@ class MVStoreStore(
 
     companion object {
         fun open(path: String, name: String, writable: Boolean = true): MVStoreStore {
-            System.setProperty("h2.fileLockMethod", "NO")
             val builder = MVStore.Builder().fileName(path) //.cacheSize(32)
             if (!writable) builder.readOnly()
             val store = builder.open()
