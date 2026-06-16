@@ -64,8 +64,6 @@ import jp.deadend.noname.skk.engine.SKKState
 import jp.deadend.noname.skk.engine.SKKZenkakuState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
@@ -169,15 +167,15 @@ class SKKService : InputMethodService() {
     private lateinit var mAudioManager: AudioManager
     private var mStreamVolume = 0
 
-    private lateinit var mEngine: SKKEngine
+    internal lateinit var mEngine: SKKEngine
     internal val engineState: SKKState
         get() {
             val rawState = mEngine.state
             return if (rawState is SKKEmojiState) mEngine.oldState else rawState
         }
-    private lateinit var mUserDict: SKKUserDictionary
-    private lateinit var mAsciiDict: SKKUserDictionary
-    private lateinit var mEmojiDict: SKKUserDictionary
+    internal lateinit var mUserDict: SKKUserDictionary
+    internal lateinit var mAsciiDict: SKKUserDictionary
+    internal lateinit var mEmojiDict: SKKUserDictionary
 
     internal val isHiragana: Boolean
         get() = kanaState is SKKHiraganaState
@@ -210,12 +208,6 @@ class SKKService : InputMethodService() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         SKKLog.d("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
         when (intent?.getStringExtra(KEY_COMMAND)) {
-            COMMAND_CLOSE_DICT -> MainScope().launch(Dispatchers.IO) {
-                SKKLog.d("closing the dictionaries")
-                mEngine.close()
-                flow.tryEmit(EVENT_DICT_CLOSING)
-            }
-
             COMMAND_READ_PREFS -> {
                 mInputView = null // 以前のviewは新しい設定と矛盾が出るかもしれないので無効化
                 onConfigurationChanged(Configuration(resources.configuration))
@@ -1687,6 +1679,13 @@ class SKKService : InputMethodService() {
         }
     }
 
+    internal fun getStore(filePath: String): SKKStore? =
+        when {
+            !::mEngine.isInitialized -> null
+            filePath == mAsciiDict.mFilePath -> mAsciiDict
+            else -> mEngine.mDictList.find { it.mFilePath == filePath }
+        }?.mStore
+
     @Suppress("SameReturnValue")
     private fun ping() = true
 
@@ -1700,12 +1699,9 @@ class SKKService : InputMethodService() {
             }
         }
 
-        private val flow = MutableSharedFlow<String>(replay = 1, extraBufferCapacity = 1)
-        internal val sharedFlow = flow.asSharedFlow()
-        internal const val EVENT_DICT_CLOSING = "jp.deadend.noname.skk.EVENT_DICT_CLOSING"
+        internal fun getStore(filePath: String) = instance?.getStore(filePath)
 
         internal const val KEY_COMMAND = "jp.deadend.noname.skk.KEY_COMMAND"
-        internal const val COMMAND_CLOSE_DICT = "jp.deadend.noname.skk.COMMAND_CLOSE_DICT"
         internal const val COMMAND_READ_PREFS = "jp.deadend.noname.skk.COMMAND_READ_PREFS"
         internal const val COMMAND_RELOAD_DICT = "jp.deadend.noname.skk.COMMAND_RELOAD_DICT"
         internal const val COMMAND_MUSHROOM = "jp.deadend.noname.skk.COMMAND_MUSHROOM"

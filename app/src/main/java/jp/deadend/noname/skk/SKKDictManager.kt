@@ -24,15 +24,14 @@ import jp.deadend.noname.dialog.SimpleMessageDialogFragment
 import jp.deadend.noname.dialog.TextInputDialogFragment
 import jp.deadend.noname.skk.databinding.ActivityCheckedTextBinding
 import jp.deadend.noname.skk.databinding.ActivityDictManagerBinding
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeoutOrNull
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -177,34 +176,10 @@ class SKKDictManager : AppCompatActivity() {
         MainScope().launch(Dispatchers.IO) {
             val filePath = filesDir.absolutePath + "/" + item.value
             val previewText = runCatching {
-                if (SKKService.isRunning()) withTimeoutOrNull(500.milliseconds) {
-                    val job = launch {
-                        SKKService.sharedFlow.first { it == SKKService.EVENT_DICT_CLOSING }
-                    } // 先に開始しておく
-                    val intent = Intent(this@SKKDictManager, SKKService::class.java)
-                    intent.putExtra(SKKService.KEY_COMMAND, SKKService.COMMAND_CLOSE_DICT)
-                    startService(intent)
-                    job.join()
-                } ?: run {
-                    SKKLog.e("showPreview error: service not responding")
-                    return@runCatching "Error: service not responding"
-                }
-
-                openDB(filePath, getString(R.string.btree_name), false).use { store ->
-                    val sb = StringBuilder()
-                    val maxSamples = binding.dictManagerPreviewText.maxLines
-                    val storeSize = store.size()
-                    val step = (storeSize / maxSamples).coerceAtLeast(1)
-                    val padLen = storeSize.toString().length
-                    for (i in 0 until maxSamples) {
-                        ensureActive()
-                        val index = i * step
-                        if (index >= storeSize) break
-                        val paddedIndex = index.toString().padStart(padLen, '0')
-                        store.get(index)?.let { sb.append("$paddedIndex: ${it.key} ${it.value}\n") }
-                    }
-
-                    if (sb.isNotEmpty()) sb.toString() else getString(R.string.label_tools_no_entry_found)
+                SKKService.getStore(filePath)?.let { openedStore ->
+                    previewText(openedStore)
+                } ?: openDB(filePath, getString(R.string.btree_name), false).use { store ->
+                    previewText(store)
                 }
             }.getOrElse { "Error: ${it.message}" }
 
@@ -216,6 +191,23 @@ class SKKDictManager : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    private fun CoroutineScope.previewText(store: SKKStore): String {
+        val sb = StringBuilder()
+        val maxSamples = binding.dictManagerPreviewText.maxLines
+        val storeSize = store.size()
+        val step = (storeSize / maxSamples).coerceAtLeast(1)
+        val padLen = storeSize.toString().length
+        for (i in 0 until maxSamples) {
+            ensureActive()
+            val index = i * step
+            if (index >= storeSize) break
+            val paddedIndex = index.toString().padStart(padLen, '0')
+            store.get(index)?.let { sb.append("$paddedIndex: ${it.key} ${it.value}\n") }
+        }
+
+        return if (sb.isNotEmpty()) sb.toString() else getString(R.string.label_tools_no_entry_found)
     }
 
     private fun hidePreview() {
