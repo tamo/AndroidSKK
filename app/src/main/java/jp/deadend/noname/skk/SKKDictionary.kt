@@ -3,7 +3,6 @@ package jp.deadend.noname.skk
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import java.io.BufferedReader
@@ -16,7 +15,6 @@ import java.nio.charset.CodingErrorAction
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 import kotlin.math.max
-import kotlin.time.Duration.Companion.milliseconds
 
 @Throws(IOException::class)
 private fun appendToEntry(key: String, value: String, store: SKKStore) {
@@ -217,69 +215,51 @@ internal suspend fun openDB(
     btreeName: String,
     writable: Boolean = true
 ): SKKStore = withContext(Dispatchers.IO) {
-    var retryCount = 0
-    val maxRetries = 10
-    val retryDelay = 200
+    val mvFile = File("$filePath.mv")
+    if (mvFile.exists()) {
+        return@withContext MVStoreStore.open(
+            mvFile.absolutePath,
+            btreeName,
+            writable
+        )
+    }
 
-    while (true) {
-        try {
-            val mvFile = File("$filePath.mv")
-            if (mvFile.exists()) {
-                return@withContext MVStoreStore.open(
-                    mvFile.absolutePath,
-                    btreeName,
-                    writable
-                )
-            }
+    val dbFile = File("$filePath.db")
+    if (dbFile.exists()) {
+        // Migrate from JDBM to MVStore
+        SKKLog.d("Migrating $filePath to MVStore...")
+        val jdbmStore = JDBMStore.open(filePath, btreeName)
+        val mvStore =
+            MVStoreStore.open(mvFile.absolutePath, btreeName, writable = true)
 
-            val dbFile = File("$filePath.db")
-            if (dbFile.exists()) {
-                // Migrate from JDBM to MVStore
-                SKKLog.d("Migrating $filePath to MVStore...")
-                val jdbmStore = JDBMStore.open(filePath, btreeName)
-                val mvStore =
-                    MVStoreStore.open(mvFile.absolutePath, btreeName, writable = true)
-
-                val browser = jdbmStore.cursor()
-                if (browser != null) {
-                    var count = 0
-                    while (true) {
-                        val result = browser.next() ?: break
-                        mvStore.set(result.key, result.value)
-                        if (++count % 1000 == 0) mvStore.commit()
-                    }
-                }
-                mvStore.commit()
-                jdbmStore.close()
-
-                // Clean up JDBM files
-                dbFile.delete()
-                File("$filePath.lg").delete()
-                SKKLog.d("Migration finished.")
-
-                // Return a store with requested writability
-                if (writable) return@withContext mvStore else {
-                    mvStore.close()
-                    return@withContext MVStoreStore.open(
-                        mvFile.absolutePath,
-                        btreeName,
-                        writable = false
-                    )
-                }
-            }
-
-            // Create new MVStore
-            return@withContext MVStoreStore.open(mvFile.absolutePath, btreeName, writable)
-        } catch (e: Exception) {
-            if (e.toString().contains("locked") && retryCount < maxRetries) {
-                retryCount++
-                SKKLog.d("openDB: database locked, retrying ($retryCount/$maxRetries)...")
-                delay(retryDelay.milliseconds)
-            } else {
-                throw e
+        val browser = jdbmStore.cursor()
+        if (browser != null) {
+            var count = 0
+            while (true) {
+                val result = browser.next() ?: break
+                mvStore.set(result.key, result.value)
+                if (++count % 1000 == 0) mvStore.commit()
             }
         }
+        mvStore.commit()
+        jdbmStore.close()
+
+        // Clean up JDBM files
+        dbFile.delete()
+        File("$filePath.lg").delete()
+        SKKLog.d("Migration finished.")
+
+        // Return a store with requested writability
+        if (writable) return@withContext mvStore else {
+            mvStore.close()
+            return@withContext MVStoreStore.open(
+                mvFile.absolutePath,
+                btreeName,
+                writable = false
+            )
+        }
     }
-    @Suppress("UNREACHABLE_CODE")
-    throw IllegalStateException("Should not reach here")
+
+    // Create new MVStore
+    MVStoreStore.open(mvFile.absolutePath, btreeName, writable)
 }
