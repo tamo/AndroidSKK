@@ -240,10 +240,18 @@ class SKKDictManager : AppCompatActivity() {
         }
 
     override fun onPause() {
-        if (SKKService.isRunning()) { // まだ起動していないなら不要
-            val intent = Intent(this@SKKDictManager, SKKService::class.java)
-                .putExtra(SKKService.KEY_COMMAND, SKKService.COMMAND_RELOAD_DICT)
-            startService(intent)
+        val dictListString = mDictList
+            .filterNot { it.value.startsWith('/') }
+            .joinToString("") { "${it.key}/${it.value}/" }
+
+        if (skkPrefs.dictOrder != dictListString) {
+            skkPrefs.dictOrder = dictListString
+
+            if (SKKService.isRunning()) { // まだ起動していないなら不要
+                val intent = Intent(this@SKKDictManager, SKKService::class.java)
+                    .putExtra(SKKService.KEY_COMMAND, SKKService.COMMAND_RELOAD_DICT)
+                startService(intent)
+            }
         }
 
         super.onPause()
