@@ -26,11 +26,13 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 import androidx.fragment.app.commit
+import androidx.lifecycle.lifecycleScope
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.PreferenceManager
 import jp.deadend.noname.skk.databinding.ActivitySettingsBinding
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -49,11 +51,26 @@ class SKKSettingsActivity : AppCompatActivity(),
             setPreferencesFromResource(R.xml.prefs_main, rootKey)
 
             findPreference<Preference>(getString(R.string.pref_log_viewer))?.apply {
+                var lastTapTime = 0L
+                var tapCount = 0
+                var loadJob: Job? = null
+
                 setOnPreferenceClickListener {
+                    val now = System.currentTimeMillis()
+                    if (now - lastTapTime < 300) tapCount++ else tapCount = 1
+                    lastTapTime = now
+                    if (tapCount > 2) {
+                        SKKLog.saveCrashReport(context, Throwable("擬似クラッシュ"))
+                        tapCount = 0
+                    }
+
                     val loadLogListener = onPreferenceClickListener
                     val oldIcon = icon
                     val oldTitle = title
-                    MainScope().launch {
+
+                    loadJob?.cancel()
+                    loadJob = lifecycleScope.launch {
+                        delay(300.milliseconds)
                         val text = withContext(Dispatchers.IO) {
                             val dir = context.getExternalFilesDir(null)
                                 ?: return@withContext "ログの場所が開けません"
@@ -70,13 +87,26 @@ class SKKSettingsActivity : AppCompatActivity(),
                         isSingleLineTitle = false
                         title = text
                         setOnPreferenceClickListener {
-                            (context.getSystemService(CLIPBOARD_SERVICE) as ClipboardManager)
-                                .setPrimaryClip(ClipData.newPlainText("SKK log", title))
-                            onPreferenceClickListener = loadLogListener
-                            icon = oldIcon
-                            isIconSpaceReserved = true
-                            isSingleLineTitle = true
-                            title = oldTitle
+                            val now2 = System.currentTimeMillis()
+                            if (now2 - lastTapTime < 300) tapCount++ else tapCount = 1
+                            lastTapTime = now2
+                            if (tapCount > 2) {
+                                loadLogListener?.onPreferenceClick(this@apply)
+                                return@setOnPreferenceClickListener true
+                            }
+
+                            loadJob?.cancel()
+                            loadJob = lifecycleScope.launch {
+                                delay(300.milliseconds)
+                                (context.getSystemService(CLIPBOARD_SERVICE) as ClipboardManager)
+                                    .setPrimaryClip(ClipData.newPlainText("SKK log", title))
+
+                                onPreferenceClickListener = loadLogListener
+                                icon = oldIcon
+                                isIconSpaceReserved = true
+                                isSingleLineTitle = true
+                                title = oldTitle
+                            }
                             true
                         }
                     }

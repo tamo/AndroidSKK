@@ -103,7 +103,7 @@
         <androidx.preference.Preference
             app:icon="@android:drawable/ic_dialog_alert"
             app:key="@string/pref_log_viewer"
-            app:summary="最新のクラッシュ記録や現在の詳細デバッグ情報があれば表示され，再度タップでコピーできます"
+            app:summary="最新のクラッシュ記録や現在の詳細デバッグ情報があれば表示され，再度タップでコピーできます\n(素早く3回タップでテスト)"
             app:title="ここをタップ" />
     </androidx.preference.PreferenceCategory>
 </androidx.preference.PreferenceScreen>

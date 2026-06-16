@@ -63,7 +63,7 @@ object SKKLog {
         }
     }
 
-    private fun saveCrashReport(context: Context, e: Throwable) {
+    internal fun saveCrashReport(context: Context, e: Throwable) {
         val d = Date()
         val dateTimeStr = SimpleDateFormat("yyyyMMddHHmm", Locale.US).format(d)
         val dir = context.getExternalFilesDir(null) ?: return
@@ -74,16 +74,21 @@ object SKKLog {
             pw.println()
             pw.println("Date:    $d")
             pw.println("Device:  ${Build.DEVICE}")
-            pw.println("Model:   ${Build.MODEL}")
-            pw.println("SDK:     ${Build.VERSION.SDK_INT}")
-            pw.println("Version: $versionName")
+            pw.println("Model:   ${Build.MODEL} (${Build.PRODUCT}")
+            pw.println("Brand:   ${Build.BRAND} by ${Build.MANUFACTURER}")
+            pw.println("SDK:     ${Build.VERSION.SDK_INT} (Android ${Build.VERSION.RELEASE})")
+            pw.println("ABIs:    ${Build.SUPPORTED_ABIS.joinToString(", ")}")
             pw.println()
-            pw.println("Recent logs:")
+            pw.println("Version: $versionName")
+            pw.println("Prefs:   ${skkPrefs.prefs.all}")
+            pw.println()
+            pw.println("-- クラッシュ直前までのログ --")
             synchronized(logBuffer) {
-                if (logBuffer.isEmpty()) pw.println("(disabled or empty)")
+                if (logBuffer.isEmpty()) pw.println("なし (起動直後か詳細ログが無効)")
                 else logBuffer.forEach { pw.println(it) }
             }
             pw.println()
+            pw.println("-- クラッシュのスタックトレース --")
             e.printStackTrace(pw)
         }
     }

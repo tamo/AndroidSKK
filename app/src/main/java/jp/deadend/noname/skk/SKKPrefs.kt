@@ -5,7 +5,7 @@ import androidx.core.content.edit
 import androidx.preference.PreferenceManager
 
 class SKKPrefs(context: Context) {
-    private val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+    internal val prefs = PreferenceManager.getDefaultSharedPreferences(context)
     private val res = context.resources
 
     // prefs_main
