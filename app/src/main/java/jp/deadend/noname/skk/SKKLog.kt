@@ -74,7 +74,7 @@ object SKKLog {
             pw.println()
             pw.println("Date:    $d")
             pw.println("Device:  ${Build.DEVICE}")
-            pw.println("Model:   ${Build.MODEL} (${Build.PRODUCT}")
+            pw.println("Model:   ${Build.MODEL} (${Build.PRODUCT})")
             pw.println("Brand:   ${Build.BRAND} by ${Build.MANUFACTURER}")
             pw.println("SDK:     ${Build.VERSION.SDK_INT} (Android ${Build.VERSION.RELEASE})")
             pw.println("ABIs:    ${Build.SUPPORTED_ABIS.joinToString(", ")}")
