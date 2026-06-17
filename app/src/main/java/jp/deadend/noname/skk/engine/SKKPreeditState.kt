@@ -1,5 +1,6 @@
 package jp.deadend.noname.skk.engine
 
+import jp.deadend.noname.skk.SKKLog
 import jp.deadend.noname.skk.createTrimmedBuilder
 import jp.deadend.noname.skk.hiragana2katakana
 import jp.deadend.noname.skk.isShifted
@@ -29,6 +30,7 @@ object SKKPreeditState : SKKState {
     override fun processKey(context: SKKEngine, keyCode: Int) {
         val codeLower = keyCode.lowerCode
         val isUpper = keyCode.isShifted
+        SKKLog.d("processKey(${codeLower.toChar()}, upper=$isUpper)")
 
         context.apply {
             val canRetry = mComposing.isNotEmpty() // 無限ループ防止
@@ -96,11 +98,10 @@ object SKKPreeditState : SKKState {
                 }
 
                 else -> {
+                    // 最初の平仮名はついシフトキーを押しっぱなしにしてしまうため、
+                    // kanjiKey.isEmpty の時はシフトが押されていなかったことにする
                     if (isUpper && mKanjiKey.isNotEmpty()) {
                         // 送り仮名開始
-                        // 最初の平仮名はついシフトキーを押しっぱなしにしてしまうた
-                        // め、kanjiKeyの長さをチェックkanjiKeyの長さが0の時はシフトが
-                        // 押されていなかったことにして下方へ継続させる
                         if (isVowel(codeLower)) { // 母音なら送り仮名決定，変換
                             mComposing.append(Char(codeLower)) // 「OkurI」の composing を ri に
                             mOkurigana = RomajiConverter.convert(mComposing.toString())
@@ -124,6 +125,7 @@ object SKKPreeditState : SKKState {
                             }
                             mComposing.append(Char(codeLower)) // ty や ch のように 2 文字の場合あり
                             mKanjiKey.insertAtCursor(mComposing[0].toString()) //送りありの場合子音文字追加
+                            mKanjiKey.deleteAfterCursor()
                             setComposingTextSKK(
                                 createTrimmedBuilder(mKanjiKey.entry).append('*').append(mComposing)
                             )
