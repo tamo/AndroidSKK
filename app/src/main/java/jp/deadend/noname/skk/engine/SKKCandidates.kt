@@ -81,40 +81,38 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
 
         if (isForward) mIndex++ else mIndex--
 
-        if (mIndex > list.lastIndex) {
-            if (mQuery == "emoji" || mQuery == "/きごう") {
-                mIndex = 0
-            } else {
-                engine.mRegister.start(engine.mKanjiKey.toString())
-                return
-            }
-        } else if (mIndex < 0) {
-            if (mQuery == "emoji" || mQuery == "/きごう") {
-                mIndex = list.lastIndex
-            } else when (engine.state) {
-                is SKKChooseState -> engine.apply {
-                    if (mComposing.isEmpty()) {
-                        if (mOkurigana.isNotEmpty()) {
-                            mOkurigana = ""
-                            mKanjiKey.deleteAtCursor()
-                        }
-                        changeState(SKKPreeditState)
-                        setComposingTextSKK()
-                        complete(mKanjiKey.toString())
-                    } else {
-                        mKanjiKey.clear()
-                        changeState(SKKAbbrevState)
-                        setComposingTextSKK(mComposing)
-                        complete(mComposing.toString())
-                    }
+        when (mQuery) {
+            "emoji", "/きごう" -> mIndex = (mIndex + list.size) % list.size
 
-                    mIndex = 0
-                    updateComposingText()
+            else -> when {
+                mIndex > list.lastIndex -> {
+                    engine.mRegister.start(engine.mKanjiKey.toString())
                     return
                 }
 
-                is SKKNarrowingState -> {
-                    mIndex = list.lastIndex
+                mIndex < 0 -> when (engine.state) {
+                    is SKKNarrowingState -> mIndex = list.lastIndex
+
+                    is SKKChooseState -> engine.apply {
+                        if (mComposing.isEmpty()) {
+                            if (mOkurigana.isNotEmpty()) {
+                                mOkurigana = ""
+                                mKanjiKey.deleteAtCursor()
+                            }
+                            changeState(SKKPreeditState)
+                            setComposingTextSKK()
+                            complete(mKanjiKey.toString())
+                        } else {
+                            mKanjiKey.clear()
+                            changeState(SKKAbbrevState)
+                            setComposingTextSKK(mComposing)
+                            complete(mComposing.toString())
+                        }
+
+                        mIndex = 0
+                        updateComposingText()
+                        return
+                    }
                 }
             }
         }
@@ -130,7 +128,7 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
 
     fun updateComposingText() = get(mIndex)?.let { candidate ->
         engine.setComposingTextSKK(candidate + engine.mOkurigana)
-    }
+    } ?: engine.setComposingTextSKK()
 
     fun pickCandidate(index: Int, backspace: Boolean = false, unregister: Boolean = false) {
         if (!engine.state.hasCandidates) return
@@ -367,11 +365,9 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
             }
         }
 
-        if (narrowed.isNotEmpty()) {
-            mList = narrowed
-            mIndex = 0
-            setView(narrowed, mQuery, mIndex)
-        } else SKKLog.d("narrowCandidates: no entries")
+        mList = narrowed.ifEmpty { null }
+        mIndex = 0
+        setView(narrowed, mQuery, mIndex)
         updateComposingText()
     }
 

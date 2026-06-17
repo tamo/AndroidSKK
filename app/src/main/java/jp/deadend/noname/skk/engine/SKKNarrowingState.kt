@@ -14,7 +14,7 @@ object SKKNarrowingState : SKKConfirmingState {
     override var pendingLambda: (() -> Unit)? = null
     override var oldComposingText = ""
 
-    internal val mHint = StringBuilder()
+    internal val mHint = SKKEngine.KanjiKey()
     internal var mOriginalCandidates: List<String>? = null
     internal var mSpaceUsed = false // xを前候補にするためのフラグ
     internal var isASCII = false // isJapanese とは違って可変な内部フラグ
@@ -53,7 +53,7 @@ object SKKNarrowingState : SKKConfirmingState {
 
             if (isASCII) {
                 // このモードでは ' ' も 'X' も利かない
-                mHint.append(Char(charCode))
+                mHint.insertAtCursor(Char(charCode).toString())
                 mComposing.setLength(0)
                 mCandidates.narrow(mHint.toString())
                 return
@@ -76,7 +76,7 @@ object SKKNarrowingState : SKKConfirmingState {
                             Character.toLowerCase(keyCode),
                             false
                         ) { _, hiraganaChar ->
-                            mHint.append(hiraganaChar)
+                            mHint.insertAtCursor(hiraganaChar)
                             mComposing.setLength(0)
                             mCandidates.narrow(mHint.toString())
                         }
@@ -95,7 +95,7 @@ object SKKNarrowingState : SKKConfirmingState {
                     mComposing.deleteCharAt(mComposing.lastIndex)
                     mCandidates.updateComposingText()
                 } else {
-                    mHint.deleteCharAt(mHint.lastIndex)
+                    mHint.deleteAtCursor()
                     mCandidates.narrow(mHint.toString())
                 }
             }

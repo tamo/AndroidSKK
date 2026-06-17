@@ -82,7 +82,7 @@ object SKKPreeditState : SKKState {
             }
 
             when (codeLower) {
-                ' '.code, '>'.code -> {
+                ' '.code, '>'.code, ':'.code -> {
                     // 変換開始
                     // 最後に単体の'n'で終わっている場合、'ん'に変換
                     if (mComposing.length == 1 && mComposing[0] == 'n') {
@@ -92,6 +92,7 @@ object SKKPreeditState : SKKState {
                     if (codeLower == '>'.code) mKanjiKey.insertAtCursor(">") // 接頭辞入力
                     mComposing.setLength(0)
                     startConversion()
+                    if (codeLower == ':'.code) changeState(SKKNarrowingState)
                 }
 
                 else -> {

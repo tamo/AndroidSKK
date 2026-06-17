@@ -282,7 +282,10 @@ class SKKEngine(
 
     internal fun handleDpad(keyCode: Int): Boolean {
         when {
-            state.hasCandidates -> when (keyCode) {
+            // narrowing のときは hint のカーソルを動かす方が便利
+            // 前の候補を選択したいときはちょっと不便だが直接選択したりできるし
+            // 次の候補はスペースで選択できるから
+            state.hasCandidates && state !is SKKNarrowingState -> when (keyCode) {
                 KeyEvent.KEYCODE_DPAD_LEFT -> moveCandidateCursor(false)
                 KeyEvent.KEYCODE_DPAD_RIGHT -> moveCandidateCursor(true)
                 else -> return false
@@ -296,20 +299,22 @@ class SKKEngine(
     }
 
     private fun handleDpadTransient(keyCode: Int): Boolean {
-        val oldCursor = mKanjiKey.cursor
-        mKanjiKey.cursor = when (keyCode) {
-            KeyEvent.KEYCODE_DPAD_LEFT -> mKanjiKey.cursor.dec().coerceAtLeast(0)
-            KeyEvent.KEYCODE_DPAD_RIGHT -> mKanjiKey.cursor.inc().coerceAtMost(mKanjiKey.length)
+        val target = if (state is SKKNarrowingState) SKKNarrowingState.mHint else mKanjiKey
+        val oldCursor = target.cursor
+        target.cursor = when (keyCode) {
+            KeyEvent.KEYCODE_DPAD_LEFT -> target.cursor.dec().coerceAtLeast(0)
+            KeyEvent.KEYCODE_DPAD_RIGHT -> target.cursor.inc().coerceAtMost(target.length)
             else -> return false
         }
-        if (mKanjiKey.cursor == oldCursor) {
-            mCandidates.cycleCompletionCursor(keyCode == KeyEvent.KEYCODE_DPAD_RIGHT)
-            if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT) mKanjiKey.cursor = 0
-        } else SKKLog.d(
-            "mKanjiKey: " + mKanjiKey.take(mKanjiKey.cursor) +
-                    " | " + mKanjiKey.drop(mKanjiKey.cursor)
-        )
-        setComposingTextSKK()
+        if (target.cursor == oldCursor) {
+            val direction = keyCode == KeyEvent.KEYCODE_DPAD_RIGHT
+            if (state is SKKNarrowingState) mCandidates.moveCandidateCursor(direction)
+            else mCandidates.cycleCompletionCursor(direction)
+            if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT) target.cursor = 0
+        } else {
+            SKKLog.d("[${target.take(target.cursor)}]|[${target.drop(target.cursor)}]")
+            setComposingTextSKK()
+        }
         return true
     }
 
@@ -370,7 +375,7 @@ class SKKEngine(
                 mKanjiKey.deleteAtCursor()
                 if (type == LAST_CONVERSION_SHIFT) {
                     mKanjiKey.deleteAfterCursor()
-                    mKanjiKey.append(RomajiConverter.getConsonantForVoiced(newLastChar))
+                    mKanjiKey.insertAtCursor(RomajiConverter.getConsonantForVoiced(newLastChar))
                     mOkurigana = newLastChar
                     startConversion() // ▼合い
                 } else {
@@ -383,14 +388,14 @@ class SKKEngine(
             state.hasCandidates && mComposing.isEmpty() -> {
                 if (state is SKKNarrowingState && SKKNarrowingState.mHint.isNotEmpty()) {
                     val hint = SKKNarrowingState.mHint // ▼藹 hint: わ
-                    val idx = hint.length - 1
                     if (type == LAST_CONVERSION_SHIFT) return
-                    val newLastChar =
-                        RomajiConverter.convertLastChar(hint.substring(idx), type).second
+                    val newLastChar = RomajiConverter.convertLastChar(
+                        hint.substring(hint.cursor - 1, hint.cursor), type
+                    ).second
                     // この convertLastChar にも 2 文字が渡ることはない
 
-                    hint.deleteCharAt(idx)
-                    hint.append(newLastChar)
+                    hint.deleteAtCursor()
+                    hint.insertAtCursor(newLastChar)
                     mCandidates.narrow(hint.toString())
                 } else if (state is SKKChooseState) {
                     if (mOkurigana.isEmpty()) return
@@ -408,7 +413,7 @@ class SKKEngine(
                     // 「ゃゅょ」で送りがなが始まる場合はないはず
                     if (type != LAST_CONVERSION_SMALL) {
                         mKanjiKey.deleteAtCursor()
-                        mKanjiKey.append(RomajiConverter.getConsonantForVoiced(newOkurigana))
+                        mKanjiKey.insertAtCursor(RomajiConverter.getConsonantForVoiced(newOkurigana))
                     }
                     mOkurigana = newOkurigana
                     startConversion() //変換やりなおし
@@ -428,7 +433,7 @@ class SKKEngine(
 
                 if (mRegister.isOngoing) {
                     val (regInfo, firstEntry) = mRegister.first()!!
-                    if (regInfo.cursor > if (deleteTwo) 1 else 0) return
+                    if (regInfo.cursor < if (deleteTwo) 2 else 1) return
                     firstEntry.deleteCharAt(regInfo.cursor--)
                     if (deleteTwo) {
                         firstEntry.deleteCharAt(regInfo.cursor--)
@@ -536,7 +541,10 @@ class SKKEngine(
             )
         )
         if (state is SKKNarrowingState) {
-            ct.append(" hint: ", SKKNarrowingState.mHint, mComposing)
+            val hint = (state as SKKNarrowingState).mHint
+            val hintWithCursor = if (hint.cursor == hint.length) "${hint}${mComposing}"
+            else "${hint.take(hint.cursor)}[${mComposing}]${hint.drop(hint.cursor)}"
+            ct.append(" hint: ", hintWithCursor)
         }
 
         if (suffix.isNotEmpty()) {
@@ -868,7 +876,7 @@ class SKKEngine(
 
             is SKKNarrowingState -> {
                 state.apply {
-                    mHint.setLength(0)
+                    mHint.clear()
                     mOriginalCandidates = null
                     mSpaceUsed = false
                     isSequential = false
