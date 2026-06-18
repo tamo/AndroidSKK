@@ -10,6 +10,7 @@ import jp.deadend.noname.skk.SKKLog
 import jp.deadend.noname.skk.SKKService
 import jp.deadend.noname.skk.SKKUserDictionary
 import jp.deadend.noname.skk.encodeKey
+import jp.deadend.noname.skk.getKeyName
 import jp.deadend.noname.skk.hankaku2zenkaku
 import jp.deadend.noname.skk.hiragana2katakana
 import jp.deadend.noname.skk.isAlphabet
@@ -135,18 +136,27 @@ class SKKEngine(
         }
     }
 
-    internal fun processKey(keyCode: Int) = state.processKey(this, keyCode)
+    internal fun processKey(keyCode: Int) {
+        if (skkPrefs.isModeKey(keyCode)) SKKLog.d("processKey(${getKeyName(keyCode)}) in ${state.name}")
+        state.processKey(this, keyCode)
+    }
 
-    internal fun handleKanaKey() = state.handleKanaKey(this)
+    internal fun handleKanaKey() {
+        SKKLog.d("handleKanaKey() in ${state.name}")
+        state.handleKanaKey(this)
+    }
 
-    private fun handleKatakanaKey(): Boolean = true.also {
+    private fun handleKatakanaKey(): Boolean {
+        SKKLog.d("handleKatakanaKey() in ${state.name}")
         changeState(
             if (kanaState is SKKHiraganaState) SKKKatakanaState
             else SKKHiraganaState
         )
+        return true
     }
 
     internal fun handleASCIIKey(): Boolean {
+        SKKLog.d("handleASCIIKey() in ${state.name}")
         if (mComposing.length != 1 || mComposing[0] != 'z') {
             // ▽モード(PreeditState)では l で Abbrev モードに遷移（SKK 原本の動作）
             if (state is SKKPreeditState) changeState(SKKAbbrevState)
@@ -157,35 +167,34 @@ class SKKEngine(
         return false
     }
 
-    private fun handleZenkakuKey(): Boolean = true.also { changeState(SKKZenkakuState) }
-
-    private fun handleAbbrevKey(): Boolean =
-        if (mComposing.isEmpty()) true.also { changeState(SKKAbbrevState) }
-        else false
-
-    private fun handleHankakuKanaKey(): Boolean = true.also { changeState(SKKHanKanaState) }
-
-    internal fun handleEnter(): Boolean {
-        when {
-            state.hasCandidates -> mCandidates.pickCandidate(mCandidates.mIndex)
-            state.isTransient && state.canComplete -> changeState(kanaState)
-            else -> {
-                if (mComposing.isEmpty()) {
-                    if (mRegister.isOngoing) mRegister.finish() else return false
-                } else {
-                    commitTextSKK(
-                        if (state is SKKHanKanaState) zenkaku2hankaku(mComposing.toString())
-                        else mComposing
-                    )
-                    mComposing.setLength(0)
-                }
-            }
-        }
-
+    private fun handleZenkakuKey(): Boolean {
+        SKKLog.d("handleZenkakuKey() in ${state.name}")
+        changeState(SKKZenkakuState)
         return true
     }
 
+    private fun handleAbbrevKey(): Boolean {
+        SKKLog.d("handleAbbrevKey() in ${state.name}")
+        if (mComposing.isEmpty()) {
+            changeState(SKKAbbrevState)
+            return true
+        }
+        return false
+    }
+
+    private fun handleHankakuKanaKey(): Boolean {
+        SKKLog.d("handleHankakuKanaKey() in ${state.name}")
+        changeState(SKKHanKanaState)
+        return true
+    }
+
+    internal fun handleEnter(): Boolean {
+        SKKLog.d("handleEnter() in ${state.name}")
+        return state.handleEnter(this)
+    }
+
     internal fun handleBackspace(): Boolean {
+        SKKLog.d("handleBackspace() in ${state.name} ($mKanjiKey[$mComposing])")
         if (state.hasCandidates) {
             state.afterBackspace(this)
             return true
@@ -215,8 +224,10 @@ class SKKEngine(
         return true
     }
 
-    internal fun handleCancel(reconvert: Boolean = true): Boolean =
-        ic != null && state.handleCancel(this, reconvert)
+    internal fun handleCancel(reconvert: Boolean = true): Boolean {
+        SKKLog.d("handleCancel() in ${state.name}")
+        return ic != null && state.handleCancel(this, reconvert)
+    }
 
     /**
      * commitTextのラッパー 登録作業中なら登録内容に追加し，表示を更新
@@ -240,6 +251,7 @@ class SKKEngine(
     }
 
     internal fun resetOnStartInput() {
+        SKKLog.d("resetOnStartInput()")
         mComposing.setLength(0)
         mKanjiKey.clear()
         mOkurigana = ""
@@ -261,6 +273,7 @@ class SKKEngine(
         mCandidates.moveCandidateCursor(isForward)
 
     internal fun handleDpad(keyCode: Int): Boolean {
+        SKKLog.d("handleDpad(${getKeyName(keyCode)}) in ${state.name}")
         when {
             // narrowing のときは hint のカーソルを動かす方が便利
             // 前の候補を選択したいときはちょっと不便だが直接選択したりできるし
@@ -325,6 +338,7 @@ class SKKEngine(
     }
 
     internal fun prepareToMushroom(clip: String): String {
+        SKKLog.d("prepareToMushroom() in ${state.name}")
         val str = when {
             state is SKKASCIIState -> (state as SKKASCIIState).getPrefix(this).ifEmpty { clip }
             state.canComplete -> mKanjiKey.toString()
@@ -343,6 +357,7 @@ class SKKEngine(
 
     // 小文字大文字変換，濁音，半濁音に使う
     internal fun changeLastChar(type: String) {
+        SKKLog.d("changeLastChar($type) in ${state.name} ($mKanjiKey[$mComposing])")
         when {
             state is SKKPreeditState && mComposing.isEmpty() && mKanjiKey.cursor > 0 -> {
                 val s = mKanjiKey.toString() // ▽あい
@@ -405,7 +420,7 @@ class SKKEngine(
                 val cs = ic.getTextBeforeCursor(2, 0) ?: return
                 // 0〜2 文字を 0〜3 文字にするので注意!
                 val newLast2Chars = RomajiConverter.convertLastChar(cs.toString(), type)
-                SKKLog.d("changeLastChar: 2chars=$newLast2Chars")
+                SKKLog.d("changeLastChar: $cs -> 2chars=$newLast2Chars")
                 if (newLast2Chars.first.isEmpty() && newLast2Chars.second.isEmpty()) return
 
                 val deleteTwo = (cs.length == 2 && newLast2Chars.first.isEmpty())
@@ -568,7 +583,7 @@ class SKKEngine(
 
     internal fun reConvert(): Boolean {
         val lastConv = mLastConversion ?: return false
-        SKKLog.d("last conversion: ${lastConv.candidate} from ${lastConv.list} at ${lastConv.index} (key=${lastConv.kanjiKey}, okuri=${lastConv.okurigana})")
+        SKKLog.d("reConvert: lastConv=${lastConv.candidate} from ${lastConv.list} at ${lastConv.index} (key=${lastConv.kanjiKey}, okuri=${lastConv.okurigana})")
 
         if (mService.prepareReConversion(lastConv.candidate)) {
             runBlocking(Dispatchers.IO) { mUserDict.rollBack() }

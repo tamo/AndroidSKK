@@ -13,8 +13,16 @@ interface SKKConfirmingState : SKKState {
 
     fun beforeProcessKey(context: SKKEngine, keyCode: Int): Boolean {
         val lowerCode = keyCode.lowerCode
+        return checkPending(context, lowerCode)
+    }
+
+    fun handleEnterConfirming(context: SKKEngine): Boolean {
+        return checkPending(context, 'y'.code)
+    }
+
+    private fun checkPending(context: SKKEngine, lowerCode: Int): Boolean {
         pendingLambda?.let {
-            SKKLog.d("SKKConfirmingState.pendingLambda: $lowerCode (oldComposingText=$oldComposingText)")
+            SKKLog.d("checkPending: '${Char(lowerCode)}' (oldComposingText=$oldComposingText)")
             pendingLambda = null
             if (lowerCode == 'y'.code) {
                 it.invoke()

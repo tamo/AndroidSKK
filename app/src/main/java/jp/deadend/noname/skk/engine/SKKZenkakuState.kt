@@ -16,6 +16,8 @@ object SKKZenkakuState : SKKState {
         context.changeState(SKKHiraganaState)
     }
 
+    override fun handleEnter(context: SKKEngine): Boolean = false
+
     override fun processKey(context: SKKEngine, keyCode: Int) {
         val lower = keyCode.lowerCode
         val charCode = if (keyCode.isShifted) Character.toUpperCase(lower) else lower

@@ -17,6 +17,8 @@ object SKKHanKanaState : SKKState {
         }
     }
 
+    override fun handleEnter(context: SKKEngine): Boolean = SKKHiraganaState.handleEnter(context)
+
     override fun processKey(context: SKKEngine, keyCode: Int) {
         if (context.changeInputMode(keyCode)) return
         SKKHiraganaState.processKana(context, keyCode) { engine, hiraganaChar ->

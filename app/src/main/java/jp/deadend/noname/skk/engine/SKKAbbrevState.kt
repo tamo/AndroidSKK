@@ -20,6 +20,11 @@ object SKKAbbrevState : SKKState {
         context.changeState(SKKPreeditState)
     }
 
+    override fun handleEnter(context: SKKEngine): Boolean {
+        context.changeState(context.kanaState)
+        return true
+    }
+
     override fun processKey(context: SKKEngine, keyCode: Int) {
         val lower = keyCode.lowerCode
         val charCode = if (keyCode.isShifted) Character.toUpperCase(lower) else lower

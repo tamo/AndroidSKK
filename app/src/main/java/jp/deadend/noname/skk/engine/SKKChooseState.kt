@@ -28,6 +28,11 @@ object SKKChooseState : SKKConfirmingState {
         }
     }
 
+    override fun handleEnter(context: SKKEngine): Boolean {
+        if (!handleEnterConfirming(context)) context.pickCurrentCandidate()
+        return true
+    }
+
     override fun processKey(context: SKKEngine, keyCode: Int) {
         if (super.beforeProcessKey(context, keyCode)) return
         val lower = keyCode.lowerCode

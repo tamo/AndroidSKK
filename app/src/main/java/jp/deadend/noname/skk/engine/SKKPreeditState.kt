@@ -1,6 +1,5 @@
 package jp.deadend.noname.skk.engine
 
-import jp.deadend.noname.skk.SKKLog
 import jp.deadend.noname.skk.createTrimmedBuilder
 import jp.deadend.noname.skk.hiragana2katakana
 import jp.deadend.noname.skk.isShifted
@@ -28,10 +27,14 @@ object SKKPreeditState : SKKState {
         }
     }
 
+    override fun handleEnter(context: SKKEngine): Boolean {
+        context.changeState(context.kanaState)
+        return true
+    }
+
     override fun processKey(context: SKKEngine, keyCode: Int) {
         val codeLower = keyCode.lowerCode
         val isUpper = keyCode.isShifted
-        SKKLog.d("processKey(${codeLower.toChar()}, upper=$isUpper)")
 
         context.apply {
             val canRetry = mComposing.isNotEmpty() // 無限ループ防止
@@ -45,7 +48,7 @@ object SKKPreeditState : SKKState {
             }
 
             when (keyCode) {
-                skkPrefs.asciiKey, skkPrefs.abbrevKey -> {
+                skkPrefs.asciiKey, skkPrefs.abbrevKey, skkPrefs.zenkakuKey -> {
                     changeInputMode(keyCode)
                     return
                 }

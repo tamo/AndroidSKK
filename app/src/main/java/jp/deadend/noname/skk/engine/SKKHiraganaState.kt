@@ -15,6 +15,23 @@ object SKKHiraganaState : SKKState {
         if (skkPrefs.toggleKanaKey) context.changeState(SKKASCIIState, true)
     }
 
+    override fun handleEnter(context: SKKEngine): Boolean = context.run {
+        when {
+            mComposing.isNotEmpty() -> {
+                commitComposing()
+                setComposingTextSKK("")
+                true
+            }
+
+            mRegister.isOngoing -> {
+                mRegister.finish()
+                true
+            }
+
+            else -> false
+        }
+    }
+
     internal fun processKana(
         context: SKKEngine,
         keyCode: Int, commitAlphabet: Boolean = true, commitFunc:

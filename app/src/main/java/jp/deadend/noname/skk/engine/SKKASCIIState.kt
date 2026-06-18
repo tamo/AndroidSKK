@@ -19,6 +19,8 @@ object SKKASCIIState : SKKConfirmingState {
         context.changeState(SKKHiraganaState) // Flickにするのは別キーなので内部だけひらがなに
     }
 
+    override fun handleEnter(context: SKKEngine): Boolean = handleEnterConfirming(context)
+
     override fun processKey(context: SKKEngine, keyCode: Int) {
         if (beforeProcessKey(context, keyCode)) return
         val lower = keyCode.lowerCode

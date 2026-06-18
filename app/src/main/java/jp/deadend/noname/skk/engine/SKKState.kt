@@ -13,6 +13,7 @@ interface SKKState {
     val icon: Int // 非表示は 0
     var isSequential: Boolean get() = false; set(_) {} // シフトでオンオフする連続入力フラグ
     fun handleKanaKey(context: SKKEngine)
+    fun handleEnter(context: SKKEngine): Boolean = false
     fun processKey(context: SKKEngine, keyCode: Int)
     fun afterBackspace(context: SKKEngine)
     fun handleCancel(context: SKKEngine, reconvert: Boolean): Boolean

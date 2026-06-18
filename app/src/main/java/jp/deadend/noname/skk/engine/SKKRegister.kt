@@ -1,6 +1,7 @@
 package jp.deadend.noname.skk.engine
 
 import android.view.KeyEvent
+import jp.deadend.noname.skk.SKKLog
 import jp.deadend.noname.skk.hiragana2katakana
 import jp.deadend.noname.skk.isAlphabet
 import jp.deadend.noname.skk.processConcatAndMore
@@ -27,6 +28,7 @@ class SKKRegister(private val engine: SKKEngine) {
         get() = mStack.isNotEmpty()
 
     internal fun start(str: String) = engine.apply {
+        SKKLog.d("SKKRegister.start($str)")
         mStack.addFirst(RegistrationInfo(str, mOkurigana))
         reset()
         kanaStateBefore = kanaState

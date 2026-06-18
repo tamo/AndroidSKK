@@ -25,6 +25,11 @@ object SKKOkuriganaState : SKKState {
         }
     }
 
+    override fun handleEnter(context: SKKEngine): Boolean {
+        context.changeState(context.kanaState)
+        return true
+    }
+
     override fun processKey(context: SKKEngine, keyCode: Int) {
         val codeLower = keyCode.lowerCode
 

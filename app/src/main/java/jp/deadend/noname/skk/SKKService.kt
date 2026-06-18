@@ -1179,7 +1179,7 @@ class SKKService : InputMethodService() {
     fun processKey(code: Int) {
         val isCtrl = code and CTRL_PRESSED != 0
         val isAlt = code and ALT_PRESSED != 0
-        if (isCtrl || isAlt) {
+        if (!skkPrefs.isModeKey(code) && (isCtrl || isAlt)) {
             val downTime = System.currentTimeMillis()
             currentInputConnection.sendKeyEvent(
                 KeyEvent(
