@@ -127,9 +127,10 @@
             app:keyWidth="20%p" />
         <Key
             app:codes="-1010"
-            app:downLabel="CXL"
+            app:downLabel="Google"
             app:keyLabel="全角"
-            app:keyWidth="15%p" />
+            app:keyWidth="15%p"
+            app:shiftedLabel="CXL" />
         <Key
             app:codes="32"
             app:keyIcon="@drawable/ic_keyboard_space_bar"

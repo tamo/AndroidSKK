@@ -9,6 +9,8 @@ import jp.deadend.noname.skk.skkPrefs
 // 日本語辞書で英数を変換するための Preedit (▽モード)
 object SKKAbbrevState : SKKState {
     override val isTransient = true
+    override val isPreedit = true
+    override val isTemporaryView = true
     override val canComplete = true
     override val prefix = "▽"
     override val isJapanese = false

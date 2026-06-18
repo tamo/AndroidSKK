@@ -8,6 +8,8 @@ interface SKKState {
     val hasCandidates: Boolean get() = false // ▼
     val prefix: String? get() = null // composing 表示に ▽ や ▼ を入れるとき
     val isJapanese: Boolean get() = true // 表示キーボードの判別用
+    val isPreedit: Boolean get() = false // reset() しないで遷移する state
+    val isTemporaryView: Boolean get() = false // メインじゃないキーボードを使用
     val icon: Int // 非表示は 0
     var isSequential: Boolean get() = false; set(_) {} // シフトでオンオフする連続入力フラグ
     fun handleKanaKey(context: SKKEngine)

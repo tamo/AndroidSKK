@@ -158,10 +158,10 @@
             app:shiftedLabel="貼付" />
         <Key
             app:codes="-1009"
-            app:downLabel="CXL"
+            app:downLabel="Google"
             app:keyLabel="記号"
             app:keyWidth="15%p"
-            app:shiftedLabel="Google" />
+            app:shiftedLabel="CXL" />
         <Key
             app:codes="32"
             app:keyIcon="@drawable/ic_keyboard_space_bar"

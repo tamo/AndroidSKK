@@ -184,8 +184,8 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                         // 記号は capslock にならない気がするが一応
                     }
 
-                    flickUp -> mService.googleTransliterate()
-                    FLICK_DOWN -> mService.handleCancel()
+                    flickUp -> mService.handleCancel()
+                    FLICK_DOWN -> mService.googleTransliterate()
                 }
             }
 

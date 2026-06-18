@@ -9,6 +9,7 @@ import jp.deadend.noname.skk.skkPrefs
 // 送り仮名入力中(▽モード，*つき)
 object SKKOkuriganaState : SKKState {
     override val isTransient = true
+    override val isPreedit = true
     override val canComplete = true
     override val prefix = "▽"
     override val icon = 0

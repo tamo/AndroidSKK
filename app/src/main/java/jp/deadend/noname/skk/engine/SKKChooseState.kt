@@ -8,6 +8,7 @@ import jp.deadend.noname.skk.skkPrefs
 // 変換候補選択中(▼モード)
 object SKKChooseState : SKKConfirmingState {
     override val isTransient = true
+    override val isPreedit = true
     override val hasCandidates = true
     override val prefix = "▼"
     override val icon = 0

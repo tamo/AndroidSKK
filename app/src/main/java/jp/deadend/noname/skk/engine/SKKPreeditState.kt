@@ -13,6 +13,7 @@ import jp.deadend.noname.skk.zenkaku2hankaku
 // 漢字変換のためのひらがな入力中(▽モード)
 object SKKPreeditState : SKKState {
     override val isTransient = true
+    override val isPreedit = true
     override val canComplete = true
     override val prefix = "▽"
     override val icon = 0

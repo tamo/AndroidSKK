@@ -601,7 +601,7 @@ class SKKEngine(
     private val volleyQueue by lazy { Volley.newRequestQueue(mService.applicationContext) }
     internal fun googleTransliterate() {
         if (!mRegister.isOngoing) {
-            if (state is SKKASCIIState) return googleTranslate()
+            if (!state.isJapanese) return googleTranslate()
             if (mKanjiKey.isEmpty()) return
         } else {
             // candidate から選択しただけで登録されるので
@@ -652,9 +652,10 @@ class SKKEngine(
     }
 
     private fun googleTranslate() {
-        val query = state.let { ascii ->
-            if (ascii !is SKKASCIIState) return
-            ascii.getPrefix(this) + ascii.getSuffix(this) // Uri.encode() すべき?
+        val query = when (val state = state) {
+            is SKKAbbrevState -> mKanjiKey.toString()
+            is SKKASCIIState -> state.getPrefix(this) + state.getSuffix(this) // Uri.encode() すべき?
+            else -> return
         }
         SKKLog.d("googleTranslate query=$query")
         if (query.isEmpty()) return
@@ -681,6 +682,7 @@ class SKKEngine(
                         SKKLog.w(" googleTranslate JSON error", e)
                         listOf("(エラー)", query)
                     }
+                    if (state is SKKAbbrevState) changeState(SKKChooseState)
                     mCandidates.apply {
                         mCompletionList = list.map { query }
                         mList = list
@@ -822,40 +824,39 @@ class SKKEngine(
         reset()
     }
 
-    internal fun changeState(state: SKKState, force: Boolean = false) {
-        SKKLog.d("changeState ${this.state.name} -> ${state.name} (force=$force)")
-        val willBeTemporaryView = state is SKKAbbrevState || state is SKKZenkakuState
+    internal fun changeState(newState: SKKState, force: Boolean = false) {
+        SKKLog.d("changeState ${this.state.name} -> ${newState.name} (force=$force)")
+        val willBeTemporaryView = newState.isTemporaryView
         val wasTemporaryView = mService.isTemporaryView
-        val inCompatibleStates = (this.state.isTransient && this.state.canComplete &&
-                state.isTransient && state.canComplete)
+        val isPreeditTransition = this.state.isPreedit && newState.isPreedit // reset() しない
 
         if (this.state !is SKKEmojiState)
             oldState = this.state
         else mKanjiKey.clear() // mKanjiKey=="emoji"は基本的に無意味なので
 
-        this.state = state
+        this.state = newState
 
         val prevInputView = if (cameFromFlick) kanaState else SKKASCIIState
-        if (!state.isTransient || force || willBeTemporaryView || wasTemporaryView) {
-            if (!state.isTransient) {
+        if (!newState.isTransient || force || willBeTemporaryView || wasTemporaryView) {
+            if (!newState.isTransient) {
                 commitComposing() // 暗黙の確定
-            } else if (!inCompatibleStates) {
+            } else if (!isPreeditTransition) {
                 reset()
             }
             when {
-                force || willBeTemporaryView -> changeSoftKeyboard(state)
+                force || willBeTemporaryView -> changeSoftKeyboard(newState)
                 wasTemporaryView -> mService.changeSoftKeyboard(prevInputView) // cameFromFlick に記録しない
             }
             if (mRegister.isOngoing) setComposingTextSKK("")
             // reset()で一旦消してるので， 登録中はここまで来てからComposingText復活
         }
 
-        when (state) {
+        when (newState) {
             SKKHiraganaState, SKKKatakanaState, SKKHanKanaState ->
-                mService.kanaState = state
+                mService.kanaState = newState
 
             is SKKNarrowingState -> {
-                state.apply {
+                newState.apply {
                     mHint.clear()
                     mOriginalCandidates = null
                     mSpaceUsed = false
@@ -865,22 +866,26 @@ class SKKEngine(
                 mCandidates.updateComposingText()
             }
         }
-        if (state.icon != 0) {
-            mService.showStatusIcon(state.icon)
-        } else if (state is SKKASCIIState) {
+        if (newState.icon != 0) {
+            mService.showStatusIcon(newState.icon)
+        } else if (newState is SKKASCIIState) {
             mService.hideStatusIcon()
         }
     }
 
     internal fun changeSoftKeyboard(state: SKKState) {
         // 仮名からASCII以外の一時的なキーボードになるときや明示的変更のとき記録して後で戻れるようにしておく
-        when (state) {
-            SKKAbbrevState, SKKZenkakuState -> cameFromFlick = mService.isFlickWidth()
-            SKKASCIIState -> cameFromFlick = false
-            SKKHiraganaState,
-            SKKKatakanaState, SKKHanKanaState -> cameFromFlick = true
-
-            SKKEmojiState -> return
+        cameFromFlick = when {
+            state.isTemporaryView -> mService.isFlickWidth()
+            else -> when (state) {
+                SKKASCIIState -> false
+                SKKHiraganaState, SKKKatakanaState, SKKHanKanaState -> true
+                SKKEmojiState -> return
+                else -> {
+                    SKKLog.e("changeSoftKeyboard(${state.name})", Throwable())
+                    return
+                }
+            }
         }
         mService.changeSoftKeyboard(state)
     }

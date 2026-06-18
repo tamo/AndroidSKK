@@ -117,8 +117,9 @@ class AbbrevKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
 
             KEYCODE_ABBREV_ZENKAKU -> {
                 when (isFlicked) {
+                    FLICK_UP -> mService.handleCancel()
                     FLICK_NONE -> mService.processKey(skkPrefs.hankakuKanaKey)
-                    FLICK_DOWN -> mService.handleCancel()
+                    FLICK_DOWN -> mService.googleTransliterate()
                 }
             }
 
