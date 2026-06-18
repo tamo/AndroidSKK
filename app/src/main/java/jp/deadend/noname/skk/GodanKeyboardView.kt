@@ -13,7 +13,6 @@ import android.widget.TextView
 import androidx.core.content.res.ResourcesCompat
 import jp.deadend.noname.skk.databinding.PopupFlickguideBinding
 import jp.deadend.noname.skk.engine.RomajiConverter.getVowel
-import jp.deadend.noname.skk.engine.SKKAbbrevState
 import jp.deadend.noname.skk.engine.SKKEngine
 import jp.deadend.noname.skk.engine.SKKState
 import jp.deadend.noname.skk.engine.SKKZenkakuState
@@ -650,7 +649,6 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
             KEYCODE_GODAN_CHAR_L -> {
                 val state = mService.engineState
                 when {
-                    state is SKKAbbrevState -> mService.processKey(skkPrefs.kanaKey)
                     !state.isJapanese -> mService.handleKanaKey()
                     else -> mService.processKey(if (isShifted) skkPrefs.zenkakuKey else skkPrefs.asciiKey)
                 }

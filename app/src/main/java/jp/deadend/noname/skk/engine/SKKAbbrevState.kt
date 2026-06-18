@@ -15,7 +15,7 @@ object SKKAbbrevState : SKKState {
     override val icon = R.drawable.ic_abbrev
 
     override fun handleKanaKey(context: SKKEngine) {
-        context.changeState(SKKHiraganaState)
+        context.changeState(SKKPreeditState)
     }
 
     override fun processKey(context: SKKEngine, keyCode: Int) {

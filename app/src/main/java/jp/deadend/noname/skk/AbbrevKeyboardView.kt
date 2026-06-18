@@ -111,8 +111,8 @@ class AbbrevKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
 
             KEYCODE_ABBREV_ENTER -> if (!mService.handleEnter()) mService.pressEnter()
             KEYCODE_ABBREV_TO_JP -> when (isFlicked) {
-                if (skkPrefs.preferFlick) FLICK_NONE else FLICK_DOWN -> mService.handleKanaKey()
-                if (skkPrefs.preferFlick) FLICK_DOWN else FLICK_NONE -> mService.processKey(skkPrefs.kanaKey)
+                if (skkPrefs.preferFlick) FLICK_NONE else FLICK_DOWN -> mService.handleEnter() // 確定
+                if (skkPrefs.preferFlick) FLICK_DOWN else FLICK_NONE -> mService.handleKanaKey()
             }
 
             KEYCODE_ABBREV_ZENKAKU -> {
