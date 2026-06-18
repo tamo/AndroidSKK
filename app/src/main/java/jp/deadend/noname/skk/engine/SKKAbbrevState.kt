@@ -43,7 +43,7 @@ object SKKAbbrevState : SKKState {
                 ' '.code -> if (mKanjiKey.isNotEmpty()) startConversion()
 
                 else -> {
-                    mKanjiKey.insertAtCursor(Char(keyCode).toString())
+                    mKanjiKey.insertAtCursor(Char(charCode).toString())
                     setComposingTextSKK()
                     complete(mKanjiKey.toString())
                 }
