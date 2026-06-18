@@ -19,6 +19,7 @@ import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewConfiguration
 import android.widget.PopupWindow
 import android.widget.TextView
 import android.widget.Toast
@@ -1162,12 +1163,12 @@ open class KeyboardView @JvmOverloads constructor(
         if (key.codes.main.size > 1) {
             mInMultiTap = true
             mTapCount =
-                if (eventTime < mLastTapTime + MULTI_TAP_INTERVAL && keyIndex == mLastSentIndex) {
+                if (eventTime < mLastTapTime + ViewConfiguration.getDoubleTapTimeout() && keyIndex == mLastSentIndex) {
                     (mTapCount + 1) % key.codes.main.size
                 } else {
                     -1
                 }
-        } else if (eventTime > mLastTapTime + MULTI_TAP_INTERVAL || keyIndex != mLastSentIndex) {
+        } else if (eventTime > mLastTapTime + ViewConfiguration.getDoubleTapTimeout() || keyIndex != mLastSentIndex) {
             resetMultiTap()
         }
     }
@@ -1288,7 +1289,6 @@ open class KeyboardView @JvmOverloads constructor(
         private const val REPEAT_START_DELAY = 400
 
         // private const val MAX_NEARBY_KEYS = 12
-        private const val MULTI_TAP_INTERVAL = 800 // milliseconds
         private const val BACKGROUND_DIM_AMOUNT = 0.6f
     }
 }
