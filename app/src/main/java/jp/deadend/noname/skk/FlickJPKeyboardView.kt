@@ -192,8 +192,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
         )
         for (key in keyboard.keys) {
             val label = labels[key.codes.main[0]] ?: continue
-            key.labels.main = if (state is SKKHiraganaState) label else
-                hiragana2katakana(label) ?: label
+            key.labels.main = if (state is SKKHiraganaState) label else hiragana2katakana(label)
         }
         invalidateAllKeys()
         return this

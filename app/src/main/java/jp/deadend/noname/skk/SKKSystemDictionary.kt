@@ -14,7 +14,7 @@ class SKKSystemDictionary private constructor(
     override val mLock = ReentrantLock()
 
     override fun getCandidates(rawKey: String): List<String>? {
-        val key = katakana2hiragana(rawKey) ?: return null
+        val key = katakana2hiragana(rawKey)
         val value = mLock.withLock { mStore?.get(key) } ?: return null
 
         val valArray = value.trim('/').split('/')

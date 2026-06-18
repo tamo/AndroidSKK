@@ -219,7 +219,7 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
             val text = when (kanaState) {
                 SKKHiraganaState -> concat
                 SKKKatakanaState -> hiragana2katakana(concat, reversed = true)
-                SKKHanKanaState -> zenkaku2hankaku(hiragana2katakana(concat)).orEmpty()
+                SKKHanKanaState -> zenkaku2hankaku(hiragana2katakana(concat))
                 else -> throw RuntimeException("kanaState: $kanaState")
             } // カナかなは互換性あるけど半角カナと全角かなは互換性ない感覚があるので reverse しない
             if (!mRegister.isOngoing) {
@@ -265,7 +265,7 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
 
                 SKKPreeditState, SKKOkuriganaState -> {
                     val hira =
-                        if (kanaState is SKKHiraganaState) conv else katakana2hiragana(conv).orEmpty()
+                        if (kanaState is SKKHiraganaState) conv else katakana2hiragana(conv)
                     val last = hira.lastOrNull() ?: ' '
                     val hasOkuri = hira.isNotEmpty() &&
                             !isAlphabet(hira.first().code) && isAlphabet(last.code)

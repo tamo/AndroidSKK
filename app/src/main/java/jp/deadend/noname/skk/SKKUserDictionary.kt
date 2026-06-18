@@ -44,7 +44,7 @@ class SKKUserDictionary private constructor(
     }
 
     fun getEntry(rawKey: String, rawValue: String? = null): Entry? = mLock.withLock {
-        val key = katakana2hiragana(rawKey) ?: return@withLock null
+        val key = katakana2hiragana(rawKey)
         val value = rawValue ?: mStore?.get(key) ?: return@withLock null
         parseValue(key, value)
     }
@@ -54,7 +54,7 @@ class SKKUserDictionary private constructor(
 
     fun addEntry(key: String, value: String, okurigana: String) = mLock.withLock {
         val store = mStore ?: return@withLock
-        val hiraganaKey = katakana2hiragana(key) ?: return@withLock
+        val hiraganaKey = katakana2hiragana(key)
         val oldVal: String? = store.get(hiraganaKey)
 
         val newVal = oldVal?.let { parseValue(hiraganaKey, it) }?.let { entry ->
@@ -79,7 +79,7 @@ class SKKUserDictionary private constructor(
 
     fun removeEntry(key: String, value: String, okurigana: String) = mLock.withLock {
         val store = mStore ?: return@withLock
-        val hiraganaKey = katakana2hiragana(key) ?: return@withLock
+        val hiraganaKey = katakana2hiragana(key)
         // 「だい4かい」がなければ「だい#かい」を削除する
         val (usedKey, oldVal) = store.get(hiraganaKey)?.let { hiraganaKey to it }
             ?: hiraganaKey.replace(Regex("\\d+(\\.\\d+)?"), "#")
@@ -107,7 +107,7 @@ class SKKUserDictionary private constructor(
 
     fun replaceEntry(key: String, value: String) = mLock.withLock {
         val store = mStore ?: return@withLock
-        val hiraganaKey = katakana2hiragana(key) ?: return@withLock
+        val hiraganaKey = katakana2hiragana(key)
         // ここは再変換と関係ないので mOldKey / mOldValue を更新しない
         if (value.isEmpty() || (Regex("/*").matchEntire(value) != null)) {
             store.delete(hiraganaKey)

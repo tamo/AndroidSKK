@@ -163,9 +163,8 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                     val key =
                         checkNotNull(findKeyByCode(keyboard, keyCode)) { "BUG: no $keyCode key" }
                     val label = key.labels.main
-                    key.labels.main = if (isKatakana)
-                        hiragana2katakana(label) ?: label
-                    else katakana2hiragana(label) ?: label
+                    key.labels.main = if (isKatakana) hiragana2katakana(label)
+                    else katakana2hiragana(label)
                 }
             }
 
@@ -521,9 +520,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
 
         labels.forEachIndexed { i, label ->
             if (i > 14) return@forEachIndexed
-            mCurrentPopupLabels[i] = if (mService.isHiragana) label else {
-                hiragana2katakana(label) ?: label
-            }
+            mCurrentPopupLabels[i] = if (mService.isHiragana) label else hiragana2katakana(label)
         }
         // Godan は各キー動作が mPopupTextView に依存するので無条件に実行
         setupPopupTextView()

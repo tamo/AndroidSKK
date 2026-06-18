@@ -18,9 +18,7 @@ object SKKZenkakuState : SKKState {
     override fun processKey(context: SKKEngine, keyCode: Int) {
         val lower = keyCode.lowerCode
         val charCode = if (keyCode.isShifted) Character.toUpperCase(lower) else lower
-        hankaku2zenkaku(Char(charCode).toString())?.let {
-            context.commitTextSKK(it)
-        }
+        context.commitTextSKK(hankaku2zenkaku(Char(charCode).toString()))
     }
 
     override fun afterBackspace(context: SKKEngine) {}

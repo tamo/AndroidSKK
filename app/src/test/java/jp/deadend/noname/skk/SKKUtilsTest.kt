@@ -17,7 +17,6 @@ class SKKUtilsTest {
         assertEquals("ヴ", hankaku2zenkaku("ｳﾞ"))
         assertEquals("－", hankaku2zenkaku("-")) // マイナス
         assertEquals("ー", hankaku2zenkaku("ｰ")) // 長音
-        assertEquals(null, hankaku2zenkaku(null))
     }
 
     @Test
@@ -33,7 +32,6 @@ class SKKUtilsTest {
         assertEquals("ｳﾞ", zenkaku2hankaku("ヴ"))
         assertEquals("ｰ", zenkaku2hankaku("ー")) // 長音
         assertEquals("-", zenkaku2hankaku("－")) // マイナス
-        assertEquals(null, zenkaku2hankaku(null))
     }
 
     @Test
@@ -49,7 +47,6 @@ class SKKUtilsTest {
     fun testKatakana2Hiragana() {
         assertEquals("あいうあいう", katakana2hiragana("アイウあいう"))
         assertEquals("ゔ", katakana2hiragana("ヴ"))
-        assertEquals(null, katakana2hiragana(null))
     }
 
     @Test

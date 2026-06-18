@@ -20,8 +20,7 @@ object SKKHanKanaState : SKKState {
     override fun processKey(context: SKKEngine, keyCode: Int) {
         if (context.changeInputMode(keyCode)) return
         SKKHiraganaState.processKana(context, keyCode) { engine, hiraganaChar ->
-            val str = zenkaku2hankaku(hiragana2katakana(hiraganaChar))
-            if (str != null) engine.commitTextSKK(str)
+            engine.commitTextSKK(zenkaku2hankaku(hiragana2katakana(hiraganaChar)))
             engine.mComposing.setLength(0)
         }
     }

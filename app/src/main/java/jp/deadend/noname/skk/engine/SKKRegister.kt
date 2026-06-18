@@ -55,7 +55,7 @@ class SKKRegister(private val engine: SKKEngine) {
                     when (kanaStateBefore) {
                         SKKHiraganaState -> it
                         SKKKatakanaState -> hiragana2katakana(it, reversed = true)
-                        SKKHanKanaState -> zenkaku2hankaku(hiragana2katakana(it)).orEmpty()
+                        SKKHanKanaState -> zenkaku2hankaku(hiragana2katakana(it))
                         // 登録した内容が半角化できる文字を含んでいる場合は、やりすぎになるが無視
                         else -> throw RuntimeException("kanaState: $kanaStateBefore")
                     }

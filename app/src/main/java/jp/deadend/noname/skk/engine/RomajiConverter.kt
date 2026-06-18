@@ -71,7 +71,7 @@ object RomajiConverter {
 
     fun convert(romaji: String) = mRomajiMap[romaji].orEmpty()
     fun getConsonantForVoiced(kana: String): String {
-        val hiragana = katakana2hiragana(hankaku2zenkaku(kana)) ?: return ""
+        val hiragana = katakana2hiragana(hankaku2zenkaku(kana))
         if (hiragana.isEmpty()) return ""
         return when (val c = hiragana[0]) {
             'ぁ', 'あ' -> "a"

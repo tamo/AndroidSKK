@@ -75,7 +75,7 @@ object SKKPreeditState : SKKState {
                         } else {
                             zenkaku2hankaku(zenkakuKatakana)
                         }
-                        if (str != null) commitTextSKK(str)
+                        commitTextSKK(str)
                         mKanjiKey.clear()
                     }
                     changeState(kanaState)
@@ -146,7 +146,7 @@ object SKKPreeditState : SKKState {
                             mComposing.setLength(0)
                             mKanjiKey.insertAtCursor(
                                 if (kanaState is SKKHiraganaState) hiraganaChar
-                                else katakana2hiragana(hiraganaChar).orEmpty()
+                                else katakana2hiragana(hiraganaChar)
                             )
                             setComposingTextSKK()
                         } else {

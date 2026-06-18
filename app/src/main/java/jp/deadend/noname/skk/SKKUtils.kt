@@ -30,7 +30,7 @@ private val PAT_CAL = Regex(
 )
 
 // 半角から全角 (UNICODE)
-fun hankaku2zenkaku(str: String?): String? = str?.let { s ->
+fun hankaku2zenkaku(str: String): String = str.let { s ->
     buildString(s.length) {
         var i = 0
         while (i < s.length) {
@@ -59,7 +59,7 @@ fun hankaku2zenkaku(str: String?): String? = str?.let { s ->
     }
 }
 
-fun zenkaku2hankaku(str: String?): String? = str?.let { s ->
+fun zenkaku2hankaku(str: String): String = str.let { s ->
     buildString(s.length) {
         for (char in s) {
             val fc = Z2H[char.code]
@@ -103,12 +103,9 @@ fun hiragana2katakana(str: String, reversed: Boolean = false): String {
     }.joinToString("")
 }
 
-fun katakana2hiragana(str: String?): String? {
-    if (str == null) return null
-
-    return str.map { if (it in 'ァ'..'ヴ') it.minus(0x60) else it }.joinToString("")
-    // 「ヴ」が「う゛」ではなく「ゔ」になる
-}
+fun katakana2hiragana(str: String): String = str.map {
+    if (it in 'ァ'..'ヴ') it.minus(0x60) else it
+}.joinToString("") // 「ヴ」が「う゛」ではなく「ゔ」になる
 
 fun isAlphabet(code: Int) = code.toChar() in 'a'..'z' || code.toChar() in 'A'..'Z'
 fun isAlNum(code: Int) = isAlphabet(code) || code.toChar() in '0'..'9'

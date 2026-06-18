@@ -146,7 +146,7 @@ interface SKKDictionaryInterface {
     suspend fun findKeys(scope: CoroutineScope, rawKey: String)
             : List<Pair<String, String>> = withContext(Dispatchers.IO) {
         val store = mStore ?: return@withContext listOf()
-        val key = katakana2hiragana(rawKey) ?: return@withContext listOf()
+        val key = katakana2hiragana(rawKey)
         val list = mutableListOf<Triple<String, String, Int>>()
 
         val topFreq = mutableListOf<Int>()

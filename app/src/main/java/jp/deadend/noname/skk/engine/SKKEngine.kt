@@ -81,11 +81,8 @@ class SKKEngine(
 
     // 再変換のための情報
     internal class ConversionInfo(
-        val candidate: String,
-        val list: List<String>,
-        val index: Int,
-        val kanjiKey: String,
-        val okurigana: String
+        val candidate: String, val list: List<String>, val index: Int,
+        val kanjiKey: String, val okurigana: String
     )
 
     internal var mLastConversion: ConversionInfo? = null
@@ -138,11 +135,9 @@ class SKKEngine(
         }
     }
 
-    internal fun processKey(keyCode: Int) =
-        state.processKey(this, keyCode)
+    internal fun processKey(keyCode: Int) = state.processKey(this, keyCode)
 
-    internal fun handleKanaKey() =
-        state.handleKanaKey(this)
+    internal fun handleKanaKey() = state.handleKanaKey(this)
 
     private fun handleKatakanaKey(): Boolean = true.also {
         changeState(
@@ -154,32 +149,21 @@ class SKKEngine(
     internal fun handleASCIIKey(): Boolean {
         if (mComposing.length != 1 || mComposing[0] != 'z') {
             // ▽モード(PreeditState)では l で Abbrev モードに遷移（SKK 原本の動作）
-            if (state is SKKPreeditState) {
-                changeState(SKKAbbrevState)
-            } else {
-                changeState(SKKASCIIState, true)
-            }
+            if (state is SKKPreeditState) changeState(SKKAbbrevState)
+            else changeState(SKKASCIIState, true)
             return true
         }
         // 「→」を入力するための z+l 例外はそのまま維持
         return false
     }
 
-    private fun handleZenkakuKey(): Boolean = true.also {
-        changeState(SKKZenkakuState)
-    }
+    private fun handleZenkakuKey(): Boolean = true.also { changeState(SKKZenkakuState) }
 
-    private fun handleAbbrevKey(): Boolean {
-        if (mComposing.isEmpty()) {
-            changeState(SKKAbbrevState)
-            return true
-        }
-        return false
-    }
+    private fun handleAbbrevKey(): Boolean =
+        if (mComposing.isEmpty()) true.also { changeState(SKKAbbrevState) }
+        else false
 
-    private fun handleHankakuKanaKey(): Boolean = true.also {
-        changeState(SKKHanKanaState)
-    }
+    private fun handleHankakuKanaKey(): Boolean = true.also { changeState(SKKHanKanaState) }
 
     internal fun handleEnter(): Boolean {
         when {
@@ -187,14 +171,10 @@ class SKKEngine(
             state.isTransient && state.canComplete -> changeState(kanaState)
             else -> {
                 if (mComposing.isEmpty()) {
-                    if (mRegister.isOngoing) {
-                        mRegister.finish()
-                    } else {
-                        return false
-                    }
+                    if (mRegister.isOngoing) mRegister.finish() else return false
                 } else {
                     commitTextSKK(
-                        if (state is SKKHanKanaState) zenkaku2hankaku(mComposing.toString()).orEmpty()
+                        if (state is SKKHanKanaState) zenkaku2hankaku(mComposing.toString())
                         else mComposing
                     )
                     mComposing.setLength(0)
@@ -439,7 +419,7 @@ class SKKEngine(
                         firstEntry.deleteCharAt(regInfo.cursor--)
                     }
                     if (type == LAST_CONVERSION_SHIFT) {
-                        mKanjiKey.append(katakana2hiragana(newLastChar).orEmpty())
+                        mKanjiKey.append(katakana2hiragana(newLastChar))
                         changeState(SKKPreeditState)
                         setComposingTextSKK()
                         complete(mKanjiKey.toString())
@@ -461,7 +441,7 @@ class SKKEngine(
                         else -> ic.deleteSurroundingText(2, 0)
                     }
                     if (type == LAST_CONVERSION_SHIFT) {
-                        mKanjiKey.append(katakana2hiragana(newLastChar).orEmpty())
+                        mKanjiKey.append(katakana2hiragana(newLastChar))
                         changeState(SKKPreeditState) // Abbrevから来ることはないはず
                         setComposingTextSKK()
                         complete(mKanjiKey.toString())
@@ -824,7 +804,7 @@ class SKKEngine(
                         hiragana2katakana(mKanjiKey.toString())
 
                     SKKHanKanaState ->
-                        zenkaku2hankaku(hiragana2katakana(mKanjiKey.toString())).orEmpty()
+                        zenkaku2hankaku(hiragana2katakana(mKanjiKey.toString()))
 
                     else -> mKanjiKey.toString()
                 }

@@ -25,9 +25,7 @@ object SKKAbbrevState : SKKState {
             when (keyCode) {
                 skkPrefs.hankakuKanaKey -> {
                     // 全角変換
-                    hankaku2zenkaku(mKanjiKey.toString())?.let { zen ->
-                        commitTextSKK(zen)
-                    }
+                    commitTextSKK(hankaku2zenkaku(mKanjiKey.toString()))
                     handleKanaKey(context)
                     return
                 }
