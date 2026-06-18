@@ -66,7 +66,7 @@ class SKKCandidatesTest {
         every { engine.find("X") } returns emptyList()
 
         candidates.narrow("X")
-        assertEquals(originalList, candidates.mList)
+        assertEquals(null, candidates.mList)
     }
 
     @Test
