@@ -29,12 +29,14 @@ import android.view.View
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.graphics.withTranslation
 
-internal data class CandidateInfo(val text: String, val w: Int, val x: Int, val l: Int)
+internal data class CandidateInfo(
+    val text: String, val annotation: String?,
+    val w: Int, val x: Int, val l: Int
+)
+
 internal data class CandidateLayout(
-    val candidates: List<CandidateInfo>,
-    val totalWidth: Int,
-    val kanjiKey: String,
-    val picture: Picture? = null
+    val candidates: List<CandidateInfo>, val totalWidth: Int,
+    val kanjiKey: String, val picture: Picture? = null
 ) {
     companion object {
         val EMPTY = CandidateLayout(emptyList(), 0, "")
@@ -105,10 +107,7 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
         mGestureDetector =
             GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
                 override fun onScroll(
-                    e1: MotionEvent?,
-                    e2: MotionEvent,
-                    distanceX: Float,
-                    distanceY: Float
+                    e1: MotionEvent?, e2: MotionEvent, distanceX: Float, distanceY: Float
                 ): Boolean {
                     val width = width
                     mScrolled = true
@@ -237,20 +236,14 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
         val isEmoji = kanjiKey == "emoji"
         val viewLines =
             if (isEmoji) skkPrefs.candidatesEmojiLines else skkPrefs.candidatesNormalLines
-        val displayList = mutableListOf<String>()
+        val displayList = mutableListOf<Pair<String, String?>>()
         list.take(MAX_CANDIDATES).forEach { rawStr ->
             val str = if (isEmoji) removeAnnotation(rawStr) else rawStr
-            str.indexOf(";").let { semicolon ->
-                if (semicolon == -1) {
-                    processConcatAndMore(str, kanjiKey)
-                } else {
-                    processConcatAndMore(str.take(semicolon), kanjiKey) +
-                            ";" +
-                            processConcatAndMore(str.substring(semicolon + 1, str.length), "#")
-                }.let {
-                    displayList.add(it)
-                }
-            }
+            val main = processConcatAndMore(str.substringBefore(';'), kanjiKey)
+            val anno = if (';' in str) {
+                ";" + processConcatAndMore(str.substringAfter(';'), "#")
+            } else null
+            displayList.add(main to anno)
         }
 
         val candidates = mutableListOf<CandidateInfo>()
@@ -261,9 +254,17 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
         var lineX = 0
         var lineW = 0
         var totalLineW = 0
-        displayList.forEach { candidate ->
+        val oldSize = mPaint.textSize
+        displayList.forEach { (main, anno) ->
+            val mainW = mPaint.measureText(main)
+            val annoW = anno?.let {
+                mPaint.textSize = oldSize * skkPrefs.annotationRatio
+                val w = mPaint.measureText(it)
+                mPaint.textSize = oldSize
+                w
+            } ?: 0f
             val ww = if (viewLines == 0) 1f else
-                mPaint.measureText(candidate).coerceAtLeast(mLineHeight * 0.7f) + X_GAP * 2
+                (mainW + annoW).coerceAtLeast(mLineHeight * 0.7f) + X_GAP * 2
 
             // 改行
             if (viewLines != 0 && lineW != 0 && lineW + ww > viewWidth) {
@@ -278,7 +279,7 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
             }
 
             // 登録
-            candidates.add(CandidateInfo(candidate, ww.toInt(), lineX + lineW, lineN))
+            candidates.add(CandidateInfo(main, anno, ww.toInt(), lineX + lineW, lineN))
             lineW += ww.toInt()
             totalLineW = lineW.coerceAtLeast(totalLineW)
         }
@@ -459,14 +460,43 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
     }
 
     private fun Canvas.drawCandidate(ci: CandidateInfo, paint: Paint, path: Path) {
-        val y = (paint.textSize * (LINE_SCALE - 1) / 2 - paint.ascent()).toInt()
+        val textSize = paint.textSize
+        val annoSize = textSize * skkPrefs.annotationRatio
+        val y = (textSize * (LINE_SCALE - 1) / 2 - paint.ascent()).toInt()
         val drawX = ci.x + ci.w / 2f
         val drawY = (y + ci.l * mLineHeight).toFloat()
-        if (skkPrefs.originalColor) {
-            paint.getTextPath(ci.text, 0, ci.text.length, drawX, drawY, path)
+
+        val mainText = ci.text
+        val annoText = ci.annotation
+
+        val mainW = paint.measureText(mainText)
+        val annoW = annoText?.let {
+            paint.textSize = annoSize
+            val w = paint.measureText(it)
+            paint.textSize = textSize
+            w
+        } ?: 0f
+        val startX = drawX - (mainW + annoW) / 2f
+
+        fun draw(text: String, x: Float) = if (skkPrefs.originalColor) {
+            path.reset()
+            paint.getTextPath(text, 0, text.length, x, drawY, path)
             drawPath(path, paint)
         } else {
-            drawText(ci.text, drawX, drawY, paint)
+            drawText(text, x, drawY, paint)
+        }
+
+        paint.textAlign.let { oldAlign ->
+            paint.textAlign = Paint.Align.LEFT
+
+            draw(mainText, startX)
+            annoText?.let {
+                paint.textSize = annoSize
+                draw(it, startX + mainW)
+                paint.textSize = textSize
+            }
+
+            paint.textAlign = oldAlign
         }
     }
 

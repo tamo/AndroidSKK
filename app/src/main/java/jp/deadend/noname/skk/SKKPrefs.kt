@@ -37,6 +37,8 @@ class SKKPrefs(context: Context) {
             else putInt(res.getString(R.string.pref_candidates_size), value)
         }
 
+    val annotationRatio: Float = 0.5f
+
     var fuzzySuggestion: Boolean
         get() = prefs.getBoolean(res.getString(R.string.pref_fuzzy_suggestion), true)
         set(value) = prefs.edit {
