@@ -3,7 +3,7 @@ package jp.deadend.noname.skk.engine
 import jp.deadend.noname.skk.isShifted
 import jp.deadend.noname.skk.lowerCode
 
-object SKKEmojiState : SKKConfirmingState {
+object SKKEmojiState : SKKConfirmingState() {
     override val isTransient = true
     override val canComplete = false
     override val hasCandidates = true
@@ -11,16 +11,14 @@ object SKKEmojiState : SKKConfirmingState {
     override val icon = 0
     override var isSequential = false
 
-    override var pendingLambda: (() -> Unit)? = null
-    override var oldComposingText = ""
-
     override fun handleKanaKey(context: SKKEngine) {
+        if (declineUnregister(context)) return
         super.handleKanaKey(context)
         context.oldState.handleKanaKey(context)
     }
 
     override fun handleEnter(context: SKKEngine): Boolean {
-        if (!handleEnterConfirming(context)) context.pickCurrentCandidate()
+        if (!declineUnregister(context)) context.pickCurrentCandidate()
         return true
     }
 
@@ -47,19 +45,20 @@ object SKKEmojiState : SKKConfirmingState {
     }
 
     override fun afterBackspace(context: SKKEngine) {
-        super.afterBackspace(context)
+        if (declineUnregister(context)) return
         context.oldState.afterBackspace(context)
         context.changeState(context.oldState)
     }
 
     override fun handleCancel(context: SKKEngine, reconvert: Boolean): Boolean {
-        super.handleCancel(context, reconvert)
+        if (declineUnregister(context)) return true
         val ret = context.oldState.handleCancel(context, reconvert)
         context.changeState(context.oldState)
         return ret
     }
 
     override fun changeToFlick(context: SKKEngine): Boolean {
+        if (declineUnregister(context)) return true
         context.changeState(context.oldState)
         return context.oldState.changeToFlick(context)
     }

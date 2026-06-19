@@ -5,21 +5,16 @@ import jp.deadend.noname.skk.engine.SKKEngine.Companion.ASCII_WORD_MAX_LENGTH
 import jp.deadend.noname.skk.isShifted
 import jp.deadend.noname.skk.lowerCode
 
-object SKKASCIIState : SKKConfirmingState {
+object SKKASCIIState : SKKConfirmingState() {
     override val isTransient = false
     override val canComplete = true
     override val isJapanese = false
     override val icon = 0
 
-    override var pendingLambda: (() -> Unit)? = null
-    override var oldComposingText = ""
-
+    // Flickにするのは別キーなので内部だけひらがなに
     override fun handleKanaKey(context: SKKEngine) {
-        super.handleKanaKey(context)
-        context.changeState(SKKHiraganaState) // Flickにするのは別キーなので内部だけひらがなに
+        if (!declineUnregister(context)) context.changeState(SKKHiraganaState)
     }
-
-    override fun handleEnter(context: SKKEngine): Boolean = handleEnterConfirming(context)
 
     override fun processKey(context: SKKEngine, keyCode: Int) {
         if (beforeProcessKey(context, keyCode)) return
@@ -30,12 +25,12 @@ object SKKASCIIState : SKKConfirmingState {
     }
 
     override fun afterBackspace(context: SKKEngine) {
-        super.afterBackspace(context)
+        declineUnregister(context)
         context.completeASCII()
     }
 
     override fun handleCancel(context: SKKEngine, reconvert: Boolean): Boolean {
-        super.handleCancel(context, reconvert)
+        if (declineUnregister(context)) return true
         if (!reconvert) {
             if (context.mCandidates.mList?.isEmpty() ?: true) return false
             context.reset()
@@ -48,8 +43,9 @@ object SKKASCIIState : SKKConfirmingState {
                 context.ic?.deleteSurroundingText(prefix.length, suffix.length) == true)
     }
 
+    // 元の「ひら/カタ」で FlickJP に
     override fun changeToFlick(context: SKKEngine): Boolean {
-        context.changeState(context.kanaState, true) // 元の「ひら/カタ」で FlickJP に
+        if (!declineUnregister(context)) context.changeState(context.kanaState, true)
         return true
     }
 

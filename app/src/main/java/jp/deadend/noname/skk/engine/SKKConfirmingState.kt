@@ -3,49 +3,56 @@ package jp.deadend.noname.skk.engine
 import jp.deadend.noname.skk.SKKLog
 import jp.deadend.noname.skk.lowerCode
 
-interface SKKConfirmingState : SKKState {
-    var pendingLambda: (() -> Unit)?
-    var oldComposingText: String
+abstract class SKKConfirmingState : SKKState {
+    var pendingLambda: (() -> Unit)? = null
+    var oldList: List<String>? = null
+    var oldIndex: Int = 0
 
     override fun handleKanaKey(context: SKKEngine) {
-        pendingLambda = null
+        declineUnregister(context)
     }
 
-    fun beforeProcessKey(context: SKKEngine, keyCode: Int): Boolean {
-        val lowerCode = keyCode.lowerCode
-        return checkPending(context, lowerCode)
-    }
+    override fun handleEnter(context: SKKEngine) =
+        declineUnregister(context)
 
-    fun handleEnterConfirming(context: SKKEngine): Boolean {
-        return checkPending(context, 'y'.code)
-    }
+    fun beforeProcessKey(context: SKKEngine, keyCode: Int) =
+        answerUnregister(context, keyCode.lowerCode)
 
-    private fun checkPending(context: SKKEngine, lowerCode: Int): Boolean {
+    fun declineUnregister(context: SKKEngine) =
+        answerUnregister(context, 'n'.code)
+
+    private fun answerUnregister(context: SKKEngine, lowerCode: Int): Boolean {
+        context.mCandidates.resumeCompletion()
         pendingLambda?.let {
-            SKKLog.d("checkPending: '${Char(lowerCode)}' (oldComposingText=$oldComposingText)")
+            SKKLog.d("checkPending: '${Char(lowerCode)}'")
             pendingLambda = null
             if (lowerCode == 'y'.code) {
                 it.invoke()
+                return true
             }
-            context.mCandidates.setView(null, "", 0)
-            context.mCandidates.resumeCompletion()
-            context.setComposingTextSKK(oldComposingText)
+            context.mCandidates.apply {
+                setView(oldList, context.mKanjiKey.toString(), oldIndex)
+                if (context.state.hasCandidates) appendTask { updateComposingText() }
+                else context.setComposingTextSKK("")
+            }
             return true
         }
         return false
     }
 
     override fun afterBackspace(context: SKKEngine) {
-        pendingLambda = null
+        declineUnregister(context)
     }
 
-    override fun handleCancel(context: SKKEngine, reconvert: Boolean): Boolean {
-        pendingLambda = null
-        return false
-    }
+    override fun handleCancel(context: SKKEngine, reconvert: Boolean) =
+        declineUnregister(context)
+
+    override fun changeToFlick(context: SKKEngine) =
+        declineUnregister(context)
 
     fun confirmUnregister(context: SKKEngine, entryString: String, onConfirm: () -> Unit) {
-        oldComposingText = context.mComposingText.toString()
+        oldList = context.mCandidates.mList
+        oldIndex = context.mCandidates.mIndex
         context.setComposingTextSKK("削除? (y/N) $entryString")
         context.mCandidates.suspendCompletion()
         context.mCandidates.setView(listOf("削除?", "× [$entryString]"), "", 0)

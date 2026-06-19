@@ -4,15 +4,12 @@ import jp.deadend.noname.skk.isShifted
 import jp.deadend.noname.skk.lowerCode
 import jp.deadend.noname.skk.skkPrefs
 
-object SKKNarrowingState : SKKConfirmingState {
+object SKKNarrowingState : SKKConfirmingState() {
     override val isTransient = true
     override val hasCandidates = true
     override val prefix = "▼"
     override val icon = 0
     override var isSequential = false
-
-    override var pendingLambda: (() -> Unit)? = null
-    override var oldComposingText = ""
 
     internal val mHint = SKKEngine.KanjiKey()
     internal var mOriginalCandidates: List<String>? = null
@@ -20,12 +17,11 @@ object SKKNarrowingState : SKKConfirmingState {
     internal var isASCII = false // isJapanese とは違って可変な内部フラグ
 
     override fun handleKanaKey(context: SKKEngine) {
-        super.handleKanaKey(context)
-        SKKChooseState.handleKanaKey(context)
+        if (!declineUnregister(context)) SKKChooseState.handleKanaKey(context)
     }
 
     override fun handleEnter(context: SKKEngine): Boolean {
-        if (!handleEnterConfirming(context)) context.pickCurrentCandidate()
+        if (!declineUnregister(context)) context.pickCurrentCandidate()
         return true
     }
 
@@ -91,8 +87,7 @@ object SKKNarrowingState : SKKConfirmingState {
     }
 
     override fun afterBackspace(context: SKKEngine) {
-        super.afterBackspace(context)
-        context.apply {
+        if (!declineUnregister(context)) context.apply {
             if (mHint.isEmpty()) {
                 startConversion()
             } else {
@@ -108,12 +103,12 @@ object SKKNarrowingState : SKKConfirmingState {
     }
 
     override fun handleCancel(context: SKKEngine, reconvert: Boolean): Boolean {
-        super.handleCancel(context, reconvert)
-        context.startConversion()
+        if (!declineUnregister(context)) context.startConversion()
         return true
     }
 
     override fun changeToFlick(context: SKKEngine): Boolean {
+        if (declineUnregister(context)) return true
         isASCII = false
         return false
     }

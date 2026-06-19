@@ -6,19 +6,15 @@ import jp.deadend.noname.skk.lowerCode
 import jp.deadend.noname.skk.skkPrefs
 
 // 変換候補選択中(▼モード)
-object SKKChooseState : SKKConfirmingState {
+object SKKChooseState : SKKConfirmingState() {
     override val isTransient = true
     override val isPreedit = true
     override val hasCandidates = true
     override val prefix = "▼"
     override val icon = 0
 
-    override var pendingLambda: (() -> Unit)? = null
-    override var oldComposingText = ""
-
     override fun handleKanaKey(context: SKKEngine) {
-        super.handleKanaKey(context)
-        context.apply {
+        if (!declineUnregister(context)) context.apply {
             pickCurrentCandidate() // kanaState になる (カタカナかもしれない)
             if (skkPrefs.toggleKanaKey) {
                 changeState(SKKASCIIState, true)
@@ -29,7 +25,7 @@ object SKKChooseState : SKKConfirmingState {
     }
 
     override fun handleEnter(context: SKKEngine): Boolean {
-        if (!handleEnterConfirming(context)) context.pickCurrentCandidate()
+        if (!declineUnregister(context)) context.pickCurrentCandidate()
         return true
     }
 
@@ -70,15 +66,11 @@ object SKKChooseState : SKKConfirmingState {
     }
 
     override fun afterBackspace(context: SKKEngine) {
-        super.afterBackspace(context)
-        context.apply {
-            pickCurrentCandidate(backspace = true)
-        }
+        if (!declineUnregister(context)) context.pickCurrentCandidate(backspace = true)
     }
 
     override fun handleCancel(context: SKKEngine, reconvert: Boolean): Boolean {
-        super.handleCancel(context, reconvert)
-        context.apply {
+        if (!declineUnregister(context)) context.apply {
             if (mKanjiKey.isEmpty()) { // どういうとき？
                 changeState(kanaState)
             } else {
@@ -101,9 +93,5 @@ object SKKChooseState : SKKConfirmingState {
             }
         }
         return true
-    }
-
-    override fun changeToFlick(context: SKKEngine): Boolean {
-        return false
     }
 }

@@ -61,6 +61,11 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
         }
     }
 
+    internal fun appendTask(task: () -> Unit) = MainScope().launch(Dispatchers.Default) {
+        mJob.join()
+        task()
+    }
+
     internal fun updateViewCursor() = service.setCandidatesCursor(mIndex)
 
     internal fun cycleCompletionCursor(isForward: Boolean) {
@@ -94,6 +99,8 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
                     is SKKNarrowingState -> mIndex = list.lastIndex
 
                     is SKKChooseState -> engine.apply {
+                        SKKLog.d("back to preedit: composing=$mComposing, key=$mKanjiKey, okuri=$mOkurigana")
+                        this@SKKCandidates.reset()
                         if (mComposing.isEmpty()) {
                             if (mOkurigana.isNotEmpty()) {
                                 mOkurigana = ""
@@ -108,9 +115,6 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
                             setComposingTextSKK(mComposing)
                             complete(mComposing.toString())
                         }
-
-                        mIndex = 0
-                        updateComposingText()
                         return
                     }
                 }
