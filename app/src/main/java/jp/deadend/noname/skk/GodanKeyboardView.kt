@@ -32,13 +32,9 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
     private var mArrowStartY = -1f
     private var mCurrentPopupLabels = Array(15) { "" }
 
-    private var mUsePopup = true
-    private var mFixedPopup = false
     private var mPopup: PopupWindow? = null
     private var mPopupTextView: Array<TextView>? = null
     private val mPopupSize = 120
-    private val mPopupOffset = intArrayOf(0, 0)
-    private val mFixedPopupPos = intArrayOf(0, 0)
     private val mCoordinates = IntArray(2)
 
     // シンプル切り替え用
@@ -228,60 +224,33 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
     }
 
     private fun readPrefs(context: Context) {
-        // シフトかな交換
-        setShiftPosition()
-        // その後でキャンセル Q 交換
-        setCancelPosition()
+        setShiftPosition() // まず skkPrefs.changeShift
+        setCancelPosition() // その後で skkPrefs.swapQCxl を反映
 
-        when {
-            skkPrefs.useSoftCancelKey -> {
-                findKeyByCode(keyboard, KEYCODE_GODAN_KOMOJI)?.labels?.main = "小\n ◻゙cxl◻゚ \n▽"
-                mFlickGuideLabelList.put(
-                    KEYCODE_GODAN_KOMOJI,
+        val (label, guide) = when {
+            skkPrefs.useSoftCancelKey -> "小\n ◻゙cxl◻゚ \n▽" to
                     arrayOf("CXL", "◻゙", "小", "◻゚", "▽") + POPUP_LABELS_NULL
-                )
-            }
 
-            skkPrefs.useSoftTransKey -> {
-                findKeyByCode(keyboard, KEYCODE_GODAN_KOMOJI)?.labels?.main = "cxl\n ◻゙□゚ \n▽"
-                mFlickGuideLabelList.put(
-                    KEYCODE_GODAN_KOMOJI,
+            skkPrefs.useSoftTransKey -> "cxl\n ◻゙□゚ \n▽" to
                     arrayOf("◻゙□゚", "◻゙", "CXL", "◻゚", "▽") + POPUP_LABELS_NULL
-                )
-            }
 
-            else -> {
-                findKeyByCode(keyboard, KEYCODE_GODAN_KOMOJI)?.labels?.main = "cxl\n ◻゙小◻゚ \n▽"
-                mFlickGuideLabelList.put(
-                    KEYCODE_GODAN_KOMOJI,
+            else -> "cxl\n ◻゙小◻゚ \n▽" to
                     arrayOf("小", "◻゙", "CXL", "◻゚", "▽") + POPUP_LABELS_NULL
-                )
-            }
         }
-        // ポップアップ
-        mUsePopup = skkPrefs.usePopup
-        mFixedPopup = skkPrefs.useFixedPopup
+        findKeyByCode(keyboard, KEYCODE_GODAN_KOMOJI)?.labels?.main = label
+        mFlickGuideLabelList.put(KEYCODE_GODAN_KOMOJI, guide)
+
+        // ポップアップは表示するしないにかかわらず作成しロジックに使用する
         if (mPopup == null) {
-            val popup = createPopupGuide(context)
-            mPopup = popup
-            val binding = PopupFlickguideBinding.bind(popup.contentView)
-            mPopupTextView = arrayOf(
-                binding.labelA,
-                binding.labelI,
-                binding.labelU,
-                binding.labelE,
-                binding.labelO,
-                binding.labelLeftA,
-                binding.labelRightA,
-                binding.labelLeftI,
-                binding.labelRightI,
-                binding.labelLeftU,
-                binding.labelRightU,
-                binding.labelLeftE,
-                binding.labelRightE,
-                binding.labelLeftO,
-                binding.labelRightO
-            )
+            mPopup = createPopupGuide(context).also { popup ->
+                mPopupTextView = PopupFlickguideBinding.bind(popup.contentView).run {
+                    arrayOf(
+                        labelA, labelI, labelU, labelE, labelO,
+                        labelLeftA, labelRightA, labelLeftI, labelRightI, labelLeftU,
+                        labelRightU, labelLeftE, labelRightE, labelLeftO, labelRightO
+                    )
+                }
+            }
         }
     }
 
@@ -361,6 +330,8 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                 mFlickStartY = me.y
                 mArrowStartX = me.x
                 mArrowStartY = me.y
+                val keyIndex = getKeyIndex(me.x.toInt() - paddingLeft, me.y.toInt() - paddingTop)
+                checkMultiTap(me.eventTime, keyIndex)
             }
 
             MotionEvent.ACTION_MOVE -> {
@@ -405,7 +376,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                     else -> processCurveFlick(dx, dy)
                 }
 
-                if (mUsePopup) setupPopupTextView()
+                if (skkPrefs.usePopup) setupPopupTextView()
                 return true
             }
 
@@ -482,28 +453,24 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
 
             else -> return
         }
-        if (mFlickState != newState &&
-            (!isCurve(newState) ||
+        if (mFlickState != newState && (!isCurve(newState) ||
                     (hasLeftCurve && isLeftCurve(newState)) ||
-                    (hasRightCurve && isRightCurve(newState))
-                    )
+                    (hasRightCurve && isRightCurve(newState)))
         ) {
             mFlickState = newState
             performHapticFeedback(skkPrefs.haptic)
         }
     }
 
-    override fun onLongPress(key: Keyboard.Key): Boolean {
-        val code = key.codes.main[0]
-        if (code == KEYCODE_GODAN_ENTER) {
+    override fun onLongPress(key: Keyboard.Key): Boolean = when {
+        key.codes.main[0] == KEYCODE_GODAN_ENTER -> {
             mService.pressSearch()
-            return true
+            true
         }
 
-        if (mUsePopup && !skkPrefs.popupOnPress) {
-            if (showPopup()) return true
-        }
-        return super.onLongPress(key)
+        skkPrefs.usePopup && !skkPrefs.popupOnPress && showPopup() -> true
+
+        else -> super.onLongPress(key)
     }
 
     override fun onPress(primaryCode: Int) {
@@ -525,7 +492,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
         // Godan は各キー動作が mPopupTextView に依存するので無条件に実行
         setupPopupTextView()
 
-        if (mUsePopup && skkPrefs.popupOnPress) {
+        if (skkPrefs.usePopup && skkPrefs.popupOnPress) {
             showPopup()
         }
     }
@@ -533,63 +500,63 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
     private fun showPopup(): Boolean {
         if (mCurrentPopupLabels[0] == "") return false
 
-        calculatePopupPos()
-
-        val (x, y) = if (mFixedPopup) mFixedPopupPos[0] to mFixedPopupPos[1]
-        else mFlickStartX.toInt() + mPopupOffset[0] to
-                mFlickStartY.toInt() + mPopupOffset[1]
+        val (x, y) = calculatePopupPos()
         mPopup?.showAtLocation(this, android.view.Gravity.NO_GRAVITY, x, y)
 
         // true だと release して repeat が終わってしまうので
         return !(findKeyByCode(keyboard, mLastPressedKey)?.repeatable ?: false)
     }
 
-    private fun calculatePopupPos() {
+    private fun calculatePopupPos(): Pair<Int, Int> {
         val scale = context.resources.displayMetrics.density
         val size = (mPopupSize * scale + 0.5f).toInt()
         val fingerOffset = size * skkPrefs.fingerOffset / 100
         getLocationInWindow(mCoordinates)
-        mPopupOffset[0] = mCoordinates[0] - size / 2
-        mPopupOffset[1] = mCoordinates[1] - size / 2 - fingerOffset
-        mFixedPopupPos[0] = mCoordinates[0] + this.width / 2 - size / 2
-        mFixedPopupPos[1] = mCoordinates[1] - size - fingerOffset
+        return if (skkPrefs.useFixedPopup)
+            mCoordinates[0] + this.width / 2 - size / 2 to
+                    mCoordinates[1] - size - fingerOffset
+        else mFlickStartX.toInt() + mCoordinates[0] - size / 2 to
+                mFlickStartY.toInt() + mCoordinates[1] - size / 2 - fingerOffset
     }
 
-    override fun onKey(primaryCode: Int) {
-        when (primaryCode) {
-            // repeatable
-            Keyboard.KEYCODE_DELETE -> if (!mService.handleBackspace()) {
-                if (!isCapsLocked) isShifted = false
-                mService.pressDel()
-            }
-
-            KEYCODE_GODAN_LEFT -> if (!mArrowFlicked && !mService.handleDpad(KeyEvent.KEYCODE_DPAD_LEFT)) {
-                mService.keyDownUp(KeyEvent.KEYCODE_DPAD_LEFT)
-            }
-
-            KEYCODE_GODAN_RIGHT -> if (!mArrowFlicked && !mService.handleDpad(KeyEvent.KEYCODE_DPAD_RIGHT)) {
-                mService.keyDownUp(KeyEvent.KEYCODE_DPAD_RIGHT)
-            }
-
-            KEYCODE_GODAN_SPACE -> if (isShifted) {
-                val intent = Intent(context, SKKSettingsActivity::class.java)
-                    .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                context.startActivity(intent)
-            } else if (mFlickState == EnumSet.of(FlickState.NONE)) {
-                mService.processKey(' ')
-            }
-            // 不明: release で処理してもいいのか?
-            33, 40, 41, 44, 46, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 63, 91, 93 -> {
-                // ! ( ) , . 0〜9 ? [ ]
-                mService.processKey(primaryCode)
-                if (!isCapsLocked) isShifted = false
-            }
-            // codes[0] 以外
-            Keyboard.KEYCODE_CAPSLOCK -> {
-                isShifted = true
-                isCapsLocked = true
-            }
+    override fun onKey(primaryCode: Int) = when (primaryCode) {
+        // repeatable
+        Keyboard.KEYCODE_DELETE
+            if !mService.handleBackspace() -> {
+            if (!isCapsLocked) isShifted = false
+            mService.pressDel()
         }
+
+        KEYCODE_GODAN_LEFT if !mArrowFlicked &&
+                !mService.handleDpad(KeyEvent.KEYCODE_DPAD_LEFT) ->
+            mService.keyDownUp(KeyEvent.KEYCODE_DPAD_LEFT)
+
+        KEYCODE_GODAN_RIGHT if !mArrowFlicked &&
+                !mService.handleDpad(KeyEvent.KEYCODE_DPAD_RIGHT) ->
+            mService.keyDownUp(KeyEvent.KEYCODE_DPAD_RIGHT)
+
+        KEYCODE_GODAN_SPACE if isShifted -> {
+            val intent = Intent(context, SKKSettingsActivity::class.java)
+                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(intent)
+        }
+
+        KEYCODE_GODAN_SPACE if mFlickState == EnumSet.of(FlickState.NONE) ->
+            mService.processKey(' ')
+
+        // 直接入力するASCIIキー: release で処理してもいいかも
+        in 32..126 ->
+            mService.processKey(primaryCode).also {
+                if (!isCapsLocked) isShifted = false
+            }
+
+        // codes[0] 以外
+        Keyboard.KEYCODE_CAPSLOCK -> {
+            isShifted = true
+            isCapsLocked = true
+        }
+
+        else -> {}
     }
 
     private fun release() {
@@ -602,34 +569,27 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                 mService.sendToMushroom()
             // repeatable 以外
             Keyboard.KEYCODE_SHIFT -> {
-                when (mFlickState) {
-                    EnumSet.of(FlickState.NONE) -> {
-                        isShifted = !isShifted
-                        isCapsLocked = false
-                    }
-
-                    EnumSet.of(FlickState.UP) -> {
-                        isShifted = true
-                        isCapsLocked = true
-                    }
+                if (mFlickState == EnumSet.of(FlickState.UP) || mInMultiTap && mTapCount != -1) {
+                    isCapsLocked = true; isShifted = true
+                } else {
+                    isShifted = !isShifted; isCapsLocked = false
                 }
                 onSetShifted(isShifted)
                 consumesShift = false
             }
 
-            KEYCODE_GODAN_ENTER -> if (!mService.handleEnter()) mService.pressEnter()
-            KEYCODE_GODAN_CANCEL -> {
-                when (mFlickState) {
-                    EnumSet.of(FlickState.NONE) -> mService.handleCancel()
-                    EnumSet.of(FlickState.LEFT) -> mService.processKey(':')
-                    EnumSet.of(FlickState.UP) -> mService.pasteClip()
-                    EnumSet.of(FlickState.RIGHT) -> mService.processKey('>')
-                    EnumSet.of(FlickState.DOWN) -> mService.googleTransliterate()
-                }
+            KEYCODE_GODAN_ENTER -> if (!mService.handleEnter())
+                mService.pressEnter()
+
+            KEYCODE_GODAN_CANCEL -> when (mFlickState) {
+                EnumSet.of(FlickState.NONE) -> mService.handleCancel()
+                EnumSet.of(FlickState.LEFT) -> mService.processKey(':')
+                EnumSet.of(FlickState.UP) -> mService.pasteClip()
+                EnumSet.of(FlickState.RIGHT) -> mService.processKey('>')
+                EnumSet.of(FlickState.DOWN) -> mService.googleTransliterate()
             }
 
-            KEYCODE_GODAN_KOMOJI -> {
-                val isSoftCancel = skkPrefs.useSoftCancelKey
+            KEYCODE_GODAN_KOMOJI -> skkPrefs.useSoftCancelKey.let { isSoftCancel ->
                 when (mFlickState) {
                     EnumSet.of(if (isSoftCancel) FlickState.UP else FlickState.NONE) ->
                         mService.changeLastChar(if (!isSoftCancel && skkPrefs.useSoftTransKey) SKKEngine.LAST_CONVERSION_TRANS else SKKEngine.LAST_CONVERSION_SMALL)
@@ -643,18 +603,13 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
 
             KEYCODE_GODAN_PASTE -> mService.pasteClip()
             KEYCODE_GODAN_GOOGLE -> mService.googleTransliterate()
-            KEYCODE_GODAN_CHAR_L -> {
-                val state = mService.engineState
-                when {
-                    !state.isJapanese -> mService.handleKanaKey()
-                    else -> mService.processKey(if (isShifted) skkPrefs.zenkakuKey else skkPrefs.asciiKey)
-                }
+            KEYCODE_GODAN_CHAR_L -> when {
+                !mService.engineState.isJapanese -> mService.handleKanaKey()
+                else -> mService.processKey(if (isShifted) skkPrefs.zenkakuKey else skkPrefs.asciiKey)
             }
 
-            KEYCODE_GODAN_CHAR_A, KEYCODE_GODAN_CHAR_K, KEYCODE_GODAN_CHAR_H, KEYCODE_GODAN_CHAR_I,
-            KEYCODE_GODAN_CHAR_S, KEYCODE_GODAN_CHAR_M, KEYCODE_GODAN_CHAR_U, KEYCODE_GODAN_CHAR_T,
-            KEYCODE_GODAN_CHAR_Y, KEYCODE_GODAN_CHAR_Q, KEYCODE_GODAN_CHAR_E, KEYCODE_GODAN_CHAR_N,
-            KEYCODE_GODAN_CHAR_R, KEYCODE_GODAN_CHAR_O, KEYCODE_GODAN_CHAR_W -> {
+            in KEYCODE_GODAN_CHAR_A downTo KEYCODE_GODAN_CHAR_W,
+            KEYCODE_GODAN_CHAR_Q -> {
                 val base = when {
                     mFlickState.contains(FlickState.NONE) -> 0
                     mFlickState.contains(FlickState.LEFT) -> 1
@@ -739,18 +694,17 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                         mPopupTextView?.getOrNull(0)?.text?.let { vowelStr ->
                             val vowel = vowelStr.first()
                             if (vowel in "AIUEO") {
-                                val c =
-                                    if (!isShifted) Character.toLowerCase(vowel.code) else vowel.code
-                                mService.suspendCompletion()
-                                mService.processKey(encodeKey(c))
-                                mService.resumeCompletion()
-                                // 前の processKey で▼モードになっていたら次で確定してしまうので止まる
-                                if (!mService.engineState.hasCandidates) {
-                                    when (popupText[1]) {
+                                val c = if (!isShifted) vowel.lowercaseChar().code else vowel.code
+                                mService.apply {
+                                    suspendCompletion()
+                                    processKey(encodeKey(c))
+                                    resumeCompletion()
+                                    // 前の processKey で▼モードになっていたら次で確定してしまうので止まる
+                                    if (!engineState.hasCandidates) when (popupText[1]) {
                                         'っ', 'ッ' -> "xtu"
                                         'ん', 'ン' -> "nn"
                                         else -> ""
-                                    }.forEach { mService.processKey(it) }
+                                    }.forEach { processKey(it) }
                                 }
                             }
                         }
@@ -759,8 +713,8 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
             }
         }
 
-        if (consumesShift) {
-            if (!isCapsLocked) isShifted = false
+        if (consumesShift && !isCapsLocked) {
+            isShifted = false
             onSetShifted(isShifted)
         }
         setKeyState(mService.engineState)

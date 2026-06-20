@@ -744,7 +744,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
         setupPopupTextView()
 
         val (x, y) = calculatePopupPos()
-        mPopup!!.showAtLocation(this, android.view.Gravity.NO_GRAVITY, x, y)
+        mPopup?.showAtLocation(this, android.view.Gravity.NO_GRAVITY, x, y)
 
         // true だと release して repeat が終わってしまうので
         return !(findKeyByCode(mJPKeyboard, mLastPressedKey)?.repeatable ?: false)
@@ -785,7 +785,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
             mService.processKey(' ')
 
         // Num等、直接入力するASCIIキー: release で処理してもいいかも
-        else if primaryCode in 32..126 ->
+        in 32..126 ->
             mService.processKey(primaryCode)
 
         else -> {}
