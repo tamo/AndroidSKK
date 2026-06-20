@@ -146,6 +146,7 @@ class SKKEngine(
         state.handleKanaKey(this)
     }
 
+    @Suppress("SameReturnValue")
     private fun handleKatakanaKey(): Boolean {
         SKKLog.d("handleKatakanaKey() in ${state.name}")
         changeState(
@@ -167,6 +168,7 @@ class SKKEngine(
         return false
     }
 
+    @Suppress("SameReturnValue")
     private fun handleZenkakuKey(): Boolean {
         SKKLog.d("handleZenkakuKey() in ${state.name}")
         changeState(SKKZenkakuState)
@@ -182,6 +184,7 @@ class SKKEngine(
         return false
     }
 
+    @Suppress("SameReturnValue")
     private fun handleHankakuKanaKey(): Boolean {
         SKKLog.d("handleHankakuKanaKey() in ${state.name}")
         changeState(SKKHanKanaState)
