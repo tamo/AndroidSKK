@@ -110,6 +110,7 @@ open class Keyboard {
         var width: Int
         var defaultWidth: Int
         var height: Int
+        var defaultHeight: Int
         var horizontalGap: Int
         var defaultHorizontalGap: Int
         private var sticky = false
@@ -131,6 +132,7 @@ open class Keyboard {
 
         init {
             height = parent.defaultHeight
+            defaultHeight = height
             width = parent.defaultWidth
             defaultWidth = width
             horizontalGap = parent.defaultHorizontalGap
@@ -151,6 +153,7 @@ open class Keyboard {
             height = getDimensionOrFraction(
                 a, R.styleable.Keyboard_keyHeight, keyboard.mDisplayHeight, parent.defaultHeight
             )
+            defaultHeight = height
             horizontalGap = getDimensionOrFraction(
                 a,
                 R.styleable.Keyboard_horizontalGap,
@@ -348,7 +351,7 @@ open class Keyboard {
                 key.horizontalGap = (key.defaultHorizontalGap * hScaleFactor).toInt()
                 key.x = x + key.horizontalGap
                 x += key.horizontalGap + key.width
-                key.height = row.defaultHeight
+                key.height = (key.defaultHeight * vScaleFactor).toInt()
                 key.y = y
             }
             y += row.defaultHeight + row.verticalGap

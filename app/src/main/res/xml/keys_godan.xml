@@ -74,6 +74,7 @@
             app:keyLabel="？\n。R！\n、" />
         <Key
             app:codes="-1007"
+            app:keyHeight="16%p"
             app:keyIcon="@drawable/ic_keyboard_return" />
     </Row>
     <Row app:rowEdgeFlags="bottom">
@@ -89,8 +90,5 @@
         <Key
             app:codes="-214"
             app:keyLabel="V\n「W」\n＂" />
-        <Key
-            app:codes="-1007"
-            app:keyIcon="@drawable/ic_keyboard_return" />
     </Row>
 </Keyboard>
