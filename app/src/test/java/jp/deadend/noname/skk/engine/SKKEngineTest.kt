@@ -45,6 +45,7 @@ class SKKEngineTest {
         every { service.kanaState = any() } answers {
             engine.kanaState = it.invocation.args[0] as SKKState
         }
+        every { service.isHiragana } answers { engine.kanaState is SKKHiraganaState }
     }
 
     @Test

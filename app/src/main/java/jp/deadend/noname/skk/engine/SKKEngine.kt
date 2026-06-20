@@ -530,7 +530,7 @@ class SKKEngine(
         })
 
         ct.append(
-            if (mService.isHiragana) textToProcess else hiragana2katakana(
+            if (kanaState is SKKHiraganaState) textToProcess else hiragana2katakana(
                 textToProcess.toString(),
                 reversed = true
             )
