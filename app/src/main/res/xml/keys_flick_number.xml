@@ -5,7 +5,10 @@
     app:keyWidth="20%p"
     app:verticalGap="0dip">
     <Row>
-        <Key app:codes="0" />
+        <Key
+            app:codes="-1,-7"
+            app:isSticky="true"
+            app:keyIcon="@drawable/ic_keyboard_shift" />
         <Key
             app:codes="49"
             app:keyLabel="1" />
@@ -59,16 +62,18 @@
     <Row app:rowEdgeFlags="bottom">
         <Key
             app:codes="-1003"
-            app:keyLabel="全角ａ\n abc \nqwerty" />
+            app:keyLabel="全角ａ\n☻abc記\nqwerty" />
         <Key
-            app:codes="-214"
-            app:keyLabel="＋\n￥＃＄\n＊" />
+            app:codes="-213"
+            app:keyLabel="＋\n￥＃＄\n＊"
+            app:shiftedLabel="＋\n＼＃＄\n×" />
         <Key
             app:codes="48"
             app:keyLabel="0" />
         <Key
-            app:codes="-213"
-            app:keyLabel="－\n．，：\n／" />
+            app:codes="-214"
+            app:keyLabel="－\n．，：\n／"
+            app:shiftedLabel="－\n．，：\n÷" />
         <Key
             app:codes="-1007"
             app:keyIcon="@drawable/ic_keyboard_return" />

@@ -99,9 +99,9 @@ open class KeyboardView @JvmOverloads constructor(
 
     // For multi-tap
     private var mLastSentIndex = 0
-    private var mTapCount = 0
-    private var mLastTapTime: Long = 0
-    private var mInMultiTap = false
+    protected var mTapCount = 0
+    protected var mLastTapTime: Long = 0
+    protected var mInMultiTap = false
 
     private var mDrawPending = false
     private val mDirtyRect = Rect()
@@ -589,7 +589,7 @@ open class KeyboardView @JvmOverloads constructor(
         canvas: Canvas, x: Float, y: Float, paint: Paint
     ): Boolean = false
 
-    private fun getKeyIndex(x: Int, y: Int): Int {
+    protected fun getKeyIndex(x: Int, y: Int): Int {
         return mKeyboard.getNearestKeys(x, y).findLast {
             mKeyboard.keys[it].isInside(x, y)
         } ?: NOT_A_KEY
@@ -1156,7 +1156,7 @@ open class KeyboardView @JvmOverloads constructor(
         mInMultiTap = false
     }
 
-    private fun checkMultiTap(eventTime: Long, keyIndex: Int) {
+    protected fun checkMultiTap(eventTime: Long, keyIndex: Int) {
         if (keyIndex == NOT_A_KEY) return
 
         val key = mKeyboard.keys[keyIndex]
