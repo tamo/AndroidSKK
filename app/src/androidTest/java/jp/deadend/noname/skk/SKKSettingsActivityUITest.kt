@@ -28,6 +28,7 @@ import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
+import org.hamcrest.CoreMatchers.allOf
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -82,7 +83,7 @@ class SKKSettingsActivityUITest {
         // 新規インストールであることを前提としているので失敗したら再テストで通る
         assert(skkPrefs.dictOrder == skkPrefs.defaultDictOrder)
         onView(withText("システム辞書の管理")).perform(click())
-        onView(withText("SKK S 辞書"))
+        onView(allOf(withId(R.id.dictManagerListItem), withText("SKK S 辞書")))
             .check(matches(isNotChecked()))
             .perform(click())
         // ダウンロードしますか?
@@ -91,7 +92,8 @@ class SKKSettingsActivityUITest {
         for (i in 1..maxWait) {
             Thread.sleep(1000)
             if (try {
-                    onView(withText("SKK S 辞書")).check(matches(isChecked()))
+                    onView(allOf(withId(R.id.dictManagerListItem), withText("SKK S 辞書")))
+                        .check(matches(isChecked()))
                     true
                 } catch (e: NoMatchingViewException) {
                     if (i < maxWait) false else throw e
@@ -173,15 +175,22 @@ class SKKSettingsActivityUITest {
 
         // 「んん*で」を「えxで」と登録
         device.pressKeyCode(KeyEvent.KEYCODE_N, KeyEvent.META_SHIFT_LEFT_ON) // ▽n
-        device.pressKeyCodes(intArrayOf(KeyEvent.KEYCODE_N, KeyEvent.KEYCODE_N)) // ▽ン
-        device.pressKeyCode(KeyEvent.KEYCODE_D, KeyEvent.META_SHIFT_LEFT_ON) // ▽ン*d
-        device.pressKeyCodes(
-            intArrayOf(
-                KeyEvent.KEYCODE_E, KeyEvent.KEYCODE_E, // 登録でひらがなになっている
-                KeyEvent.KEYCODE_L, KeyEvent.KEYCODE_X, // 本家SKKの挙動は不明
-                KeyEvent.KEYCODE_ENTER
-            )
-        )
+        device.pressKeyCodes(intArrayOf(KeyEvent.KEYCODE_N, KeyEvent.KEYCODE_N)) // ▽ンn
+        device.pressKeyCode(KeyEvent.KEYCODE_D, KeyEvent.META_SHIFT_LEFT_ON) // ▽ンン*d
+        onView(withId(R.id.userDictToolSearch)).check { v, _ ->
+            assert((v as SearchView).query.contentEquals("アクお▽ンン*d"))
+        }
+        device.pressKeyCode(KeyEvent.KEYCODE_E) // [登録]ンン*デ：
+        device.pressKeyCode(KeyEvent.KEYCODE_E) // [登録]んん*で：え
+        onView(withId(R.id.userDictToolSearch)).check { v, _ ->
+            assert((v as SearchView).query.contentEquals("アクお[登録]んん*で：え"))
+        }
+        device.pressKeyCode(KeyEvent.KEYCODE_L) // [登録]んん*で：え
+        device.pressKeyCode(KeyEvent.KEYCODE_X) // [登録]んん*で：えx
+        onView(withId(R.id.userDictToolSearch)).check { v, _ ->
+            assert((v as SearchView).query.contentEquals("アクお[登録]んん*で：えx"))
+        }
+        device.pressKeyCode(KeyEvent.KEYCODE_ENTER)
         onView(withId(R.id.userDictToolSearch)).check { v, _ ->
             assert((v as SearchView).query.contentEquals("アクおエxデ"))
         } // 登録終了でカタカナに戻り、「え」を反転し「エ」になる

@@ -16,6 +16,19 @@ object SKKASCIIState : SKKConfirmingState() {
         if (!declineUnregister(context)) context.changeState(SKKHiraganaState)
     }
 
+    override fun handleEnter(context: SKKEngine): Boolean = context.run {
+        when {
+            declineUnregister(context) -> true
+
+            mRegister.isOngoing -> {
+                mRegister.finish()
+                true
+            }
+
+            else -> false
+        }
+    }
+
     override fun processKey(context: SKKEngine, keyCode: Int) {
         if (beforeProcessKey(context, keyCode)) return
         val lower = keyCode.lowerCode
