@@ -386,63 +386,64 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
                 return@launch
             }
 
-            val set = mutableSetOf<Pair<String, String>>()
-            val elapsed = measureTime {
-                val isEmoji = str == "emoji"
-                val maskedStr = str.replace(mNumberRegex, "#")
-                val isFuzzyEnabled = skkPrefs.fuzzySuggestion && !isEmoji
+            val isEmoji = str == "emoji"
+            val maskedStr = str.replace(mNumberRegex, "#")
+            val isFuzzyEnabled = skkPrefs.fuzzySuggestion && !isEmoji
 
-                engine.mDictList.map { dict ->
-                    async {
-                        if (engine.state is SKKASCIIState &&
-                            if (isEmoji) dict !is SKKUserDictionary else dict != engine.mUserDict
-                        ) return@async
-                        // 字数を増やさずに変換できるものを最優先
-                        val fuzzyFurther = isFuzzyEnabled && withTimeoutOrNull(1000.milliseconds) {
-                            // 重い処理: 価値があるので数は少なくてもいいがタイムアウトが必要
-                            var foundCount = 0
-                            500 > measureTime {
-                                val goal: Int = skkPrefs.candidatesNormalLines * 7 / str.length
-                                for (fuzzyStr in fuzzy(str)) {
-                                    if (foundCount >= goal) break
-                                    ensureActive()
-                                    if (withContext(Dispatchers.IO) {
-                                            dict.getCandidates(fuzzyStr).isNullOrEmpty()
-                                        }) continue
-                                    val shownStr =
-                                        if (service.isHiragana) fuzzyStr
-                                        else hiragana2katakana(fuzzyStr, reversed = true)
-                                    synchronized(set) { set.add(fuzzyStr to shownStr) }
-                                    foundCount++
-                                }
-                            }.inWholeMilliseconds || foundCount == 0
-                        } ?: true // タイムアウトしても未発見なら前方一致あいまい検索してみる
+            var elapsed = 0.milliseconds
+            val results = engine.mDictList.map { dict ->
+                async {
+                    if (engine.state is SKKASCIIState &&
+                        if (isEmoji) dict !is SKKUserDictionary else dict != engine.mUserDict
+                    ) return@async null
 
-                        // 前方一致は軽いので無条件で実行 (数字ありと数字マスク状態で)
-                        val dictFound = mutableSetOf<Pair<String, String>>()
-                        addFound(this, dictFound, str, dict)
-
-                        if (maskedStr != str) {
-                            addFound(this, dictFound, maskedStr, dict)
-                        }
-
-                        // あいまい前方一致は意味があまりないので数は多く、最後に短時間だけ
-                        val goal: Int = skkPrefs.candidatesNormalLines * 10 / str.length
-                        if (fuzzyFurther) withTimeoutOrNull(500.milliseconds) {
-                            for (fuzzyStr in fuzzy(maskedStr)) {
-                                if (dictFound.size > goal) break
+                    val found = mutableSetOf<Pair<String, String>>()
+                    // 字数を増やさずに変換できるものを最優先
+                    val fuzzyFurther = isFuzzyEnabled && withTimeoutOrNull(1000.milliseconds) {
+                        // 重い処理: 価値があるので数は少なくてもいいがタイムアウトが必要
+                        var foundCount = 0
+                        elapsed += measureTime {
+                            val goal: Int = skkPrefs.candidatesNormalLines * 7 / str.length
+                            for (fuzzyStr in fuzzy(str)) {
+                                if (foundCount >= goal) break
                                 ensureActive()
-                                addFound(this, dictFound, fuzzyStr, dict)
+                                if (withContext(Dispatchers.IO) {
+                                        dict.getCandidates(fuzzyStr).isNullOrEmpty()
+                                    }) continue
+                                val shownStr =
+                                    if (service.isHiragana) fuzzyStr
+                                    else hiragana2katakana(fuzzyStr, reversed = true)
+                                found.add(fuzzyStr to shownStr)
+                                foundCount++
                             }
                         }
-                        synchronized(set) { set.addAll(dictFound) }
+                        elapsed < 500.milliseconds || foundCount == 0
+                    } ?: true // タイムアウトしても未発見なら前方一致あいまい検索してみる
+
+                    // 前方一致は軽いので無条件で実行 (数字ありと数字マスク状態で)
+                    addFound(this, found, str, dict)
+
+                    if (maskedStr != str) {
+                        addFound(this, found, maskedStr, dict)
                     }
-                }.awaitAll()
-            }
+
+                    // あいまい前方一致は意味があまりないので数は多く、最後に短時間だけ
+                    val goal: Int = skkPrefs.candidatesNormalLines * 10 / str.length
+                    if (fuzzyFurther) withTimeoutOrNull(500.milliseconds) {
+                        for (fuzzyStr in fuzzy(maskedStr)) {
+                            if (found.size > goal) break
+                            ensureActive()
+                            addFound(this, found, fuzzyStr, dict)
+                        }
+                    }
+                    found
+                }
+            }.awaitAll().filterNotNull()
+
             delay(150.milliseconds - elapsed)
             ensureActive() // 短時間に連続で実行されないよう最新のみ有効に
 
-            val uniqueSet = set.distinctBy { it.second }
+            val uniqueSet = results.flatten().distinctBy { it.second }
             SKKLog.d("complete query='$str' found=${uniqueSet.size} in ${elapsed.inWholeMilliseconds}ms")
 
             val (completionList, list) = uniqueSet.unzip()
