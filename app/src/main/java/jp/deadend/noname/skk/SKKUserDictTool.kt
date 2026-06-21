@@ -26,6 +26,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -45,6 +46,7 @@ class SKKUserDictTool : AppCompatActivity() {
     private var mSearchJob: Job = Job()
     private var mDatabaseJob: Job = Job()
     private var mInFileLauncher = false
+    private val mScope = MainScope()
 
     private val importFileLauncher = registerForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -56,7 +58,7 @@ class SKKUserDictTool : AppCompatActivity() {
         SKKLog.d("importing $uri")
         mSearchJob.cancel()
         mDatabaseJob.cancel()
-        mDatabaseJob = MainScope().launch(Dispatchers.IO) {
+        mDatabaseJob = mScope.launch(Dispatchers.IO) {
             withContext(Dispatchers.Main) {
                 mAdapter.clear()
                 mSearchView.queryHint = "辞書に書き込む準備中"
@@ -86,7 +88,7 @@ class SKKUserDictTool : AppCompatActivity() {
                             processedInputStream, charset, isWordList, store, false
                         ) {
                             if (floor(sqrt(it.toFloat())) % 50 == 0f) { // 味わい進捗
-                                MainScope().launch(Dispatchers.Main) {
+                                mScope.launch(Dispatchers.Main) {
                                     mSearchView.queryHint = "インポート中 ${it}行目"
                                 }
                             }
@@ -129,7 +131,7 @@ class SKKUserDictTool : AppCompatActivity() {
             ).show()
         }
         mDatabaseJob.cancel()
-        mDatabaseJob = MainScope().launch(Dispatchers.IO) {
+        mDatabaseJob = mScope.launch(Dispatchers.IO) {
             val errorMessage = withUserDict(writable = false) { store ->
                 runCatching {
                     contentResolver.openOutputStream(uri, "wt")?.bufferedWriter()?.use {
@@ -197,7 +199,8 @@ class SKKUserDictTool : AppCompatActivity() {
                             val adapter = parent.adapter as EntryAdapter
                             val item = adapter.getItem(position)!!
                             SKKLog.d("remove $item from $mDictName")
-                            MainScope().launch(Dispatchers.IO) {
+                            mDatabaseJob.cancel()
+                            mDatabaseJob = mScope.launch(Dispatchers.IO) {
                                 withUserDict { store ->
                                     store.delete(item.key)
                                     withContext(Dispatchers.Main) {
@@ -238,7 +241,7 @@ class SKKUserDictTool : AppCompatActivity() {
                 }
                 val regex: Regex? by lazy { runCatching { Regex(newText) }.getOrNull() }
                 mFoundList.clear()
-                mSearchJob = MainScope().launch(Dispatchers.Default) {
+                mSearchJob = mScope.launch(Dispatchers.Default) {
                     mFoundList.addAll(mEntryList.filter {
                         ensureActive() // ここでキャンセルされる
                         if (regex != null) {
@@ -336,14 +339,22 @@ class SKKUserDictTool : AppCompatActivity() {
     }
 
     public override fun onPause() {
+        mSearchJob.cancel()
+        mDatabaseJob.cancel()
         super.onPause() // 画面は早めに消してしまう
         reloadDict()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        mScope.cancel()
     }
 
     private fun recreateUserDict(extract: Boolean) {
         mAdapter.clear()
 
-        MainScope().launch(Dispatchers.IO) {
+        mDatabaseJob.cancel()
+        mDatabaseJob = mScope.launch(Dispatchers.IO) {
             deleteFile("$mDictName.mv")
 
             if (extract) {
@@ -406,17 +417,23 @@ class SKKUserDictTool : AppCompatActivity() {
         try {
             block(store)
         } catch (e: Exception) {
-            SKKLog.e("withUserDict error in block", e)
+            when (e) {
+                is IllegalStateException if isShared &&
+                        e.message?.contains("closed", ignoreCase = true) == true ->
+                    SKKLog.w("withUserDict: Shared store was closed", e)
+
+                is CancellationException -> throw e
+                else -> SKKLog.e("withUserDict error in block", e)
+            }
             null
         } finally {
-            if (!isShared) {
-                runCatching {
-                    store.commit()
-                }.onFailure { SKKLog.e("withUserDict commit error", it) }
-                runCatching {
-                    store.close()
-                }.onFailure { SKKLog.e("withUserDict close error", it) }
-            }
+            if (writable) runCatching {
+                store.commit()
+            }.onFailure { SKKLog.e("withUserDict commit error", it) }
+
+            if (!isShared) runCatching {
+                store.close()
+            }.onFailure { SKKLog.e("withUserDict close error", it) }
         }
     }
 
@@ -424,7 +441,7 @@ class SKKUserDictTool : AppCompatActivity() {
         SKKLog.d("updateListItems")
         mSearchJob.cancel()
         mDatabaseJob.cancel()
-        mDatabaseJob = MainScope().launch(Dispatchers.IO) {
+        mDatabaseJob = mScope.launch(Dispatchers.IO) {
             withUserDict(writable = false) { store ->
                 withContext(Dispatchers.Main) {
                     mSearchView.isEnabled = false
