@@ -30,8 +30,9 @@ import androidx.core.content.res.ResourcesCompat
 import androidx.core.graphics.withTranslation
 
 internal data class CandidateInfo(
-    val text: String, val annotation: String?,
-    val w: Int, val x: Int, val l: Int
+    val mainText: String, val annoText: String?,
+    val w: Int, val x: Int, val l: Int,
+    val mainW: Float, val annoW: Float
 )
 
 internal data class CandidateLayout(
@@ -66,7 +67,6 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
     private val mColorCursor: Int
     private val mColorOther: Int
     private val mTextPath: Path
-    private val mWorkPaint = Paint()
     internal val mPaint = Paint()
     internal val mLineHeight
         get() = (mPaint.textSize * LINE_SCALE).toInt()
@@ -194,14 +194,16 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
 
         mLayout.picture?.let { canvas.drawPicture(it) }
 
-        if (mCursor >= 0 && mCursor < mLayout.candidates.size) {
-            mWorkPaint.set(mPaint)
-            mWorkPaint.apply {
-                isFakeBoldText = true
-                color = mColorCursor
-                textAlign = Paint.Align.CENTER
-            }
-            canvas.drawCandidate(mLayout.candidates[mCursor], mWorkPaint, mTextPath)
+        mLayout.candidates.getOrNull(mCursor)?.let { candidate ->
+            val oldBold = mPaint.isFakeBoldText
+            val oldColor = mPaint.color
+
+            mPaint.isFakeBoldText = true
+            mPaint.color = mColorCursor
+            canvas.drawCandidate(candidate, mPaint, mTextPath)
+
+            mPaint.isFakeBoldText = oldBold
+            mPaint.color = oldColor
         }
 
         if (mScrolled && mTargetScrollX != scrollX) scrollToTarget()
@@ -248,21 +250,19 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
 
         val candidates = mutableListOf<CandidateInfo>()
         val viewWidth = width.coerceAtLeast(1)
+        val mainPaint = Paint(mPaint)
+        val annoPaint = Paint(mPaint).apply {
+            textSize = mainPaint.textSize * skkPrefs.annotationRatio
+        }
 
         // Compute the total width
         var lineN = 0
         var lineX = 0
         var lineW = 0
         var totalLineW = 0
-        val oldSize = mPaint.textSize
         displayList.forEach { (main, anno) ->
-            val mainW = mPaint.measureText(main)
-            val annoW = anno?.let {
-                mPaint.textSize = oldSize * skkPrefs.annotationRatio
-                val w = mPaint.measureText(it)
-                mPaint.textSize = oldSize
-                w
-            } ?: 0f
+            val mainW = mainPaint.measureText(main)
+            val annoW = anno?.let { annoPaint.measureText(it) } ?: 0f
             val ww = if (viewLines == 0) 1f else
                 (mainW + annoW).coerceAtLeast(mLineHeight * 0.7f) + X_GAP * 2
 
@@ -279,7 +279,9 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
             }
 
             // 登録
-            candidates.add(CandidateInfo(main, anno, ww.toInt(), lineX + lineW, lineN))
+            candidates.add(
+                CandidateInfo(main, anno, ww.toInt(), lineX + lineW, lineN, mainW, annoW)
+            )
             lineW += ww.toInt()
             totalLineW = lineW.coerceAtLeast(totalLineW)
         }
@@ -289,18 +291,17 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
         if (totalWidth > 0) {
             val canvas = picture.beginRecording(totalWidth, mLineHeight * viewLines)
             val textPath = Path()
-            mWorkPaint.set(mPaint)
-            mWorkPaint.apply {
+            mainPaint.apply {
                 color = mColorOther
                 textAlign = Paint.Align.CENTER
             }
 
             candidates.forEach { ci ->
-                canvas.drawCandidate(ci, mWorkPaint, textPath)
+                canvas.drawCandidate(ci, mainPaint, textPath)
                 canvas.drawLine(
                     ci.x + ci.w + 0.5f, (ci.l + 0f) * mLineHeight + 1f,
                     ci.x + ci.w + 0.5f, (ci.l + 1f) * mLineHeight - 1f,
-                    mWorkPaint
+                    mainPaint
                 )
             }
             picture.endRecording()
@@ -465,18 +466,7 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
         val y = (textSize * (LINE_SCALE - 1) / 2 - paint.ascent()).toInt()
         val drawX = ci.x + ci.w / 2f
         val drawY = (y + ci.l * mLineHeight).toFloat()
-
-        val mainText = ci.text
-        val annoText = ci.annotation
-
-        val mainW = paint.measureText(mainText)
-        val annoW = annoText?.let {
-            paint.textSize = annoSize
-            val w = paint.measureText(it)
-            paint.textSize = textSize
-            w
-        } ?: 0f
-        val startX = drawX - (mainW + annoW) / 2f
+        val startX = drawX - (ci.mainW + ci.annoW) / 2f
 
         fun draw(text: String, x: Float) = if (skkPrefs.originalColor) {
             path.reset()
@@ -489,10 +479,10 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
         paint.textAlign.let { oldAlign ->
             paint.textAlign = Paint.Align.LEFT
 
-            draw(mainText, startX)
-            annoText?.let {
+            draw(ci.mainText, startX)
+            ci.annoText?.let {
                 paint.textSize = annoSize
-                draw(it, startX + mainW)
+                draw(it, startX + ci.mainW)
                 paint.textSize = textSize
             }
 
