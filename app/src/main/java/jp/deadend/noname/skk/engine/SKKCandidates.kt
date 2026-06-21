@@ -27,7 +27,6 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.measureTime
 
 class SKKCandidates(private val engine: SKKEngine, private val service: SKKService) {
     // mList と mCompletionList は基本的に同じものが入るが、
@@ -411,7 +410,8 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
             val maskedStr = str.replace(mNumberRegex, "#")
             val isFuzzyEnabled = skkPrefs.fuzzySuggestion && !isEmoji
 
-            var elapsed = 0.milliseconds
+            val startTime = System.currentTimeMillis()
+            fun elapsed() = System.currentTimeMillis() - startTime
             val results = withContext(Dispatchers.Default) {
                 engine.mDictList.map { dict ->
                     async {
@@ -420,28 +420,28 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
                         ) return@async null
 
                         val found = mutableSetOf<Pair<String, String>>()
+                        fun fuzzySequence(str: String) = if (skkPrefs.fuzzySuggestion) {
+                            fuzzy(str, false) +
+                                    if (skkPrefs.fuzzierSuggestion) fuzzy(str, true)
+                                    else emptySequence()
+                        } else emptySequence()
+
                         // 字数を増やさずに変換できるものを最優先
-                        val fuzzyFurther = isFuzzyEnabled && withTimeoutOrNull(1000.milliseconds) {
+                        if (isFuzzyEnabled) withTimeoutOrNull(1000.milliseconds) {
                             // 重い処理: 価値があるので数は少なくてもいいがタイムアウトが必要
-                            var foundCount = 0
-                            val duration = measureTime {
-                                val goal: Int = skkPrefs.candidatesNormalLines * 7 / str.length
-                                for (fuzzyStr in fuzzy(str)) {
-                                    if (foundCount >= goal) break
-                                    ensureActive()
-                                    if (withContext(Dispatchers.IO) {
-                                            dict.getCandidates(fuzzyStr).isNullOrEmpty()
-                                        }) continue
-                                    val shownStr =
-                                        if (service.isHiragana) fuzzyStr
-                                        else hiragana2katakana(fuzzyStr, reversed = true)
-                                    found.add(fuzzyStr to shownStr)
-                                    foundCount++
-                                }
+                            val goal: Int = skkPrefs.candidatesNormalLines * 7 / str.length
+                            for (fuzzyStr in fuzzySequence(str)) {
+                                if (found.size >= goal) break
+                                ensureActive()
+                                if (withContext(Dispatchers.IO) {
+                                        dict.getCandidates(fuzzyStr).isNullOrEmpty()
+                                    }) continue
+                                val shownStr =
+                                    if (service.isHiragana) fuzzyStr
+                                    else hiragana2katakana(fuzzyStr, reversed = true)
+                                found.add(fuzzyStr to shownStr)
                             }
-                            elapsed += duration
-                            duration < 500.milliseconds || foundCount == 0
-                        } ?: true // タイムアウトしても未発見なら前方一致あいまい検索してみる
+                        }
 
                         // 前方一致は軽いので無条件で実行 (数字ありと数字マスク状態で)
                         addFound(this, found, str, dict)
@@ -451,10 +451,12 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
                         }
 
                         // あいまい前方一致は意味があまりないので数は多く、最後に短時間だけ
-                        val goal: Int = skkPrefs.candidatesNormalLines * 10 / str.length
-                        if (fuzzyFurther) withTimeoutOrNull(500.milliseconds) {
-                            for (fuzzyStr in fuzzy(maskedStr)) {
-                                if (found.size > goal) break
+                        if (isFuzzyEnabled) {
+                            val goal: Int = skkPrefs.candidatesNormalLines * 10 / str.length
+                            for (fuzzyStr in fuzzySequence(maskedStr)) {
+                                if (found.size > goal ||
+                                    found.size > 2000 / elapsed().coerceAtLeast(1)
+                                ) break
                                 ensureActive()
                                 addFound(this, found, fuzzyStr, dict)
                             }
@@ -464,11 +466,11 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
                 }.awaitAll()
             }.filterNotNull()
 
-            delay(150.milliseconds - elapsed)
+            delay((150 - elapsed()).milliseconds)
             ensureActive() // 短時間に連続で実行されないよう最新のみ有効に
 
             val uniqueSet = results.flatten().distinctBy { it.second }
-            SKKLog.d("complete query='$str' found=${uniqueSet.size} in ${elapsed.inWholeMilliseconds}ms")
+            SKKLog.d("complete query='$str' found=${uniqueSet.size} in ${elapsed()} ms")
 
             val (completionList, list) = uniqueSet.unzip()
             mCompletionList = completionList

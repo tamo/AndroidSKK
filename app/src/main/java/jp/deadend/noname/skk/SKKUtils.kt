@@ -479,9 +479,8 @@ private val KANA_VARIANTS: Pair<Map<Char, List<Char>>, Map<Char, List<Char>>> by
     variant(kanaGroups.first) to variant(kanaGroups.second)
 }
 
-internal fun fuzzy(str: String): Sequence<String> {
+internal fun fuzzy(str: String, isFuzzier: Boolean): Sequence<String> {
     if (str.isEmpty()) return sequenceOf()
-    val isFuzzier = runCatching { skkPrefs.fuzzierSuggestion }.getOrDefault(false)
 
     fun withCaps(s: String, force: Boolean = false) = sequence {
         yield(s) // そのまま出力
