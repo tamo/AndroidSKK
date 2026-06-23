@@ -526,4 +526,13 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
         isSpecial = false
         mFoundKeys.clear()
     }
+
+    internal fun loadAllSymbols() {
+        val list = engine.mSymbolDict.getAllCandidates()
+        mList = list
+        mCompletionList = list.map { "" }
+        mQuery = ""
+        mIndex = 0
+        setView(list, mQuery, mIndex)
+    }
 }

@@ -52,6 +52,17 @@ class SKKUserDictionary private constructor(
     override fun getCandidates(rawKey: String): List<String>? =
         getEntry(rawKey)?.candidates?.distinct()
 
+    fun getAllCandidates(): List<String> = mLock.withLock {
+        val store = mStore ?: return@withLock listOf()
+        val list = mutableListOf<String>()
+        val browser = store.cursor() ?: return@withLock listOf()
+        while (true) {
+            val tuple = browser.next() ?: break
+            parseValue(tuple.key, tuple.value)?.candidates?.let { list.addAll(it) }
+        }
+        return@withLock list.distinct()
+    }
+
     fun addEntry(key: String, value: String, okurigana: String) = mLock.withLock {
         val store = mStore ?: return@withLock
         val hiraganaKey = katakana2hiragana(key)

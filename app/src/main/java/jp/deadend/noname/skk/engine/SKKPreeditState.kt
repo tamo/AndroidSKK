@@ -89,8 +89,14 @@ object SKKPreeditState : SKKState {
 
             when (codeLower) {
                 ' '.code, '>'.code, ':'.code -> {
-                    if (mCandidates.isSpecial) // カテゴリ選択なので絞り込みなどない
-                        return pickCandidatesViewManually(mCandidates.mIndex)
+                    if (mCandidates.isSpecial) {
+                        return if (codeLower == ':'.code) {
+                            mCandidates.loadAllSymbols() // カテゴリ未選択なので全候補から絞る
+                            changeState(SKKNarrowingState)
+                        } else {
+                            pickCandidatesViewManually(mCandidates.mIndex)
+                        }
+                    }
 
                     // 変換開始
                     // 最後に単体の'n'で終わっている場合、'ん'に変換
