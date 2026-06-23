@@ -343,7 +343,9 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
             // -> narrowed(["樹"])
             candidates.filter { str ->
                 str.any { it in hintKanjiSet } ||
-                        str.contains(hint) || str.contains(katakanaHint)
+                        str.contains(hint) ||
+                        str.contains(katakanaHint) ||
+                        str.contains(hint.uppercase()) // 記号用
             }
         }
 
@@ -486,12 +488,8 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
 
             engine.mEmojiDict, engine.mSymbolDict ->
                 if (isSpecial || key == "emoji") // symbol は isSpecial 以外で呼ばれないはず
-                    return dict.findKeys(scope, "").forEach { pair ->
-                        val found = pair.second.let {
-                            if (isSpecial) removeAnnotation(it) else it
-                        } // 手打ち emoji は注釈を残すことにする
-                        target.add(key to found)
-                    }
+                    return dict.findKeys(scope, "")
+                        .forEach { pair -> target.add(key to pair.second) }
                 else return
 
             else -> dict

@@ -87,13 +87,16 @@ object SKKNarrowingState : SKKConfirmingState() {
 
     override fun afterBackspace(context: SKKEngine) {
         if (!declineUnregister(context)) context.apply {
-            if (mHint.isEmpty()) {
-                startConversion()
-            } else {
-                if (mComposing.isNotEmpty()) {
+            when {
+                mHint.isEmpty() && !mCandidates.isSpecial -> // 絵文字や記号は変換ではない
+                    startConversion()
+
+                mComposing.isNotEmpty() -> {
                     mComposing.deleteCharAt(mComposing.lastIndex)
                     mCandidates.updateComposingText()
-                } else {
+                }
+
+                else -> {
                     mHint.deleteAtCursor()
                     mCandidates.narrow(mHint.toString())
                 }
@@ -102,7 +105,21 @@ object SKKNarrowingState : SKKConfirmingState() {
     }
 
     override fun handleCancel(context: SKKEngine, reconvert: Boolean): Boolean {
-        if (!declineUnregister(context)) context.startConversion()
+        if (!declineUnregister(context)) context.apply {
+            when {
+                !mCandidates.isSpecial -> startConversion()
+
+                !mHint.isEmpty() -> { // 絵文字や記号は変換ではないので
+                    mHint.clear() // 初回はヒントを消すだけにして
+                    mCandidates.narrow(mHint.toString())
+                }
+
+                else -> { // 消えたら絵文字自体を中止
+                    mKanjiKey.clear() // 暗黙の確定を回避
+                    changeState(kanaState) // ASCII からは来ていない前提
+                }
+            }
+        }
         return true
     }
 

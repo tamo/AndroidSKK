@@ -127,9 +127,7 @@ object MakeAssetDict {
             }
         }
         val merged = entries.map { (key, candidates) ->
-            val value = candidates.distinct().reduce { a, c ->
-                a + " | " + c.substringAfter(";")
-            }
+            val value = candidates.distinct().joinToString(" | ") { it.substringAfter(";") }
             key to "/$value/"
         }
 
@@ -293,10 +291,16 @@ object MakeAssetDict {
                 for (code in seen) {
                     val char = String(Character.toChars(code))
                     if (char == "/" || char == "\\") continue
-                    if (Character.isISOControl(code) || Character.isWhitespace(code)) continue
+                    when (Character.getType(code).toByte()) {
+                        Character.UNASSIGNED, Character.CONTROL, Character.FORMAT,
+                        Character.PRIVATE_USE, Character.SURROGATE -> continue
+
+                        else if Character.isWhitespace(code) -> continue
+                    }
 
                     sb.append("/").append(char)
                         .append(";").append(String.format("U+%04X", code))
+                        .append(" ").append(Character.getName(code).orEmpty())
                 }
                 sb.append("/\n")
                 writer.write(sb.toString())
