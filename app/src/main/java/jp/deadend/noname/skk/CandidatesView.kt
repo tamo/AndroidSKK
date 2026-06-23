@@ -233,14 +233,15 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
         mContainer.binding.candidatesRight.active = targetX + width < mLayout.totalWidth
     }
 
-    internal fun buildLayout(list: List<String>, kanjiKey: String): Pair<CandidateLayout, Int> {
+    internal fun buildLayout(
+        list: List<String>, kanjiKey: String, isSpecial: Boolean
+    ): Pair<CandidateLayout, Int> {
         SKKLog.d("buildLayout(list=$list, kanjiKey=$kanjiKey)")
-        val isEmoji = kanjiKey == "emoji"
-        val viewLines =
-            if (isEmoji) skkPrefs.candidatesEmojiLines else skkPrefs.candidatesNormalLines
+        val viewLines = if (isSpecial || kanjiKey == "emoji") // 手打ち emoji も大きく表示
+            skkPrefs.candidatesEmojiLines else skkPrefs.candidatesNormalLines
         val displayList = mutableListOf<Pair<String, String?>>()
         list.take(MAX_CANDIDATES).forEach { rawStr ->
-            val str = if (isEmoji) removeAnnotation(rawStr) else rawStr
+            val str = if (isSpecial) removeAnnotation(rawStr) else rawStr
             val main = processConcatAndMore(str.substringBefore(';'), kanjiKey)
             val anno = if (';' in str) {
                 ";" + processConcatAndMore(str.substringAfter(';'), "#")

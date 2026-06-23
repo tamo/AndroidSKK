@@ -56,6 +56,15 @@
                 android:targetClass="jp.deadend.noname.skk.SKKUserDictTool"
                 android:targetPackage="jp.deadend.noname.skk" />
         </androidx.preference.Preference>
+        <androidx.preference.Preference
+            app:icon="@android:drawable/ic_menu_manage"
+            app:title="@string/label_symbol_tool_activity">
+            <intent
+                android:action="android.intent.action.MAIN"
+                android:data="@string/dict_name_symbol"
+                android:targetClass="jp.deadend.noname.skk.SKKUserDictTool"
+                android:targetPackage="jp.deadend.noname.skk" />
+        </androidx.preference.Preference>
     </androidx.preference.PreferenceCategory>
     <androidx.preference.PreferenceCategory
         app:iconSpaceReserved="false"
@@ -87,6 +96,16 @@
             <intent
                 android:action="android.intent.action.MAIN"
                 android:data="@string/dict_name_emoji_recreate"
+                android:targetClass="jp.deadend.noname.skk.SKKUserDictTool"
+                android:targetPackage="jp.deadend.noname.skk" />
+        </androidx.preference.Preference>
+        <androidx.preference.Preference
+            app:icon="@android:drawable/ic_notification_clear_all"
+            app:summary="初期辞書だけの状態にします"
+            app:title="@string/label_symbol_tool_recreate">
+            <intent
+                android:action="android.intent.action.MAIN"
+                android:data="@string/dict_name_symbol_recreate"
                 android:targetClass="jp.deadend.noname.skk.SKKUserDictTool"
                 android:targetPackage="jp.deadend.noname.skk" />
         </androidx.preference.Preference>

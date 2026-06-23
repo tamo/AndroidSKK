@@ -49,12 +49,10 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.net.toUri
-import androidx.preference.PreferenceManager
 import jp.deadend.noname.skk.databinding.InputViewBinding
 import jp.deadend.noname.skk.engine.RomajiConverter
 import jp.deadend.noname.skk.engine.SKKASCIIState
 import jp.deadend.noname.skk.engine.SKKAbbrevState
-import jp.deadend.noname.skk.engine.SKKEmojiState
 import jp.deadend.noname.skk.engine.SKKEngine
 import jp.deadend.noname.skk.engine.SKKHanKanaState
 import jp.deadend.noname.skk.engine.SKKHiraganaState
@@ -168,14 +166,11 @@ class SKKService : InputMethodService() {
     private var mStreamVolume = 0
 
     internal lateinit var mEngine: SKKEngine
-    internal val engineState: SKKState
-        get() {
-            val rawState = mEngine.state
-            return if (rawState is SKKEmojiState) mEngine.oldState else rawState
-        }
+    internal val engineState: SKKState get() = mEngine.state
     internal lateinit var mUserDict: SKKUserDictionary
     internal lateinit var mAsciiDict: SKKUserDictionary
     internal lateinit var mEmojiDict: SKKUserDictionary
+    internal lateinit var mSymbolDict: SKKUserDictionary
 
     internal val isHiragana: Boolean
         get() = kanaState is SKKHiraganaState
@@ -274,22 +269,15 @@ class SKKService : InputMethodService() {
     private fun openDictionaries(): List<SKKDictionaryInterface> {
         val result = mutableListOf<SKKDictionaryInterface>()
         val dd = filesDir.absolutePath
-        SKKLog.d("dict dir: $dd")
-
-        val prefVal = PreferenceManager.getDefaultSharedPreferences(this)
-            .getString(
-                getString(R.string.pref_dict_order),
-                "ユーザー辞書/${getString(R.string.dict_name_user)}/絵文字辞書/${getString(R.string.dict_name_emoji)}/"
-            )
-        SKKLog.d("dict pref: $prefVal")
+        SKKLog.d("dict dir=$dd order=${skkPrefs.dictOrder}")
 
         val oldDictList = if (::mEngine.isInitialized) mEngine.mDictList else emptyList()
 
-        prefVal?.split("/")?.chunked(2)?.forEach { chunk ->
+        skkPrefs.dictOrder.split("/").chunked(2).forEach { chunk ->
             if (chunk.size < 2) return@forEach
             when (val dictPath = chunk[1]) {
                 getString(R.string.dict_name_user) -> mUserDict
-                getString(R.string.dict_name_emoji) -> mEmojiDict
+                getString(R.string.dict_name_emoji) -> null // 以前の設定が残っているが無視
                 else -> (if (dictPath.startsWith("/")) dictPath else "$dd/$dictPath").let { fullPath ->
                     (oldDictList.find { it.mFilePath == fullPath } as? SKKSystemDictionary)?.let {
                         if (it.mStore != null) it else null
@@ -365,8 +353,10 @@ class SKKService : InputMethodService() {
             openUserDictionary(getString(R.string.dict_name_ascii), isASCII = true) ?: return
         mEmojiDict =
             openUserDictionary(getString(R.string.dict_name_emoji), isASCII = true) ?: return
+        mSymbolDict =
+            openUserDictionary(getString(R.string.dict_name_symbol), isASCII = false) ?: return
         val dictList = openDictionaries()
-        if (dictList.minus(mUserDict).minus(mEmojiDict).isEmpty()) {
+        if (!dictList.any { it is SKKSystemDictionary }) {
             val intent = Intent(applicationContext, SKKDictManager::class.java)
                 .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             val pendingIntent = PendingIntent.getActivity(
@@ -380,7 +370,8 @@ class SKKService : InputMethodService() {
             )
         }
 
-        mEngine = SKKEngine(this@SKKService, dictList, mUserDict, mAsciiDict, mEmojiDict)
+        mEngine =
+            SKKEngine(this@SKKService, dictList, mUserDict, mAsciiDict, mEmojiDict, mSymbolDict)
 
         mSpeechRecognizer.setRecognitionListener(object : RecognitionListener {
             private fun restoreState() {
@@ -1680,11 +1671,9 @@ class SKKService : InputMethodService() {
     }
 
     internal fun getStore(filePath: String): SKKStore? =
-        when {
-            !::mEngine.isInitialized -> null
-            filePath == mAsciiDict.mFilePath -> mAsciiDict
-            else -> mEngine.mDictList.find { it.mFilePath == filePath }
-        }?.mStore
+        if (!::mEngine.isInitialized) null
+        else (mEngine.mDictList + mAsciiDict + mEmojiDict + mSymbolDict)
+            .find { it.mFilePath == filePath }?.mStore
 
     @Suppress("SameReturnValue")
     private fun ping() = true

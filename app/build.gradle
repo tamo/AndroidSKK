@@ -180,4 +180,18 @@ afterEvaluate {
                 "${project.projectDir}/src/test/dict/NOTICE-unicode"
         ]
     }
+
+    tasks.register('generateSymbolDict', JavaExec) {
+        group = 'build'
+        description = 'Generates skk_symboldict.zip from SKK-JISYO.symbol'
+        mainClass = 'jp.deadend.noname.skk.MakeAssetDict'
+        def compileTask = tasks.named('compileDebugUnitTestKotlin')
+        dependsOn compileTask
+        classpath = compileTask.get().outputs.files + configurations.debugUnitTestRuntimeClasspath
+        args = [
+                'symbol',
+                "${project.projectDir}/src/test/dict/SKK-JISYO.symbol",
+                "${project.projectDir}/src/main/assets/skk_symboldict.zip"
+        ]
+    }
 }

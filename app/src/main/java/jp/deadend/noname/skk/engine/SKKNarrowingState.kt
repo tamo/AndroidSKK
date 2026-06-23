@@ -9,7 +9,6 @@ object SKKNarrowingState : SKKConfirmingState() {
     override val hasCandidates = true
     override val prefix = "▼"
     override val icon = 0
-    override var isSequential = false
 
     internal val mHint = SKKEngine.KanjiKey()
     internal var mOriginalCandidates: List<String>? = null

@@ -156,9 +156,12 @@ class SKKUserDictionary private constructor(
         ): SKKUserDictionary? {
             val mvFile = File("$filePath.mv")
             val dbFile = File("$filePath.db")
-            if (isASCII && !mvFile.exists() && !dbFile.exists()) {
-                context.extractDictionary(dbFile.nameWithoutExtension)
-            }
+            val dictName = dbFile.nameWithoutExtension
+
+            if (dictName != context.getString(R.string.dict_name_user) &&
+                !mvFile.exists() && !dbFile.exists()
+            ) context.extractDictionary(dictName)
+
             return runCatching {
                 val store = runBlocking(Dispatchers.IO) {
                     openDB(filePath, btreeName, writable = true)

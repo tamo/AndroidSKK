@@ -71,12 +71,24 @@ object SKKChooseState : SKKConfirmingState() {
 
     override fun handleCancel(context: SKKEngine, reconvert: Boolean): Boolean {
         if (!declineUnregister(context)) context.apply {
-            if (mKanjiKey.isEmpty()) { // どういうとき？
-                changeState(kanaState)
-            } else {
-                if (isAlphabet(mKanjiKey[0].code)) { // Abbrev モード
+            when {
+                mCandidates.isSpecial -> {
+                    val wasSymbol = mCandidates.mQuery != "emoji"
+                    mKanjiKey.clear() // 暗黙の確定を回避
+                    changeState(kanaState) // ASCII から special は来ないはず
+                    if (wasSymbol) symbolCandidates() // 戻る先は Preedit
+                    return true
+                }
+
+                mKanjiKey.isEmpty() -> { // どういうとき？
+                    changeState(kanaState)
+                    return true
+                }
+
+                isAlphabet(mKanjiKey[0].code) -> // 厳密な判定ではないが
                     changeState(SKKAbbrevState)
-                } else { // 漢字変換中
+
+                else -> { // 漢字変換中
                     mComposing.setLength(0) // 最初から空のはずだけど念のため
                     mOkurigana = "" // これは入っている可能性がある
                     changeState(SKKPreeditState) // Abbrev の可能性はない
@@ -88,9 +100,9 @@ object SKKChooseState : SKKConfirmingState() {
                         }
                     }
                 }
-                setComposingTextSKK()
-                complete(mKanjiKey.toString())
             }
+            setComposingTextSKK()
+            complete(mKanjiKey.toString())
         }
         return true
     }

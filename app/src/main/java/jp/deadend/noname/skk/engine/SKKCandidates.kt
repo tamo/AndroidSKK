@@ -3,7 +3,6 @@ package jp.deadend.noname.skk.engine
 import jp.deadend.noname.skk.SKKDictionaryInterface
 import jp.deadend.noname.skk.SKKLog
 import jp.deadend.noname.skk.SKKService
-import jp.deadend.noname.skk.SKKUserDictionary
 import jp.deadend.noname.skk.encodeKey
 import jp.deadend.noname.skk.fuzzy
 import jp.deadend.noname.skk.hiragana2katakana
@@ -35,6 +34,8 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
     internal var mCompletionList: List<String>? = null
     internal var mIndex = 0
     internal var mQuery = ""
+    internal var isSequential = false // シフトでオンオフする連続入力フラグ
+    internal var isSpecial = false // 絵文字か記号をソフトキーで呼んだら true
     private var mJob: Job = Job()
     private var mSuspended: Boolean = false
 
@@ -47,7 +48,7 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
         if (list.isNullOrEmpty()) withContext(Dispatchers.Main) {
             service.clearCandidatesView()
         } else {
-            val (layout, viewLines) = service.mCandidatesView.buildLayout(list, kanjiKey)
+            val (layout, viewLines) = service.mCandidatesView.buildLayout(list, kanjiKey, isSpecial)
             withContext(Dispatchers.Main) {
                 service.setCandidates(layout, viewLines, index)
             }
@@ -70,6 +71,7 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
 
     internal fun cycleCompletionCursor(isForward: Boolean) {
         val list = mList ?: return
+        if (list.isEmpty()) return SKKLog.d("list is empty")
 
         mIndex = if (isForward) {
             (mIndex + 1) % list.size
@@ -83,40 +85,38 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
 
     internal fun moveCandidateCursor(isForward: Boolean) {
         val list = mList ?: return
+        if (list.isEmpty()) return SKKLog.d("list is empty")
 
         if (isForward) mIndex++ else mIndex--
 
-        when (mQuery) {
-            "emoji", "/きごう" -> mIndex = (mIndex + list.size) % list.size
+        if (isSpecial) mIndex = (mIndex + list.size) % list.size
+        else when {
+            mIndex > list.lastIndex -> {
+                engine.mRegister.start(engine.mKanjiKey.toString())
+                return
+            }
 
-            else -> when {
-                mIndex > list.lastIndex -> {
-                    engine.mRegister.start(engine.mKanjiKey.toString())
-                    return
-                }
+            mIndex < 0 -> when (engine.state) {
+                is SKKNarrowingState -> mIndex = list.lastIndex
 
-                mIndex < 0 -> when (engine.state) {
-                    is SKKNarrowingState -> mIndex = list.lastIndex
-
-                    is SKKChooseState -> engine.apply {
-                        SKKLog.d("back to preedit: composing=$mComposing, key=$mKanjiKey, okuri=$mOkurigana")
-                        this@SKKCandidates.reset()
-                        if (mComposing.isEmpty()) {
-                            if (mOkurigana.isNotEmpty()) {
-                                mOkurigana = ""
-                                mKanjiKey.deleteAtCursor()
-                            }
-                            changeState(SKKPreeditState)
-                            setComposingTextSKK()
-                            complete(mKanjiKey.toString())
-                        } else {
-                            mKanjiKey.clear()
-                            changeState(SKKAbbrevState)
-                            setComposingTextSKK(mComposing)
-                            complete(mComposing.toString())
+                is SKKChooseState -> engine.apply {
+                    SKKLog.d("back to preedit: composing=$mComposing, key=$mKanjiKey, okuri=$mOkurigana")
+                    this@SKKCandidates.reset()
+                    if (mComposing.isEmpty()) {
+                        if (mOkurigana.isNotEmpty()) {
+                            mOkurigana = ""
+                            mKanjiKey.deleteAtCursor()
                         }
-                        return
+                        changeState(SKKPreeditState)
+                        setComposingTextSKK()
+                        complete(mKanjiKey.toString())
+                    } else {
+                        mKanjiKey.clear()
+                        changeState(SKKAbbrevState)
+                        setComposingTextSKK(mComposing)
+                        complete(mComposing.toString())
                     }
+                    return
                 }
             }
         }
@@ -126,8 +126,8 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
     }
 
 
-    private fun get(index: Int): String? = mList?.let {
-        processConcatAndMore(removeAnnotation(it[index]), mQuery)
+    private fun get(index: Int): String? = mList?.getOrNull(index)?.let {
+        processConcatAndMore(removeAnnotation(it), mQuery)
     }
 
     fun updateComposingText() = get(mIndex)?.let { candidate ->
@@ -137,55 +137,34 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
     fun pickCandidate(index: Int, backspace: Boolean = false, unregister: Boolean = false) {
         if (!engine.state.hasCandidates) return
         val list = mList ?: return
-        val rawCandidate = list[index]
+        val rawCandidate = list.getOrNull(index) ?: return
         val candidate = StringBuilder(get(index) ?: return)
         SKKLog.d("pickCandidate $candidate from $list (unregister=$unregister, learn=${engine.isPersonalizedLearning}, key=${engine.mKanjiKey})")
         suspendCompletion()
 
-        if (mQuery == "emoji" || mQuery == "/きごう") {
-            if (engine.isPersonalizedLearning || unregister) {
-                val s = removeAnnotation(candidate.toString())
-                var newEntry = "/160/$s"
-                runBlocking(Dispatchers.IO) {
-                    engine.mASCIIDict.getEntry(mQuery)?.let { entry ->
-                        entry.candidates.asSequence()
-                            .zipWithNext()
-                            .filterIndexed { i, _ -> i % 2 == 0 }
-                            .mapNotNull {
-                                if (it.second == s) {
-                                    newEntry = "/${it.first.toInt().coerceAtLeast(160)}/$s"
-                                    null
-                                } else it
-                            }
-                            .fold("/") { str, pair -> "$str${pair.first}/${pair.second}/" }
-                    }
-                }.orEmpty().let { oldEntry ->
-                    if (unregister) newEntry = ""
-                    SKKLog.d("replaceEntry($mQuery, $newEntry$oldEntry)")
-                    runBlocking(Dispatchers.IO) {
-                        engine.mASCIIDict.replaceEntry(mQuery, newEntry + oldEntry)
-                    }
-                }
-            }
-
-            engine.apply {
+        if (isSpecial) engine.apply {
+            if (mQuery.isNotEmpty()) {
                 if (unregister) {
                     val confirm = state as SKKConfirmingState
                     confirm.confirmUnregister(this, "/${removeAnnotation(rawCandidate)}/") {
+                        registerSpecial(mQuery, candidate.toString(), unregister)
                         reset()
                         changeState(oldState)
                     }
                     resumeCompletion()
                     return
+                } else if (isPersonalizedLearning) {
+                    registerSpecial(mQuery, candidate.toString())
                 }
-
-                commitTextSKK(removeAnnotation(candidate.toString()))
-                resumeCompletion()
-                if (state.isSequential) return
-                reset()
-                changeState(oldState)
-                return
             }
+
+            commitTextSKK(removeAnnotation(candidate.toString()))
+            resumeCompletion()
+
+            if (isSequential) return
+            reset()
+            changeState(kanaState)
+            return
         }
 
         if (unregister) engine.apply {
@@ -234,7 +213,7 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
             commitTextSKK(text)
             resumeCompletion()
 
-            if (state.isSequential) return
+            if (isSequential) return
             reset()
             changeState(kanaState)
         }
@@ -260,7 +239,7 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
         // comp が ill で conv が I'll になるような、入力した文字まで変化する場合がある
 
         engine.apply {
-            when (state) {
+            when (val state = state) {
                 SKKAbbrevState -> {
                     mKanjiKey.set(conv)
                     setComposingTextSKK()
@@ -276,12 +255,14 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
                     val kanjiKey = if (hasOkuri) hira.dropLast(1) else hira
                     mKanjiKey.set(kanjiKey)
                     mComposing.setLength(0)
-                    if (commit) {
-                        if (hasOkuri) {
-                            processKey(encodeKey(last.uppercaseChar().code))
-                        } else {
-                            startConversion()
+                    if (commit) when {
+                        isSpecial -> {
+                            mKanjiKey.set(conv) // カテゴリ名
+                            startConversion(listOf(mUserDict, mSymbolDict))
                         }
+
+                        hasOkuri -> processKey(encodeKey(last.uppercaseChar().code))
+                        else -> startConversion()
                     } else {
                         // ハードウェアキーボードで Tab を押しただけなら送り仮名で conversionStart しない
                         val composing = if (hasOkuri && last !in "aiueo") {
@@ -293,52 +274,49 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
                 }
 
                 is SKKASCIIState -> {
-                    if (!commit) return
-                    if (isPersonalizedLearning || unregister) {
-                        val lambda = {
-                            var newEntry = "/160/$conv"
-                            runBlocking(Dispatchers.IO) {
-                                engine.mASCIIDict.getEntry(comp)?.let { entry ->
-                                    entry.candidates.asSequence() // freq1, val1, freq2, val2
-                                        .zipWithNext() // (freq1, val1), (val1, freq2), (freq2, val2)
-                                        .filterIndexed { i, _ -> i % 2 == 0 } // (freq1, val1), (freq2, val2)
-                                        .mapNotNull {
-                                            if (it.second == conv) {
-                                                newEntry =
-                                                    "/${it.first.toInt().coerceAtLeast(160)}/$conv"
-                                                null
-                                            } else it
-                                        }
-                                        .fold("/") { str, pair -> "$str${pair.first}/${pair.second}/" }
-                                }
-                            }.orEmpty().let { oldEntry ->
-                                if (unregister) newEntry = ""
-                                SKKLog.d("replaceEntry($comp, $newEntry$oldEntry)")
-                                runBlocking(Dispatchers.IO) {
-                                    engine.mASCIIDict.replaceEntry(comp, newEntry + oldEntry)
-                                }
-                            }
+                    when {
+                        !commit -> return
+                        unregister -> return state.confirmUnregister(
+                            engine, "/${removeAnnotation(rawCompletion)}/"
+                        ) {
+                            registerSpecial(comp, conv, unregister)
+                            reset() // ASCII からは changeState(oldState) 不要
                         }
-                        if (unregister) {
-                            val confirm = state as SKKConfirmingState
-                            confirm.confirmUnregister(
-                                engine,
-                                "/${removeAnnotation(rawCompletion)}/"
-                            ) {
-                                lambda()
-                                reset()
-                                // ASCII からは changeState(oldState) 不要
-                            }
-                            return
-                        }
-                        lambda()
+
+                        isPersonalizedLearning ->
+                            registerSpecial(comp, conv)
                     }
 
                     val slim = removeAnnotation(conv)
                     commitTextSKK(slim) // アプリ側で補完表示していることがあるのでまず上書きしておく
-                    (state as SKKASCIIState).deleteSurroundingText(this@apply, slim)
+                    state.deleteSurroundingText(this@apply, slim)
                     reset()
                 }
+            }
+        }
+    }
+
+    private fun registerSpecial(query: String, candidate: String, unregister: Boolean = false) {
+        val s = removeAnnotation(candidate)
+        var newEntry = "/160/$s"
+        runBlocking(Dispatchers.IO) {
+            engine.mASCIIDict.getEntry(query)?.let { entry ->
+                entry.candidates.asSequence() // freq1, val1, freq2, val2
+                    .zipWithNext() // (freq1, val1), (val1, freq2), (freq2, val2)
+                    .filterIndexed { i, _ -> i % 2 == 0 } // (freq1, val1), (freq2, val2)
+                    .mapNotNull {
+                        if (it.second == s) {
+                            newEntry = "/${it.first.toInt().coerceAtLeast(160)}/$s"
+                            null
+                        } else it
+                    }
+                    .fold("/") { str, pair -> "$str${pair.first}/${pair.second}/" }
+            }
+        }.orEmpty().let { oldEntry ->
+            if (unregister) newEntry = ""
+            SKKLog.d("replaceEntry($query, $newEntry$oldEntry)")
+            runBlocking(Dispatchers.IO) {
+                engine.mASCIIDict.replaceEntry(query, newEntry + oldEntry)
             }
         }
     }
@@ -406,17 +384,21 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
                 return@coroutineScope
             }
 
-            val isEmoji = str == "emoji"
+            val isEmoji = str == "emoji" // 手動で emoji と打った
             val maskedStr = str.replace(mNumberRegex, "#")
             val isFuzzyEnabled = skkPrefs.fuzzySuggestion && !isEmoji
+            val dictList = if (isEmoji) engine.mDictList + engine.mEmojiDict
+            else engine.mDictList
 
             val startTime = System.currentTimeMillis()
             fun elapsed() = System.currentTimeMillis() - startTime
+
             val results = withContext(Dispatchers.Default) {
-                engine.mDictList.map { dict ->
+                dictList.map { dict ->
                     async {
-                        if (engine.state is SKKASCIIState &&
-                            if (isEmoji) dict !is SKKUserDictionary else dict != engine.mUserDict
+                        // ASCII は、ほとんどの辞書を無視する (user は実際には ASCII の意味になる)
+                        if (engine.state is SKKASCIIState && dict !== engine.mUserDict &&
+                            !(isEmoji && dict === engine.mEmojiDict)
                         ) return@async null
 
                         val found = mutableSetOf<Pair<String, String>>()
@@ -498,18 +480,19 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
         dict: SKKDictionaryInterface
     ) {
         val dictionary = when (dict) {
-            engine.mUserDict -> {
-                if (key == "emoji" || engine.state is SKKASCIIState) engine.mASCIIDict else engine.mUserDict
-            }
+            engine.mUserDict ->
+                if (isSpecial || key == "emoji" || engine.state is SKKASCIIState)
+                    engine.mASCIIDict else engine.mUserDict
 
-            engine.mEmojiDict -> {
-                if (key == "emoji" || key == "えもじ") {
-                    engine.mEmojiDict.findKeys(scope, "").forEach { emoji ->
-                        target.add(key to emoji.second)
+            engine.mEmojiDict, engine.mSymbolDict ->
+                if (isSpecial || key == "emoji") // symbol は isSpecial 以外で呼ばれないはず
+                    return dict.findKeys(scope, "").forEach { pair ->
+                        val found = pair.second.let {
+                            if (isSpecial) removeAnnotation(it) else it
+                        } // 手打ち emoji は注釈を残すことにする
+                        target.add(key to found)
                     }
-                }
-                return
-            }
+                else return
 
             else -> dict
         }
@@ -541,6 +524,8 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
         mCompletionList = null
         mIndex = 0
         mQuery = ""
+        isSequential = false
+        isSpecial = false
         mFoundKeys.clear()
     }
 }

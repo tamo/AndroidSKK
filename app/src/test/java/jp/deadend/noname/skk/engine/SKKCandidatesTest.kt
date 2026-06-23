@@ -47,7 +47,8 @@ class SKKCandidatesTest {
         SKKNarrowingState.mOriginalCandidates = null
         every { engine.mUserDict } returns mockk<SKKUserDictionary>(relaxed = true)
         every { service.mCandidatesView } returns candidatesView
-        every { candidatesView.buildLayout(any(), any()) } returns (CandidateLayout.EMPTY to 1)
+        every { candidatesView.buildLayout(any(), any(), any()) } returns
+                (CandidateLayout.EMPTY to 1)
     }
 
     @After
@@ -161,5 +162,35 @@ class SKKCandidatesTest {
 
         candidates.narrow("じゅもく")
         assertEquals(listOf("樹"), candidates.mList)
+    }
+
+    @Test
+    fun testPickCandidate_ResetsWhenNotSequential() {
+        candidates.mList = listOf("candidate")
+        candidates.mQuery = "query"
+        candidates.isSequential = false
+        every { engine.state.hasCandidates } returns true
+        every { engine.kanaState } returns SKKHiraganaState
+
+        candidates.pickCandidate(0)
+
+        assertEquals(false, candidates.isSequential)
+        io.mockk.verify { engine.reset() }
+        io.mockk.verify { engine.changeState(any()) }
+    }
+
+    @Test
+    fun testPickCandidate_DoesNotResetWhenSequential() {
+        candidates.mList = listOf("candidate")
+        candidates.mQuery = "query"
+        candidates.isSequential = true
+        every { engine.state.hasCandidates } returns true
+        every { engine.kanaState } returns SKKHiraganaState
+
+        candidates.pickCandidate(0)
+
+        assertEquals(true, candidates.isSequential)
+        io.mockk.verify(exactly = 0) { engine.reset() }
+        io.mockk.verify(exactly = 0) { engine.changeState(any()) }
     }
 }

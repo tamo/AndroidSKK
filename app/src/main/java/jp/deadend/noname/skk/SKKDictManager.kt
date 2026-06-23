@@ -60,8 +60,7 @@ class SKKDictManager : AppCompatActivity() {
 
     private val commonDictList: List<SKKStoreTuple> by lazy {
         listOf(
-            SKKStoreTuple("ユーザー辞書", getString(R.string.dict_name_user)),
-            SKKStoreTuple("絵文字辞書", getString(R.string.dict_name_emoji))
+            SKKStoreTuple("ユーザー辞書", getString(R.string.dict_name_user))
         ) + listOf(
             "lisplike", "L+", "L", "L.unannotated", "S",
             "jinmei", "geo", "station", "propernoun",

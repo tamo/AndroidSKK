@@ -528,7 +528,7 @@ class SKKPrefs(context: Context) {
 
     // 辞書管理
     val defaultDictOrder =
-        "ユーザー辞書/${res.getString(R.string.dict_name_user)}/絵文字辞書/${res.getString(R.string.dict_name_emoji)}/"
+        "ユーザー辞書/${res.getString(R.string.dict_name_user)}/"
     var dictOrder: String
         get() = prefs.getString(res.getString(R.string.pref_dict_order), defaultDictOrder)
             ?: defaultDictOrder

@@ -28,6 +28,7 @@ class SKKEngineTest {
     private val userDict = mockk<SKKUserDictionary>(relaxed = true)
     private val asciiDict = mockk<SKKUserDictionary>(relaxed = true)
     private val emojiDict = mockk<SKKUserDictionary>(relaxed = true)
+    private val symbolDict = mockk<SKKUserDictionary>(relaxed = true)
 
     @Before
     fun setUp() {
@@ -40,7 +41,7 @@ class SKKEngineTest {
 
         engine = SKKEngine(
             service, listOf(userDict, asciiDict, emojiDict),
-            userDict, asciiDict, emojiDict
+            userDict, asciiDict, emojiDict, symbolDict
         )
         every { service.kanaState = any() } answers {
             engine.kanaState = it.invocation.args[0] as SKKState

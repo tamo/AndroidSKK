@@ -7,12 +7,14 @@
     <string name="label_dict_tool_activity">ユーザー辞書ツール</string>
     <string name="label_ascii_tool_activity">ASCII 辞書ツール</string>
     <string name="label_emoji_tool_activity">絵文字辞書ツール</string>
+    <string name="label_symbol_tool_activity">記号辞書ツール</string>
     <string name="label_pref_hard_keyboard">ハードウェアキーボードの設定</string>
     <string name="label_pref_soft_keyboard">ソフトウェアキーボードの設定</string>
     <string name="label_dict_manager_reset">辞書を初期化</string>
     <string name="label_dict_tool_recreate">ユーザー辞書の初期化</string>
     <string name="label_ascii_tool_recreate">ASCII 辞書の初期化</string>
     <string name="label_emoji_tool_recreate">絵文字辞書の初期化</string>
+    <string name="label_symbol_tool_recreate">記号辞書の初期化</string>
     <string name="label_log_viewer">ログの表示</string>
 
     <string name="label_dict_manager_optional_dict">SKK 追加辞書</string>
@@ -150,7 +152,9 @@
     <string name="dict_name_user" translatable="false">skk_userdict</string>
     <string name="dict_name_ascii" translatable="false">skk_asciidict</string>
     <string name="dict_name_emoji" translatable="false">skk_emojidict</string>
+    <string name="dict_name_symbol" translatable="false">skk_symboldict</string>
     <string name="dict_name_user_recreate" translatable="false">*skk_userdict</string>
     <string name="dict_name_ascii_recreate" translatable="false">+skk_asciidict</string>
     <string name="dict_name_emoji_recreate" translatable="false">+skk_emojidict</string>
+    <string name="dict_name_symbol_recreate" translatable="false">+skk_symboldict</string>
 </resources>

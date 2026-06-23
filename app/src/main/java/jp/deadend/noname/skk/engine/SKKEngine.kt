@@ -27,7 +27,8 @@ class SKKEngine(
     internal var mDictList: List<SKKDictionaryInterface>,
     internal val mUserDict: SKKUserDictionary,
     internal val mASCIIDict: SKKUserDictionary,
-    internal val mEmojiDict: SKKUserDictionary
+    internal val mEmojiDict: SKKUserDictionary,
+    internal val mSymbolDict: SKKUserDictionary
 ) {
     internal var state: SKKState = SKKHiraganaState
         private set
@@ -128,11 +129,9 @@ class SKKEngine(
     }
 
     internal fun close() {
-        for (dict in mDictList) {
-            dict.close()
-            if (dict == mUserDict) {
-                mASCIIDict.close()
-            } // ASCII は mDictList に入れていない
+        val closedSet = mutableSetOf<SKKDictionaryInterface>()
+        for (dict in mDictList + mASCIIDict + mEmojiDict + mSymbolDict) {
+            if (closedSet.add(dict)) dict.close()
         }
     }
 
@@ -319,20 +318,21 @@ class SKKEngine(
         unregister: Boolean = false,
         sequential: Boolean = false
     ) {
-        SKKLog.d("pickCandidatesViewManually(index=$index, unregister=$unregister, sequential=$sequential)")
+        SKKLog.d("pickCandidatesViewManually(index=$index, unregister=$unregister, sequential=$sequential) state=${state.name}")
         val state = state
-        if (state is SKKConfirmingState && state.pendingLambda != null) {
-            state.beforeProcessKey(this, encodeKey('y'.code))
-            return
-        }
         when {
+            state is SKKConfirmingState && state.pendingLambda != null -> {
+                state.beforeProcessKey(this, encodeKey('y'.code))
+                return
+            }
+
             state.hasCandidates -> {
-                state.isSequential = sequential
+                mCandidates.isSequential = sequential
                 mCandidates.pickCandidate(index, unregister = unregister)
             }
 
             state.canComplete -> {
-                state.isSequential = sequential
+                mCandidates.isSequential = sequential
                 mCandidates.pickCompletion(index, unregister)
             }
 
@@ -558,7 +558,7 @@ class SKKEngine(
      * mKanjiKey で変換スタート
      * 送りありの場合，事前に送りがなをmOkuriganaにセットしておく
      */
-    internal fun startConversion() {
+    internal fun startConversion(dictList: List<SKKDictionaryInterface> = mDictList) {
         val key = mKanjiKey.entry
         if (key.isEmpty()) {
             changeState(kanaState) // ASCIIには戻れない…
@@ -568,8 +568,8 @@ class SKKEngine(
 
         changeState(SKKChooseState)
 
-        val list = find(str).ifEmpty {
-            find(str.replace(Regex("\\d+(\\.\\d+)?"), "#")).ifEmpty {
+        val list = find(str, dictList).ifEmpty {
+            find(str.replace(Regex("\\d+(\\.\\d+)?"), "#"), dictList).ifEmpty {
                 mRegister.start(str)
                 return
             }
@@ -717,30 +717,40 @@ class SKKEngine(
         )
     }
 
-    internal fun symbolCandidates() {
-        changeState(SKKEmojiState)
-        val set = mutableSetOf<Pair<String, String>>()
-        runBlocking {
-            mCandidates.addFound(this, set, "/きごう", mASCIIDict)
-        }
+    internal fun symbolCandidates() =
+        specialCandidates(SKKPreeditState, listOf(mSymbolDict), "")
+
+    internal fun emojiCandidates() =
+        specialCandidates(SKKChooseState, listOf(mASCIIDict, mEmojiDict), "emoji")
+
+    private fun specialCandidates(
+        targetState: SKKState,
+        dictList: List<SKKUserDictionary>, query: String
+    ) {
+        mKanjiKey.set("emoji")
+        changeState(targetState)
+
         mCandidates.apply {
-            mList = set.map { it.second } +
-                    "\"#$%&'()=^~¥|@`[{;+*]},<.>\\_←↓↑→“”‘’『』【】！＂＃＄％＆＇（）－＝＾～￥｜＠｀［｛；＋：＊］｝，＜．＞／？＼＿、。"
-                        .toCharArray()
-                        .map { it.toString() }
-            mCompletionList = mList?.map { "/きごう" }
+            isSpecial = true
+
+            val set = mutableSetOf<Pair<String, String>>()
+            runBlocking {
+                dictList.forEach { addFound(this, set, "emoji", it) }
+            }
+
+            val (completionList, list) = set.unzip()
+            mCompletionList = completionList
+            mList = list
             mIndex = 0
-            mQuery = "/きごう"
+            mQuery = query
             setView(mList, mQuery, mIndex)
+            //updateComposingText()
         }
     }
 
-    internal fun emojiCandidates() {
-        changeState(SKKEmojiState)
-        complete("emoji")
-    }
-
-    internal fun find(key: String): List<String> = runBlocking(Dispatchers.IO) {
+    internal fun find(
+        key: String, dictList: List<SKKDictionaryInterface> = mDictList
+    ): List<String> = runBlocking(Dispatchers.IO) {
         val userEntry = mUserDict.getEntry(key)
         SKKLog.d("user dictionary: $key -> ${userEntry?.candidates} with ${userEntry?.okuriganaBlocks}")
         val (userOkList, userRestList) = (userEntry?.candidates ?: listOf()).partition { s ->
@@ -751,14 +761,9 @@ class SKKEngine(
             } == true
         }
 
-        val rawList: List<String> = mDictList.asSequence().mapNotNull { dict ->
+        val rawList: List<String> = dictList.asSequence().mapNotNull { dict ->
             when (dict) {
                 mUserDict -> userOkList
-
-                mEmojiDict -> if (key == "えもじ") runBlocking {
-                    mEmojiDict.findKeys(this, "").map { it.second }
-                } else null
-
                 else -> dict.getCandidates(key)
             }
         }.fold(listOf<String>()) { acc, list -> acc + list }
@@ -848,9 +853,7 @@ class SKKEngine(
         val wasTemporaryView = mService.isTemporaryView
         val isPreeditTransition = this.state.isPreedit && newState.isPreedit // reset() しない
 
-        if (this.state !is SKKEmojiState)
-            oldState = this.state
-        else mKanjiKey.clear() // mKanjiKey=="emoji"は基本的に無意味なので
+        oldState = this.state
 
         this.state = newState
 
@@ -878,7 +881,6 @@ class SKKEngine(
                     mHint.clear()
                     mOriginalCandidates = null
                     mSpaceUsed = false
-                    isSequential = false
                     isASCII = false
                 }
                 mCandidates.updateComposingText()
@@ -898,7 +900,6 @@ class SKKEngine(
             else -> when (state) {
                 SKKASCIIState -> false
                 SKKHiraganaState, SKKKatakanaState, SKKHanKanaState -> true
-                SKKEmojiState -> return
                 else -> {
                     SKKLog.e("changeSoftKeyboard(${state.name})", Throwable())
                     return
