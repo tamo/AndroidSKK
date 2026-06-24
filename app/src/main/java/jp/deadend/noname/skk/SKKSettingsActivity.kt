@@ -140,7 +140,7 @@ class SKKSettingsActivity : AppCompatActivity(),
                     if (skkPrefs.backgroundImage == null)
                         pickMedia()
                     else AlertDialog.Builder(requireContext())
-                        .setTitle(title).setItems(arrayOf("選択", "なし")) { _, which ->
+                        .setTitle(title).setItems(arrayOf("選択する", "画像なしにする")) { _, which ->
                             when (which) {
                                 0 -> pickMedia()
                                 1 -> {
