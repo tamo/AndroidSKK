@@ -5,15 +5,14 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.ImageDecoder
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
-import android.util.Size
 import android.view.KeyEvent
 import android.view.MenuItem
 import android.view.inputmethod.InputMethodManager
+import android.widget.Toast
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -37,7 +36,6 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlin.math.max
 import kotlin.time.Duration.Companion.milliseconds
 
 
@@ -162,10 +160,28 @@ class SKKSettingsActivity : AppCompatActivity(),
         private val pickMediaLauncher =
             registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
                 uri ?: return@registerForActivityResult
-                requireContext().contentResolver
-                    .takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                skkPrefs.backgroundImage = uri.toString()
-                updateThumbnail()
+
+                lifecycleScope.launch {
+                    val isValid = withContext(Dispatchers.IO) {
+                        runCatching {
+                            val resolver = requireContext().contentResolver
+                            resolver.takePersistableUriPermission(
+                                uri, Intent.FLAG_GRANT_READ_URI_PERMISSION
+                            )
+                            CroppedDrawable.decode(resolver, uri, 100, 100) != null
+                        }.getOrElse { tr ->
+                            SKKLog.w("Invalid image selected: $uri", tr)
+                            false
+                        }
+                    }
+
+                    if (isValid) {
+                        skkPrefs.backgroundImage = uri.toString()
+                        updateThumbnail()
+                    } else Toast.makeText(
+                        requireContext(), R.string.error_invalid_image, Toast.LENGTH_LONG
+                    ).show()
+                }
             }
 
         private fun updateThumbnail() = MainScope().launch {
@@ -173,24 +189,9 @@ class SKKSettingsActivity : AppCompatActivity(),
                 icon = skkPrefs.backgroundImage?.toUri()?.let { uri ->
                     summary = withContext(Dispatchers.IO) { getFileName(uri) }
                     withContext(Dispatchers.IO) {
-                        runCatching {
-                            val resolver = requireContext().contentResolver
-                            val size = (48 * resources.displayMetrics.density).toInt()
-                            runCatching {
-                                resolver.loadThumbnail(uri, Size(size, size), null)
-                            }.getOrElse { tr ->
-                                SKKLog.w("loadThumbnail failed", tr)
-                                val source = ImageDecoder.createSource(resolver, uri)
-                                ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
-                                    val src = info.size
-                                    val factor = max(src.width / size, src.height / size)
-                                    decoder.setTargetSize(src.width / factor, src.height / factor)
-                                }
-                            }
-                        }.getOrElse { tr ->
-                            SKKLog.e("Failed to load thumbnail", tr)
-                            null
-                        }?.toDrawable(resources)
+                        val size = (48 * resources.displayMetrics.density).toInt()
+                        CroppedDrawable.decode(requireContext().contentResolver, uri, size, size)
+                            ?.toDrawable(resources)
                     }
                 }
                 if (icon == null) summary = "なし"

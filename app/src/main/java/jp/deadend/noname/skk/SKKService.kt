@@ -9,14 +9,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Configuration
-import android.graphics.Bitmap
-import android.graphics.BitmapShader
-import android.graphics.Canvas
-import android.graphics.ImageDecoder
-import android.graphics.Matrix
-import android.graphics.Rect
-import android.graphics.Shader
-import android.graphics.drawable.BitmapDrawable
 import android.hardware.display.DisplayManager
 import android.inputmethodservice.InputMethodService
 import android.media.AudioManager
@@ -1542,79 +1534,27 @@ class SKKService : InputMethodService() {
         val uri = skkPrefs.backgroundImage ?: run { opaque.background = null }
         if ((opaque.background as? CroppedDrawable)?.uri == uri) return
         MainScope().launch {
-            opaque.background = skkPrefs.backgroundImage?.let { uri ->
+            opaque.background = skkPrefs.backgroundImage?.let { uriString ->
                 withContext(Dispatchers.IO) {
-                    runCatching {
-                        val src = ImageDecoder.createSource(contentResolver, uri.toUri())
-                        val bitmap = ImageDecoder.decodeBitmap(src) { decoder, info, _ ->
-                            decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
-                            val maxDimension = max(mScreenWidth, mScreenHeight)
-                            val (w, h) = info.size.run { width.toFloat() to height.toFloat() }
-                            val scale = max(maxDimension / w, maxDimension / h)
-                            decoder.setTargetSize((w * scale).toInt(), (h * scale).toInt())
-                        }
-                        CroppedDrawable(resources, bitmap, uri)
-                    }.getOrElse { tr ->
-                        SKKLog.e("Failed to load background image", tr)
-                        null
+                    val maxDimension = max(mScreenWidth, mScreenHeight)
+                    CroppedDrawable.decode(
+                        contentResolver, uriString.toUri(),
+                        maxDimension, maxDimension
+                    )?.let { bitmap ->
+                        CroppedDrawable(
+                            resources, bitmap, uriString,
+                            getFullHeight = {
+                                keyboardHeight() + mCandidatesViewContainer.maxHeight + mInsets.bottom
+                            },
+                            getVarHeight = {
+                                if (skkPrefs.candidatesMinHeight)
+                                    mCandidatesViewContainer.run { (height - minHeight) }
+                                else 0
+                            }
+                        )
                     }
                 }
             }
-        }
-    }
-
-    private inner class CroppedDrawable(
-        res: android.content.res.Resources, bitmap: Bitmap, val uri: String
-    ) : BitmapDrawable(res, bitmap) {
-        private val bitmapW = bitmap.width
-        private val bitmapH = bitmap.height
-        private val mMatrix = Matrix()
-        private val mShader = BitmapShader(bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP)
-
-        val lastBounds = Rect()
-        private var lastMaxH = -1
-
-        init {
-            paint.shader = mShader
-        }
-
-        override fun getIntrinsicWidth() = -1
-        override fun getIntrinsicHeight() = -1
-        override fun draw(canvas: Canvas) {
-            val b = bounds
-            val boundsW = b.width()
-            val boundsH = b.height()
-            val maxH = keyboardHeight() + mCandidatesViewContainer.maxHeight + mInsets.bottom
-            if (bitmapW <= 0 || bitmapH <= 0 || boundsW <= 0 || maxH <= 0) return
-
-            if (b != lastBounds || maxH != lastMaxH) {
-                SKKLog.d("background: bounds=$b (last=$lastBounds) maxH=$maxH (last=$lastMaxH)")
-                val scale: Float
-                val dx: Float
-                val dy: Float
-                if (bitmapW.toLong() * maxH > boundsW.toLong() * bitmapH) {
-                    scale = maxH.toFloat() / bitmapH.toFloat()
-                    dx = (boundsW - bitmapW * scale) * 0.5f; dy = 0f
-                } else {
-                    scale = boundsW.toFloat() / bitmapW.toFloat()
-                    dy = (maxH - bitmapH * scale) * 0.5f; dx = 0f
-                }
-                val offset = maxH - boundsH // 底面に合わせる
-                mMatrix.setScale(scale, scale)
-                mMatrix.postTranslate(dx + b.left, dy + b.top - offset)
-                mShader.setLocalMatrix(mMatrix)
-
-                lastBounds.set(b)
-                lastMaxH = maxH
-            }
-
-            val varHeight = if (skkPrefs.candidatesMinHeight)
-                mCandidatesViewContainer.run { (height - minHeight) } else 0
-            canvas.drawRect(
-                b.left.toFloat(), (b.top + varHeight).toFloat(),
-                b.right.toFloat(), b.bottom.toFloat(),
-                paint
-            )
         }
     }
 
