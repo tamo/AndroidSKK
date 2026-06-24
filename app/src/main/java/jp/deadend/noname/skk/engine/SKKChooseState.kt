@@ -11,7 +11,6 @@ object SKKChooseState : SKKConfirmingState() {
     override val isPreedit = true
     override val hasCandidates = true
     override val prefix = "▼"
-    override val icon = 0
 
     override fun handleKanaKey(context: SKKEngine) {
         if (!declineUnregister(context)) context.apply {
@@ -74,7 +73,6 @@ object SKKChooseState : SKKConfirmingState() {
             when {
                 mCandidates.isSpecial -> {
                     val wasSymbol = mCandidates.mQuery != "emoji"
-                    mKanjiKey.clear() // 暗黙の確定を回避
                     changeState(kanaState) // ASCII から special は来ないはず
                     if (wasSymbol) symbolCandidates() // 戻る先は Preedit
                     return true

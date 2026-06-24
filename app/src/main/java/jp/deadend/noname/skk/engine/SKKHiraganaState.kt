@@ -8,7 +8,6 @@ import jp.deadend.noname.skk.lowerCode
 import jp.deadend.noname.skk.skkPrefs
 
 object SKKHiraganaState : SKKState {
-    override val isTransient = false
     override val icon = R.drawable.ic_hiragana
 
     override fun handleKanaKey(context: SKKEngine) {

@@ -859,7 +859,7 @@ class SKKEngine(
 
         val prevInputView = if (cameFromFlick) kanaState else SKKASCIIState
         if (!newState.isTransient || force || willBeTemporaryView || wasTemporaryView) {
-            if (!newState.isTransient) {
+            if (!newState.isTransient && !mCandidates.isSpecial) {
                 commitComposing() // 暗黙の確定
             } else if (!isPreeditTransition) {
                 reset()

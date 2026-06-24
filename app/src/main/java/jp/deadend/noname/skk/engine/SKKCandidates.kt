@@ -147,14 +147,16 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
                 if (unregister) {
                     val confirm = state as SKKConfirmingState
                     confirm.confirmUnregister(this, "/${removeAnnotation(rawCandidate)}/") {
-                        registerSpecial(mQuery, candidate.toString(), unregister)
+                        runBlocking(Dispatchers.IO) {
+                            engine.mASCIIDict.removeEntry(mQuery, rawCandidate, "")
+                        }
                         reset()
                         changeState(oldState)
                     }
                     resumeCompletion()
                     return
-                } else if (isPersonalizedLearning) {
-                    registerSpecial(mQuery, candidate.toString())
+                } else if (isPersonalizedLearning) runBlocking(Dispatchers.IO) {
+                    engine.mASCIIDict.addEntry(mQuery, candidate.toString(), "")
                 }
             }
 
@@ -258,7 +260,7 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
                     if (commit) when {
                         isSpecial -> {
                             mKanjiKey.set(conv) // カテゴリ名
-                            startConversion(listOf(mUserDict, mSymbolDict))
+                            startConversion(listOf(mASCIIDict, mSymbolDict))
                         }
 
                         hasOkuri -> processKey(encodeKey(last.uppercaseChar().code))
@@ -276,15 +278,19 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
                 is SKKASCIIState -> {
                     when {
                         !commit -> return
+
                         unregister -> return state.confirmUnregister(
                             engine, "/${removeAnnotation(rawCompletion)}/"
                         ) {
-                            registerSpecial(comp, conv, unregister)
+                            runBlocking(Dispatchers.IO) {
+                                engine.mASCIIDict.removeEntry(comp, rawCompletion, "")
+                            }
                             reset() // ASCII からは changeState(oldState) 不要
                         }
 
-                        isPersonalizedLearning ->
-                            registerSpecial(comp, conv)
+                        isPersonalizedLearning -> runBlocking(Dispatchers.IO) {
+                            engine.mASCIIDict.addEntry(comp, rawCompletion, "")
+                        }
                     }
 
                     val slim = removeAnnotation(conv)
@@ -296,30 +302,6 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
         }
     }
 
-    private fun registerSpecial(query: String, candidate: String, unregister: Boolean = false) {
-        val s = removeAnnotation(candidate)
-        var newEntry = "/160/$s"
-        runBlocking(Dispatchers.IO) {
-            engine.mASCIIDict.getEntry(query)?.let { entry ->
-                entry.candidates.asSequence() // freq1, val1, freq2, val2
-                    .zipWithNext() // (freq1, val1), (val1, freq2), (freq2, val2)
-                    .filterIndexed { i, _ -> i % 2 == 0 } // (freq1, val1), (freq2, val2)
-                    .mapNotNull {
-                        if (it.second == s) {
-                            newEntry = "/${it.first.toInt().coerceAtLeast(160)}/$s"
-                            null
-                        } else it
-                    }
-                    .fold("/") { str, pair -> "$str${pair.first}/${pair.second}/" }
-            }
-        }.orEmpty().let { oldEntry ->
-            if (unregister) newEntry = ""
-            SKKLog.d("replaceEntry($query, $newEntry$oldEntry)")
-            runBlocking(Dispatchers.IO) {
-                engine.mASCIIDict.replaceEntry(query, newEntry + oldEntry)
-            }
-        }
-    }
 
     internal fun narrow(hint: String) {
         SKKLog.d("narrowCandidates: hint: $hint, mKanjiKey: $mQuery")

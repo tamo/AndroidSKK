@@ -15,7 +15,6 @@ object SKKPreeditState : SKKState {
     override val isPreedit = true
     override val canComplete = true
     override val prefix = "▽"
-    override val icon = 0
 
     override fun handleKanaKey(context: SKKEngine) {
         context.apply {
@@ -111,6 +110,12 @@ object SKKPreeditState : SKKState {
                 }
 
                 else -> {
+                    if (mCandidates.isSpecial) {
+                        changeState(kanaState)
+                        kanaState.processKey(context, keyCode)
+                        return
+                    }
+
                     // 最初の平仮名はついシフトキーを押しっぱなしにしてしまうため、
                     // kanjiKey.isEmpty の時はシフトが押されていなかったことにする
                     if (isUpper && mKanjiKey.isNotEmpty()) {

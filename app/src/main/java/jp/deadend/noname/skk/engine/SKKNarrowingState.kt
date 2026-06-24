@@ -8,7 +8,6 @@ object SKKNarrowingState : SKKConfirmingState() {
     override val isTransient = true
     override val hasCandidates = true
     override val prefix = "▼"
-    override val icon = 0
 
     internal val mHint = SKKEngine.KanjiKey()
     internal var mOriginalCandidates: List<String>? = null
@@ -114,10 +113,8 @@ object SKKNarrowingState : SKKConfirmingState() {
                     mCandidates.narrow(mHint.toString())
                 }
 
-                else -> { // 消えたら絵文字自体を中止
-                    mKanjiKey.clear() // 暗黙の確定を回避
+                else -> // 消えたら絵文字自体を中止
                     changeState(kanaState) // ASCII からは来ていない前提
-                }
             }
         }
         return true

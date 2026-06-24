@@ -5,7 +5,6 @@ import jp.deadend.noname.skk.hiragana2katakana
 import jp.deadend.noname.skk.skkPrefs
 
 object SKKKatakanaState : SKKState {
-    override val isTransient = false
     override val icon = R.drawable.ic_katakana
 
     override fun handleKanaKey(context: SKKEngine) {

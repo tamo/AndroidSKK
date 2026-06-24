@@ -12,7 +12,6 @@ object SKKOkuriganaState : SKKState {
     override val isPreedit = true
     override val canComplete = true
     override val prefix = "▽"
-    override val icon = 0
 
     override fun handleKanaKey(context: SKKEngine) {
         context.apply {

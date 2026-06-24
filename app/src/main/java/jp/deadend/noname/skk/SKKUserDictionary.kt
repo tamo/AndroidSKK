@@ -49,8 +49,26 @@ class SKKUserDictionary private constructor(
         parseValue(key, value)
     }
 
-    override fun getCandidates(rawKey: String): List<String>? =
-        getEntry(rawKey)?.candidates?.distinct()
+    override fun getCandidates(rawKey: String): List<String>? = mLock.withLock {
+        val key = katakana2hiragana(rawKey)
+        val value = mStore?.get(key) ?: return@withLock null
+        val entry = parseValue(key, value) ?: return@withLock null
+
+        if (mIsASCII) {
+            // ASCII 辞書の場合は /freq1/word1/freq2/word2/ という形式
+            // 奇数番目が頻度、偶数番目が単語。頻度で降順ソートして単語のみ返す。
+            entry.candidates.asSequence().chunked(2)
+                .mapNotNull {
+                    if (it.size == 2) it[1] to (it[0].toIntOrNull() ?: 0)
+                    else null
+                }
+                .sortedByDescending { it.second }
+                .map { it.first }
+                .distinct().toList()
+        } else {
+            entry.candidates.distinct()
+        }
+    }
 
     fun getAllCandidates(): List<String> = mLock.withLock {
         val store = mStore ?: return@withLock listOf()
@@ -58,7 +76,13 @@ class SKKUserDictionary private constructor(
         val browser = store.cursor() ?: return@withLock listOf()
         while (true) {
             val tuple = browser.next() ?: break
-            parseValue(tuple.key, tuple.value)?.candidates?.let { list.addAll(it) }
+            parseValue(tuple.key, tuple.value)?.candidates?.let { candidates ->
+                if (mIsASCII) {
+                    list.addAll(candidates.filterIndexed { index, _ -> index % 2 == 1 })
+                } else {
+                    list.addAll(candidates)
+                }
+            }
         }
         return@withLock list.distinct()
     }
@@ -68,20 +92,45 @@ class SKKUserDictionary private constructor(
         val hiraganaKey = katakana2hiragana(key)
         val oldVal: String? = store.get(hiraganaKey)
 
-        val newVal = oldVal?.let { parseValue(hiraganaKey, it) }?.let { entry ->
-            val candidates =
-                listOf(value)
-                    .plus(entry.candidates)
-                    .distinctBy { candidate -> removeAnnotation(candidate) }
+        val newVal = if (mIsASCII) {
+            val s = removeAnnotation(value)
+            var currentFreq = 160
+            val otherCandidates = mutableListOf<Pair<Int, String>>()
 
-            val okuriganaBlocks =
-                (if (okurigana.isEmpty()) emptyList() else listOf(okurigana to value))
-                    .plus(entry.okuriganaBlocks)
-                    .distinctBy { (okuri, kanji) -> okuri to removeAnnotation(kanji) }
+            oldVal?.let { parseValue(hiraganaKey, it) }?.candidates?.chunked(2)?.forEach {
+                if (it.size == 2) {
+                    val freq = it[0].toIntOrNull() ?: 0
+                    val word = it[1]
+                    if (removeAnnotation(word) == s) {
+                        currentFreq = freq.coerceAtLeast(160)
+                    } else {
+                        otherCandidates.add(freq to word)
+                    }
+                }
+            }
 
-            candidates.joinToString("/", prefix = "/", postfix = "/") +
-                    okuriganaBlocks.joinToString("") { (okuri, kanji) -> "[$okuri/$kanji/]/" }
-        } ?: ("/$value/" + if (okurigana.isNotEmpty()) "[$okurigana/$value/]/" else "")
+            val result = StringBuilder("/")
+            result.append(currentFreq).append("/").append(value).append("/")
+            for (pair in otherCandidates) {
+                result.append(pair.first).append("/").append(pair.second).append("/")
+            }
+            result.toString()
+        } else {
+            oldVal?.let { parseValue(hiraganaKey, it) }?.let { entry ->
+                val candidates =
+                    listOf(value)
+                        .plus(entry.candidates)
+                        .distinctBy { candidate -> removeAnnotation(candidate) }
+
+                val okuriganaBlocks =
+                    (if (okurigana.isEmpty()) emptyList() else listOf(okurigana to value))
+                        .plus(entry.okuriganaBlocks)
+                        .distinctBy { (okuri, kanji) -> okuri to removeAnnotation(kanji) }
+
+                candidates.joinToString("/", prefix = "/", postfix = "/") +
+                        okuriganaBlocks.joinToString("") { (okuri, kanji) -> "[$okuri/$kanji/]/" }
+            } ?: ("/$value/" + if (okurigana.isNotEmpty()) "[$okurigana/$value/]/" else "")
+        }
 
         mOldKey = hiraganaKey
         mOldValue = oldVal.orEmpty()
@@ -97,17 +146,27 @@ class SKKUserDictionary private constructor(
                 .let { it to store.get(it) }
         val entry = oldVal?.let { parseValue(usedKey, it) } ?: return@withLock
 
-        val candidates = entry.candidates.toMutableList() // 送/遅/贈;ユーザー辞書にも注釈がある
-        val okuriganaBlocks = entry.okuriganaBlocks.toMutableList() // [ら/送/]/[り/送/]/[る/送;注釈もありうる?/]
-        val rawVal = value.takeWhile { it != ';' } // 注釈を無視して探す
+        val newVal = if (mIsASCII) {
+            val rawVal = removeAnnotation(value)
+            val remaining = entry.candidates.chunked(2).filter {
+                it.size == 2 && removeAnnotation(it[1]) != rawVal
+            }
+            if (remaining.isEmpty()) ""
+            else remaining.joinToString("/", prefix = "/", postfix = "/") { "${it[0]}/${it[1]}" }
+        } else {
+            val candidates = entry.candidates.toMutableList() // 送/遅/贈;ユーザー辞書にも注釈がある
+            val okuriganaBlocks =
+                entry.okuriganaBlocks.toMutableList() // [ら/送/]/[り/送/]/[る/送;注釈もありうる?/]
+            val rawVal = removeAnnotation(value) // 注釈を無視して探す
 
-        if (okuriganaBlocks.isEmpty() || !okuriganaBlocks.removeIf { pair ->
-                pair.first == okurigana && pair.second.takeWhile { it != ';' } == rawVal
-            } // 送りブロックが残らない場合は丸ごと消す
-        ) candidates.removeIf { old -> old.takeWhile { it != ';' } == rawVal }
+            if (okuriganaBlocks.isEmpty() || !okuriganaBlocks.removeIf { pair ->
+                    pair.first == okurigana && removeAnnotation(pair.second) == rawVal
+                } // 送りブロックが残らない場合は丸ごと消す
+            ) candidates.removeIf { old -> removeAnnotation(old) == rawVal }
 
-        val newVal = candidates.joinToString("/", prefix = "/", postfix = "/") +
-                okuriganaBlocks.joinToString("") { (okuri, kanji) -> "[$okuri/$kanji/]/" }
+            candidates.joinToString("/", prefix = "/", postfix = "/") +
+                    okuriganaBlocks.joinToString("") { (okuri, kanji) -> "[$okuri/$kanji/]/" }
+        }
 
         if (newVal.isEmpty() || (Regex("/*").matchEntire(newVal) != null)) {
             store.delete(usedKey)
@@ -116,16 +175,6 @@ class SKKUserDictionary private constructor(
         }.commit()
     }
 
-    fun replaceEntry(key: String, value: String) = mLock.withLock {
-        val store = mStore ?: return@withLock
-        val hiraganaKey = katakana2hiragana(key)
-        // ここは再変換と関係ないので mOldKey / mOldValue を更新しない
-        if (value.isEmpty() || (Regex("/*").matchEntire(value) != null)) {
-            store.delete(hiraganaKey)
-        } else {
-            store.set(hiraganaKey, value)
-        }.commit()
-    }
 
     fun rollBack() = mLock.withLock {
         if (mOldKey.isEmpty()) return@withLock
