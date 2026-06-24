@@ -744,7 +744,9 @@ class SKKEngine(
             mIndex = 0
             mQuery = query
             setView(mList, mQuery, mIndex)
-            //updateComposingText()
+
+            // 補完は暗黙の確定をしないので composing 表示不要、候補だけ表示
+            if (targetState.hasCandidates) updateComposingText()
         }
     }
 
