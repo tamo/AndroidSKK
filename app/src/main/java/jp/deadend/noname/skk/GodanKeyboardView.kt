@@ -20,8 +20,9 @@ import jp.deadend.noname.skk.engine.convertTo
 import java.util.EnumSet
 import kotlin.math.ceil
 
-class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(context, attrs),
-    KeyboardView.OnKeyboardActionListener {
+class GodanKeyboardView(
+    context: Context, attrs: AttributeSet?
+) : KeyboardView(context, attrs), OnKeyboardActionListener {
     private var mLastPressedKey = KEYCODE_GODAN_NONE
     private var mFlickState = EnumSet.of(FlickState.NONE)
     private var mFlickStartX = -1f
@@ -182,11 +183,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
         spaceKey.labels.main = if (isShifted) "設定" else ""
     }
 
-    internal fun prepareNewKeyboard(
-        context: Context,
-        widthPixel: Int,
-        heightPixel: Int
-    ) {
+    internal fun prepareNewKeyboard(context: Context, widthPixel: Int, heightPixel: Int) {
         keyboard = Keyboard(
             context,
             if (!mIsASCII && skkPrefs.simpleGodan) R.xml.keys_godan_simple else R.xml.keys_godan,
@@ -729,16 +726,6 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
     override fun onRelease(primaryCode: Int) {
         mArrowFlicked = false
     }
-
-    override fun onText(text: CharSequence) {}
-
-    override fun swipeRight() {}
-
-    override fun swipeLeft() {}
-
-    override fun swipeDown() {}
-
-    override fun swipeUp() {}
 
     companion object {
         private const val KEYCODE_GODAN_CHAR_A = -201

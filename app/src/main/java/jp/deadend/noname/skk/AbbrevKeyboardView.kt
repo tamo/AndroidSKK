@@ -6,14 +6,9 @@ import android.view.MotionEvent
 import jp.deadend.noname.skk.engine.SKKAbbrevState
 import jp.deadend.noname.skk.engine.SKKState
 
-class AbbrevKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
-    constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
-    constructor(context: Context, attrs: AttributeSet?, defStyle: Int) : super(
-        context,
-        attrs,
-        defStyle
-    )
-
+class AbbrevKeyboardView @JvmOverloads constructor(
+    context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
+) : KeyboardView(context, attrs, defStyleAttr) {
     override fun setService(service: SKKService) {
         super.setService(service)
         keyboard = Keyboard(context, R.xml.abbrev, mService.mRootWidth, mService.mScreenHeight)
@@ -49,27 +44,13 @@ class AbbrevKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                 val dy = me.y - flickStartY
                 val dx2 = dx * dx
                 val dy2 = dy * dy
-                if (dx2 + dy2 > mFlickSensitivitySquared) {
-                    when {
-                        dy < 0 && dx2 < dy2 -> {
-                            isFlicked = FLICK_UP
-                            return true
-                        }
-
-                        dy > 0 && dx2 < dy2 -> {
-                            isFlicked = FLICK_DOWN
-                            return true
-                        }
-
-                        else -> {
-                            isFlicked = FLICK_NONE
-                            // 左右に外れたので別のキーになるかもしれないので return しない
-                        }
-                    }
-                } else {
-                    isFlicked = FLICK_NONE
-                    return true // フリックなし (に戻す)
-                }
+                val flick = if (dx2 + dy2 > mFlickSensitivitySquared) when {
+                    dy < 0 && dx2 < dy2 -> FLICK_UP
+                    dy > 0 && dx2 < dy2 -> FLICK_DOWN
+                    else -> null // 左右に外れたので別のキーになるかもしれないので return しない
+                } else FLICK_NONE // フリックなし (に戻す)
+                isFlicked = flick ?: FLICK_NONE
+                if (flick != null) return true
             }
         }
         return super.onModifiedTouchEvent(me, possiblePoly)
@@ -157,18 +138,6 @@ class AbbrevKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
         invalidateAllKeys()
         return this
     }
-
-    override fun onPress(primaryCode: Int) {}
-
-    override fun onText(text: CharSequence) {}
-
-    override fun swipeRight() {}
-
-    override fun swipeLeft() {}
-
-    override fun swipeDown() {}
-
-    override fun swipeUp() {}
 
     companion object {
         private const val KEYCODE_ABBREV_TO_JP = -1008

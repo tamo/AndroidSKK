@@ -45,6 +45,14 @@
         <attr name="verticalGap" format="dimension|fraction" />
     </declare-styleable>
     <declare-styleable name="Keyboard_Row">
+        <!-- Default width of a key, in pixels or percentage of display width -->
+        <attr name="keyWidth" />
+        <!-- Default height of a key, in pixels or percentage of display width -->
+        <attr name="keyHeight" />
+        <!-- Default horizontal gap between keys -->
+        <attr name="horizontalGap" />
+        <!-- Default vertical gap between rows of keys -->
+        <attr name="verticalGap" />
         <!-- Row edge flags-->
         <attr name="rowEdgeFlags">
             <!-- Row is anchored to the top of the keyboard -->
@@ -57,6 +65,12 @@
         <attr name="keyboardMode" format="reference" />
     </declare-styleable>
     <declare-styleable name="Keyboard_Key">
+        <!-- Default width of a key, in pixels or percentage of display width -->
+        <attr name="keyWidth" />
+        <!-- Default height of a key, in pixels or percentage of display width -->
+        <attr name="keyHeight" />
+        <!-- Default horizontal gap between keys -->
+        <attr name="horizontalGap" />
         <!-- The Unicode value or comma-separated values that this key outputs -->
         <attr name="codes" format="integer|string" />
         <!-- 上フリックで出るコード -->

@@ -9,7 +9,9 @@ import jp.deadend.noname.skk.engine.SKKHiraganaState
 import jp.deadend.noname.skk.engine.SKKState
 import jp.deadend.noname.skk.engine.SKKZenkakuState
 
-class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
+class QwertyKeyboardView @JvmOverloads constructor(
+    context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
+) : KeyboardView(context, attrs, defStyleAttr) {
     val mLatinKeyboard: Keyboard by lazy {
         Keyboard(context, R.xml.qwerty, mService.mRootWidth, mService.mScreenHeight)
     }
@@ -19,13 +21,6 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
 
     private var mSpacePressed = false
     private var mSpaceFlicked = false
-
-    constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
-    constructor(context: Context, attrs: AttributeSet?, defStyle: Int) : super(
-        context,
-        attrs,
-        defStyle
-    )
 
     override fun setService(service: SKKService) {
         super.setService(service)
@@ -66,55 +61,35 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                 val dy = me.y - flickStartY
                 val dx2 = dx * dx
                 val dy2 = dy * dy
-                if (dx2 + dy2 > mFlickSensitivitySquared) {
-                    when {
-                        mSpacePressed -> {
-                            if (dx2 > dy2 && dx2 > mFlickSensitivitySquared) {
-                                if (dx < 0) {
-                                    mService.keyDownUp(KeyEvent.KEYCODE_DPAD_LEFT)
-                                } else {
-                                    mService.keyDownUp(KeyEvent.KEYCODE_DPAD_RIGHT)
-                                }
-                                mSpaceFlicked = true
-                                flickStartX = me.x
-                                flickStartY = me.y
-                            } else if (dx2 < dy2 && dy2 > mFlickSensitivitySquared) {
-                                if (dy < 0) {
-                                    mService.keyDownUp(KeyEvent.KEYCODE_DPAD_UP)
-                                } else {
-                                    mService.keyDownUp(KeyEvent.KEYCODE_DPAD_DOWN)
-                                }
-                                mSpaceFlicked = true
-                                flickStartY = me.y
-                                flickStartX = me.x
-                            }
-                            return true
-                        }
+                isFlicked = if (dx2 + dy2 > mFlickSensitivitySquared) when {
+                    mSpacePressed -> return true.also {
+                        when {
+                            dx2 > dy2 && dx2 > mFlickSensitivitySquared ->
+                                if (dx < 0) KeyEvent.KEYCODE_DPAD_LEFT
+                                else KeyEvent.KEYCODE_DPAD_RIGHT
 
-                        dx2 > dy2 && dx2 > mFlickSensitivitySquared -> {
-                            isFlicked = if (dx < 0) FLICK_LEFT else FLICK_RIGHT
-                            return true
-                        }
+                            dx2 < dy2 && dy2 > mFlickSensitivitySquared ->
+                                if (dy < 0) KeyEvent.KEYCODE_DPAD_UP
+                                else KeyEvent.KEYCODE_DPAD_DOWN
 
-                        dy < 0 && dx2 < dy2 -> {
-                            isFlicked = FLICK_UP
-                            return true
-                        }
-
-                        dy > 0 && dx2 < dy2 -> {
-                            isFlicked = FLICK_DOWN
-                            return true
-                        }
-
-                        else -> {
-                            isFlicked = FLICK_NONE
-                            // 左右に外れて別のキーになるかもしれないので return しない
+                            else -> null
+                        }?.let { dpad ->
+                            mService.keyDownUp(dpad)
+                            mSpaceFlicked = true
+                            flickStartX = me.x
+                            flickStartY = me.y
                         }
                     }
-                } else {
-                    isFlicked = FLICK_NONE
-                    return true // フリックなし (に戻す)
-                }
+
+                    dx2 > dy2 && dx2 > mFlickSensitivitySquared ->
+                        if (dx < 0) FLICK_LEFT else FLICK_RIGHT
+
+                    dy < 0 && dx2 < dy2 -> FLICK_UP
+                    dy > 0 && dx2 < dy2 -> FLICK_DOWN
+                    else -> FLICK_NONE
+                } else FLICK_NONE // フリックなし (に戻す)
+
+                return true
             }
         }
         return super.onModifiedTouchEvent(me, possiblePoly)
@@ -213,16 +188,13 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                     return
                 }
 
-                val primaryKey = findKeyByCode(primaryCode)
-                val code = if (primaryKey == null) primaryCode else when (flick) {
-                    FLICK_DOWN ->
-                        if (primaryKey.codes.down > 0) primaryKey.codes.down else primaryCode
-
-                    flickUp ->
-                        if (primaryKey.codes.shifted > 0) primaryKey.codes.shifted else primaryCode
-
-                    else -> primaryCode
-                }
+                val code = findKeyByCode(primaryCode)?.let { key ->
+                    when (flick) {
+                        FLICK_DOWN if key.codes.down > 0 -> key.codes.down
+                        flickUp if key.codes.shifted > 0 -> key.codes.shifted
+                        else -> primaryCode
+                    }
+                } ?: primaryCode
                 val meta = when (isFlicked) {
                     FLICK_LEFT if code > 0 -> CTRL_PRESSED
                     FLICK_RIGHT if code > 0 -> ALT_PRESSED
@@ -252,12 +224,8 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
             // kanaKey.on = (state.isJapanese && mService.isHiragana)
         }
 
-        val qKey = findKeyByCode('q'.code)
-        qKey?.on = (state.isJapanese && !mService.isHiragana)
-
-        val lKey = findKeyByCode('l'.code)
-        lKey?.on = (state is SKKASCIIState)
-
+        findKeyByCode('q'.code)?.on = (state.isJapanese && !mService.isHiragana)
+        findKeyByCode('l'.code)?.on = (state is SKKASCIIState)
         isZenkaku = (state is SKKZenkakuState)
 
         invalidateAllKeys()
@@ -267,20 +235,8 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
     override fun onPress(primaryCode: Int) {
         mSpacePressed = (primaryCode == ' '.code)
         mSpaceFlicked = false
-        if (mSpacePressed) {
-            mService.suspendCompletion()
-        }
+        if (mSpacePressed) mService.suspendCompletion()
     }
-
-    override fun onText(text: CharSequence) {}
-
-    override fun swipeRight() {}
-
-    override fun swipeLeft() {}
-
-    override fun swipeDown() {}
-
-    override fun swipeUp() {}
 
     companion object {
         private const val KEYCODE_QWERTY_TO_JP = -1008

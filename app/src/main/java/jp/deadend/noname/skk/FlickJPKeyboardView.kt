@@ -25,8 +25,9 @@ import jp.deadend.noname.skk.engine.convertTo
 import java.util.EnumSet
 import kotlin.math.ceil
 
-class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(context, attrs),
-    KeyboardView.OnKeyboardActionListener {
+class FlickJPKeyboardView(
+    context: Context, attrs: AttributeSet?
+) : KeyboardView(context, attrs), OnKeyboardActionListener {
     private var mLastPressedKey = KEYCODE_FLICK_JP_NONE
     private var mFlickState = EnumSet.of(FlickState.NONE)
     private var mFlickStartX = -1f
@@ -892,16 +893,6 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
     override fun onRelease(primaryCode: Int) {
         mArrowFlicked = false
     }
-
-    override fun onText(text: CharSequence) {}
-
-    override fun swipeRight() {}
-
-    override fun swipeLeft() {}
-
-    override fun swipeDown() {}
-
-    override fun swipeUp() {}
 
     private val leftSymbol = "【"
     private val rightSymbol = "】"
