@@ -636,8 +636,8 @@ open class KeyboardView @JvmOverloads constructor(
 //            // シフト時の toUpper とか必要ならするけど今はアルファベットの multiTap がない
 //        }
         else -> when (isFlicked) {
-            FLICK_LEFT -> "Ctrl-"
-            FLICK_RIGHT -> "Alt-"
+            FLICK_LEFT if key.codes.main[0] > 0 -> "Ctrl-"
+            FLICK_RIGHT if key.codes.main[0] > 0 -> "Alt-"
             else -> ""
         } + when {
             isFlicked == FLICK_DOWN && key.labels.down.isNotEmpty() -> key.labels.splitDown()

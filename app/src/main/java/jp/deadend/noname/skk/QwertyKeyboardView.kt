@@ -142,22 +142,26 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
         // シフトで up と none が交換される
         val flickNone = if (isShifted) FLICK_UP else FLICK_NONE
         val flickUp = if (isShifted) FLICK_NONE else FLICK_UP
+        // 横フリックは FLICK_NONE とほぼ等価 (上記 flickNone ではない)
+        val flick = when (isFlicked) {
+            FLICK_LEFT, FLICK_RIGHT -> FLICK_NONE
+            else -> isFlicked
+        }
 
         if (!mMiniKeyboardOnScreen) when (primaryCode) {
             // onKey で消費済み
             Keyboard.KEYCODE_DELETE, Keyboard.KEYCODE_CAPSLOCK -> {}
-            // repeatable 以外
-            Keyboard.KEYCODE_SHIFT -> {
-                when (isFlicked) {
-                    FLICK_NONE -> {
-                        isShifted = !isShifted
-                        isCapsLocked = false
-                    }
 
-                    else -> {
-                        isShifted = true
-                        isCapsLocked = true
-                    }
+            // repeatable 以外
+            Keyboard.KEYCODE_SHIFT -> when (flick) {
+                FLICK_NONE -> {
+                    isShifted = !isShifted
+                    isCapsLocked = false
+                }
+
+                else -> {
+                    isShifted = true
+                    isCapsLocked = true
                 }
             }
 
@@ -166,17 +170,15 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                 if (!mService.handleEnter()) mService.pressEnter()
             }
 
-            KEYCODE_QWERTY_TO_JP -> {
-                when (isFlicked) {
-                    if (skkPrefs.preferFlick) flickNone else FLICK_DOWN -> mService.changeToFlick()
-                    if (skkPrefs.preferFlick) FLICK_DOWN else flickNone -> mService.handleKanaKey()
-                    flickUp -> mService.pasteClip()
-                }
+            KEYCODE_QWERTY_TO_JP -> when (flick) {
+                flickUp -> mService.pasteClip()
+                if (skkPrefs.preferFlick) flickNone else FLICK_DOWN -> mService.changeToFlick()
+                else -> mService.handleKanaKey()
             }
 
             KEYCODE_QWERTY_TO_SYM -> {
                 if (!isCapsLocked) isShifted = false
-                when (isFlicked) {
+                when (flick) {
                     flickNone -> {
                         keyboard = mSymbolsKeyboard
                         isShifted = keyboard.isShifted
@@ -189,20 +191,19 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                 }
             }
 
-            KEYCODE_QWERTY_TO_LATIN -> {
-                // 単純 shift を capslock として扱うので状態を残す
-                when (isFlicked) {
-                    FLICK_NONE, FLICK_UP -> {
-                        keyboard = mLatinKeyboard
-                        isShifted = keyboard.isShifted
-                        isCapsLocked = keyboard.isCapsLocked
-                        // latin に capslock が残っている場合がある
-                    }
+            KEYCODE_QWERTY_TO_LATIN -> when (flick) {
+                FLICK_NONE, FLICK_UP -> {
+                    keyboard = mLatinKeyboard
 
-                    FLICK_DOWN -> {
-                        mService.handleCancel()
-                        if (!isCapsLocked) isShifted = false
-                    }
+                    // 単純 shift を capslock として扱うので状態を残す
+                    isShifted = keyboard.isShifted
+                    isCapsLocked = keyboard.isCapsLocked
+                    // latin に capslock が残っている場合がある
+                }
+
+                FLICK_DOWN -> {
+                    mService.handleCancel()
+                    if (!isCapsLocked) isShifted = false
                 }
             }
 
@@ -213,7 +214,7 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                 }
 
                 val primaryKey = findKeyByCode(primaryCode)
-                val code = if (primaryKey == null) primaryCode else when (isFlicked) {
+                val code = if (primaryKey == null) primaryCode else when (flick) {
                     FLICK_DOWN ->
                         if (primaryKey.codes.down > 0) primaryKey.codes.down else primaryCode
 
@@ -223,8 +224,8 @@ class QwertyKeyboardView : KeyboardView, KeyboardView.OnKeyboardActionListener {
                     else -> primaryCode
                 }
                 val meta = when (isFlicked) {
-                    FLICK_LEFT -> CTRL_PRESSED
-                    FLICK_RIGHT -> ALT_PRESSED
+                    FLICK_LEFT if code > 0 -> CTRL_PRESSED
+                    FLICK_RIGHT if code > 0 -> ALT_PRESSED
                     else -> 0
                 }
                 mService.processKey(encodeKey(code, meta))
