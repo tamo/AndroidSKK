@@ -16,6 +16,7 @@ import jp.deadend.noname.skk.engine.RomajiConverter.getVowel
 import jp.deadend.noname.skk.engine.SKKEngine
 import jp.deadend.noname.skk.engine.SKKState
 import jp.deadend.noname.skk.engine.SKKZenkakuState
+import jp.deadend.noname.skk.engine.convertTo
 import java.util.EnumSet
 import kotlin.math.ceil
 
@@ -151,7 +152,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
 
         val qKey = checkNotNull(findKeyByCode(keyboard, KEYCODE_GODAN_CHAR_Q)) { "BUG: no Q key" }
         qKey.on = (state.isJapanese && !mService.isHiragana)
-            .also { isKatakana ->
+            .also {
                 listOf(
                     KEYCODE_GODAN_CHAR_A, KEYCODE_GODAN_CHAR_I, KEYCODE_GODAN_CHAR_U,
                     KEYCODE_GODAN_CHAR_E, KEYCODE_GODAN_CHAR_O, KEYCODE_GODAN_CHAR_N,
@@ -159,8 +160,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
                     val key =
                         checkNotNull(findKeyByCode(keyboard, keyCode)) { "BUG: no $keyCode key" }
                     val label = key.labels.main
-                    key.labels.main = if (isKatakana) hiragana2katakana(label)
-                    else katakana2hiragana(label)
+                    key.labels.main = label.convertTo(mService.kanaState)
                 }
             }
 
@@ -487,7 +487,7 @@ class GodanKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView(c
 
         labels.forEachIndexed { i, label ->
             if (i > 14) return@forEachIndexed
-            mCurrentPopupLabels[i] = if (mService.isHiragana) label else hiragana2katakana(label)
+            mCurrentPopupLabels[i] = label.convertTo(mService.kanaState)
         }
         // Godan は各キー動作が mPopupTextView に依存するので無条件に実行
         setupPopupTextView()

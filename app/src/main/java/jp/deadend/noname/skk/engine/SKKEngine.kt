@@ -22,6 +22,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.json.JSONException
 
+fun String.convertTo(state: SKKState, reversed: Boolean = false): String = when (state) {
+    SKKHiraganaState -> if (reversed) this else katakana2hiragana(this)
+    SKKKatakanaState -> hiragana2katakana(this, reversed = reversed)
+    SKKHanKanaState -> zenkaku2hankaku(hiragana2katakana(this))
+    else -> this
+}
+
 class SKKEngine(
     private val mService: SKKService,
     internal var mDictList: List<SKKDictionaryInterface>,
@@ -568,8 +575,8 @@ class SKKEngine(
 
         changeState(SKKChooseState)
 
-        val list = find(str, dictList).ifEmpty {
-            find(str.replace(Regex("\\d+(\\.\\d+)?"), "#"), dictList).ifEmpty {
+        val list = lookup(str, dictList).ifEmpty {
+            lookup(str.replace(Regex("\\d+(\\.\\d+)?"), "#"), dictList).ifEmpty {
                 mRegister.start(str)
                 return
             }
@@ -724,21 +731,17 @@ class SKKEngine(
         specialCandidates(SKKChooseState, listOf(mASCIIDict, mEmojiDict), "emoji")
 
     private fun specialCandidates(
-        targetState: SKKState,
-        dictList: List<SKKUserDictionary>, query: String
+        targetState: SKKState, dictList: List<SKKUserDictionary>, query: String
     ) {
-        mKanjiKey.set("emoji")
+        mKanjiKey.set(query)
         changeState(targetState)
 
         mCandidates.apply {
             isSpecial = true
 
-            val set = mutableSetOf<Pair<String, String>>()
-            runBlocking {
-                dictList.forEach { addFound(this, set, "emoji", it) }
-            }
-
-            val (completionList, list) = set.unzip()
+            val (completionList, list) = mutableSetOf<Pair<String, String>>().also { set ->
+                runBlocking { dictList.forEach { searchCandidates(this, set, query, it) } }
+            }.unzip()
             mCompletionList = completionList
             mList = list
             mIndex = 0
@@ -750,7 +753,7 @@ class SKKEngine(
         }
     }
 
-    internal fun find(
+    internal fun lookup(
         key: String, dictList: List<SKKDictionaryInterface> = mDictList
     ): List<String> = runBlocking(Dispatchers.IO) {
         val userEntry = mUserDict.getEntry(key)

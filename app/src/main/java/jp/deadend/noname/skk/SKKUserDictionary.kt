@@ -13,6 +13,7 @@ class SKKUserDictionary private constructor(
     private val mBtreeName: String
 ) : SKKDictionaryInterface {
     override val mLock = ReentrantLock()
+    override var mCache: SKKDictionaryInterface.DictCache? = null
     private var mOldKey: String = ""
     private var mOldValue: String = ""
 

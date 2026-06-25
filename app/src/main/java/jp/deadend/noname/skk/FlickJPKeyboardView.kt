@@ -21,6 +21,7 @@ import jp.deadend.noname.skk.engine.SKKHiraganaState
 import jp.deadend.noname.skk.engine.SKKKatakanaState
 import jp.deadend.noname.skk.engine.SKKState
 import jp.deadend.noname.skk.engine.SKKZenkakuState
+import jp.deadend.noname.skk.engine.convertTo
 import java.util.EnumSet
 import kotlin.math.ceil
 
@@ -252,11 +253,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
                 // 現在の state で表示するキーは調整が必要
                 key.labels.main = when (code) {
                     in KEYCODE_FLICK_JP_CHAR_A downTo KEYCODE_FLICK_JP_CHAR_WA,
-                    KEYCODE_FLICK_JP_TO_KANA -> when (kanaState) {
-                        SKKKatakanaState -> hiragana2katakana(label)
-                        SKKHanKanaState -> zenkaku2hankaku(hiragana2katakana(label))
-                        else -> label
-                    }
+                    KEYCODE_FLICK_JP_TO_KANA -> label.convertTo(kanaState)
 
                     else -> label
                 }
@@ -727,8 +724,7 @@ class FlickJPKeyboardView(context: Context, attrs: AttributeSet?) : KeyboardView
             mCurrentPopupLabels[i] = when {
                 // 「う」には濁点を付けず「ウ」にだけ付ける
                 primaryCode == KEYCODE_FLICK_JP_CHAR_A && i == 10 && mService.isHiragana -> ""
-                mService.isHiragana -> label
-                else -> hiragana2katakana(label, reversed = true)
+                else -> label.convertTo(mService.kanaState, reversed = true)
             }
         }
 

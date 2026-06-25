@@ -7,11 +7,9 @@ import jp.deadend.noname.skk.encodeKey
 import jp.deadend.noname.skk.fuzzy
 import jp.deadend.noname.skk.hiragana2katakana
 import jp.deadend.noname.skk.isAlphabet
-import jp.deadend.noname.skk.katakana2hiragana
 import jp.deadend.noname.skk.processConcatAndMore
 import jp.deadend.noname.skk.removeAnnotation
 import jp.deadend.noname.skk.skkPrefs
-import jp.deadend.noname.skk.zenkaku2hankaku
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -40,9 +38,6 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
     private var mSuspended: Boolean = false
 
     private val mNumberRegex = Regex("\\d+(\\.\\d+)?")
-    private val mFoundKeys = mutableMapOf<SKKDictionaryInterface, DictCache>()
-
-    private data class DictCache(val key: String, val results: List<Pair<String, String>>)
 
     private suspend fun updateView(list: List<String>?, kanjiKey: String, index: Int) {
         if (list.isNullOrEmpty()) withContext(Dispatchers.Main) {
@@ -201,12 +196,7 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
                 else candidate.deleteCharAt(candidate.lastIndex)
             }
             val concat = candidate.toString() + mOkurigana
-            val text = when (kanaState) {
-                SKKHiraganaState -> concat
-                SKKKatakanaState -> hiragana2katakana(concat, reversed = true)
-                SKKHanKanaState -> zenkaku2hankaku(hiragana2katakana(concat))
-                else -> throw RuntimeException("kanaState: $kanaState")
-            } // カナかなは互換性あるけど半角カナと全角かなは互換性ない感覚があるので reverse しない
+            val text = concat.convertTo(kanaState, reversed = true)
             if (!mRegister.isOngoing) {
                 mLastConversion = SKKEngine.ConversionInfo(
                     text, list, index, mKanjiKey.toString(), mOkurigana
@@ -249,8 +239,7 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
                 }
 
                 SKKPreeditState, SKKOkuriganaState -> {
-                    val hira =
-                        if (kanaState is SKKHiraganaState) conv else katakana2hiragana(conv)
+                    val hira = conv.convertTo(SKKHiraganaState)
                     val last = hira.lastOrNull() ?: ' '
                     val hasOkuri = hira.isNotEmpty() &&
                             !isAlphabet(hira.first().code) && isAlphabet(last.code)
@@ -312,7 +301,7 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
 
         val narrowed = if (hint.isEmpty()) candidates else {
             val katakanaHint = hiragana2katakana(hint)
-            val hintKanjiSet = engine.find(hint).asSequence()
+            val hintKanjiSet = engine.lookup(hint).asSequence()
                 .flatMap { processConcatAndMore(removeAnnotation(it), "").asSequence() }
                 .toSet()
             SKKLog.d("narrowCandidates: hintKanjiSet: $hintKanjiSet")
@@ -368,8 +357,9 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
                 return@coroutineScope
             }
 
-            val isEmoji = str == "emoji" // 手動で emoji と打った
-            val maskedStr = str.replace(mNumberRegex, "#")
+            val isEmoji = str == "emoji" // 手動で emoji と打ったかどうか
+            val hiraKey = str.convertTo(SKKHiraganaState)
+            val maskedStr = hiraKey.replace(mNumberRegex, "#")
             val isFuzzyEnabled = skkPrefs.fuzzySuggestion && !isEmoji
             val dictList = if (isEmoji) engine.mDictList + engine.mEmojiDict
             else engine.mDictList
@@ -395,36 +385,34 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
                         // 字数を増やさずに変換できるものを最優先
                         if (isFuzzyEnabled) withTimeoutOrNull(1000.milliseconds) {
                             // 重い処理: 価値があるので数は少なくてもいいがタイムアウトが必要
-                            val goal: Int = skkPrefs.candidatesNormalLines * 7 / str.length
-                            for (fuzzyStr in fuzzySequence(str)) {
+                            val goal: Int = skkPrefs.candidatesNormalLines * 7 / hiraKey.length
+                            for (fuzzyStr in fuzzySequence(hiraKey)) {
                                 if (found.size >= goal) break
                                 ensureActive()
                                 if (withContext(Dispatchers.IO) {
                                         dict.getCandidates(fuzzyStr).isNullOrEmpty()
                                     }) continue
-                                val shownStr =
-                                    if (service.isHiragana) fuzzyStr
-                                    else hiragana2katakana(fuzzyStr, reversed = true)
+                                val shownStr = fuzzyStr.convertTo(engine.kanaState, reversed = true)
                                 found.add(fuzzyStr to shownStr)
                             }
                         }
 
                         // 前方一致は軽いので無条件で実行 (数字ありと数字マスク状態で)
-                        addFound(this, found, str, dict)
+                        searchCandidates(this, found, hiraKey, dict)
 
-                        if (maskedStr != str) {
-                            addFound(this, found, maskedStr, dict)
+                        if (maskedStr != hiraKey) {
+                            searchCandidates(this, found, maskedStr, dict)
                         }
 
                         // あいまい前方一致は意味があまりないので数は多く、最後に短時間だけ
                         if (isFuzzyEnabled) {
-                            val goal: Int = skkPrefs.candidatesNormalLines * 10 / str.length
+                            val goal: Int = skkPrefs.candidatesNormalLines * 10 / hiraKey.length
                             for (fuzzyStr in fuzzySequence(maskedStr)) {
                                 if (found.size > goal ||
                                     found.size > 2000 / elapsed().coerceAtLeast(1)
                                 ) break
                                 ensureActive()
-                                addFound(this, found, fuzzyStr, dict)
+                                searchCandidates(this, found, fuzzyStr, dict)
                             }
                         }
                         found
@@ -436,15 +424,15 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
             ensureActive() // 短時間に連続で実行されないよう最新のみ有効に
 
             val uniqueSet = results.flatten().distinctBy { it.second }
-            SKKLog.d("complete query='$str' found=${uniqueSet.size} in ${elapsed()} ms")
+            SKKLog.d("complete query='$hiraKey' found=${uniqueSet.size} in ${elapsed()} ms")
 
             val (completionList, list) = uniqueSet.unzip()
             mCompletionList = completionList
             mList = list
 
-            mQuery = str
+            mQuery = hiraKey
             mIndex = 0
-            updateView(mList, str, mIndex)
+            updateView(mList, hiraKey, mIndex)
         }
     }
 
@@ -457,7 +445,7 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
         mSuspended = false
     }
 
-    internal suspend fun addFound(
+    internal suspend fun searchCandidates(
         scope: CoroutineScope,
         target: MutableSet<Pair<String, String>>,
         key: String,
@@ -469,32 +457,18 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
                     engine.mASCIIDict else engine.mUserDict
 
             engine.mEmojiDict, engine.mSymbolDict ->
-                if (isSpecial || key == "emoji") // symbol は isSpecial 以外で呼ばれないはず
-                    return dict.findKeys(scope, "")
-                        .forEach { pair -> target.add(key to pair.second) }
-                else return
+                if (isSpecial || key == "emoji") { // symbol は isSpecial 以外で呼ばれないはず
+                    dict.findKeys(scope, "").forEach { pair -> target.add(key to pair.second) }
+                    return
+                } else return
 
             else -> dict
         }
 
-        val cached = mFoundKeys[dictionary]
-        val limit = if (dictionary.mIsASCII) SKKDictionaryInterface.MAX_FIND_KEYS_ASCII
-        else SKKDictionaryInterface.MAX_FIND_KEYS
-        val keys =
-            if (cached != null && key.startsWith(cached.key) && cached.results.size < limit) {
-                cached.results.filter { it.first.startsWith(key) }
-            } else {
-                dictionary.findKeys(scope, key).also {
-                    mFoundKeys[dictionary] = DictCache(key, it)
-                }
-            }
+        val keys = dictionary.findCandidates(scope, key)
 
-        if (engine.kanaState is SKKHiraganaState) {
-            target.addAll(keys)
-        } else {
-            keys.mapTo(target) { (first, second) ->
-                first to hiragana2katakana(second, reversed = true)
-            }
+        keys.forEach { (first, second) ->
+            target.add(first to second.convertTo(engine.kanaState, reversed = true))
         }
     }
 
@@ -506,7 +480,9 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
         mQuery = ""
         isSequential = false
         isSpecial = false
-        mFoundKeys.clear()
+        engine.apply {
+            (mDictList + mASCIIDict + mEmojiDict + mSymbolDict).forEach { it.clearCache() }
+        }
     }
 
     internal fun loadAllSymbols() {

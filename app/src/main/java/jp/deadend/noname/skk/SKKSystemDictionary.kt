@@ -12,6 +12,7 @@ class SKKSystemDictionary private constructor(
 ) : SKKDictionaryInterface {
     override val mIsASCII = false
     override val mLock = ReentrantLock()
+    override var mCache: SKKDictionaryInterface.DictCache? = null
 
     override fun getCandidates(rawKey: String): List<String>? {
         val key = katakana2hiragana(rawKey)

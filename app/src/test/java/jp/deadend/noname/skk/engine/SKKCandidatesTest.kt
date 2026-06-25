@@ -64,11 +64,11 @@ class SKKCandidatesTest {
         every { engine.state } returns mockk<SKKHiraganaState>(relaxed = true)
         every { service.isHiragana } returns true
 
-        coEvery { dict1.findKeys(any(), "は") } coAnswers {
+        coEvery { dict1.findCandidates(any(), "は") } coAnswers {
             Thread.sleep(100) // 最初の辞書の結果は、遅く返ってきても最初になる
             listOf("はあ" to "ハア") // 実際には日本語の辞書の pair は同じもの二つだが
         }
-        coEvery { dict2.findKeys(any(), "は") } returns
+        coEvery { dict2.findCandidates(any(), "は") } returns
                 listOf("はい" to "ハイ")
 
         candidates.complete("は")
@@ -90,9 +90,9 @@ class SKKCandidatesTest {
         every { service.isHiragana } returns true
 
         coEvery { dict1.getCandidates("か") } returns listOf("下", "課")
-        coEvery { dict1.findKeys(any(), "か") } returns listOf("か" to "カ", "かい" to "カイ")
+        coEvery { dict1.findCandidates(any(), "か") } returns listOf("か" to "カ", "かい" to "カイ")
         coEvery { dict1.getCandidates("が") } returns listOf("画", "我")
-        coEvery { dict1.findKeys(any(), "が") } returns listOf("が" to "ガ", "がい" to "ガイ")
+        coEvery { dict1.findCandidates(any(), "が") } returns listOf("が" to "ガ", "がい" to "ガイ")
 
         candidates.complete("か")
 
@@ -118,7 +118,7 @@ class SKKCandidatesTest {
     fun testNarrow_KanjiMatch() {
         val originalList = listOf("漢字; 注釈も含む", "幹事", "監事", "感じ")
         candidates.mList = originalList
-        every { engine.find("おとこ") } returns listOf("男", "漢", "♂; 注釈に感を含む")
+        every { engine.lookup("おとこ") } returns listOf("男", "漢", "♂; 注釈に感を含む")
 
         candidates.narrow("おとこ")
         assertEquals(listOf("漢字; 注釈も含む"), candidates.mList)
@@ -128,7 +128,7 @@ class SKKCandidatesTest {
     fun testNarrow_DirectMatch() {
         val originalList = listOf("漢字", "幹事", "監事", "感じ")
         candidates.mList = originalList
-        every { engine.find("じ") } returns listOf("時", "字", "地")
+        every { engine.lookup("じ") } returns listOf("時", "字", "地")
 
         candidates.narrow("じ")
         assertEquals(listOf("漢字", "感じ"), candidates.mList)
@@ -138,7 +138,7 @@ class SKKCandidatesTest {
     fun testNarrow_KatakanaMatch() {
         val originalList = listOf("\uD83D\uDCFA;テレビ", "\uD83D\uDCFB;ラジオ")
         candidates.mList = originalList
-        every { engine.find("てれ") } returns emptyList()
+        every { engine.lookup("てれ") } returns emptyList()
 
         candidates.narrow("てれ")
         assertEquals(listOf("\uD83D\uDCFA;テレビ"), candidates.mList)
@@ -148,7 +148,7 @@ class SKKCandidatesTest {
     fun testNarrow_NoMatch() {
         val originalList = listOf("A", "B")
         candidates.mList = originalList
-        every { engine.find("X") } returns emptyList()
+        every { engine.lookup("X") } returns emptyList()
 
         candidates.narrow("X")
         assertEquals(null, candidates.mList)
@@ -158,7 +158,7 @@ class SKKCandidatesTest {
     fun testNarrow_KanjiPartlyMatch() {
         val originalList = listOf("受", "授", "樹", "寿")
         candidates.mList = originalList
-        every { engine.find("じゅもく") } returns listOf("樹木")
+        every { engine.lookup("じゅもく") } returns listOf("樹木")
 
         candidates.narrow("じゅもく")
         assertEquals(listOf("樹"), candidates.mList)

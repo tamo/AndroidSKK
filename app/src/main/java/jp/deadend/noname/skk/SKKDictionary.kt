@@ -138,13 +138,33 @@ interface SKKDictionaryInterface {
         const val MAX_FIND_KEYS_ASCII = 1500
     }
 
+    data class DictCache(val key: String, val results: List<Pair<String, String>>)
+
     val mStore: SKKStore?
     val mFilePath: String
     val mIsASCII: Boolean
     val mLock: ReentrantLock
+    var mCache: DictCache?
 
-    suspend fun findKeys(scope: CoroutineScope, rawKey: String)
-            : List<Pair<String, String>> = withContext(Dispatchers.IO) {
+    fun clearCache() {
+        mCache = null
+    }
+
+    suspend fun findCandidates(
+        scope: CoroutineScope, key: String
+    ): List<Pair<String, String>> {
+        val cache = mCache
+        val limit = if (mIsASCII) MAX_FIND_KEYS_ASCII else MAX_FIND_KEYS
+
+        return if (cache != null && key.startsWith(cache.key) && cache.results.size < limit)
+            cache.results.filter { it.first.startsWith(key) }
+        else
+            findKeys(scope, key).also { mCache = DictCache(key, it) }
+    }
+
+    suspend fun findKeys(
+        scope: CoroutineScope, rawKey: String
+    ): List<Pair<String, String>> = withContext(Dispatchers.IO) {
         val store = mStore ?: return@withContext listOf()
         val key = katakana2hiragana(rawKey)
         val list = mutableListOf<Triple<String, String, Int>>()
@@ -211,9 +231,7 @@ interface SKKDictionaryInterface {
 }
 
 internal suspend fun openDB(
-    filePath: String,
-    btreeName: String,
-    writable: Boolean = true
+    filePath: String, btreeName: String, writable: Boolean = true
 ): SKKStore = withContext(Dispatchers.IO) {
     val mvFile = File("$filePath.mv")
     if (mvFile.exists()) {
