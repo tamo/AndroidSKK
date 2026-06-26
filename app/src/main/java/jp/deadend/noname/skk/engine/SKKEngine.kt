@@ -735,6 +735,7 @@ class SKKEngine(
     ) {
         mKanjiKey.set(query)
         changeState(targetState)
+        setComposingTextSKK("") // 前の mKanjiKey の表示が残らないように
 
         mCandidates.apply {
             isSpecial = true
