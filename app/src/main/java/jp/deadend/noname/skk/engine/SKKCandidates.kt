@@ -465,7 +465,7 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
             else -> dict
         }
 
-        val keys = dictionary.findCandidates(scope, key)
+        val keys = dictionary.findCompletePairs(scope, key)
 
         keys.forEach { (first, second) ->
             target.add(first to second.convertTo(engine.kanaState, reversed = true))

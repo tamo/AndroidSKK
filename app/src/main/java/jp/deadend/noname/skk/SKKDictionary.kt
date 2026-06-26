@@ -150,7 +150,7 @@ interface SKKDictionaryInterface {
         mCache = null
     }
 
-    suspend fun findCandidates(
+    suspend fun findCompletePairs(
         scope: CoroutineScope, key: String
     ): List<Pair<String, String>> {
         val cache = mCache
@@ -207,10 +207,11 @@ interface SKKDictionaryInterface {
 
                     // 送りありエントリ
                     !isAlphabet(str.first().code) && isAlphabet(str.last().code) ->
-                        if (skkPrefs.completeOkuri) {
-                            str.dropLast(1).let { list.add(Triple(it, str, 0)) }
-                        } else continue
+                        if (skkPrefs.completeOkuri)
+                            list.add(Triple(str.dropLast(1), str, 0))
+                        else continue
 
+                    // 通常は first == second
                     else -> list.add(Triple(str, str, 0))
                 }
             }

@@ -64,11 +64,11 @@ class SKKCandidatesTest {
         every { engine.state } returns mockk<SKKHiraganaState>(relaxed = true)
         every { service.isHiragana } returns true
 
-        coEvery { dict1.findCandidates(any(), "は") } coAnswers {
+        coEvery { dict1.findCompletePairs(any(), "は") } coAnswers {
             Thread.sleep(100) // 最初の辞書の結果は、遅く返ってきても最初になる
             listOf("はあ" to "ハア") // 実際には日本語の辞書の pair は同じもの二つだが
         }
-        coEvery { dict2.findCandidates(any(), "は") } returns
+        coEvery { dict2.findCompletePairs(any(), "は") } returns
                 listOf("はい" to "ハイ")
 
         candidates.complete("は")
@@ -79,7 +79,8 @@ class SKKCandidatesTest {
             count++
         }
 
-        assertEquals(listOf("はあ", "はい"), candidates.mList)
+        // mList に入るのは findCompletePairs の second の方
+        assertEquals(listOf("ハア", "ハイ"), candidates.mList)
     }
 
     @Test
@@ -90,9 +91,9 @@ class SKKCandidatesTest {
         every { service.isHiragana } returns true
 
         coEvery { dict1.getCandidates("か") } returns listOf("下", "課")
-        coEvery { dict1.findCandidates(any(), "か") } returns listOf("か" to "カ", "かい" to "カイ")
+        coEvery { dict1.findCompletePairs(any(), "か") } returns listOf("か" to "か", "かい" to "かい")
         coEvery { dict1.getCandidates("が") } returns listOf("画", "我")
-        coEvery { dict1.findCandidates(any(), "が") } returns listOf("が" to "ガ", "がい" to "ガイ")
+        coEvery { dict1.findCompletePairs(any(), "が") } returns listOf("が" to "が", "がい" to "がい")
 
         candidates.complete("か")
 
