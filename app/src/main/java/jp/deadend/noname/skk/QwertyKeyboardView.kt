@@ -200,7 +200,7 @@ class QwertyKeyboardView @JvmOverloads constructor(
                     FLICK_RIGHT if code > 0 -> ALT_PRESSED
                     else -> 0
                 }
-                mService.processKey(encodeKey(code, meta))
+                mService.handleKey(encKey = encodeKey(code, meta))
             }
         }
         when (primaryCode) {

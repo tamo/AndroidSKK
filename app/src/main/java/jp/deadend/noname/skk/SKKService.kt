@@ -971,38 +971,22 @@ class SKKService : InputMethodService() {
             mEngine.state is SKKASCIIState && keyCode == KeyEvent.KEYCODE_SPACE
         ) {
             mSpacePressed = false
-            if (!mSandSUsed) currentInputConnection?.commitText(" ", 1)
-            mSandSUsed = false
+            if (!mSandSUsed) currentInputConnection?.commitText(" ", 1) else mSandSUsed = false
             return true
         }
 
         when (keyCode) {
-            KeyEvent.KEYCODE_SHIFT_LEFT, KeyEvent.KEYCODE_SHIFT_RIGHT -> {
-                if (mStickyShift) {
-                    mShiftKey.release()
-                    return true
-                }
+            KeyEvent.KEYCODE_SHIFT_LEFT if mStickyShift -> return true.also { mShiftKey.release() }
+            KeyEvent.KEYCODE_SHIFT_RIGHT if mStickyShift -> return true.also { mShiftKey.release() }
+
+            KeyEvent.KEYCODE_SPACE if !mStickyShift && mSandS -> {
+                mSpacePressed = false
+                if (!mSandSUsed) processKey(' ') else mSandSUsed = false
+                return true
             }
 
-            KeyEvent.KEYCODE_SPACE -> {
-                if (!mStickyShift && mSandS) {
-                    mSpacePressed = false
-                    if (!mSandSUsed) processKey(' ')
-                    mSandSUsed = false
-                    return true
-                }
-                if (isEnterUsed) {
-                    isEnterUsed = false
-                    return true
-                }
-            }
-
-            KeyEvent.KEYCODE_ENTER -> {
-                if (isEnterUsed) {
-                    isEnterUsed = false
-                    return true
-                }
-            }
+            KeyEvent.KEYCODE_SPACE if isEnterUsed -> return true.also { isEnterUsed = false }
+            KeyEvent.KEYCODE_ENTER if isEnterUsed -> return true.also { isEnterUsed = false }
 
             else -> {}
         }
@@ -1021,11 +1005,31 @@ class SKKService : InputMethodService() {
             currentInputEditorInfo?.inputType == EditorInfo.TYPE_NULL
         ) return false
 
-        val engineState = mEngine.state
-        val encodedKey = encodeKey(event)
+        if (handleKey(event)) return true
 
-        // Emacs 風ナビゲーションキー（設定が 0 の場合は encodedKey と合致し得ない）
+        return super.onKeyDown(keyCode, event)
+    }
+
+    internal fun handleKey(ev: KeyEvent? = null, encKey: Int? = null): Boolean {
+        val engineState = mEngine.state
+        val (event, encodedKey) = when {
+            ev != null -> ev to encodeKey(ev)
+            encKey == null -> return false
+            else -> {
+                val now = System.currentTimeMillis()
+                KeyEvent(
+                    now, now, KeyEvent.ACTION_DOWN,
+                    encKey.charCode, 0, encKey.metaState
+                ) to encKey
+            }
+        }
+        val keyCode = event.keyCode
+
         when (encodedKey) {
+            skkPrefs.kanaKey -> return true.also { mEngine.handleKanaKey() }
+            skkPrefs.cancelKey -> return mEngine.handleCancel()
+
+            // Emacs 風ナビゲーションキー（設定が 0 の場合は encodedKey と合致し得ない）
             skkPrefs.navLineStartKey -> KeyEvent.KEYCODE_MOVE_HOME
             skkPrefs.navLineEndKey -> KeyEvent.KEYCODE_MOVE_END
             skkPrefs.navForwardKey -> KeyEvent.KEYCODE_DPAD_RIGHT
@@ -1033,31 +1037,25 @@ class SKKService : InputMethodService() {
             else -> null
         }?.let { navKey ->
             return when {
-                engineState.isTransient -> true
+                engineState.isTransient || mEngine.mRegister.isOngoing ->
+                    true.also { handleDpad(navKey) }
 
-                engineState is SKKASCIIState && !skkPrefs.emacsNavInAscii ->
-                    super.onKeyDown(keyCode, event)
+                engineState is SKKASCIIState && !skkPrefs.emacsNavInAscii -> false
 
                 else -> true.also { sendDownUpKeyEvents(navKey) }
             }
         }
 
-        // Process special keys
-        if (encodedKey == skkPrefs.kanaKey) {
-            mEngine.handleKanaKey()
-            return true
-        }
-
         // SandS: ASCII モードでのスペース＆修飾処理（早期リターンより前に置く）
         if (!mStickyShift && mSandS && skkPrefs.sandSInAscii &&
             engineState is SKKASCIIState && !mEngine.mRegister.isOngoing
-        ) {
-            if (keyCode == KeyEvent.KEYCODE_SPACE) {
+        ) when {
+            keyCode == KeyEvent.KEYCODE_SPACE -> {
                 mSpacePressed = true
                 return true
             }
 
-            if (mSpacePressed) {
+            mSpacePressed -> {
                 val shiftedEvent = event.run {
                     KeyEvent(
                         downTime, eventTime, action, event.keyCode, repeatCount,
@@ -1071,28 +1069,19 @@ class SKKService : InputMethodService() {
             }
         }
 
-        if (encodedKey == skkPrefs.cancelKey) {
-            // ここで return しないと Ctrl-G が G として処理される
-            return handleCancel()
-        }
-
-        if (keyCode == KeyEvent.KEYCODE_TAB && engineState.canComplete) {
-            val isShifted = when {
-                mStickyShift -> mShiftKey.useState() != 0
-                mSandS && mSpacePressed -> true.also { mSandSUsed = true }
-                else -> event.isShiftPressed
-            }
-            mEngine.mCandidates.cycleCompletionCursor(!isShifted)
-            return true
-        }
-
         when (keyCode) {
-            KeyEvent.KEYCODE_SHIFT_LEFT, KeyEvent.KEYCODE_SHIFT_RIGHT -> {
-                if (mStickyShift) {
-                    mShiftKey.press()
-                    return true
+            KeyEvent.KEYCODE_TAB if engineState.canComplete -> {
+                val isShifted = when {
+                    mStickyShift -> mShiftKey.useState() != 0
+                    mSandS && mSpacePressed -> true.also { mSandSUsed = true }
+                    else -> event.isShiftPressed
                 }
+                mEngine.mCandidates.cycleCompletionCursor(!isShifted)
+                return true
             }
+
+            KeyEvent.KEYCODE_SHIFT_LEFT if mStickyShift -> return true.also { mShiftKey.press() }
+            KeyEvent.KEYCODE_SHIFT_RIGHT if mStickyShift -> return true.also { mShiftKey.press() }
 
             KeyEvent.KEYCODE_BACK -> if (mEngine.handleCancel(false)) return true
 
@@ -1101,36 +1090,20 @@ class SKKService : InputMethodService() {
             KeyEvent.KEYCODE_ENTER -> if (handleEnter()) return true
 
             KeyEvent.KEYCODE_SPACE -> {
-                if (!mStickyShift && mSandS) {
-                    mSpacePressed = true
-                } else {
-                    processKey(' ')
-                }
+                if (!mStickyShift && mSandS) mSpacePressed = true
+                else processKey(' ')
                 return true
             }
 
-            KeyEvent.KEYCODE_DPAD_LEFT,
-            KeyEvent.KEYCODE_DPAD_RIGHT,
-            KeyEvent.KEYCODE_DPAD_UP,
-            KeyEvent.KEYCODE_DPAD_DOWN -> if (handleDpad(keyCode)) return true
-
-            else ->
-                // For all other keys, if we want to do transformations on
-                // text being entered with a hard keyboard, we need to
-                // process it and do the appropriate action.
-                if (translateKeyDown(event)) return true
+            KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_DPAD_RIGHT,
+            KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_DOWN,
+            KeyEvent.KEYCODE_MOVE_HOME, KeyEvent.KEYCODE_MOVE_END ->
+                if (handleDpad(keyCode)) return true
         }
 
-        return super.onKeyDown(keyCode, event)
-    }
-
-    /**
-     * This translates incoming hard key events in to edit operations
-     * on an InputConnection.
-     */
-    private fun translateKeyDown(event: KeyEvent): Boolean {
         if (KeyEvent.isModifierKey(event.keyCode)) return false
 
+        // シフトを内部状態で更新したキーイベントを作って使う
         val newEvent = event.run {
             KeyEvent(
                 downTime, eventTime, action, keyCode, repeatCount,
@@ -1159,24 +1132,16 @@ class SKKService : InputMethodService() {
         return true
     }
 
-    fun processKey(code: Int) {
-        val isCtrl = code and CTRL_PRESSED != 0
-        val isAlt = code and ALT_PRESSED != 0
-        if (!skkPrefs.isModeKey(code) && (isCtrl || isAlt)) {
+    internal fun processKey(code: Int) {
+        if (!skkPrefs.isModeKey(code) && (code and (CTRL_PRESSED or ALT_PRESSED) != 0)) {
             val downTime = System.currentTimeMillis()
+            val keyCode = code.charCode
+            val metaState = code.metaState
             currentInputConnection.sendKeyEvent(
-                KeyEvent(
-                    downTime, System.currentTimeMillis(), KeyEvent.ACTION_DOWN,
-                    KeyEvent.keyCodeFromString(code.toChar().uppercaseChar().toString()),
-                    0, if (isCtrl) KeyEvent.META_CTRL_ON else KeyEvent.META_ALT_ON
-                )
+                KeyEvent(downTime, downTime, KeyEvent.ACTION_DOWN, keyCode, 0, metaState)
             )
             currentInputConnection.sendKeyEvent(
-                KeyEvent(
-                    downTime, System.currentTimeMillis(), KeyEvent.ACTION_UP,
-                    KeyEvent.keyCodeFromString(code.toChar().uppercaseChar().toString()),
-                    0, 0
-                )
+                KeyEvent(downTime, downTime, KeyEvent.ACTION_UP, keyCode, 0, 0)
             )
             return
         }

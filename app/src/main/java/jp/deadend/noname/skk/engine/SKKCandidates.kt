@@ -120,6 +120,12 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
         updateComposingText()
     }
 
+    internal fun setCandidateCursor(index: Int) {
+        mIndex = index
+        mList ?: return
+        updateViewCursor()
+        updateComposingText()
+    }
 
     private fun get(index: Int): String? = mList?.getOrNull(index)?.let {
         processConcatAndMore(removeAnnotation(it), mQuery)

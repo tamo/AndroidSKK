@@ -48,6 +48,19 @@ fun encodeKey(charCode: Int, metaState: Int = 0): Int {
 internal inline val Int.lowerCode: Int get() = this and CHAR_CODE_MASK
 internal inline val Int.isShifted: Boolean get() = (this and SHIFT_PRESSED) != 0
 
+internal inline val Int.metaState: Int
+    get() = (if (this and META_PRESSED != 0) KeyEvent.META_META_ON else 0) or
+            (if (this and CTRL_PRESSED != 0) KeyEvent.META_CTRL_ON else 0) or
+            (if (this and ALT_PRESSED != 0) KeyEvent.META_ALT_ON else 0) or
+            (if (this and SHIFT_PRESSED != 0) KeyEvent.META_SHIFT_ON else 0)
+
+internal inline val Int.charCode: Int
+    get() {
+        val code = this and CHAR_CODE_MASK
+        return if (this and RAW_KEYCODE != 0) code
+        else KeyEvent.keyCodeFromString(Char(code).uppercaseChar().toString())
+    }
+
 fun getKeyName(key: Int): String {
     val charCode = key and CHAR_CODE_MASK
     if (charCode == 0) return "" // モディファイアのみの場合

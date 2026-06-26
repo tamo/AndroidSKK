@@ -93,8 +93,10 @@ class SKKRegister(private val engine: SKKEngine) {
         if (engine.mKanjiKey.isNotEmpty() || engine.mComposing.isNotEmpty()) return false
         val (regInfo, entry) = first() ?: return false
         regInfo.cursor = when (keyCode) {
+            KeyEvent.KEYCODE_MOVE_HOME -> 0
             KeyEvent.KEYCODE_DPAD_LEFT -> regInfo.cursor.dec().coerceAtLeast(0)
             KeyEvent.KEYCODE_DPAD_RIGHT -> regInfo.cursor.inc().coerceAtMost(entry.length)
+            KeyEvent.KEYCODE_MOVE_END -> entry.length
             else -> return false
         }
         engine.setComposingTextSKK()

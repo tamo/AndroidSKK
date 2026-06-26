@@ -288,8 +288,13 @@ class SKKEngine(
             // 前の候補を選択したいときはちょっと不便だが直接選択したりできるし
             // 次の候補はスペースで選択できるから
             state.hasCandidates && state !is SKKNarrowingState -> when (keyCode) {
+                KeyEvent.KEYCODE_MOVE_HOME -> mCandidates.setCandidateCursor(0)
                 KeyEvent.KEYCODE_DPAD_LEFT -> moveCandidateCursor(false)
                 KeyEvent.KEYCODE_DPAD_RIGHT -> moveCandidateCursor(true)
+                KeyEvent.KEYCODE_MOVE_END -> mCandidates.mList?.run {
+                    mCandidates.setCandidateCursor(lastIndex)
+                }
+
                 else -> return false
             }
 
@@ -302,19 +307,20 @@ class SKKEngine(
 
     private fun handleDpadTransient(keyCode: Int): Boolean {
         val target = if (state is SKKNarrowingState) SKKNarrowingState.mHint else mKanjiKey
-        val oldCursor = target.cursor
-        target.cursor = when (keyCode) {
-            KeyEvent.KEYCODE_DPAD_LEFT -> target.cursor.dec().coerceAtLeast(0)
-            KeyEvent.KEYCODE_DPAD_RIGHT -> target.cursor.inc().coerceAtMost(target.length)
+        val (cursor, direction) = when (keyCode) {
+            KeyEvent.KEYCODE_MOVE_HOME -> 0 to null
+            KeyEvent.KEYCODE_DPAD_LEFT -> target.cursor.dec().coerceAtLeast(0) to false
+            KeyEvent.KEYCODE_DPAD_RIGHT -> target.cursor.inc().coerceAtMost(target.length) to true
+            KeyEvent.KEYCODE_MOVE_END -> target.length to null
             else -> return false
         }
-        if (target.cursor == oldCursor) {
-            val direction = keyCode == KeyEvent.KEYCODE_DPAD_RIGHT
+        if (target.cursor == cursor && direction != null) {
             if (state is SKKNarrowingState) mCandidates.moveCandidateCursor(direction)
             else mCandidates.cycleCompletionCursor(direction)
             if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT) target.cursor = 0
         } else {
-            SKKLog.d("[${target.take(target.cursor)}]|[${target.drop(target.cursor)}]")
+            SKKLog.d("[${target.take(cursor)}]|[${target.drop(cursor)}]")
+            target.cursor = cursor
             setComposingTextSKK()
         }
         return true
