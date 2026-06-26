@@ -49,29 +49,51 @@ class SKKEngineTest {
         every { service.isHiragana } answers { engine.kanaState is SKKHiraganaState }
     }
 
+    private fun typeText(text: String) {
+        for (char in text) {
+            when (char) {
+                '\n' -> engine.handleEnter()
+                '\b' -> engine.handleBackspace()
+                '■' -> engine.handleCancel() // Ctrl-g
+                '←' -> engine.handleDpad(KeyEvent.KEYCODE_DPAD_LEFT)
+                '↑' -> engine.handleDpad(KeyEvent.KEYCODE_DPAD_UP)
+                '→' -> engine.handleDpad(KeyEvent.KEYCODE_DPAD_RIGHT)
+                '↓' -> engine.handleDpad(KeyEvent.KEYCODE_DPAD_DOWN)
+                else -> {
+                    val code = char.code
+                    if (Character.isUpperCase(code)) {
+                        engine.processKey(encodeKey(Character.toLowerCase(code), SHIFT_PRESSED))
+                    } else {
+                        engine.processKey(encodeKey(code))
+                    }
+                }
+            }
+        }
+    }
+
     @Test
     fun testHiraganaState() {
         assertEquals(SKKHiraganaState, engine.state)
 
-        engine.processKey(encodeKey('k'.code))
+        typeText("k")
         verify { ic.setComposingText(match { it.toString() == "k" }, 1) }
 
-        engine.processKey(encodeKey('a'.code))
+        typeText("a")
         verify { ic.commitText(match { it.toString() == "か" }, 1) }
         assertEquals(0, engine.mComposing.length)
     }
 
     @Test
     fun testChangeState() {
-        engine.processKey(encodeKey('q'.code))
+        typeText("q")
         assertEquals(SKKKatakanaState, engine.state)
         assertEquals(SKKKatakanaState, engine.kanaState)
 
-        engine.processKey(encodeKey('q'.code))
+        typeText("q")
         assertEquals(SKKHiraganaState, engine.state)
         assertEquals(SKKHiraganaState, engine.kanaState)
 
-        engine.processKey(encodeKey('l'.code))
+        typeText("l")
         assertEquals(SKKASCIIState, engine.state)
 
         engine.handleKanaKey()
@@ -80,24 +102,21 @@ class SKKEngineTest {
 
     @Test
     fun testPreeditState() {
-        engine.processKey(encodeKey('a'.code, SHIFT_PRESSED))
+        typeText("A")
         assertEquals(SKKPreeditState, engine.state)
         assertEquals("あ", engine.mKanjiKey.toString())
 
-        engine.processKey(encodeKey('t'.code))
-        engine.processKey(encodeKey('i'.code))
+        typeText("ti")
         assertEquals(SKKPreeditState, engine.state)
         assertEquals("あち", engine.mKanjiKey.toString())
 
-        engine.handleDpad(KeyEvent.KEYCODE_DPAD_LEFT) // あ[]ち
-        engine.processKey(encodeKey('r'.code)) // あ[r]ち
-        engine.processKey(encodeKey('e'.code)) // あれ[]ち
+        typeText("←re") // あ[]ち -> あ[r]ち -> あれ[]ち
         assertEquals("あれち", engine.mKanjiKey.toString())
     }
 
     @Test
     fun testChangeLastChar() {
-        engine.processKey(encodeKey('a'.code, SHIFT_PRESSED))
+        typeText("A")
         assertEquals(SKKPreeditState, engine.state)
         assertEquals("あ", engine.mKanjiKey.toString())
 
@@ -109,8 +128,7 @@ class SKKEngineTest {
         assertEquals(SKKPreeditState, engine.state)
         assertEquals("あ", engine.mKanjiKey.toString())
 
-        engine.processKey(encodeKey('d'.code))
-        engine.processKey(encodeKey('e'.code))
+        typeText("de")
         assertEquals(SKKPreeditState, engine.state)
         assertEquals("あで", engine.mKanjiKey.toString())
 
@@ -129,8 +147,7 @@ class SKKEngineTest {
 
     @Test
     fun testAbbrevState() {
-        engine.processKey(encodeKey('/'.code))
-        engine.processKey(encodeKey('a'.code))
+        typeText("/a")
         assertEquals(SKKAbbrevState, engine.state)
         assertEquals("a", engine.mKanjiKey.toString())
     }
@@ -141,30 +158,26 @@ class SKKEngineTest {
         every { userDict.getEntry("かんじ") } returns
                 SKKUserDictionary.Entry(candidatesList, emptyList())
 
-        engine.processKey(encodeKey('k'.code, SHIFT_PRESSED)) // ▽k
-        engine.processKey(encodeKey('a'.code)) // ▽か
-        engine.processKey(encodeKey('n'.code)) // ▽かn
-        engine.processKey(encodeKey('j'.code)) // ▽かんj
-        engine.processKey(encodeKey('i'.code)) // ▽かんじ
+        typeText("Kanji")
         assertEquals(SKKPreeditState, engine.state)
         assertEquals("かんじ", engine.mKanjiKey.toString())
 
-        engine.processKey(encodeKey(' '.code))
+        typeText(" ")
         assertEquals("▼漢字", engine.mComposingText.toString())
         assertEquals(SKKChooseState, engine.state)
         assertEquals("漢字", engine.mCandidates.mList?.get(engine.mCandidates.mIndex))
 
-        engine.processKey(encodeKey(' '.code))
+        typeText(" ")
         assertEquals("▼幹事", engine.mComposingText.toString())
         assertEquals("幹事", engine.mCandidates.mList?.get(engine.mCandidates.mIndex))
 
-        engine.processKey(encodeKey('x'.code))
+        typeText("x")
         assertEquals("▼漢字", engine.mComposingText.toString())
     }
 
     @Test
     fun testBackspace() {
-        engine.processKey(encodeKey('k'.code))
+        typeText("k")
         verify { ic.setComposingText(match { it.toString() == "k" }, 1) }
 
         engine.handleBackspace()
@@ -174,22 +187,16 @@ class SKKEngineTest {
         val candidatesList = listOf("漢字")
         every { userDict.getEntry("かんじ") } returns
                 SKKUserDictionary.Entry(candidatesList, emptyList())
-        engine.processKey(encodeKey('k'.code, SHIFT_PRESSED))
-        engine.processKey(encodeKey('a'.code))
-        engine.processKey(encodeKey('n'.code))
-        engine.processKey(encodeKey('j'.code))
-        engine.processKey(encodeKey('i'.code))
-        engine.processKey(encodeKey(' '.code))
-        engine.handleBackspace()
+        typeText("Kanji \b")
         verify { ic.commitText(match { it.toString() == "漢" }, 1) }
     }
 
     @Test
     fun testCancel() {
-        engine.processKey(encodeKey('a'.code, SHIFT_PRESSED))
+        typeText("A")
         assertEquals(SKKPreeditState, engine.state)
 
-        engine.processKey(encodeKey(' '.code))
+        typeText(" ")
         assertEquals(true, engine.mRegister.isOngoing)
         assertEquals(SKKHiraganaState, engine.state)
         assertEquals("[登録]あ：", engine.mComposingText.toString())
@@ -205,28 +212,21 @@ class SKKEngineTest {
 
     @Test
     fun testHandleEnter() {
-        engine.processKey(encodeKey('n'.code))
-        engine.handleEnter()
+        typeText("n\n")
         verify { ic.commitText(match { it.toString() == "ん" }, 1) }
         assertEquals(0, engine.mComposing.length)
 
-        engine.processKey(encodeKey('k'.code))
-        engine.handleEnter()
+        typeText("k\n")
         verify { ic.setComposingText(match { it.toString() == "" }, 1) }
         assertEquals(0, engine.mComposing.length)
 
-        engine.processKey(encodeKey('q'.code))
-        assertEquals(SKKKatakanaState, engine.state)
-        engine.processKey(encodeKey('n'.code))
-        engine.handleEnter()
+        typeText("qn\n")
         verify { ic.commitText(match { it.toString() == "ン" }, 1) }
 
-        engine.processKey(encodeKey('a'.code, SHIFT_PRESSED))
-        assertEquals(SKKPreeditState, engine.state)
-        engine.processKey(encodeKey('k'.code))
+        typeText("Ak")
         assertEquals(1, engine.mComposing.length)
         assertEquals('k', engine.mComposing[0])
-        engine.handleEnter()
+        typeText("\n")
         verify { ic.commitText(match { it.toString() == "ア" }, 1) }
         assertEquals(SKKKatakanaState, engine.state)
         assertEquals(0, engine.mKanjiKey.length)
@@ -235,18 +235,33 @@ class SKKEngineTest {
         val candidatesList = listOf("漢字", "感じ")
         every { userDict.getEntry("かんじ") } returns
                 SKKUserDictionary.Entry(candidatesList, emptyList())
-        engine.processKey(encodeKey('k'.code, SHIFT_PRESSED))
-        engine.processKey(encodeKey('a'.code))
-        engine.processKey(encodeKey('n'.code))
-        engine.processKey(encodeKey('j'.code))
-        engine.processKey(encodeKey('i'.code))
+        typeText("Kanji")
         assertEquals("かんじ", engine.mKanjiKey.toString()) // ひらがな
         assertEquals("▽カンジ", engine.mComposingText.toString()) // カタカナ
-        engine.processKey(encodeKey(' '.code))
-        engine.processKey(encodeKey(' '.code))
+        typeText("  ")
         assertEquals(SKKChooseState, engine.state)
-        engine.handleEnter()
+        typeText("\n")
         verify { ic.commitText(match { it.toString() == "感ジ" }, 1) } // カタカナ
         assertEquals(SKKKatakanaState, engine.state)
+    }
+
+    @Test
+    fun testKatakanaConversionReversed() {
+        val candidatesList = listOf("オバQ")
+        every { userDict.getEntry("おばq") } returns
+                SKKUserDictionary.Entry(candidatesList, emptyList())
+
+        // 1. Hiragana mode (default)
+        // Use '/' to switch to Abbrev mode from Preedit
+        typeText("Oba/q \n")
+        verify { ic.commitText(match { it.toString() == "オバQ" }, 1) }
+
+        // 2. Katakana mode
+        typeText("q") // Switch to Katakana mode
+        assertEquals(SKKKatakanaState, engine.kanaState)
+
+        // Use 'l' to switch to Abbrev mode from Preedit
+        typeText("Obalq \n")
+        verify { ic.commitText(match { it.toString() == "おばQ" }, 1) }
     }
 }
