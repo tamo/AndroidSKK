@@ -14,6 +14,7 @@ open class Keyboard {
     protected var defaultVerticalGap = 0
     protected var defaultKeyWidth = 0
     protected var defaultKeyHeight = 0
+    protected var defaultPopupLayout = 0
 
     private val mShiftKeys = arrayOf<Key?>(null, null)
     var isShifted = false
@@ -51,23 +52,23 @@ open class Keyboard {
 
         constructor(res: Resources, parent: Keyboard, parser: XmlResourceParser) : this(parent) {
             res.obtainAttributes(Xml.asAttributeSet(parser), R.styleable.Keyboard_Row).apply {
-                defaultWidth = getDimensionOrFraction(
-                    this, R.styleable.Keyboard_Row_keyWidth,
+                defaultWidth = getDim(
+                    R.styleable.Keyboard_Row_width,
                     parent.mDisplayWidth, parent.defaultKeyWidth
                 )
-                defaultHeight = getDimensionOrFraction(
-                    this, R.styleable.Keyboard_Row_keyHeight,
+                defaultHeight = getDim(
+                    R.styleable.Keyboard_Row_height,
                     parent.mDisplayHeight, parent.defaultKeyHeight
                 )
-                defaultHorizontalGap = getDimensionOrFraction(
-                    this, R.styleable.Keyboard_Row_horizontalGap,
+                defaultHorizontalGap = getDim(
+                    R.styleable.Keyboard_Row_hGap,
                     parent.mDisplayWidth, parent.defaultHorizontalGap
                 )
-                verticalGap = getDimensionOrFraction(
-                    this, R.styleable.Keyboard_Row_verticalGap,
+                verticalGap = getDim(
+                    R.styleable.Keyboard_Row_vGap,
                     parent.mDisplayHeight, parent.defaultVerticalGap
                 )
-                rowEdgeFlags = getInt(R.styleable.Keyboard_Row_rowEdgeFlags, 0)
+                rowEdgeFlags = getInt(R.styleable.Keyboard_Row_edge, 0)
                 recycle()
             }
         }
@@ -126,7 +127,6 @@ open class Keyboard {
         val codes = Codes()
 
         var icon: Drawable? = null
-        private var iconPreview: Drawable? = null
         var width: Int = parent.defaultWidth
         var defaultWidth: Int = width
         var height: Int = parent.defaultHeight
@@ -136,9 +136,8 @@ open class Keyboard {
         private var sticky = false
         var repeatable = false
 
-        var text: String? = null
         var popupCharacters = ""
-        var popupResId = 0
+        var popupLayout = 0
 
         var x = 0
         var y = 0
@@ -150,31 +149,22 @@ open class Keyboard {
 
         private val keyboard: Keyboard = parent.parent
 
-        constructor(res: Resources, parent: Row, x: Int, y: Int, parser: XmlResourceParser) : this(
-            parent
-        ) {
+        constructor(res: Resources, parent: Row, x: Int, y: Int, parser: XmlResourceParser)
+                : this(parent) {
             this.x = x
             this.y = y
             res.obtainAttributes(Xml.asAttributeSet(parser), R.styleable.Keyboard_Key).apply {
-                width = getDimensionOrFraction(
-                    this,
-                    R.styleable.Keyboard_Key_keyWidth,
-                    keyboard.mDisplayWidth,
-                    parent.defaultWidth
+                width = getDim(
+                    R.styleable.Keyboard_Key_width, keyboard.mDisplayWidth, parent.defaultWidth
                 )
                 defaultWidth = width
-                height = getDimensionOrFraction(
-                    this,
-                    R.styleable.Keyboard_Key_keyHeight,
-                    keyboard.mDisplayHeight,
-                    parent.defaultHeight
+                height = getDim(
+                    R.styleable.Keyboard_Key_height, keyboard.mDisplayHeight, parent.defaultHeight
                 )
                 defaultHeight = height
-                horizontalGap = getDimensionOrFraction(
-                    this,
-                    R.styleable.Keyboard_Key_horizontalGap,
-                    keyboard.mDisplayWidth,
-                    parent.defaultHorizontalGap
+                horizontalGap = getDim(
+                    R.styleable.Keyboard_Key_hGap,
+                    keyboard.mDisplayWidth, parent.defaultHorizontalGap
                 )
                 defaultHorizontalGap = horizontalGap
 
@@ -189,23 +179,18 @@ open class Keyboard {
                 }
                 codes.shifted = getInt(R.styleable.Keyboard_Key_shiftedCode, 0)
                 codes.down = getInt(R.styleable.Keyboard_Key_downCode, 0)
-                iconPreview = getDrawable(R.styleable.Keyboard_Key_iconPreview)?.apply {
+                popupCharacters = getString(R.styleable.Keyboard_Key_popup).orEmpty()
+                popupLayout =
+                    getResourceId(R.styleable.Keyboard_Key_popupLayout, keyboard.defaultPopupLayout)
+                repeatable = getBoolean(R.styleable.Keyboard_Key_repeatable, false)
+                sticky = getBoolean(R.styleable.Keyboard_Key_sticky, false)
+                edgeFlags = getInt(R.styleable.Keyboard_Key_edge, 0) or parent.rowEdgeFlags
+                icon = getDrawable(R.styleable.Keyboard_Key_icon)?.apply {
                     setBounds(0, 0, intrinsicWidth, intrinsicHeight)
                 }
-                popupCharacters =
-                    getText(R.styleable.Keyboard_Key_popupCharacters)?.toString().orEmpty()
-                popupResId = getResourceId(R.styleable.Keyboard_Key_popupKeyboard, 0)
-                repeatable = getBoolean(R.styleable.Keyboard_Key_isRepeatable, false)
-                sticky = getBoolean(R.styleable.Keyboard_Key_isSticky, false)
-                edgeFlags = getInt(R.styleable.Keyboard_Key_keyEdgeFlags, 0) or parent.rowEdgeFlags
-                icon = getDrawable(R.styleable.Keyboard_Key_keyIcon)?.apply {
-                    setBounds(0, 0, intrinsicWidth, intrinsicHeight)
-                }
-                labels.main = getText(R.styleable.Keyboard_Key_keyLabel)?.toString().orEmpty()
-                labels.shifted =
-                    getText(R.styleable.Keyboard_Key_shiftedLabel)?.toString().orEmpty()
-                labels.down = getText(R.styleable.Keyboard_Key_downLabel)?.toString().orEmpty()
-                text = getText(R.styleable.Keyboard_Key_keyOutputText)?.toString()
+                labels.main = getString(R.styleable.Keyboard_Key_label).orEmpty()
+                labels.shifted = getString(R.styleable.Keyboard_Key_shifted).orEmpty()
+                labels.down = getString(R.styleable.Keyboard_Key_down).orEmpty()
 
                 if (codes.main.isEmpty() && labels.main.isNotEmpty()) {
                     codes.main = intArrayOf(labels.main[0].code)
@@ -253,16 +238,17 @@ open class Keyboard {
             }
 
         companion object {
-            private val KEY_STATE_NORMAL_ON =
-                intArrayOf(android.R.attr.state_checkable, android.R.attr.state_checked)
+            private val KEY_STATE_NORMAL_ON = intArrayOf(
+                android.R.attr.state_checkable, android.R.attr.state_checked
+            )
             private val KEY_STATE_PRESSED_ON = intArrayOf(
                 android.R.attr.state_pressed,
-                android.R.attr.state_checkable,
-                android.R.attr.state_checked
+                android.R.attr.state_checkable, android.R.attr.state_checked
             )
             private val KEY_STATE_NORMAL_OFF = intArrayOf(android.R.attr.state_checkable)
-            private val KEY_STATE_PRESSED_OFF =
-                intArrayOf(android.R.attr.state_pressed, android.R.attr.state_checkable)
+            private val KEY_STATE_PRESSED_OFF = intArrayOf(
+                android.R.attr.state_pressed, android.R.attr.state_checkable
+            )
             private val KEY_STATE_NORMAL = intArrayOf()
             private val KEY_STATE_PRESSED = intArrayOf(android.R.attr.state_pressed)
         }
@@ -447,18 +433,11 @@ open class Keyboard {
 
     private fun parseKeyboardAttributes(res: Resources, parser: XmlResourceParser) {
         res.obtainAttributes(Xml.asAttributeSet(parser), R.styleable.Keyboard).apply {
-            defaultKeyWidth = getDimensionOrFraction(
-                this,
-                R.styleable.Keyboard_keyWidth,
-                mDisplayWidth,
-                mDisplayWidth / 10
-            )
-            defaultKeyHeight =
-                getDimensionOrFraction(this, R.styleable.Keyboard_keyHeight, mDisplayHeight, 50)
-            defaultHorizontalGap =
-                getDimensionOrFraction(this, R.styleable.Keyboard_horizontalGap, mDisplayWidth, 0)
-            defaultVerticalGap =
-                getDimensionOrFraction(this, R.styleable.Keyboard_verticalGap, mDisplayHeight, 0)
+            defaultKeyWidth = getDim(R.styleable.Keyboard_width, mDisplayWidth, mDisplayWidth / 10)
+            defaultKeyHeight = getDim(R.styleable.Keyboard_height, mDisplayHeight, 50)
+            defaultHorizontalGap = getDim(R.styleable.Keyboard_hGap, mDisplayWidth, 0)
+            defaultVerticalGap = getDim(R.styleable.Keyboard_vGap, mDisplayHeight, 0)
+            defaultPopupLayout = getResourceId(R.styleable.Keyboard_popupLayout, 0)
             mProximityThreshold = (defaultKeyWidth * SEARCH_DISTANCE).toInt().let { it * it }
             recycle()
         }
@@ -505,16 +484,15 @@ open class Keyboard {
         private const val GRID_SIZE = GRID_WIDTH * GRID_HEIGHT
         private const val SEARCH_DISTANCE = 1.8f
 
-        fun getDimensionOrFraction(a: TypedArray, index: Int, base: Int, defValue: Int): Int =
-            a.peekValue(index).let { value ->
-                when (value?.type) {
-                    TypedValue.TYPE_DIMENSION -> a.getDimensionPixelOffset(index, defValue)
+        private fun TypedArray.getDim(idx: Int, base: Int, defValue: Int): Int =
+            when (peekValue(idx)?.type) {
+                TypedValue.TYPE_DIMENSION ->
+                    getDimensionPixelOffset(idx, defValue)
 
-                    TypedValue.TYPE_FRACTION -> a.getFraction(index, base, base, defValue.toFloat())
-                        .roundToInt()
+                TypedValue.TYPE_FRACTION ->
+                    getFraction(idx, base, base, defValue.toFloat()).roundToInt()
 
-                    else -> defValue
-                }
+                else -> defValue
             }
     }
 }

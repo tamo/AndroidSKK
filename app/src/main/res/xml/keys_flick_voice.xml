@@ -1,71 +1,71 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Keyboard xmlns:app="http://schemas.android.com/apk/res-auto"
-    app:horizontalGap="0dip"
-    app:keyHeight="8%p"
-    app:keyWidth="20%p"
-    app:verticalGap="0dip">
+    app:hGap="0dip"
+    app:height="8%p"
+    app:vGap="0dip"
+    app:width="20%p">
     <Row>
         <Key app:codes="0" />
         <Key app:codes="0" />
         <Key
             app:codes="-1012"
-            app:isSticky="true"
-            app:keyLabel="声" />
+            app:label="声"
+            app:sticky="true" />
         <Key app:codes="0" />
         <Key
             app:codes="-5"
-            app:isRepeatable="true"
-            app:keyIcon="@drawable/ic_keyboard_backspace" />
+            app:icon="@drawable/ic_keyboard_backspace"
+            app:repeatable="true" />
     </Row>
     <Row>
         <Key
             app:codes="-1001"
-            app:isRepeatable="true"
-            app:keyIcon="@drawable/ic_keyboard_arrow_left" />
+            app:icon="@drawable/ic_keyboard_arrow_left"
+            app:repeatable="true" />
         <Key
             app:codes="44"
-            app:keyLabel="、" />
+            app:label="、" />
         <Key
             app:codes="46"
-            app:keyLabel="。" />
+            app:label="。" />
         <Key app:codes="0" />
         <Key
             app:codes="-1002"
-            app:isRepeatable="true"
-            app:keyIcon="@drawable/ic_keyboard_arrow_right" />
+            app:icon="@drawable/ic_keyboard_arrow_right"
+            app:repeatable="true" />
     </Row>
     <Row>
         <Key
             app:codes="-1010"
-            app:keyLabel="(\n かな \n)※変更されます" />
+            app:label="(\n かな \n)※変更されます" />
         <Key
             app:codes="91"
-            app:keyLabel="「" />
+            app:label="「" />
         <Key
             app:codes="93"
-            app:keyLabel="」" />
+            app:label="」" />
         <Key
             app:codes="63"
-            app:keyLabel="？" />
+            app:label="？" />
         <Key
             app:codes="-1004"
-            app:keyIcon="@drawable/ic_keyboard_space_bar" />
+            app:icon="@drawable/ic_keyboard_space_bar" />
     </Row>
-    <Row app:rowEdgeFlags="bottom">
+    <Row app:edge="bottom">
         <Key
             app:codes="-1003"
-            app:keyLabel="全角ａ\n☻abc記\nqwerty" /><!-- kt と一致させること -->
+            app:label="全角ａ\n☻abc記\nqwerty" /><!-- kt と一致させること -->
         <Key
             app:codes="40"
-            app:keyLabel="（" />
+            app:label="（" />
         <Key
             app:codes="41"
-            app:keyLabel="）" />
+            app:label="）" />
         <Key
             app:codes="33"
-            app:keyLabel="！" />
+            app:label="！" />
         <Key
             app:codes="-1007"
-            app:keyIcon="@drawable/ic_keyboard_return" />
+            app:icon="@drawable/ic_keyboard_return" />
     </Row>
 </Keyboard>

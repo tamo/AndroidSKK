@@ -1,4 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Keyboard xmlns:app="http://schemas.android.com/apk/res-auto"
-    app:keyHeight="10%p"
-    app:keyWidth="10%p" />
+    app:height="10%p"
+    app:width="10%p" />

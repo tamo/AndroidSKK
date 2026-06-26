@@ -52,6 +52,7 @@ open class KeyboardView @JvmOverloads constructor(
     private var mLabelTextSize = 0
     private var mKeyTextSize = 0
     private var mKeyTextColor = 0
+    private var mKeyBackground: Drawable? = null
     private var mPreviewText: TextView? = null
     private val mPreviewPopup = PopupWindow(context)
     private var mPreviewOffset = 0
@@ -74,7 +75,6 @@ open class KeyboardView @JvmOverloads constructor(
     var isHankaku = false
 
     private val mPaint = Paint()
-    private val mPadding = Rect(0, 0, 0, 0)
     private var mCurrentKey = NOT_A_KEY
     private var mDownKey = NOT_A_KEY
     private var mRepeatKeyIndex = NOT_A_KEY
@@ -93,7 +93,6 @@ open class KeyboardView @JvmOverloads constructor(
     private var mActivePointerId = -1 // 有効な ID は 0 とか 1 とかなので初期値は負にしておく
     private var mOldPointerX = 0f
     private var mOldPointerY = 0f
-    private var mKeyBackground: Drawable? = null
 
     // For multi-tap
     private var mLastSentIndex = 0
@@ -236,8 +235,6 @@ open class KeyboardView @JvmOverloads constructor(
             textAlign = Align.CENTER
             alpha = 255
         }
-
-        mKeyBackground?.getPadding(mPadding)
 
         isHapticFeedbackEnabled = true
 
@@ -413,7 +410,6 @@ open class KeyboardView @JvmOverloads constructor(
                         else -> key.labels.mainLines
                     }
 
-                    val icon = key.icon
                     keyBackground?.bounds?.let {
                         if (key.width != it.right || key.height != it.bottom) {
                             keyBackground.setBounds(0, 0, key.width, key.height)
@@ -426,7 +422,7 @@ open class KeyboardView @JvmOverloads constructor(
                     keyBackground?.draw(canvas)
 
                     if (lines.isNotEmpty()) drawKeyLabels(canvas, key, lines, labelZoom)
-                    else icon?.let { drawKeyIcon(canvas, key, it, labelZoom) }
+                    else key.icon?.let { drawKeyIcon(canvas, key, it, labelZoom) }
                     canvas.translate(
                         (-key.x - kbdPaddingLeft).toFloat(),
                         (-key.y - kbdPaddingTop).toFloat()
@@ -463,8 +459,8 @@ open class KeyboardView @JvmOverloads constructor(
         }
 
         val sizeDefault = mPaint.textSize
-        val centerX = (key.width + mPadding.left - mPadding.right) / 2f
-        val centerY = (key.height + mPadding.top - mPadding.bottom) / 2f
+        val centerX = key.width / 2f
+        val centerY = key.height / 2f
         val currentTypeface = mPaint.typeface
 
         when (numLines) {
@@ -556,8 +552,8 @@ open class KeyboardView @JvmOverloads constructor(
             }
             canvas.drawText(
                 upLine,
-                mPadding.left + mPaint.textSize * .5f,
-                mPadding.top + mPaint.textSize * 1.5f,
+                mPaint.textSize * .5f,
+                mPaint.textSize * 1.5f,
                 mPaint
             )
         }
@@ -571,8 +567,8 @@ open class KeyboardView @JvmOverloads constructor(
             }
             canvas.drawText(
                 downLine,
-                key.width - mPadding.right - mPaint.textSize * .5f,
-                key.height - mPadding.bottom - mPaint.textSize * .6f,
+                key.width.toFloat() - mPaint.textSize * .5f,
+                key.height.toFloat() - mPaint.textSize * .6f,
                 mPaint
             )
         }
@@ -582,8 +578,8 @@ open class KeyboardView @JvmOverloads constructor(
     private fun drawKeyIcon(canvas: Canvas, key: Keyboard.Key, icon: Drawable, labelZoom: Float) {
         val w = (icon.intrinsicWidth * labelZoom).toInt()
         val h = (icon.intrinsicHeight * labelZoom).toInt()
-        val drawableX = (key.width - mPadding.left - mPadding.right - w) / 2 + mPadding.left
-        val drawableY = (key.height - mPadding.top - mPadding.bottom - h) / 2 + mPadding.top
+        val drawableX = (key.width - w) / 2
+        val drawableY = (key.height - h) / 2
         canvas.translate(drawableX.toFloat(), drawableY.toFloat())
         icon.setBounds(0, 0, w, h)
         icon.draw(canvas)
@@ -603,29 +599,23 @@ open class KeyboardView @JvmOverloads constructor(
     private fun detectAndSendKey(index: Int, eventTime: Long) {
         if (index != NOT_A_KEY && index < mKeyboard.keys.size) {
             val key = mKeyboard.keys[index]
-            val text = key.text
-            if (text != null) {
-                onKeyboardActionListener?.onText(text)
-                onKeyboardActionListener?.onRelease(NOT_A_KEY)
-            } else {
-                var code = key.codes.main[0]
-                // Multi-tap
-                if (mInMultiTap) {
-                    if (mTapCount != -1) { // 前回の入力を取り消す
-                        val codesLength = key.codes.main.size
-                        val prevCount = (mTapCount + codesLength - 1) % codesLength
-                        val prevCode = mKeyboard.keys[mLastSentIndex].codes.main[prevCount]
-                        if (prevCode > 0) {
-                            onKeyboardActionListener?.onKey(Keyboard.KEYCODE_DELETE)
-                        }
-                    } else {
-                        mTapCount = 0
+            var code = key.codes.main[0]
+            // Multi-tap
+            if (mInMultiTap) {
+                if (mTapCount != -1) { // 前回の入力を取り消す
+                    val codesLength = key.codes.main.size
+                    val prevCount = (mTapCount + codesLength - 1) % codesLength
+                    val prevCode = mKeyboard.keys[mLastSentIndex].codes.main[prevCount]
+                    if (prevCode > 0) {
+                        onKeyboardActionListener?.onKey(Keyboard.KEYCODE_DELETE)
                     }
-                    code = key.codes.main[mTapCount]
+                } else {
+                    mTapCount = 0
                 }
-                onKeyboardActionListener?.onKey(code)
-                onKeyboardActionListener?.onRelease(code)
+                code = key.codes.main[mTapCount]
             }
+            onKeyboardActionListener?.onKey(code)
+            onKeyboardActionListener?.onRelease(code)
             mLastSentIndex = index
             mLastTapTime = eventTime
         }
@@ -723,7 +713,8 @@ open class KeyboardView @JvmOverloads constructor(
 
             // Set the preview background state
             previewText.background.state =
-                if (key.popupResId != 0) LONG_PRESSABLE_STATE_SET else EMPTY_STATE_SET
+                if (key.popupLayout != 0 && key.popupCharacters.isNotEmpty()) LONG_PRESSABLE_STATE_SET
+                else EMPTY_STATE_SET
             popupPreviewX += mCoordinates[0]
             popupPreviewY += mCoordinates[1]
 
@@ -785,7 +776,7 @@ open class KeyboardView @JvmOverloads constructor(
     protected open fun onLongPress(key: Keyboard.Key): Boolean {
         if (!skkPrefs.useMiniKey) return false
         if (key.popupCharacters.isEmpty()) return false
-        val popupKeyboardId = key.popupResId
+        val popupKeyboardId = key.popupLayout
         if (popupKeyboardId != 0) {
             val cached = mMiniKeyboardCache[key]
             val miniKeyboardContainer: View
