@@ -31,6 +31,7 @@
         </androidx.preference.Preference>
         <androidx.preference.Preference
             app:icon="@android:drawable/ic_menu_manage"
+            app:summary="登録した単語と通常の変換履歴が両方入っています"
             app:title="@string/label_dict_tool_activity">
             <intent
                 android:action="android.intent.action.MAIN"
@@ -40,6 +41,7 @@
         </androidx.preference.Preference>
         <androidx.preference.Preference
             app:icon="@android:drawable/ic_menu_manage"
+            app:summary="頻度付き英語補完辞書でもあり、絵文字 (emoji) および記号 (00.〜) の履歴でもあります"
             app:title="@string/label_ascii_tool_activity">
             <intent
                 android:action="android.intent.action.MAIN"

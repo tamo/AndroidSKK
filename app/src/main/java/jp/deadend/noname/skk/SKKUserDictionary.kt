@@ -10,7 +10,8 @@ class SKKUserDictionary private constructor(
     override var mStore: SKKStore?,
     override val mIsASCII: Boolean,
     override val mFilePath: String,
-    private val mBtreeName: String
+    private val mBtreeName: String,
+    private val readonly: Boolean = false
 ) : SKKDictionaryInterface {
     override val mLock = ReentrantLock()
     override var mCache: SKKDictionaryInterface.DictCache? = null
@@ -89,6 +90,7 @@ class SKKUserDictionary private constructor(
     }
 
     fun addEntry(key: String, value: String, okurigana: String) = mLock.withLock {
+        if (readonly) return@withLock SKKLog.e("Attempt to write to readonly dictionary")
         val store = mStore ?: return@withLock
         val hiraganaKey = katakana2hiragana(key)
         val oldVal: String? = store.get(hiraganaKey)
@@ -139,6 +141,7 @@ class SKKUserDictionary private constructor(
     }
 
     fun removeEntry(key: String, value: String, okurigana: String) = mLock.withLock {
+        if (readonly) return@withLock SKKLog.e("Attempt to write to readonly dictionary")
         val store = mStore ?: return@withLock
         val hiraganaKey = katakana2hiragana(key)
         // 「だい4かい」がなければ「だい#かい」を削除する
@@ -179,6 +182,7 @@ class SKKUserDictionary private constructor(
 
     fun rollBack() = mLock.withLock {
         if (mOldKey.isEmpty()) return@withLock
+        if (readonly) return@withLock SKKLog.e("Attempt to write to readonly dictionary")
 
         if (mOldValue.isEmpty()) {
             mStore?.delete(mOldKey)
@@ -201,7 +205,7 @@ class SKKUserDictionary private constructor(
         runCatching {
             close()
             runBlocking(Dispatchers.IO) {
-                openDB(mFilePath, mBtreeName, writable = true).let { newStore ->
+                openDB(mFilePath, mBtreeName, writable = !readonly).let { newStore ->
                     mLock.withLock { mStore = newStore }
                 }
             }
@@ -210,10 +214,8 @@ class SKKUserDictionary private constructor(
 
     companion object {
         fun newInstance(
-            context: SKKService,
-            filePath: String,
-            btreeName: String,
-            isASCII: Boolean
+            context: SKKService, filePath: String, btreeName: String,
+            isASCII: Boolean, readonly: Boolean
         ): SKKUserDictionary? {
             val mvFile = File("$filePath.mv")
             val dbFile = File("$filePath.db")
@@ -225,9 +227,9 @@ class SKKUserDictionary private constructor(
 
             return runCatching {
                 val store = runBlocking(Dispatchers.IO) {
-                    openDB(filePath, btreeName, writable = true)
+                    openDB(filePath, btreeName, writable = !readonly)
                 }
-                SKKUserDictionary(store, isASCII, filePath, btreeName)
+                SKKUserDictionary(store, isASCII, filePath, btreeName, readonly)
             }.onFailure { SKKLog.e("Error in opening the dictionary", it) }.getOrNull()
         }
     }

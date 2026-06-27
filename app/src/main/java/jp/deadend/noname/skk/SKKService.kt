@@ -319,12 +319,13 @@ class SKKService : InputMethodService() {
         notificationManager.createNotificationChannel(channel)
         // 事前に権限を持っていないと、onCreate 内では権限要求を出せないみたいなので注意！
 
-        fun openUserDictionary(name: String, isASCII: Boolean): SKKUserDictionary? {
+        fun openUserDictionary(
+            name: String, isASCII: Boolean, readonly: Boolean = false
+        ): SKKUserDictionary? {
             val dict = SKKUserDictionary.newInstance(
                 this@SKKService,
-                filesDir.absolutePath + "/" + name,
-                getString(R.string.btree_name),
-                isASCII
+                filesDir.absolutePath + "/" + name, getString(R.string.btree_name),
+                isASCII, readonly
             )
             if (dict == null) {
                 val intent = Intent(applicationContext, SKKSettingsActivity::class.java)
@@ -348,9 +349,12 @@ class SKKService : InputMethodService() {
         mAsciiDict =
             openUserDictionary(getString(R.string.dict_name_ascii), isASCII = true) ?: return
         mEmojiDict =
-            openUserDictionary(getString(R.string.dict_name_emoji), isASCII = true) ?: return
+            openUserDictionary(getString(R.string.dict_name_emoji), isASCII = true, readonly = true)
+                ?: return
         mSymbolDict =
-            openUserDictionary(getString(R.string.dict_name_symbol), isASCII = false) ?: return
+            openUserDictionary(
+                getString(R.string.dict_name_symbol), isASCII = false, readonly = true
+            ) ?: return
         val dictList = openDictionaries()
         if (!dictList.any { it is SKKSystemDictionary }) {
             val intent = Intent(applicationContext, SKKDictManager::class.java)
