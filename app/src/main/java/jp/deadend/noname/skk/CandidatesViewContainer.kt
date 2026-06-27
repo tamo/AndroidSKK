@@ -231,8 +231,8 @@ class CandidatesViewImageButton(screen: Context, attrs: AttributeSet?, defStyleA
     var active = false
         set(value) {
             field = value
-            background.alpha = if (value) skkPrefs.activeAlpha else skkPrefs.inactiveAlpha
-            alpha = background.alpha / 255f
+            background.alpha = if (value) skkPrefs.activeAlpha else 255
+            alpha = if (value) 1f else skkPrefs.inactiveAlpha / 255f
         }
 
     init {
