@@ -23,6 +23,7 @@
         app:title="SKK 辞書管理">
         <androidx.preference.Preference
             app:icon="@android:drawable/ic_input_add"
+            app:summary="同梱していない辞書をダウンロードできます\n(最初に必要な設定です)"
             app:title="システム辞書の管理">
             <intent
                 android:action="android.intent.action.MAIN"
