@@ -531,6 +531,8 @@ class SKKPrefs(context: Context) {
         "ユーザー辞書/${res.getString(R.string.dict_name_user)}/"
     var dictOrder: String
         get() = prefs.getString(res.getString(R.string.pref_dict_order), defaultDictOrder)
+            ?.replace("絵文字辞書/${res.getString(R.string.dict_name_emoji)}/", "")
+            // 168ac9ef5731a7e6c6490c0ef0629aad0f5cec55 の後始末なので、そのうち消す↑
             ?: defaultDictOrder
         set(value) = prefs.edit {
             if (value == defaultDictOrder) remove(res.getString(R.string.pref_dict_order))

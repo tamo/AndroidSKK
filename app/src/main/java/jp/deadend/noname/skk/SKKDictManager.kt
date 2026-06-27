@@ -167,8 +167,7 @@ class SKKDictManager : AppCompatActivity() {
         binding.dictManagerPreviewTitle.text = item.key
         binding.dictManagerPreviewText.text = "読み込み中..."
 
-        val isCore = item.value == getString(R.string.dict_name_user) ||
-                item.value == getString(R.string.dict_name_emoji)
+        val isCore = item.value == getString(R.string.dict_name_user)
         binding.dictManagerUninstallButton.visibility =
             if (isCore) android.view.View.GONE else android.view.View.VISIBLE
 
