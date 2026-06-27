@@ -91,9 +91,11 @@ class SKKCandidatesTest {
         every { service.isHiragana } returns true
 
         coEvery { dict1.getCandidates("か") } returns listOf("下", "課")
-        coEvery { dict1.findCompletePairs(any(), "か") } returns listOf("か" to "か", "かい" to "かい")
+        coEvery { dict1.findCompletePairs(any(), "か") } returns
+                listOf("か" to "か", "かい" to "かい")
         coEvery { dict1.getCandidates("が") } returns listOf("画", "我")
-        coEvery { dict1.findCompletePairs(any(), "が") } returns listOf("が" to "が", "がい" to "がい")
+        coEvery { dict1.findCompletePairs(any(), "が") } returns
+                listOf("が" to "が", "がい" to "がい")
 
         candidates.complete("か")
 
