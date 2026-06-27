@@ -1,6 +1,7 @@
 package jp.deadend.noname.skk
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Intent
@@ -9,9 +10,11 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.text.InputType
 import android.view.KeyEvent
 import android.view.MenuItem
 import android.view.inputmethod.InputMethodManager
+import android.widget.EditText
 import android.widget.Toast
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -24,6 +27,7 @@ import androidx.core.net.toUri
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
+import androidx.core.widget.doOnTextChanged
 import androidx.fragment.app.commit
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.Preference
@@ -42,6 +46,7 @@ import kotlin.time.Duration.Companion.milliseconds
 class SKKSettingsActivity : AppCompatActivity(),
     PreferenceFragmentCompat.OnPreferenceStartFragmentCallback {
     private lateinit var binding: ActivitySettingsBinding
+    private var mKeyRecordDialog: AlertDialog? = null
     var keyPref: Preference? = null
 
     class SettingsMainFragment : PreferenceFragmentCompat() {
@@ -232,8 +237,29 @@ class SKKSettingsActivity : AppCompatActivity(),
                 summary =
                     getKeyName(currentValue).ifEmpty { getString(R.string.label_disabled_key) }
                 setOnPreferenceClickListener {
-                    summary = getString(R.string.label_push_any)
-                    (requireActivity() as SKKSettingsActivity).keyPref = this
+                    val pref = this
+                    val activity = requireActivity() as SKKSettingsActivity
+                    activity.keyPref = pref
+                    val editText = EditText(activity).apply {
+                        inputType = InputType.TYPE_CLASS_TEXT
+                        privateImeOptions = SKKService.EDITOR_OPTION_PREF
+                        hint = getString(R.string.label_push_any)
+                        setOnKeyListener { _, _, event -> activity.dispatchKeyEvent(event) }
+                        doOnTextChanged { _, _, _, _ ->
+                            if (text.isNotEmpty()) {
+                                text.clear()
+                                hint = "SKK qwerty 以外のソフトキーは使用できません"
+                            }
+                        }
+                    }
+                    activity.mKeyRecordDialog = AlertDialog.Builder(activity)
+                        .setTitle(pref.title)
+                        .setView(editText)
+                        .setNegativeButton("中止") { _, _ -> activity.keyPref = null }
+                        .setNeutralButton("無効化") { _, _ -> activity.updateKeyPref(pref, 0) }
+                        .setOnDismissListener { activity.keyPref = null }
+                        .show()
+                        .apply { setOnKeyListener { _, _, event -> activity.dispatchKeyEvent(event) } }
                     true
                 }
             }
@@ -266,15 +292,9 @@ class SKKSettingsActivity : AppCompatActivity(),
         binding = ActivitySettingsBinding.inflate(layoutInflater)
         setContentView(binding.root)
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, windowInsets ->
-            val bars = windowInsets.getInsets(
+            windowInsets.getInsets(
                 WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout(),
-            )
-            view.updatePadding(
-                left = bars.left,
-                top = bars.top,
-                right = bars.right,
-                bottom = bars.bottom,
-            )
+            ).run { view.updatePadding(left, top, right, bottom) }
             WindowInsetsCompat.CONSUMED
         }
         setSupportActionBar(binding.toolbar)
@@ -309,38 +329,42 @@ class SKKSettingsActivity : AppCompatActivity(),
             startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS))
     }
 
-    override fun dispatchKeyEvent(event: KeyEvent): Boolean = keyPref.let { pref ->
-        if (pref == null) return super.dispatchKeyEvent(event)
-        SKKLog.d("dispatchKeyEvent($event)")
-        return when (event.keyCode) {
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean = keyPref?.let { pref ->
+        when (event.keyCode) {
+            @SuppressLint("GestureBackNavigation") KeyEvent.KEYCODE_BACK,
+            KeyEvent.KEYCODE_ESCAPE,
             KeyEvent.KEYCODE_ENTER -> false
-            KeyEvent.KEYCODE_HOME -> true
-            KeyEvent.KEYCODE_ESCAPE -> if (event.action == KeyEvent.ACTION_DOWN) {
-                PreferenceManager.getDefaultSharedPreferences(applicationContext).edit {
-                    putInt(pref.key, 0)
-                }
-                pref.setSummary(getString(R.string.label_disabled_key))
-                MainScope().launch(Dispatchers.Default) {
-                    delay(500.milliseconds)
-                    keyPref = null
-                }
-                true
-            } else false
 
-            else -> if (event.action == KeyEvent.ACTION_DOWN) {
-                val key = encodeKey(event)
-                val name = getKeyName(key)
-                if (name.isEmpty()) return false
-                PreferenceManager.getDefaultSharedPreferences(applicationContext).edit {
-                    putInt(pref.key, key)
+            KeyEvent.KEYCODE_HOME -> true
+
+            else -> when (event.action) {
+                KeyEvent.ACTION_DOWN -> {
+                    val key = encodeKey(event)
+                    if (getKeyName(key).isNotEmpty()) {
+                        updateKeyPref(pref, key)
+                        true
+                    } else false
                 }
-                pref.setSummary(name)
-                MainScope().launch(Dispatchers.Default) {
-                    delay(500.milliseconds) // UP で何か実行されてしまわないように少し待つ
-                    keyPref = null
-                }
-                true
-            } else false
+                // DOWN で true 返したときにすぐ keyPref=null すると UP で何かが実行される危険がある
+                // ので UP まで keyPref を保持して UP を消費してやる
+                KeyEvent.ACTION_UP if mKeyRecordDialog == null ->
+                    true.also { keyPref = null }
+
+                else -> false
+            }
+        }
+    } ?: super.dispatchKeyEvent(event)
+
+    fun updateKeyPref(pref: Preference, key: Int) {
+        PreferenceManager.getDefaultSharedPreferences(applicationContext)
+            .edit { putInt(pref.key, key) }
+        pref.summary = getKeyName(key).ifEmpty { getString(R.string.label_disabled_key) }
+
+        mKeyRecordDialog?.dismiss()
+        mKeyRecordDialog = null
+        MainScope().launch(Dispatchers.Default) {
+            delay(500.milliseconds) // ハードキーはこの間に UP して keyPref=null するはずだが
+            keyPref?.run { keyPref = null } // ソフトキーだと UP しないので自動終了が必要
         }
     }
 

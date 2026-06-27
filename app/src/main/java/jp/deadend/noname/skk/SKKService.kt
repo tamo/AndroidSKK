@@ -26,6 +26,7 @@ import android.text.InputType
 import android.text.SpannableString
 import android.util.TypedValue
 import android.view.Display.DEFAULT_DISPLAY
+import android.view.KeyCharacterMap
 import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
@@ -131,6 +132,9 @@ class SKKService : InputMethodService() {
     // 幅の確認
     internal fun isFlickWidth(view: KeyboardView? = null): Boolean =
         (view ?: mInputView).let { it is FlickJPKeyboardView || it is GodanKeyboardView }
+
+    private val isInPref
+        get() = currentInputEditorInfo?.privateImeOptions == EDITOR_OPTION_PREF
 
     internal val isTemporaryView: Boolean
         get() = (mInputView === mAbbrevKeyboardView || mEngine.state is SKKZenkakuState)
@@ -717,6 +721,7 @@ class SKKService : InputMethodService() {
         val keyboardType = when (attribute.inputType and InputType.TYPE_MASK_CLASS) {
             InputType.TYPE_CLASS_NUMBER -> skkPrefs.typeNumber
             InputType.TYPE_CLASS_PHONE -> skkPrefs.typePhone
+            InputType.TYPE_CLASS_TEXT if isInPref -> "qwerty" // ハードキーボード設定
             InputType.TYPE_CLASS_TEXT -> {
                 val variation = attribute.inputType and InputType.TYPE_MASK_VARIATION
                 when (variation) {
@@ -961,11 +966,6 @@ class SKKService : InputMethodService() {
      * them or let them continue to the app.
      */
     override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean {
-        // ハードウェアキー設定と重複しないように
-        if (currentInputEditorInfo?.packageName == packageName &&
-            currentInputEditorInfo?.inputType == EditorInfo.TYPE_NULL
-        ) return false
-
         // SandS: ASCII モードでのスペースアップ処理
         if (!mStickyShift && mSandS && skkPrefs.sandSInAscii &&
             mEngine.state is SKKASCIIState && keyCode == KeyEvent.KEYCODE_SPACE
@@ -1000,11 +1000,6 @@ class SKKService : InputMethodService() {
      * them or let them continue to the app.
      */
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
-        // ハードウェアキー設定と重複しないように
-        if (currentInputEditorInfo?.packageName == packageName &&
-            currentInputEditorInfo?.inputType == EditorInfo.TYPE_NULL
-        ) return false
-
         if (handleKey(event)) return true
 
         return super.onKeyDown(keyCode, event)
@@ -1019,9 +1014,15 @@ class SKKService : InputMethodService() {
                 val now = System.currentTimeMillis()
                 KeyEvent(
                     now, now, KeyEvent.ACTION_DOWN,
-                    encKey.charCode, 0, encKey.metaState
+                    encKey.charCode, 0, encKey.metaState,
+                    KeyCharacterMap.VIRTUAL_KEYBOARD, 0
                 ) to encKey
             }
+        }
+
+        if (isInPref) {
+            currentInputConnection?.sendKeyEvent(event)
+            return true
         }
         val keyCode = event.keyCode
 
@@ -1599,6 +1600,7 @@ class SKKService : InputMethodService() {
         internal const val COMMAND_READ_PREFS = "jp.deadend.noname.skk.COMMAND_READ_PREFS"
         internal const val COMMAND_RELOAD_DICT = "jp.deadend.noname.skk.COMMAND_RELOAD_DICT"
         internal const val COMMAND_MUSHROOM = "jp.deadend.noname.skk.COMMAND_MUSHROOM"
+        internal const val EDITOR_OPTION_PREF = "jp.deadend.noname.skk.OPTION_PREF"
         private const val CHANNEL_ID = "skk_notification"
         private const val CHANNEL_NAME = "SKK"
         private const val NOTIFY_ID_ERROR_DICT = 1
