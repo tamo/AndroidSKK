@@ -270,40 +270,33 @@ class SKKDictManager : AppCompatActivity() {
             }
 
             R.id.menu_dict_manager_reset -> {
+                fun ifDeletable(callback: (String) -> Boolean) {
+                    val protectedPrefixes = listOf(
+                        R.string.dict_name_user, R.string.dict_name_ascii,
+                        R.string.dict_name_emoji, R.string.dict_name_symbol
+                    ).map { getString(it) }
+
+                    fun isDeletable(file: String): Boolean =
+                        protectedPrefixes.none { file.startsWith(it) } &&
+                                file != SKKKanaRule.INTERNAL_FILE_NAME
+
+                    Files.newDirectoryStream(filesDir.toPath()).use { stream ->
+                        stream.forEach { path ->
+                            val file = path.fileName.toString()
+                            if (isDeletable(file)) callback(file)
+                        }
+                    }
+                }
+
+                val files = mutableListOf<String>()
+                ifDeletable { files.add(it) }
                 val dialog = ConfirmationDialogFragment.newInstance(
-                    getString(R.string.message_dict_manager_confirm_clear)
+                    getString(R.string.message_dict_manager_confirm_clear, files.joinToString())
                 )
                 dialog.setListener(
                     object : ConfirmationDialogFragment.Listener {
                         override fun onPositiveClick() {
-                            Files.newDirectoryStream(filesDir.toPath()).use { stream ->
-                                stream.forEach { path ->
-                                    val file = path.fileName.toString()
-                                    if (!file.startsWith(getString(R.string.dict_name_user)) &&
-                                        !file.startsWith(getString(R.string.dict_name_ascii)) &&
-                                        !file.startsWith(getString(R.string.dict_name_emoji))
-                                    ) {
-                                        deleteFile(file)
-                                    }
-                                }
-                            }
-                            try {
-                                //unzipFile(resources.assets.open(getString(R.string.dict_name_user) + ".zip"), filesDir)
-                                unzipFile(
-                                    resources.assets.open(
-                                        getString(R.string.dict_name_ascii) + ".zip"
-                                    ), filesDir
-                                )
-                                unzipFile(
-                                    resources.assets.open(
-                                        getString(R.string.dict_name_emoji) + ".zip"
-                                    ), filesDir
-                                )
-                            } catch (_: IOException) {
-                                SimpleMessageDialogFragment.newInstance(
-                                    getString(R.string.error_extracting_dict_failed)
-                                ).show(supportFragmentManager, "dialog")
-                            }
+                            ifDeletable { deleteFile(it) }
                             mAdapter.submitList(commonDictList)
                             mDictList = commonDictList
                         }

@@ -185,6 +185,14 @@ class SKKUserDictTool : AppCompatActivity() {
         }
         setSupportActionBar(binding.userDictToolToolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.title = getString(
+            when (mDictName.trimStart { it == '*' || it == '+' }) {
+                getString(R.string.dict_name_ascii) -> R.string.label_ascii_tool_activity
+                getString(R.string.dict_name_emoji) -> R.string.label_emoji_tool_activity
+                getString(R.string.dict_name_symbol) -> R.string.label_symbol_tool_activity
+                else -> R.string.label_dict_tool_activity
+            }
+        )
 
         binding.userDictToolList.onItemClickListener =
             AdapterView.OnItemClickListener { parent, _, position, _ ->
