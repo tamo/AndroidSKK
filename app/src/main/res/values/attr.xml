@@ -11,6 +11,7 @@
         <flag name="top" value="4" />
         <flag name="bottom" value="8" />
     </attr>
+    <attr name="repeatable" format="boolean" />
 
     <declare-styleable name="KeyboardView">
         <attr name="keyboardViewStyle" format="reference" />
@@ -35,6 +36,7 @@
         <attr name="width" />
         <attr name="height" />
         <attr name="hGap" />
+        <attr name="repeatable" />
         <attr name="vGap" />
         <attr name="popupLayout" />
     </declare-styleable>
@@ -61,7 +63,7 @@
         <attr name="edge" />
         <!-- Whether this is a toggle key -->
         <attr name="sticky" format="boolean" />
-        <attr name="repeatable" format="boolean" />
+        <attr name="repeatable" />
         <attr name="label" format="string" />
         <!-- Label for up flick state -->
         <attr name="shifted" format="string" />

@@ -277,7 +277,8 @@ class SKKDictManager : AppCompatActivity() {
 
                     fun isDeletable(file: String): Boolean =
                         protectedPrefixes.none { file.startsWith(it) } &&
-                                file != SKKKanaRule.INTERNAL_FILE_NAME
+                                file != SKKKanaRule.INTERNAL_FILE_NAME &&
+                                file != SKKFlickRule.INTERNAL_FILE_NAME
 
                     Files.newDirectoryStream(filesDir.toPath()).use { stream ->
                         stream.forEach { path ->

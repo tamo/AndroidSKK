@@ -15,6 +15,7 @@ open class Keyboard {
     protected var defaultKeyWidth = 0
     protected var defaultKeyHeight = 0
     protected var defaultPopupLayout = 0
+    protected var defaultRepeatable = false
 
     private val mShiftKeys = arrayOf<Key?>(null, null)
     var isShifted = false
@@ -124,7 +125,7 @@ open class Keyboard {
         }
 
         val labels = Labels()
-        val codes = Codes()
+        var codes = Codes()
 
         var icon: Drawable? = null
         var width: Int = parent.defaultWidth
@@ -182,7 +183,8 @@ open class Keyboard {
                 popupCharacters = getString(R.styleable.Keyboard_Key_popup).orEmpty()
                 popupLayout =
                     getResourceId(R.styleable.Keyboard_Key_popupLayout, keyboard.defaultPopupLayout)
-                repeatable = getBoolean(R.styleable.Keyboard_Key_repeatable, false)
+                repeatable =
+                    getBoolean(R.styleable.Keyboard_Key_repeatable, keyboard.defaultRepeatable)
                 sticky = getBoolean(R.styleable.Keyboard_Key_sticky, false)
                 edgeFlags = getInt(R.styleable.Keyboard_Key_edge, 0) or parent.rowEdgeFlags
                 icon = getDrawable(R.styleable.Keyboard_Key_icon)?.apply {
@@ -438,6 +440,7 @@ open class Keyboard {
             defaultHorizontalGap = getDim(R.styleable.Keyboard_hGap, mDisplayWidth, 0)
             defaultVerticalGap = getDim(R.styleable.Keyboard_vGap, mDisplayHeight, 0)
             defaultPopupLayout = getResourceId(R.styleable.Keyboard_popupLayout, 0)
+            defaultRepeatable = getBoolean(R.styleable.Keyboard_repeatable, false)
             mProximityThreshold = (defaultKeyWidth * SEARCH_DISTANCE).toInt().let { it * it }
             recycle()
         }
