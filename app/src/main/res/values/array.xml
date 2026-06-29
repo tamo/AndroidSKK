@@ -56,4 +56,14 @@
         <item>serif</item>
         <item>monospace</item>
     </string-array>
+    <string-array name="soft_keyboard_type_entries">
+        <item>自動切替</item>
+        <item>常にQwerty</item>
+        <item>常にフリック</item>
+    </string-array>
+    <string-array name="soft_keyboard_type_values">
+        <item>switch</item>
+        <item>qwerty</item>
+        <item>flick</item>
+    </string-array>
 </resources>

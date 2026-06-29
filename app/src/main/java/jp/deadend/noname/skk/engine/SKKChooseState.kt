@@ -93,7 +93,7 @@ object SKKChooseState : SKKConfirmingState() {
                     val maybeComposing = mKanjiKey.lastOrNull() ?: Char(0)
                     if (isAlphabet(maybeComposing.code)) {
                         mKanjiKey.deleteLast() // 送りがなのアルファベットを削除
-                        if (!skkPrefs.preferFlick) { // Flickではアルファベットが残ると困る
+                        if (skkPrefs.softKeyboardType == "qwerty") { // Flickではアルファベットが残ると困る
                             mComposing.append(maybeComposing)
                         }
                     }

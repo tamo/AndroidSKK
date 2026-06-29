@@ -32,6 +32,8 @@ data class FlickKeyConfig(
 object SKKFlickRule {
     internal const val INTERNAL_FILE_NAME = "flick-rule.conf"
     private const val DEFAULT_RULE_FILE = "default-flick-rule.conf"
+    private const val GODAN_RULE_FILE = "godan-flick-rule.conf"
+    private const val GODAN_SIMPLE_RULE_FILE = "godan-simple-flick-rule.conf"
     private const val MAX_FILE_SIZE = 1 * 1024 * 1024 // 1MB
 
     fun getInternalFile(context: Context): File {
@@ -119,4 +121,11 @@ object SKKFlickRule {
             File(context.filesDir, INTERNAL_FILE_NAME).writeText(defaultRule)
         }
     }
+
+    fun loadGodan(context: Context, simple: Boolean = false) = runCatching {
+        val fileName = if (simple) GODAN_SIMPLE_RULE_FILE else GODAN_RULE_FILE
+        val rule = context.resources.assets.open(fileName)
+            .bufferedReader().use { it.readText() }
+        File(context.filesDir, INTERNAL_FILE_NAME).writeText(rule)
+    }.onFailure { SKKLog.e("loadGodan failed", it) }
 }

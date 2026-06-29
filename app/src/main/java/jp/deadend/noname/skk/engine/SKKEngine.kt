@@ -41,7 +41,7 @@ class SKKEngine(
         private set
     internal var kanaState: SKKState = SKKHiraganaState
     internal var oldState: SKKState = SKKHiraganaState
-    private var cameFromFlick: Boolean = skkPrefs.preferFlick
+    private var cameFromFlick: Boolean = skkPrefs.softKeyboardType != "qwerty"
 
     internal val mCandidates = SKKCandidates(this, mService)
     internal val mRegister = SKKRegister(this)

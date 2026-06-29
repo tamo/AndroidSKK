@@ -16,8 +16,6 @@ import androidx.core.content.ContextCompat
 import jp.deadend.noname.skk.databinding.PopupFlickguideBinding
 import jp.deadend.noname.skk.engine.SKKEngine
 import jp.deadend.noname.skk.engine.SKKHanKanaState
-import jp.deadend.noname.skk.engine.SKKHiraganaState
-import jp.deadend.noname.skk.engine.SKKKatakanaState
 import jp.deadend.noname.skk.engine.SKKState
 import jp.deadend.noname.skk.engine.SKKZenkakuState
 import jp.deadend.noname.skk.engine.convertTo
@@ -30,6 +28,7 @@ class FlickJPKeyboardView(
     private var mLastPressedIndex = -1
     private var mLastPressedAction = ""
     private var mProcessedOnKey = false
+    private var mIsASCII = false
     private var mFlickState = EnumSet.of(FlickState.NONE)
     private var mFlickStartX = -1f
     private var mFlickStartY = -1f
@@ -45,15 +44,9 @@ class FlickJPKeyboardView(
     private val mPopupSize = 120
     private val mCoordinates = IntArray(2)
 
-    internal val mJPKeyboard: Keyboard by lazy {
-        Keyboard(context, R.xml.keys_flick_jp, mService.mRootWidth, mService.mScreenHeight)
-    }
-    internal val mNumKeyboard: Keyboard by lazy {
-        Keyboard(context, R.xml.keys_flick_jp, mService.mRootWidth, mService.mScreenHeight)
-    }
-    internal val mVoiceKeyboard: Keyboard by lazy {
-        Keyboard(context, R.xml.keys_flick_jp, mService.mRootWidth, mService.mScreenHeight)
-    }
+    internal var mJPKeyboard: Keyboard? = null
+    internal var mNumKeyboard: Keyboard? = null
+    internal var mVoiceKeyboard: Keyboard? = null
 
     private var mFlickRules: Map<String, Map<Int, Pair<FlickKeyConfig, FlickKeyConfig?>>> =
         emptyMap()
@@ -69,34 +62,31 @@ class FlickJPKeyboardView(
         isPreviewEnabled = false
         setBackgroundColor(0x00000000)
 
-        keyboard = mJPKeyboard
+        mFlickRules = SKKFlickRule.loadFromInternalStorage(context) ?: emptyMap()
+        prepareNewKeyboard(context, mService.mRootWidth, mService.mScreenHeight)
     }
 
     override fun onDetachedFromWindow() {
         mPopup?.dismiss()
         super.onDetachedFromWindow()
+        // XXX: 以下は flick ではコメントアウト、godan では有効だった
         //isShifted = false
+        //isCapsLocked = false
     }
 
-
     override fun setKeyState(state: SKKState): FlickJPKeyboardView {
-        isHankaku = when (state) {
-            SKKHiraganaState, SKKKatakanaState -> false
-            SKKHanKanaState -> true
-            else -> return this
-        }
-        mService.kanaState = state
-        updateKeyLabels()
+        updateKeyLabels(state)
         return this
     }
 
-    private fun getFlickRule(index: Int, keyboard: Keyboard = this.keyboard): FlickKeyConfig? {
+    private fun getFlickRule(index: Int, keyboard: Keyboard? = this.keyboard): FlickKeyConfig? {
         val section = when (keyboard) {
             mNumKeyboard -> "Number"
             mVoiceKeyboard -> "Voice"
-            else -> "JP"
+            else -> if (mService.engineState.isJapanese) "JP" else "ASCII"
         }
-        val pair = mFlickRules[section]?.get(index)
+        val sectionMap = mFlickRules[section] ?: if (section == "ASCII") mFlickRules["JP"] else null
+        val pair = sectionMap?.get(index)
         return if (isShifted) pair?.second ?: pair?.first else pair?.first
     }
 
@@ -124,10 +114,17 @@ class FlickJPKeyboardView(
         return ContextCompat.getDrawable(context, resId)
     }
 
-    private fun updateKeyLabels() {
+    private fun updateKeyLabels(state: SKKState? = null) {
+        state?.let {
+            mIsASCII = !it.isJapanese
+            isHankaku = it is SKKHanKanaState
+            isZenkaku = it is SKKZenkakuState
+            mService.kanaState = it // XXX: flick にはあったが godan にはなかった
+        }
+
         val kanaState = mService.kanaState
 
-        for (kb in listOf(mJPKeyboard, mNumKeyboard, mVoiceKeyboard)) {
+        for (kb in listOfNotNull(mJPKeyboard, mNumKeyboard, mVoiceKeyboard)) {
             kb.keys.forEachIndexed { index, key ->
                 val config = getFlickRule(index, kb) ?: return@forEachIndexed
 
@@ -136,8 +133,14 @@ class FlickJPKeyboardView(
                 key.icon = getIcon(config.label)
                 if (key.icon != null) key.labels.main = ""
 
-                if (config.actions.getOrNull(0) == "(ShiftToggle)")
-                    key.codes = Keyboard.Key.Codes(main = intArrayOf(Keyboard.KEYCODE_SHIFT))
+                when (config.actions.getOrNull(0)) {
+                    "(ShiftToggle)" -> key.codes = Keyboard.Key
+                        .Codes(main = intArrayOf(Keyboard.KEYCODE_SHIFT, Keyboard.KEYCODE_CAPSLOCK))
+
+                    "q" -> key.on = !mIsASCII && !mService.isHiragana
+
+                    "(Qwerty)" -> key.on = mIsASCII
+                }
             }
             kb.reloadShiftKeys()
         }
@@ -145,10 +148,22 @@ class FlickJPKeyboardView(
     }
 
     internal fun prepareNewKeyboard(context: Context, widthPixel: Int, heightPixel: Int) {
-        mJPKeyboard.resize(widthPixel, heightPixel)
-        mNumKeyboard.resize(widthPixel, heightPixel)
-        mVoiceKeyboard.resize(widthPixel, heightPixel)
-        keyboard = mJPKeyboard
+        mFlickRules = SKKFlickRule.loadFromInternalStorage(context) ?: emptyMap()
+        fun xmlId(section: String) =
+            if ((mFlickRules[section]?.keys?.size ?: 0) > 20) R.xml.keys_flick_24
+            else R.xml.keys_flick_jp
+
+        mJPKeyboard =
+            Keyboard(context, xmlId("JP"), mService.mRootWidth, mService.mScreenHeight)
+        mNumKeyboard =
+            Keyboard(context, xmlId("Number"), mService.mRootWidth, mService.mScreenHeight)
+        mVoiceKeyboard =
+            Keyboard(context, xmlId("Voice"), mService.mRootWidth, mService.mScreenHeight)
+
+        mJPKeyboard?.resize(widthPixel, heightPixel)
+        mNumKeyboard?.resize(widthPixel, heightPixel)
+        mVoiceKeyboard?.resize(widthPixel, heightPixel)
+        keyboard = mJPKeyboard!!
         invalidateAllKeys()
 
         readPrefs(context)
@@ -457,28 +472,35 @@ class FlickJPKeyboardView(
             }
 
             "(Voice)" -> {
-                keyboard = mVoiceKeyboard; isHankaku = false
+                mVoiceKeyboard?.let { keyboard = it }; isHankaku = false
             }
 
             "(Num)" -> {
-                keyboard = mNumKeyboard; isHankaku = false
+                mNumKeyboard?.let { keyboard = it }; isHankaku = false
             }
 
             "(Kana)" -> {
                 if (keyboard == mJPKeyboard) {
                     mService.processKey(skkPrefs.katakanaKey)
                 } else {
-                    keyboard = mJPKeyboard
+                    mJPKeyboard?.let { keyboard = it }
                 }
                 isHankaku = mService.kanaState == SKKHanKanaState
             }
 
             "(HankakuKana)" -> {
+                if (mIsASCII) mService.handleKanaKey() // ひらがなを経由
                 mService.processKey(skkPrefs.hankakuKanaKey)
                 isHankaku = mService.kanaState == SKKHanKanaState
             }
 
-            "(Qwerty)" -> mService.processKey(skkPrefs.asciiKey)
+            "(Qwerty)" -> {
+                if (mService.engineState.isJapanese)
+                    mService.processKey(skkPrefs.asciiKey)
+                else mService.handleKanaKey()
+                isHankaku = mService.kanaState == SKKHanKanaState
+            }
+
             "(Zenkaku)" -> mService.processKey(skkPrefs.zenkakuKey)
 
             "(Caps)" -> {
@@ -487,20 +509,33 @@ class FlickJPKeyboardView(
             }
 
             "(ShiftToggle)" -> {
+                SKKLog.d("mInMultiTap: $mInMultiTap, mTapCount: $mTapCount")
+                /* if (mInMultiTap && mTapCount != -1) {
+                    isCapsLocked = true; isShifted = true
+                } else { */
                 isShifted = !isShifted; isCapsLocked = false
+                /* } */
                 updateKeyLabels()
             }
 
             else -> { // Literal
-                val isZenkaku = currentAction.startsWith("(Z)")
-                if (isZenkaku) currentAction = currentAction.removePrefix("(Z)")
+                if (currentAction.startsWith("(N)")) {
+                    if (!mService.isComposingN) mService.processKey('n')
+                    currentAction = currentAction.removePrefix("(N)")
+                }
+                val inZenkaku = currentAction.startsWith("(Z)")
+                if (inZenkaku) currentAction = currentAction.removePrefix("(Z)")
 
                 mService.suspendCompletion()
-                currentAction.forEachIndexed { index, char ->
-                    val c = if (index == 0 && char.isLowerCase() && isShifted)
-                        char.uppercaseChar() else char
-                    if (isZenkaku) mService.processKeyIn(SKKZenkakuState, c)
-                    else mService.processKey(c)
+                run loop@{
+                    currentAction.forEachIndexed { index, char ->
+                        val c = if (index == 0 && char.isLowerCase() && isShifted)
+                            char.uppercaseChar() else char
+                        if (inZenkaku) mService.processKeyIn(SKKZenkakuState, c)
+                        else mService.processKey(c)
+                        // ▼モードになっていたら次で確定してしまうので止まる
+                        if (mService.engineState.hasCandidates) return@loop
+                    }
                 }
                 mService.resumeCompletion()
             }

@@ -101,7 +101,7 @@ object SKKOkuriganaState : SKKState {
 
     override fun handleCancel(context: SKKEngine, reconvert: Boolean): Boolean {
         context.apply {
-            if (skkPrefs.preferFlick) mComposing.setLength(0) // Flickでアルファベットが残っても困る
+            if (skkPrefs.softKeyboardType != "qwerty") mComposing.setLength(0) // Flickでアルファベットが残っても困る
             mOkurigana = ""
             if (isAlphabet(mKanjiKey.last().code)) mKanjiKey.deleteLast() // composing と同じ子音アルファベットのはず
             changeState(SKKPreeditState)

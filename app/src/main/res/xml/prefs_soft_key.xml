@@ -34,41 +34,16 @@
         <androidx.preference.PreferenceCategory
             app:iconSpaceReserved="false"
             app:title="日本語キーボード">
+            <androidx.preference.DropDownPreference
+                app:defaultValue="switch"
+                app:entries="@array/soft_keyboard_type_entries"
+                app:entryValues="@array/soft_keyboard_type_values"
+                app:icon="@android:drawable/ic_dialog_dialer"
+                app:key="@string/pref_soft_keyboard_type"
+                app:title="ソフトキーボードの種類"
+                app:useSimpleSummaryProvider="true" />
             <androidx.preference.CheckBoxPreference
                 app:defaultValue="true"
-                app:iconSpaceReserved="false"
-                app:key="@string/pref_use_flick"
-                app:summary="オフだと日本語もqwertyキーで入力します"
-                app:title="フリック入力の使用" />
-            <androidx.preference.CheckBoxPreference
-                app:defaultValue="false"
-                app:dependency="@string/pref_use_flick"
-                app:disableDependentsState="false"
-                app:iconSpaceReserved="false"
-                app:key="@string/pref_use_godan"
-                app:summary="標準フリックではなくGodanを使用します"
-                app:title="Godan入力の使用" />
-            <androidx.preference.CheckBoxPreference
-                app:defaultValue="true"
-                app:dependency="@string/pref_use_godan"
-                app:key="@string/pref_godan_simple"
-                app:summary="かな入力のとき見やすくします"
-                app:title="Godan表示の簡素化" />
-            <androidx.preference.CheckBoxPreference
-                app:defaultValue="false"
-                app:dependency="@string/pref_use_godan"
-                app:key="@string/pref_godan_qwerty"
-                app:summary="オフだと英数もGodanで入力します"
-                app:title="Godanとqwertyの併用" />
-            <androidx.preference.CheckBoxPreference
-                app:defaultValue="false"
-                app:dependency="@string/pref_use_godan"
-                app:key="@string/pref_godan_swap_qc"
-                app:summary="「下シフト」の後に交換されます"
-                app:title="GodanでQとキャンセルの交換" />
-            <androidx.preference.CheckBoxPreference
-                app:defaultValue="true"
-                app:disableDependentsState="false"
                 app:iconSpaceReserved="false"
                 app:key="@string/pref_use_popup"
                 app:summary="フリック入力用のガイドを表示します"
@@ -95,31 +70,10 @@
                 app:summary="固定オフでこの値が 0 だと指の真下になり実質見えません"
                 app:title="ポップアップの上下ずらし" />
             <androidx.preference.CheckBoxPreference
-                app:defaultValue="false"
-                app:disableDependentsState="true"
-                app:iconSpaceReserved="false"
-                app:key="@string/pref_use_soft_cancel_key"
-                app:summary="小文字キーとキャンセルキーの操作を交換します (上フリックで小文字)"
-                app:title="キャンセルキーの使用" />
-            <androidx.preference.CheckBoxPreference
                 app:defaultValue="true"
-                app:dependency="@string/pref_use_soft_cancel_key"
-                app:disableDependentsState="false"
-                app:key="@string/pref_use_soft_trans_key"
-                app:summary="小文字キーが連打で濁点や半濁点にもなります"
-                app:title="「◻゙□゚」の使用" />
-            <androidx.preference.CheckBoxPreference
-                app:defaultValue="false"
-                app:dependency="@string/pref_use_soft_trans_key"
                 app:key="@string/pref_use_small_k"
                 app:summary="「◻゙□゚」で「かけカケ」を小さくします"
                 app:title="小書きカケの使用" />
-            <androidx.preference.CheckBoxPreference
-                app:defaultValue="true"
-                app:iconSpaceReserved="false"
-                app:key="@string/pref_exchange_shift_kana"
-                app:summary="かなキー (Godanではキャンセルキー) が上でシフトキーが下になります"
-                app:title="下シフトキーの使用" />
         </androidx.preference.PreferenceCategory>
 
         <androidx.preference.PreferenceCategory

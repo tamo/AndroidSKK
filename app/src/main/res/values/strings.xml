@@ -150,6 +150,11 @@
     <string name="pref_forbid_paste" translatable="false">PrefKeyForbidPaste</string>
     <string name="pref_use_del" translatable="false">PrefKeyUseDel</string>
 
+    <string name="pref_soft_keyboard_type" translatable="false">PrefKeySoftKeyboardType</string>
+    <string name="menu_flick_rule_load_godan">Godanを読み込む</string>
+    <string name="menu_flick_rule_load_godan_simple">簡易表示 Godan を読み込む</string>
+    <string name="message_confirm_load_godan_rule">Godanのフリックルールを読み込みますか？\n(現在の設定は上書きされます)</string>
+
     <string name="pref_dict_order" translatable="false">PrefKeyDicsOrder</string>
 
     <string name="btree_name" translatable="false">skk_dict</string>

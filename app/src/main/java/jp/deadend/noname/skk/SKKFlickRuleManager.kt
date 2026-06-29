@@ -87,6 +87,23 @@ class SKKFlickRuleManager : AppCompatActivity() {
         when (item.itemId) {
             android.R.id.home -> finish()
 
+            R.id.menu_flick_rule_load_godan, R.id.menu_flick_rule_load_godan_simple -> {
+                val isSimple = item.itemId == R.id.menu_flick_rule_load_godan_simple
+                val dialog = ConfirmationDialogFragment.newInstance(
+                    getString(R.string.message_confirm_load_godan_rule)
+                )
+                dialog.setListener(object : ConfirmationDialogFragment.Listener {
+                    override fun onPositiveClick() {
+                        SKKFlickRule.loadGodan(this@SKKFlickRuleManager, isSimple)
+                        isModified = true
+                        updateEditorText()
+                    }
+
+                    override fun onNegativeClick() {}
+                })
+                dialog.show(supportFragmentManager, "dialog")
+            }
+
             R.id.menu_flick_rule_select -> {
                 selectFileLauncher.launch(arrayOf("*/*"))
             }

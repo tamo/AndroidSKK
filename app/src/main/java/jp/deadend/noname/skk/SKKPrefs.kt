@@ -231,6 +231,13 @@ class SKKPrefs(context: Context) {
             else putString(res.getString(R.string.pref_use_soft_key), value)
         }
 
+    var softKeyboardType: String
+        get() = prefs.getString(res.getString(R.string.pref_soft_keyboard_type), null) ?: "switch"
+        set(value) = prefs.edit {
+            if (value == "switch") remove(res.getString(R.string.pref_soft_keyboard_type))
+            else putString(res.getString(R.string.pref_soft_keyboard_type), value)
+        }
+
     var showStatusIcon: Boolean
         get() = prefs.getBoolean(res.getString(R.string.pref_show_status_icon), true)
         set(value) = prefs.edit {
@@ -238,40 +245,6 @@ class SKKPrefs(context: Context) {
             else putBoolean(res.getString(R.string.pref_show_status_icon), false)
         }
 
-    var preferFlick: Boolean
-        get() = prefs.getBoolean(res.getString(R.string.pref_use_flick), true)
-        set(value) = prefs.edit {
-            if (value) remove(res.getString(R.string.pref_use_flick))
-            else putBoolean(res.getString(R.string.pref_use_flick), false)
-        }
-
-    var preferGodan: Boolean
-        get() = prefs.getBoolean(res.getString(R.string.pref_use_godan), false)
-        set(value) = prefs.edit {
-            if (!value) remove(res.getString(R.string.pref_use_godan))
-            else putBoolean(res.getString(R.string.pref_use_godan), true)
-        }
-
-    var simpleGodan: Boolean
-        get() = prefs.getBoolean(res.getString(R.string.pref_godan_simple), true)
-        set(value) = prefs.edit {
-            if (value) remove(res.getString(R.string.pref_godan_simple))
-            else putBoolean(res.getString(R.string.pref_godan_simple), false)
-        }
-
-    var godanQwerty: Boolean
-        get() = prefs.getBoolean(res.getString(R.string.pref_godan_qwerty), false)
-        set(value) = prefs.edit {
-            if (!value) remove(res.getString(R.string.pref_godan_qwerty))
-            else putBoolean(res.getString(R.string.pref_godan_qwerty), true)
-        }
-
-    var swapQCxl: Boolean
-        get() = prefs.getBoolean(res.getString(R.string.pref_godan_swap_qc), true)
-        set(value) = prefs.edit {
-            if (value) remove(res.getString(R.string.pref_godan_swap_qc))
-            else putBoolean(res.getString(R.string.pref_godan_swap_qc), false)
-        }
 
     var usePopup: Boolean
         get() = prefs.getBoolean(res.getString(R.string.pref_use_popup), true)
@@ -301,19 +274,6 @@ class SKKPrefs(context: Context) {
             else putInt(res.getString(R.string.pref_finger_offset), value)
         }
 
-    var useSoftCancelKey: Boolean
-        get() = prefs.getBoolean(res.getString(R.string.pref_use_soft_cancel_key), false)
-        set(value) = prefs.edit {
-            if (!value) remove(res.getString(R.string.pref_use_soft_cancel_key))
-            else putBoolean(res.getString(R.string.pref_use_soft_cancel_key), true)
-        }
-
-    var useSoftTransKey: Boolean
-        get() = prefs.getBoolean(res.getString(R.string.pref_use_soft_trans_key), true)
-        set(value) = prefs.edit {
-            if (value) remove(res.getString(R.string.pref_use_soft_trans_key))
-            else putBoolean(res.getString(R.string.pref_use_soft_trans_key), false)
-        }
 
     var useSmallK: Boolean
         get() = prefs.getBoolean(res.getString(R.string.pref_use_small_k), false)
@@ -322,12 +282,6 @@ class SKKPrefs(context: Context) {
             else putBoolean(res.getString(R.string.pref_use_small_k), true)
         }
 
-    var changeShift: Boolean
-        get() = prefs.getBoolean(res.getString(R.string.pref_exchange_shift_kana), true)
-        set(value) = prefs.edit {
-            if (value) remove(res.getString(R.string.pref_exchange_shift_kana))
-            else putBoolean(res.getString(R.string.pref_exchange_shift_kana), false)
-        }
 
     var longPressTimeout: Int
         get() = prefs.getInt(res.getString(R.string.pref_long_press_timeout), 500)

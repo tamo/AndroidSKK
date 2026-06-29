@@ -92,8 +92,8 @@ class AbbrevKeyboardView @JvmOverloads constructor(
 
             KEYCODE_ABBREV_ENTER -> if (!mService.handleEnter()) mService.pressEnter()
             KEYCODE_ABBREV_TO_JP -> when (isFlicked) {
-                if (skkPrefs.preferFlick) FLICK_NONE else FLICK_DOWN -> mService.handleEnter() // 確定
-                if (skkPrefs.preferFlick) FLICK_DOWN else FLICK_NONE -> mService.handleKanaKey()
+                if (skkPrefs.softKeyboardType != "qwerty") FLICK_NONE else FLICK_DOWN -> mService.handleEnter() // 確定
+                if (skkPrefs.softKeyboardType != "qwerty") FLICK_DOWN else FLICK_NONE -> mService.handleKanaKey()
             }
 
             KEYCODE_ABBREV_ZENKAKU -> {
@@ -131,8 +131,8 @@ class AbbrevKeyboardView @JvmOverloads constructor(
 
     override fun setKeyState(state: SKKState): AbbrevKeyboardView {
         keyboard.keys.find { it.codes.main[0] == KEYCODE_ABBREV_TO_JP }?.labels.let {
-            it?.main = if (skkPrefs.preferFlick) "確定" else "かな"
-            it?.down = if (skkPrefs.preferFlick) "かな" else "確定"
+            it?.main = if (skkPrefs.softKeyboardType != "qwerty") "確定" else "かな"
+            it?.down = if (skkPrefs.softKeyboardType != "qwerty") "かな" else "確定"
         }
 
         invalidateAllKeys()

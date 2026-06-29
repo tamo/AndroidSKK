@@ -147,7 +147,7 @@ class QwertyKeyboardView @JvmOverloads constructor(
 
             KEYCODE_QWERTY_TO_JP -> when (flick) {
                 flickUp -> mService.pasteClip()
-                if (skkPrefs.preferFlick) flickNone else FLICK_DOWN -> mService.changeToFlick()
+                if (skkPrefs.softKeyboardType != "qwerty") flickNone else FLICK_DOWN -> mService.changeToFlick()
                 else -> mService.handleKanaKey()
             }
 
@@ -217,9 +217,11 @@ class QwertyKeyboardView @JvmOverloads constructor(
     override fun setKeyState(state: SKKState): QwertyKeyboardView {
         findKeyByCode(KEYCODE_QWERTY_TO_JP)?.let { kanaKey ->
             val kanaLabel = if (state.isTransient) "確定" else "かな"
-            val flickLabel = if (skkPrefs.preferGodan) "Godan" else "Flick"
-            kanaKey.labels.main = if (skkPrefs.preferFlick) flickLabel else kanaLabel
-            kanaKey.labels.down = if (skkPrefs.preferFlick) kanaLabel else flickLabel
+            val flickLabel = "Flick"
+            kanaKey.labels.main =
+                if (skkPrefs.softKeyboardType != "qwerty") flickLabel else kanaLabel
+            kanaKey.labels.down =
+                if (skkPrefs.softKeyboardType != "qwerty") kanaLabel else flickLabel
             kanaKey.on = state is SKKHiraganaState // Kanji とか Choose とかで消えるのがイヤなら以下にする
             // kanaKey.on = (state.isJapanese && mService.isHiragana)
         }

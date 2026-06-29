@@ -100,10 +100,9 @@ object SKKKanaRule {
         file.writeText(defaultRule)
     }
 
-    fun loadAzik(context: Context) {
-        val file = File(context.filesDir, INTERNAL_FILE_NAME)
-        val defaultRule = context.resources.assets.open(AZIK_RULE_FILE)
+    fun loadAzik(context: Context) = runCatching {
+        val rule = context.resources.assets.open(AZIK_RULE_FILE)
             .bufferedReader().use { it.readText() }
-        file.writeText(defaultRule)
-    }
+        File(context.filesDir, INTERNAL_FILE_NAME).writeText(rule)
+    }.onFailure { SKKLog.e("loadAzik failed", it) }
 }

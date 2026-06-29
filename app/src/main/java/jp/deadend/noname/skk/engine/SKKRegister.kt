@@ -79,7 +79,7 @@ class SKKRegister(private val engine: SKKEngine) {
         mKanjiKey.set(regInfo.key).lastOrNull()?.let { maybeComposing ->
             if (isAlphabet(maybeComposing.code)) {
                 mKanjiKey.deleteAtCursor()
-                if (!skkPrefs.preferFlick) { // Flickでアルファベットがあっても困る
+                if (skkPrefs.softKeyboardType == "qwerty") { // Flickでアルファベットがあっても困る
                     mComposing.append(maybeComposing)
                 }
             }

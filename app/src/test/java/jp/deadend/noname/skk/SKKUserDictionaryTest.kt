@@ -15,10 +15,11 @@ class SKKUserDictionaryTest {
             SKKStore::class.java,
             Boolean::class.java,
             String::class.java,
-            String::class.java
+            String::class.java,
+            Boolean::class.java
         )
         constructor.isAccessible = true
-        return constructor.newInstance(store, isASCII, "path", "btree") as SKKUserDictionary
+        return constructor.newInstance(store, isASCII, "path", "btree", false) as SKKUserDictionary
     }
 
     @Test

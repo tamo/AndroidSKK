@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Keyboard xmlns:app="http://schemas.android.com/apk/res-auto"
+    app:hGap="0dip"
+    app:height="8%p"
+    app:repeatable="true"
+    app:vGap="0dip"
+    app:width="20%p">
+    <Row>
+        <Key app:codes="-1000" />
+        <Key app:codes="-1001" />
+        <Key app:codes="-1002" />
+        <Key app:codes="-1003" />
+        <Key app:codes="-1004" />
+    </Row>
+    <Row>
+        <Key app:codes="-1005" />
+        <Key app:codes="-1006" />
+        <Key app:codes="-1007" />
+        <Key app:codes="-1008" />
+        <Key app:codes="-1009" />
+    </Row>
+    <Row>
+        <Key app:codes="-1010" />
+        <Key app:codes="-1011" />
+        <Key app:codes="-1012" />
+        <Key app:codes="-1013" />
+        <Key app:codes="-1014" />
+    </Row>
+    <Row>
+        <Key app:codes="-1015" />
+        <Key app:codes="-1016" />
+        <Key app:codes="-1017" />
+        <Key app:codes="-1018" />
+        <Key
+            app:codes="-1019"
+            app:height="16%p"
+            app:icon="@drawable/ic_keyboard_return" />
+    </Row>
+    <Row app:edge="bottom">
+        <Key app:codes="-1020" />
+        <Key app:codes="-1021" />
+        <Key app:codes="-1022" />
+        <Key app:codes="-1023" />
+    </Row>
+</Keyboard>
