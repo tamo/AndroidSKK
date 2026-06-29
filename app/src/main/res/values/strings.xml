@@ -29,6 +29,7 @@
     <string name="label_tools_no_entry_found">エントリがありません</string>
 
     <string name="label_kana_rule_manager_activity">SKK ローマ字かな変換ルール</string>
+    <string name="label_flick_rule_manager_activity">フリックキーボード定義</string>
     <string name="label_kana_rule_select">ファイルを選択</string>
     <string name="label_kana_rule_azik">AZIK 風ルールで上書き</string>
     <string name="label_kana_rule_clear">初期化</string>
@@ -56,7 +57,9 @@
 
     <string name="message_confirm_load_azik_rule">現在の変換ルールを AZIK 風の設定で上書きしますか？</string>
     <string name="message_confirm_clear_kana_rule">ローマ字かな変換ルールをデフォルトに戻しますか？</string>
+    <string name="message_confirm_clear_flick_rule">フリックキーボードをデフォルトに戻しますか？</string>
     <string name="hint_kana_rule_editor">#コメント\nka,か\nna,な</string>
+    <string name="hint_flick_rule_editor">#コメント\nキー番号,キーラベル,ラベル0,アクション0,ラベル1,アクション1,…</string>
 
     <string name="error_kana_rule_load">ファイルを読み込めませんでした</string>
     <string name="error_access_failed">アクセスできません: %1$s</string>

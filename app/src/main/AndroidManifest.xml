@@ -67,6 +67,11 @@
             android:launchMode="singleInstance"
             android:theme="@style/Theme.AppCompat.DayNight.NoActionBar" />
         <activity
+            android:name=".SKKFlickRuleManager"
+            android:label="@string/label_flick_rule_manager_activity"
+            android:launchMode="singleInstance"
+            android:theme="@style/Theme.AppCompat.DayNight.NoActionBar" />
+        <activity
             android:name=".SKKMushroom"
             android:label="@string/label_mushroom"
             android:theme="@style/Theme.AppCompat.DayNight.Dialog" />

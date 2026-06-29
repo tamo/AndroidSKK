@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/menu_flick_rule_select"
+        android:icon="@drawable/ic_add"
+        android:title="@string/label_kana_rule_select"
+        app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/menu_flick_rule_clear"
+        android:title="@string/label_kana_rule_clear"
+        app:showAsAction="never" />
+</menu>

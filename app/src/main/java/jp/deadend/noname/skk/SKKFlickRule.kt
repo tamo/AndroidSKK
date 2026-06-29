@@ -36,7 +36,7 @@ object SKKFlickRule {
 
     fun getInternalFile(context: Context): File {
         val file = File(context.filesDir, INTERNAL_FILE_NAME)
-        if (BuildConfig.DEBUG || !file.exists()) clear(context) // TODO: remove debug
+        if (!file.exists()) clear(context)
         return file
     }
 

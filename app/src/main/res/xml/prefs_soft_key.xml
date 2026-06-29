@@ -22,6 +22,14 @@
             app:key="@string/pref_show_status_icon"
             app:summary="ソフトウェアキーボード使用時にも「あ」「ア」「Ａ」「ab」といった状態を表示します"
             app:title="ステータスアイコンの表示" />
+        <androidx.preference.Preference
+            app:icon="@android:drawable/ic_menu_edit"
+            app:title="@string/label_flick_rule_manager_activity">
+            <intent
+                android:action="android.intent.action.MAIN"
+                android:targetClass="jp.deadend.noname.skk.SKKFlickRuleManager"
+                android:targetPackage="jp.deadend.noname.skk" />
+        </androidx.preference.Preference>
 
         <androidx.preference.PreferenceCategory
             app:iconSpaceReserved="false"
