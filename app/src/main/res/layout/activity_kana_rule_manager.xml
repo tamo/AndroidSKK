@@ -19,6 +19,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:autofillHints="romaji"
+            android:fontFamily="monospace"
             android:hint="@string/hint_kana_rule_editor"
             android:inputType="textMultiLine|textNoSuggestions" />
     </ScrollView>
