@@ -14,7 +14,15 @@
             app:entryValues="@array/use_soft_key_values"
             app:icon="@android:drawable/ic_dialog_dialer"
             app:key="@string/pref_use_soft_key"
-            app:title="ソフトウェアキーボードの表示"
+            app:title="表示の有無"
+            app:useSimpleSummaryProvider="true" />
+        <androidx.preference.DropDownPreference
+            app:defaultValue="switch"
+            app:entries="@array/soft_keyboard_type_entries"
+            app:entryValues="@array/soft_keyboard_type_values"
+            app:icon="@android:drawable/ic_dialog_dialer"
+            app:key="@string/pref_soft_keyboard_type"
+            app:title="種類の切替"
             app:useSimpleSummaryProvider="true" />
         <androidx.preference.CheckBoxPreference
             app:defaultValue="true"
@@ -22,26 +30,18 @@
             app:key="@string/pref_show_status_icon"
             app:summary="ソフトウェアキーボード使用時にも「あ」「ア」「Ａ」「ab」といった状態を表示します"
             app:title="ステータスアイコンの表示" />
-        <androidx.preference.Preference
-            app:icon="@android:drawable/ic_menu_edit"
-            app:title="@string/label_flick_rule_manager_activity">
-            <intent
-                android:action="android.intent.action.MAIN"
-                android:targetClass="jp.deadend.noname.skk.SKKFlickRuleManager"
-                android:targetPackage="jp.deadend.noname.skk" />
-        </androidx.preference.Preference>
 
         <androidx.preference.PreferenceCategory
             app:iconSpaceReserved="false"
             app:title="日本語キーボード">
-            <androidx.preference.DropDownPreference
-                app:defaultValue="switch"
-                app:entries="@array/soft_keyboard_type_entries"
-                app:entryValues="@array/soft_keyboard_type_values"
-                app:icon="@android:drawable/ic_dialog_dialer"
-                app:key="@string/pref_soft_keyboard_type"
-                app:title="ソフトキーボードの種類"
-                app:useSimpleSummaryProvider="true" />
+            <androidx.preference.Preference
+                app:icon="@android:drawable/ic_menu_edit"
+                app:title="@string/label_flick_rule_manager_activity">
+                <intent
+                    android:action="android.intent.action.MAIN"
+                    android:targetClass="jp.deadend.noname.skk.SKKFlickRuleManager"
+                    android:targetPackage="jp.deadend.noname.skk" />
+            </androidx.preference.Preference>
             <androidx.preference.CheckBoxPreference
                 app:defaultValue="true"
                 app:iconSpaceReserved="false"
@@ -71,6 +71,7 @@
                 app:title="ポップアップの上下ずらし" />
             <androidx.preference.CheckBoxPreference
                 app:defaultValue="true"
+                app:iconSpaceReserved="false"
                 app:key="@string/pref_use_small_k"
                 app:summary="「◻゙□゚」で「かけカケ」を小さくします"
                 app:title="小書きカケの使用" />

@@ -53,7 +53,7 @@
                 app:entryValues="@array/theme_values"
                 app:icon="@android:drawable/ic_dialog_dialer"
                 app:key="@string/pref_theme"
-                app:title="テーマの強制"
+                app:title="テーマの手動設定"
                 app:useSimpleSummaryProvider="true" />
             <androidx.preference.CheckBoxPreference
                 app:defaultValue="false"
