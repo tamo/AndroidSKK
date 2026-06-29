@@ -57,8 +57,12 @@ internal inline val Int.metaState: Int
 internal inline val Int.charCode: Int
     get() {
         val code = this and CHAR_CODE_MASK
-        return if (this and RAW_KEYCODE != 0) code
-        else KeyEvent.keyCodeFromString(Char(code).uppercaseChar().toString())
+        if (this and RAW_KEYCODE != 0) return code
+        val name = when (code) {
+            32 -> "SPACE" // keyCodeFromString(" ") は 0 (KEYCODE_UNKNOWN) を返す
+            else -> Char(code).uppercaseChar().toString()
+        }
+        return KeyEvent.keyCodeFromString(name)
     }
 
 fun getKeyName(key: Int): String {
