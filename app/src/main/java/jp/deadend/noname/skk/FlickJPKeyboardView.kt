@@ -519,9 +519,9 @@ class FlickJPKeyboardView(
             }
 
             else -> { // Literal
-                if (currentAction.startsWith("(N)")) {
+                if (currentAction.startsWith("(n)")) {
                     if (!mService.isComposingN) mService.processKey('n')
-                    currentAction = currentAction.removePrefix("(N)")
+                    currentAction = currentAction.removePrefix("(n)")
                 }
                 val inZenkaku = currentAction.startsWith("(Z)")
                 if (inZenkaku) currentAction = currentAction.removePrefix("(Z)")
