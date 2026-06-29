@@ -19,6 +19,7 @@ import jp.deadend.noname.skk.engine.SKKHanKanaState
 import jp.deadend.noname.skk.engine.SKKHiraganaState
 import jp.deadend.noname.skk.engine.SKKKatakanaState
 import jp.deadend.noname.skk.engine.SKKState
+import jp.deadend.noname.skk.engine.SKKZenkakuState
 import jp.deadend.noname.skk.engine.convertTo
 import java.util.EnumSet
 import kotlin.math.ceil
@@ -491,11 +492,15 @@ class FlickJPKeyboardView(
             }
 
             else -> { // Literal
+                val isZenkaku = currentAction.startsWith("(Z)")
+                if (isZenkaku) currentAction = currentAction.removePrefix("(Z)")
+
                 mService.suspendCompletion()
                 currentAction.forEachIndexed { index, char ->
                     val c = if (index == 0 && char.isLowerCase() && isShifted)
                         char.uppercaseChar() else char
-                    mService.processKey(c.code)
+                    if (isZenkaku) mService.processKeyIn(SKKZenkakuState, c)
+                    else mService.processKey(c)
                 }
                 mService.resumeCompletion()
             }
@@ -514,8 +519,8 @@ class FlickJPKeyboardView(
     }
 
     override fun onPress(primaryCode: Int) {
-        //val index = keyboard.keys.indexOfFirst { it.codes.main[0] == primaryCode }
-        val index = -(primaryCode + 1000)
+        // val index = -(primaryCode + 1000) はシフトキーが code 変更するため破綻
+        val index = keyboard.keys.indexOfFirst { it.codes.main[0] == primaryCode }
         val config = getFlickRule(index)
         if (mFlickState == EnumSet.of(FlickState.NONE)) {
             mLastPressedIndex = index
@@ -572,8 +577,7 @@ class FlickJPKeyboardView(
     }
 
     override fun onKey(primaryCode: Int) {
-        //val keyIndex = keyboard.keys.indexOfFirst { it.codes.main[0] == primaryCode }
-        val keyIndex = -(primaryCode + 1000)
+        val keyIndex = keyboard.keys.indexOfFirst { it.codes.main[0] == primaryCode }
         val config = getFlickRule(keyIndex)
         val action = config?.actions?.get(0) ?: ""
 

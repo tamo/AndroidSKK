@@ -45,21 +45,21 @@ object SKKFlickRule {
         var currentSection = "JP"
 
         for (line in text.lines()) {
-            val trimmed = line.trim()
-            if (trimmed.isEmpty() || trimmed.startsWith("#")) continue
-            if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
-                currentSection = trimmed.removeSurrounding("[", "]")
+            // スペース等も使うので trim() しない
+            if (line.isEmpty() || line.startsWith("#")) continue
+            if (line.startsWith("[") && line.endsWith("]")) {
+                currentSection = line.removeSurrounding("[", "]")
                 continue
             }
 
-            val fields = trimmed.split(",").map {
+            val fields = line.split(",").map {
                 it.replace("(Comma)", ",")
                     .replace("\\n", "\n")
             }
             if (fields.size < 2) continue
 
             var idx = 0
-            val idStr = fields[idx++].trim()
+            val idStr = fields[idx++]
             val isShifted = idStr.endsWith("S")
             val id = idStr.removeSuffix("S").toIntOrNull() ?: continue
 
@@ -70,8 +70,8 @@ object SKKFlickRule {
             for (i in 0 until 15) {
                 val labelIdx = idx + i * 2
                 val actionIdx = idx + 1 + i * 2
-                if (labelIdx < fields.size) labels[i] = fields[labelIdx].trim()
-                if (actionIdx < fields.size) actions[i] = fields[actionIdx].trim()
+                if (labelIdx < fields.size) labels[i] = fields[labelIdx]
+                if (actionIdx < fields.size) actions[i] = fields[actionIdx]
 
                 if (actions[i].isEmpty() && labels[i].isNotEmpty())
                     actions[i] = "(Commit)" +
