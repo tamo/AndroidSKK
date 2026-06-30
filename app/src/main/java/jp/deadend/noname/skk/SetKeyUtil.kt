@@ -47,6 +47,9 @@ fun encodeKey(charCode: Int, metaState: Int = 0): Int {
 
 internal inline val Int.lowerCode: Int get() = this and CHAR_CODE_MASK
 internal inline val Int.isShifted: Boolean get() = (this and SHIFT_PRESSED) != 0
+internal inline val Int.upperChar: Char get() = Char(this.lowerCode).uppercaseChar()
+internal inline val Int.char: Char get() = if (this.isShifted) this.upperChar else Char(this.lowerCode)
+internal inline val Int.upper: Int get() = this or SHIFT_PRESSED
 
 internal inline val Int.metaState: Int
     get() = (if (this and META_PRESSED != 0) KeyEvent.META_META_ON else 0) or

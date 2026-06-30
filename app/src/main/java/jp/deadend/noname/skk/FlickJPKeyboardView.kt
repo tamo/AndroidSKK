@@ -16,6 +16,7 @@ import androidx.core.content.ContextCompat
 import jp.deadend.noname.skk.databinding.PopupFlickguideBinding
 import jp.deadend.noname.skk.engine.SKKEngine
 import jp.deadend.noname.skk.engine.SKKHanKanaState
+import jp.deadend.noname.skk.engine.SKKHiraganaState
 import jp.deadend.noname.skk.engine.SKKState
 import jp.deadend.noname.skk.engine.SKKZenkakuState
 import jp.deadend.noname.skk.engine.convertTo
@@ -26,15 +27,12 @@ class FlickJPKeyboardView(
     context: Context, attrs: AttributeSet?
 ) : KeyboardView(context, attrs), OnKeyboardActionListener {
     private var mLastPressedIndex = -1
-    private var mLastPressedAction = ""
     private var mProcessedOnKey = false
     private var mIsASCII = false
     private var mFlickState = EnumSet.of(FlickState.NONE)
     private var mFlickStartX = -1f
     private var mFlickStartY = -1f
-    private val mArrowPressed: Boolean
-        get() = mLastPressedAction == SKKFlickRule.ACTION_DPAD_LEFT ||
-                mLastPressedAction == SKKFlickRule.ACTION_DPAD_RIGHT
+    private var mArrowPressed: Boolean = false
     private var mArrowFlicked = false
     private var mArrowStartX = -1f
     private var mArrowStartY = -1f
@@ -91,10 +89,10 @@ class FlickJPKeyboardView(
         return if (isShifted) pair?.second ?: pair?.first else pair?.first
     }
 
-    private fun FlickKeyConfig?.getAction(actionIndex: Int = 0): String =
-        this?.actions?.getOrNull(actionIndex) ?: ""
+    private fun FlickKeyConfig?.getAction(actionIndex: Int = 0): FlickAction =
+        this?.actions?.getOrNull(actionIndex) ?: FlickAction.EMPTY
 
-    private fun getKeyAction(keyIndex: Int, actionIndex: Int = 0): String =
+    private fun getKeyAction(keyIndex: Int, actionIndex: Int = 0): FlickAction =
         getConfig(keyIndex).getAction(actionIndex)
 
     private fun getKeyLabel(config: FlickKeyConfig): String {
@@ -137,7 +135,8 @@ class FlickJPKeyboardView(
                 key.icon = getIcon(config.label)
                 if (key.icon != null) key.labels.main = ""
 
-                when (val action = config.getAction(0)) {
+                val action = config.getAction(0)
+                when (action.text) {
                     // KEYCODE_SHIFT にしておくと Keyboard でシフト on してくれる
                     // codes を 2 つ入れておかないとダブルタップの判定がスキップされる (2 つ目の中身は関係ない)
                     SKKFlickRule.ACTION_TOGGLE_SHIFT -> key.codes = Keyboard.Key
@@ -145,9 +144,9 @@ class FlickJPKeyboardView(
 
                     SKKFlickRule.ACTION_KBD_QWERTY -> key.on = mIsASCII
 
-                    // FIXME: 'q' ならいいけど Ctrl-q などを表現する機能がない
-                    else if action.length == 1 && encodeKey(action[0].code) == skkPrefs.katakanaKey ->
-                        key.on = !mIsASCII && !mService.isHiragana
+                    SKKFlickRule.ACTION_KATAKANA -> key.on = !mIsASCII && !mService.isHiragana
+                    //else if action.codes.size == 1 && action.codes[0] == skkPrefs.katakanaKey ->
+                    //    key.on = !mIsASCII && !mService.isHiragana
                 }
             }
             kb.reloadShiftKeys()
@@ -436,16 +435,16 @@ class FlickJPKeyboardView(
         }
     }
 
-    private fun executeAction(action: String) {
-        if (action.isEmpty()) return
+    private fun executeAction(action: FlickAction) {
+        if (action.codes.isEmpty()) return
 
         var currentAction = action
-        if (currentAction.startsWith(SKKFlickRule.ACTION_COMMIT_CANDIDATE)) {
+        if (currentAction.text.startsWith(SKKFlickRule.ACTION_COMMIT_CANDIDATE)) {
             if (mService.engineState.hasCandidates) mService.handleEnter()
             currentAction = currentAction.removePrefix(SKKFlickRule.ACTION_COMMIT_CANDIDATE)
         }
 
-        when (currentAction) {
+        when (currentAction.text) {
             SKKFlickRule.ACTION_SMALL_LAST -> mService.changeLastChar(SKKEngine.LAST_CONVERSION_SMALL)
             SKKFlickRule.ACTION_DAKUTEN_LAST -> mService.changeLastChar(SKKEngine.LAST_CONVERSION_DAKUTEN)
             SKKFlickRule.ACTION_HANDAKUTEN_LAST -> mService.changeLastChar(SKKEngine.LAST_CONVERSION_HANDAKUTEN)
@@ -496,6 +495,11 @@ class FlickJPKeyboardView(
                     mJPKeyboard?.let { keyboard = it }
                 }
 
+            SKKFlickRule.ACTION_KATAKANA -> {
+                if (mIsASCII) mService.handleKanaKey() // ひらがなを経由
+                mService.processKey(skkPrefs.katakanaKey)
+            }
+
             SKKFlickRule.ACTION_HANKAKU_KANA -> {
                 if (mIsASCII) mService.handleKanaKey() // ひらがなを経由
                 mService.processKey(skkPrefs.hankakuKanaKey)
@@ -503,6 +507,7 @@ class FlickJPKeyboardView(
 
             SKKFlickRule.ACTION_KBD_QWERTY ->
                 if (mService.engineState.isJapanese) {
+                    mService.kanaState = SKKHiraganaState // カタカナには戻れないので
                     mService.processKey(skkPrefs.asciiKey)
                 } else {
                     mService.handleKanaKey()
@@ -522,26 +527,26 @@ class FlickJPKeyboardView(
                     isShifted = !isShifted; isCapsLocked = false
                 }
 
-            else if currentAction.startsWith(SKKFlickRule.ACTION_COMMIT) ->
-                mService.commitTextSKK(currentAction.removePrefix(SKKFlickRule.ACTION_COMMIT))
+            else if currentAction.text.startsWith(SKKFlickRule.ACTION_COMMIT) ->
+                mService.commitTextSKK(currentAction.removePrefix(SKKFlickRule.ACTION_COMMIT).text)
 
             else -> {
-                if (currentAction.startsWith(SKKFlickRule.ACTION_DEDUPE_N)) {
+                if (currentAction.text.startsWith(SKKFlickRule.ACTION_DEDUPE_N)) {
                     if (!mService.isComposingN) mService.processKey('n')
                     currentAction = currentAction.removePrefix(SKKFlickRule.ACTION_DEDUPE_N)
                 }
-                val inZenkaku = currentAction.startsWith(SKKFlickRule.ACTION_IN_ZENKAKU)
+                val inZenkaku = currentAction.text.startsWith(SKKFlickRule.ACTION_IN_ZENKAKU)
                 if (inZenkaku) currentAction =
                     currentAction.removePrefix(SKKFlickRule.ACTION_IN_ZENKAKU)
 
                 mService.suspendCompletion()
                 run loop@{
-                    currentAction.forEachIndexed { index, char ->
-                        if (index == currentAction.lastIndex) mService.resumeCompletion()
-                        val c = if (index == 0 && char.isLowerCase() && isShifted)
-                            char.uppercaseChar() else char
-                        if (inZenkaku) mService.processKeyIn(SKKZenkakuState, c)
-                        else mService.processKey(c)
+                    currentAction.codes.forEachIndexed { index, low ->
+                        if (index == currentAction.codes.lastIndex) mService.resumeCompletion()
+                        val (char, code) = if ((index == 0 && isShifted) || low and SHIFT_PRESSED != 0)
+                            low.upperChar to low.upper else low.char to low
+                        if (inZenkaku) mService.processKeyIn(SKKZenkakuState, char)
+                        else mService.processKey(code)
                         // ▼モードになっていたら次で確定してしまうので止まる
                         if (mService.engineState.hasCandidates) return@loop
                     }
@@ -552,7 +557,7 @@ class FlickJPKeyboardView(
     }
 
     override fun onLongPress(key: Keyboard.Key): Boolean = when {
-        getKeyAction(mLastPressedIndex) == SKKFlickRule.ACTION_ENTER -> {
+        getKeyAction(mLastPressedIndex).text == SKKFlickRule.ACTION_ENTER -> {
             mService.pressSearch()
             true
         }
@@ -571,7 +576,10 @@ class FlickJPKeyboardView(
 
         if (mFlickState == EnumSet.of(FlickState.NONE)) {
             mLastPressedIndex = keyIndex
-            mLastPressedAction = config.getAction(0)
+            mArrowPressed = when (config.getAction(0).text) {
+                SKKFlickRule.ACTION_DPAD_LEFT, SKKFlickRule.ACTION_DPAD_RIGHT -> true
+                else -> false
+            }
         }
 
         config.labels.forEachIndexed { i, label ->
@@ -598,7 +606,7 @@ class FlickJPKeyboardView(
         mPopup?.showAtLocation(this, android.view.Gravity.NO_GRAVITY, x, y)
 
         // true だと release して repeat が終わってしまうので
-        val isRepeatable = when (getKeyAction(mLastPressedIndex)) {
+        val isRepeatable = when (getKeyAction(mLastPressedIndex).text) {
             SKKFlickRule.ACTION_BACKSPACE, SKKFlickRule.ACTION_SPACE,
             SKKFlickRule.ACTION_DPAD_LEFT, SKKFlickRule.ACTION_DPAD_RIGHT,
             SKKFlickRule.ACTION_SETTINGS -> true
@@ -624,7 +632,7 @@ class FlickJPKeyboardView(
     override fun onKey(primaryCode: Int) {
         val keyIndex = keyboard.keys.indexOfFirst { it.codes.main[0] == primaryCode }
         mProcessedOnKey = true
-        when (getKeyAction(keyIndex)) {
+        when (getKeyAction(keyIndex).text) {
             SKKFlickRule.ACTION_BACKSPACE ->
                 if (!mService.handleBackspace()) mService.pressDel()
 
@@ -652,16 +660,15 @@ class FlickJPKeyboardView(
     private fun release() {
         val action = getKeyAction(mLastPressedIndex, getFlickIndex(mFlickState))
 
-        if (!mProcessedOnKey && action.isNotEmpty())
-            executeAction(action)
+        if (!mProcessedOnKey) executeAction(action)
 
-        if (action != SKKFlickRule.ACTION_TOGGLE_SHIFT &&
-            action != SKKFlickRule.ACTION_CAPS && !isCapsLocked
+        if (action.text != SKKFlickRule.ACTION_TOGGLE_SHIFT &&
+            action.text != SKKFlickRule.ACTION_CAPS && !isCapsLocked
         ) isShifted = false
 
         updateKeyLabels(mService.engineState)
 
-        mLastPressedAction = ""
+        mArrowPressed = false
         mLastPressedIndex = -1
         mProcessedOnKey = false
         mFlickState = EnumSet.of(FlickState.NONE)
