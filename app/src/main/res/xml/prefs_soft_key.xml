@@ -36,6 +36,7 @@
             app:title="日本語キーボード">
             <androidx.preference.Preference
                 app:icon="@android:drawable/ic_menu_edit"
+                app:summary="通常のフリックや Godan から選択したり調整したりできます"
                 app:title="@string/label_flick_rule_manager_activity">
                 <intent
                     android:action="android.intent.action.MAIN"

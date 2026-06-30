@@ -69,9 +69,6 @@ class FlickJPKeyboardView(
     override fun onDetachedFromWindow() {
         mPopup?.dismiss()
         super.onDetachedFromWindow()
-        // XXX: 以下は flick ではコメントアウト、godan では有効だった
-        //isShifted = false
-        //isCapsLocked = false
     }
 
     override fun setKeyState(state: SKKState): FlickJPKeyboardView {
@@ -119,7 +116,6 @@ class FlickJPKeyboardView(
             mIsASCII = !it.isJapanese
             isHankaku = it is SKKHanKanaState
             isZenkaku = it is SKKZenkakuState
-            mService.kanaState = it // XXX: flick にはあったが godan にはなかった
         }
 
         val kanaState = mService.kanaState
@@ -481,24 +477,26 @@ class FlickJPKeyboardView(
 
             "(Kana)" -> {
                 if (keyboard == mJPKeyboard) {
-                    mService.processKey(skkPrefs.katakanaKey)
+                    mService.handleKanaKey()
                 } else {
                     mJPKeyboard?.let { keyboard = it }
                 }
-                isHankaku = mService.kanaState == SKKHanKanaState
+                updateKeyLabels(mService.kanaState)
             }
 
             "(HankakuKana)" -> {
                 if (mIsASCII) mService.handleKanaKey() // ひらがなを経由
                 mService.processKey(skkPrefs.hankakuKanaKey)
-                isHankaku = mService.kanaState == SKKHanKanaState
+                updateKeyLabels(mService.kanaState)
             }
 
             "(Qwerty)" -> {
-                if (mService.engineState.isJapanese)
+                if (mService.engineState.isJapanese) {
                     mService.processKey(skkPrefs.asciiKey)
-                else mService.handleKanaKey()
-                isHankaku = mService.kanaState == SKKHanKanaState
+                } else {
+                    mService.handleKanaKey()
+                    updateKeyLabels(mService.kanaState)
+                }
             }
 
             "(Zenkaku)" -> mService.processKey(skkPrefs.zenkakuKey)
