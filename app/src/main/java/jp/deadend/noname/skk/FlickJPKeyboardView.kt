@@ -289,8 +289,6 @@ class FlickJPKeyboardView(
                 mFlickStartY = me.y
                 mArrowStartX = me.x
                 mArrowStartY = me.y
-                val keyIndex = getKeyIndex(me.x.toInt() - paddingLeft, me.y.toInt() - paddingTop)
-                checkMultiTap(me.eventTime, keyIndex)
             }
 
             MotionEvent.ACTION_MOVE -> {
@@ -508,12 +506,11 @@ class FlickJPKeyboardView(
             }
 
             "(ShiftToggle)" -> {
-                SKKLog.d("mInMultiTap: $mInMultiTap, mTapCount: $mTapCount")
-                /* if (mInMultiTap && mTapCount != -1) {
+                if (mInMultiTap && mTapCount == 1) { // ダブルタップで (Caps) と等価
                     isCapsLocked = true; isShifted = true
-                } else { */
-                isShifted = !isShifted; isCapsLocked = false
-                /* } */
+                } else {
+                    isShifted = !isShifted; isCapsLocked = false
+                }
                 updateKeyLabels()
             }
 
