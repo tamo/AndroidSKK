@@ -128,7 +128,7 @@ class FlickJPKeyboardView(
                 if (key.icon != null) key.labels.main = ""
 
                 when (config.actions.getOrNull(0)) {
-                    "(ShiftToggle)" -> key.codes = Keyboard.Key
+                    "(ToggleShift)" -> key.codes = Keyboard.Key
                         .Codes(main = intArrayOf(Keyboard.KEYCODE_SHIFT, Keyboard.KEYCODE_CAPSLOCK))
 
                     "q" -> key.on = !mIsASCII && !mService.isHiragana
@@ -505,7 +505,7 @@ class FlickJPKeyboardView(
                 updateKeyLabels()
             }
 
-            "(ShiftToggle)" -> {
+            "(ToggleShift)" -> {
                 if (mInMultiTap && mTapCount == 1) { // ダブルタップで (Caps) と等価
                     isCapsLocked = true; isShifted = true
                 } else {
@@ -645,7 +645,7 @@ class FlickJPKeyboardView(
 
         if (!mProcessedOnKey && action.isNotEmpty()) executeAction(action)
 
-        if (action != "(ShiftToggle)" && action != "(Caps)" && !isCapsLocked) {
+        if (action != "(ToggleShift)" && action != "(Caps)" && !isCapsLocked) {
             isShifted = false
             updateKeyLabels()
         }
