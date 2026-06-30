@@ -30,6 +30,53 @@ data class FlickKeyConfig(
 }
 
 object SKKFlickRule {
+    internal const val SECTION_MAIN = "Main"
+    internal const val SECTION_ASCII = "ASCII"
+    internal const val SECTION_NUMBER = "Number"
+    internal const val SECTION_VOICE = "Voice"
+
+    internal const val MARKER_KATAKANA_ONLY = "(K)"
+
+    internal const val ACTION_COMMIT = "(Commit)"
+    internal const val ACTION_COMMIT_CANDIDATE = "(N)"
+    internal const val ACTION_DEDUPE_N = "(n)"
+    internal const val ACTION_ZENKAKU = "(Zenkaku)"
+    internal const val ACTION_IN_ZENKAKU = "(Z)"
+    internal const val ACTION_TOGGLE_SHIFT = "(ToggleShift)"
+    internal const val ACTION_CAPS = "(Caps)"
+    internal const val ACTION_KBD_QWERTY = "(KbdQwerty)"
+    internal const val ACTION_ENTER = "(Enter)"
+    internal const val ACTION_BACKSPACE = "(Backspace)"
+    internal const val ACTION_DPAD_LEFT = "(DpadLeft)"
+    internal const val ACTION_DPAD_RIGHT = "(DpadRight)"
+    internal const val ACTION_DPAD_UP = "(DpadUp)"
+    internal const val ACTION_DPAD_DOWN = "(DpadDown)"
+    internal const val ACTION_SETTINGS = "(Settings)"
+    internal const val ACTION_KBD_VOICE = "(KbdVoice)"
+    internal const val ACTION_KBD_NUMBER = "(KbdNumber)"
+    internal const val ACTION_RESET = "(Reset)"
+    internal const val ACTION_HANKAKU_KANA = "(HankakuKana)"
+    internal const val ACTION_SMALL_LAST = "(SmallLast)"
+    internal const val ACTION_DAKUTEN_LAST = "(DakutenLast)"
+    internal const val ACTION_HANDAKUTEN_LAST = "(HandakutenLast)"
+    internal const val ACTION_TRANS_LAST = "(TransLast)"
+    internal const val ACTION_SHIFT_LAST = "(ShiftLast)"
+    internal const val ACTION_CANCEL = "(Cancel)"
+    internal const val ACTION_EMOJI = "(Emoji)"
+    internal const val ACTION_SYMBOL = "(Symbol)"
+    internal const val ACTION_GOOGLE = "(Google)"
+    internal const val ACTION_PASTE = "(Paste)"
+    internal const val ACTION_SPEECH = "(Speech)"
+    internal const val ACTION_MUSHROOM = "(Mushroom)"
+    internal const val ACTION_SPACE = "(Space)"
+
+    internal const val ICON_SHIFT = "(IconShift)"
+    internal const val ICON_BACKSPACE = "(IconBackspace)"
+    internal const val ICON_LEFT = "(IconLeft)"
+    internal const val ICON_RIGHT = "(IconRight)"
+    internal const val ICON_RETURN = "(IconReturn)"
+    internal const val ICON_SPACE = "(IconSpace)"
+
     internal const val INTERNAL_FILE_NAME = "flick-rule.conf"
     private const val DEFAULT_RULE_FILE = "default-flick-rule.conf"
     private const val GODAN_RULE_FILE = "godan-flick-rule.conf"
@@ -44,7 +91,7 @@ object SKKFlickRule {
 
     fun parse(text: String): Map<String, Map<Int, Pair<FlickKeyConfig, FlickKeyConfig?>>> {
         val result = mutableMapOf<String, MutableMap<Int, Pair<FlickKeyConfig, FlickKeyConfig?>>>()
-        var currentSection = "JP"
+        var currentSection = SECTION_MAIN
 
         for (line in text.lines()) {
             // スペース等も使うので trim() しない
@@ -76,9 +123,7 @@ object SKKFlickRule {
                 if (actionIdx < fields.size) actions[i] = fields[actionIdx]
 
                 if (actions[i].isEmpty() && labels[i].isNotEmpty())
-                    actions[i] = "(Commit)" +
-                            if (labels[i].startsWith("(K)")) labels[i].removePrefix("(K)")
-                            else labels[i]
+                    actions[i] = ACTION_COMMIT + labels[i].removePrefix(MARKER_KATAKANA_ONLY)
             }
 
             val config = FlickKeyConfig(label, labels, actions)
