@@ -118,13 +118,11 @@ class FlickJPKeyboardView(
             isZenkaku = it is SKKZenkakuState
         }
 
-        val kanaState = mService.kanaState
-
         for (kb in listOfNotNull(mJPKeyboard, mNumKeyboard, mVoiceKeyboard)) {
             kb.keys.forEachIndexed { index, key ->
                 val config = getFlickRule(index, kb) ?: return@forEachIndexed
 
-                key.labels.main = getKeyLabel(config).convertTo(kanaState, reversed = true)
+                key.labels.main = getKeyLabel(config).convertTo(mService.kanaState, reversed = true)
 
                 key.icon = getIcon(config.label)
                 if (key.icon != null) key.labels.main = ""
@@ -475,19 +473,19 @@ class FlickJPKeyboardView(
                 mNumKeyboard?.let { keyboard = it }; isHankaku = false
             }
 
-            "(Kana)" -> {
+            "(Reset)" -> { // かなキー (toggleKanaKey なら ASCII を意味するので注意)
                 if (keyboard == mJPKeyboard) {
                     mService.handleKanaKey()
                 } else {
                     mJPKeyboard?.let { keyboard = it }
                 }
-                updateKeyLabels(mService.kanaState)
+                updateKeyLabels(mService.engineState)
             }
 
             "(HankakuKana)" -> {
                 if (mIsASCII) mService.handleKanaKey() // ひらがなを経由
                 mService.processKey(skkPrefs.hankakuKanaKey)
-                updateKeyLabels(mService.kanaState)
+                updateKeyLabels(mService.engineState)
             }
 
             "(Qwerty)" -> {
@@ -495,11 +493,14 @@ class FlickJPKeyboardView(
                     mService.processKey(skkPrefs.asciiKey)
                 } else {
                     mService.handleKanaKey()
-                    updateKeyLabels(mService.kanaState)
                 }
+                updateKeyLabels(mService.engineState)
             }
 
-            "(Zenkaku)" -> mService.processKey(skkPrefs.zenkakuKey)
+            "(Zenkaku)" -> {
+                mService.processKey(skkPrefs.zenkakuKey)
+                updateKeyLabels(mService.engineState)
+            }
 
             "(Caps)" -> {
                 isCapsLocked = true; isShifted = true
