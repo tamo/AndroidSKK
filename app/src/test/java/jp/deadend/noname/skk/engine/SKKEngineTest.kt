@@ -53,7 +53,8 @@ class SKKEngineTest {
         for (char in text) {
             when (char) {
                 '\n' -> engine.handleEnter()
-                '\b' -> engine.handleBackspace()
+                '◀' -> engine.handleBackspace()
+                '▶' -> engine.handleForwardDel()
                 '■' -> engine.handleCancel() // Ctrl-g
                 '←' -> engine.handleDpad(KeyEvent.KEYCODE_DPAD_LEFT)
                 '↑' -> engine.handleDpad(KeyEvent.KEYCODE_DPAD_UP)
@@ -187,7 +188,7 @@ class SKKEngineTest {
         val candidatesList = listOf("漢字")
         every { userDict.getEntry("かんじ") } returns
                 SKKUserDictionary.Entry(candidatesList, emptyList())
-        typeText("Kanji \b")
+        typeText("Kanji ◀")
         verify { ic.commitText(match { it.toString() == "漢" }, 1) }
     }
 
@@ -266,13 +267,59 @@ class SKKEngineTest {
     }
 
     @Test
+    fun testForwardDel() {
+        // Preedit state
+        typeText("Ati") // あち
+        assertEquals("あち", engine.mKanjiKey.toString())
+        assertEquals(2, engine.mKanjiKey.cursor)
+
+        typeText("←←") // |あち
+        assertEquals(0, engine.mKanjiKey.cursor)
+        typeText("▶") // |ち
+        assertEquals("ち", engine.mKanjiKey.toString())
+        assertEquals(0, engine.mKanjiKey.cursor)
+
+        typeText("a") // あ|ち
+        assertEquals("あち", engine.mKanjiKey.toString())
+        assertEquals(1, engine.mKanjiKey.cursor)
+        typeText("▶") // あ|
+        assertEquals("あ", engine.mKanjiKey.toString())
+        assertEquals(1, engine.mKanjiKey.cursor)
+
+        // Registration state
+        engine.reset()
+        typeText("A ") // ▽あ -> space -> registration
+        assertEquals(true, engine.mRegister.isOngoing)
+        typeText("kanji") // [登録]あ：かんじ|
+        println("Entry after typing kanji: ${engine.mRegister.first()?.entry}, cursor: ${engine.mRegister.first()?.cursor}")
+        assertEquals("かんじ", engine.mRegister.first()?.entry.toString())
+        assertEquals(3, engine.mRegister.first()?.cursor)
+
+        typeText("←←") // [登録]あ：か|んじ
+        println("Entry after moving cursor: ${engine.mRegister.first()?.entry}, cursor: ${engine.mRegister.first()?.cursor}")
+        assertEquals(1, engine.mRegister.first()?.cursor)
+        typeText("▶") // [登録]あ：か|じ
+        println("Entry after delete: ${engine.mRegister.first()?.entry}, cursor: ${engine.mRegister.first()?.cursor}")
+        assertEquals("かじ", engine.mRegister.first()?.entry.toString())
+        assertEquals(1, engine.mRegister.first()?.cursor)
+
+        // Normal state (should return false and let the system handle it)
+        engine.mRegister.mStack.clear()
+        engine.reset()
+        assertEquals(SKKHiraganaState, engine.state)
+        assertEquals(false, engine.mRegister.isOngoing)
+        val result = engine.handleForwardDel()
+        assertEquals(false, result)
+    }
+
+    @Test
     fun testOkuriganaSokuon() {
         typeText("IXtu")
         assertEquals(SKKOkuriganaState, engine.state)
         assertEquals("いt", engine.mKanjiKey.toString())
         assertEquals("っ", engine.mOkurigana)
 
-        typeText("\b")
+        typeText("◀")
         assertEquals(SKKPreeditState, engine.state)
         assertEquals("い", engine.mKanjiKey.toString())
     }
@@ -285,11 +332,11 @@ class SKKEngineTest {
         assertEquals("", engine.mOkurigana)
         assertEquals("ry", engine.mComposing.toString())
 
-        typeText("\b")
+        typeText("◀")
         assertEquals(SKKOkuriganaState, engine.state)
         assertEquals("r", engine.mComposing.toString())
 
-        typeText("\b")
+        typeText("◀")
         assertEquals(SKKPreeditState, engine.state)
         assertEquals("い", engine.mKanjiKey.toString())
     }

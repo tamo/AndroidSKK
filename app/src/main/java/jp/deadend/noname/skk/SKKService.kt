@@ -1076,6 +1076,8 @@ class SKKService : InputMethodService() {
 
             KeyEvent.KEYCODE_DEL -> if (handleBackspace()) return true
 
+            KeyEvent.KEYCODE_FORWARD_DEL -> if (handleForwardDel()) return true
+
             KeyEvent.KEYCODE_ENTER -> if (handleEnter()) return true
 
             KeyEvent.KEYCODE_SPACE -> {
@@ -1165,6 +1167,11 @@ class SKKService : InputMethodService() {
         return mEngine.handleBackspace()
     }
 
+    fun handleForwardDel(): Boolean {
+        if (mStickyShift) mShiftKey.useState()
+        return mEngine.handleForwardDel()
+    }
+
     fun handleEnter(): Boolean {
         if (mStickyShift) mShiftKey.useState()
 
@@ -1209,6 +1216,17 @@ class SKKService : InputMethodService() {
             ic.commitText("", 1)
         }
         completeASCII()
+    }
+
+    fun pressForwardDel() {
+        if (skkPrefs.useDel) return keyDownUp(KeyEvent.KEYCODE_FORWARD_DEL)
+        val ic = currentInputConnection ?: return
+        if (ic.getSelectedText(0).isNullOrEmpty()) {
+            ic.deleteSurroundingTextInCodePoints(0, 1)
+        } else {
+            ic.commitText("", 1)
+        }
+        // 前方を消しても completeASCII に影響ないはず
     }
 
     fun pressSearch() {

@@ -110,6 +110,7 @@ class FlickJPKeyboardView(
         val resId = when (marker) {
             SKKFlickRule.ICON_SHIFT -> R.drawable.ic_keyboard_shift
             SKKFlickRule.ICON_BACKSPACE -> R.drawable.ic_keyboard_backspace
+            SKKFlickRule.ICON_DELETE -> R.drawable.ic_keyboard_delete
             SKKFlickRule.ICON_LEFT -> R.drawable.ic_keyboard_arrow_left
             SKKFlickRule.ICON_RIGHT -> R.drawable.ic_keyboard_arrow_right
             SKKFlickRule.ICON_RETURN -> R.drawable.ic_keyboard_return
@@ -461,6 +462,7 @@ class FlickJPKeyboardView(
 
             SKKFlickRule.ACTION_ENTER -> if (!mService.handleEnter()) mService.pressEnter()
             SKKFlickRule.ACTION_BACKSPACE -> if (!mService.handleBackspace()) mService.pressDel()
+            SKKFlickRule.ACTION_DELETE -> if (!mService.handleForwardDel()) mService.pressForwardDel()
 
             SKKFlickRule.ACTION_DPAD_LEFT -> if (!mService.handleDpad(KeyEvent.KEYCODE_DPAD_LEFT))
                 mService.keyDownUp(KeyEvent.KEYCODE_DPAD_LEFT)
@@ -607,7 +609,7 @@ class FlickJPKeyboardView(
 
         // true だと release して repeat が終わってしまうので
         val isRepeatable = when (getKeyAction(mLastPressedIndex).text) {
-            SKKFlickRule.ACTION_BACKSPACE, SKKFlickRule.ACTION_SPACE,
+            SKKFlickRule.ACTION_BACKSPACE, SKKFlickRule.ACTION_DELETE, SKKFlickRule.ACTION_SPACE,
             SKKFlickRule.ACTION_DPAD_LEFT, SKKFlickRule.ACTION_DPAD_RIGHT,
             SKKFlickRule.ACTION_SETTINGS -> true
 
@@ -635,6 +637,9 @@ class FlickJPKeyboardView(
         when (getKeyAction(keyIndex).text) {
             SKKFlickRule.ACTION_BACKSPACE ->
                 if (!mService.handleBackspace()) mService.pressDel()
+
+            SKKFlickRule.ACTION_DELETE ->
+                if (!mService.handleForwardDel()) mService.pressForwardDel()
 
             SKKFlickRule.ACTION_DPAD_LEFT -> if (!mArrowFlicked)
                 if (!mService.handleDpad(KeyEvent.KEYCODE_DPAD_LEFT))

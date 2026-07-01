@@ -88,6 +88,7 @@ object SKKFlickRule {
     internal const val ACTION_KBD_QWERTY = "(KbdQwerty)"
     internal const val ACTION_ENTER = "(Enter)"
     internal const val ACTION_BACKSPACE = "(Backspace)"
+    internal const val ACTION_DELETE = "(Delete)"
     internal const val ACTION_DPAD_LEFT = "(DpadLeft)"
     internal const val ACTION_DPAD_RIGHT = "(DpadRight)"
     internal const val ACTION_DPAD_UP = "(DpadUp)"
@@ -114,6 +115,7 @@ object SKKFlickRule {
 
     internal const val ICON_SHIFT = "(IconShift)"
     internal const val ICON_BACKSPACE = "(IconBackspace)"
+    internal const val ICON_DELETE = "(IconDelete)"
     internal const val ICON_LEFT = "(IconLeft)"
     internal const val ICON_RIGHT = "(IconRight)"
     internal const val ICON_RETURN = "(IconReturn)"

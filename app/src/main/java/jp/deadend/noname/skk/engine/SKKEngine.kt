@@ -67,7 +67,11 @@ class SKKEngine(
         fun deleteAtCursor(): StringBuilder =
             if (cursor > 0) entry.deleteCharAt(--cursor) else entry
 
-        fun deleteAfterCursor(): StringBuilder = entry.delete(cursor, entry.length)
+        fun deleteAfterCursor(all: Boolean = true): StringBuilder =
+            if (cursor < entry.length) {
+                if (all) entry.delete(cursor, entry.length)
+                else entry.deleteCharAt(cursor)
+            } else entry
 
         fun deleteLast(): StringBuilder =
             (if (entry.isNotEmpty()) entry.deleteCharAt(entry.lastIndex) else entry)
@@ -202,35 +206,54 @@ class SKKEngine(
         return state.handleEnter(this)
     }
 
-    internal fun handleBackspace(): Boolean {
-        SKKLog.d("handleBackspace() in ${state.name} ($mKanjiKey[$mComposing])")
+    internal fun handleBackspace(): Boolean = handleDelete(false)
+
+    internal fun handleForwardDel(): Boolean = handleDelete(true)
+
+    internal fun handleDelete(isForward: Boolean = false): Boolean {
+        SKKLog.d("handleDelete(isForward=$isForward) in ${state.name} ($mKanjiKey[$mComposing])")
         if (state.hasCandidates) {
-            state.afterBackspace(this)
+            if (!isForward) state.afterBackspace(this)
             return true
         }
 
         // 変換中のものがない場合
         if (mComposing.isEmpty() && mKanjiKey.isEmpty()) {
-            if (state.isTransient && state.canComplete) {
+            if (!isForward && state.isTransient && state.canComplete) {
                 changeState(kanaState)
                 return true
             }
             val (regInfo, firstEntry) = mRegister.first() ?: return state.isTransient
-            if (firstEntry.length >= regInfo.cursor && regInfo.cursor > 0) {
-                firstEntry.deleteCharAt(--regInfo.cursor)
+
+            when (isForward) {
+                true if regInfo.cursor < firstEntry.length ->
+                    firstEntry.deleteCharAt(regInfo.cursor)
+
+                false if regInfo.cursor > 0 ->
+                    firstEntry.deleteCharAt(--regInfo.cursor)
+
+                else -> null
+            }?.let {
                 setComposingTextSKK("")
                 return true
-            } // else 何もしない
+            } // ?: 何もしない
         }
 
-        val isComposingDeleted = when {
-            mComposing.isNotEmpty() -> true.also { mComposing.deleteCharAt(mComposing.lastIndex) }
-            mOkurigana.isNotEmpty() -> false.also { mOkurigana = mOkurigana.dropLast(1) }
-            mKanjiKey.isNotEmpty() -> false.also { mKanjiKey.deleteAtCursor() }
-            else -> false
-        }
-        state.afterBackspace(this, isComposingDeleted)
+        when (isForward) {
+            true -> if (mKanjiKey.isNotEmpty() && mKanjiKey.cursor < mKanjiKey.length) {
+                mKanjiKey.deleteAfterCursor(all = false)
+                state.afterBackspace(this, false)
+            }
 
+            false -> when {
+                mComposing.isNotEmpty() -> true.also { mComposing.deleteCharAt(mComposing.lastIndex) }
+                mOkurigana.isNotEmpty() -> false.also { mOkurigana = mOkurigana.dropLast(1) }
+                mKanjiKey.isNotEmpty() -> false.also { mKanjiKey.deleteAtCursor() }
+                else -> false
+            }.let { isComposingDeleted ->
+                state.afterBackspace(this, isComposingDeleted)
+            }
+        }
         return true
     }
 
