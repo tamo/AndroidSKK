@@ -868,6 +868,9 @@ class SKKEngine(
 
         oldState = this.state
 
+        if (oldState.canComplete && newState.hasCandidates)
+            mCandidates.reset() // 前の補完が遅れて悪さをしないように止める
+
         this.state = newState
 
         val prevInputView = if (cameFromFlick) kanaState else SKKASCIIState
