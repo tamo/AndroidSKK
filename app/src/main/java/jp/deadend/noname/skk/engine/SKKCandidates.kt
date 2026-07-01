@@ -34,6 +34,7 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
     internal var mQuery = ""
     internal var isSequential = false // シフトでオンオフする連続入力フラグ
     internal var isSpecial = false // 絵文字か記号をソフトキーで呼んだら true
+    private var isFirstMove = true // mIndex は 0 からスタートだが -1 のように扱いたい
     private var mJob: Job = Job()
     private var mSuspended: Boolean = false
 
@@ -48,6 +49,7 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
                 service.setCandidates(layout, viewLines, index)
             }
         }
+        isFirstMove = true
     }
 
     internal fun setView(list: List<String>?, kanjiKey: String, index: Int) {
@@ -69,7 +71,8 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
         if (list.isEmpty()) return SKKLog.d("list is empty")
 
         mIndex = if (isForward) {
-            (mIndex + 1) % list.size
+            if (isFirstMove) mIndex.also { isFirstMove = false }
+            else (mIndex + 1) % list.size
         } else {
             (mIndex - 1 + list.size) % list.size
         }
