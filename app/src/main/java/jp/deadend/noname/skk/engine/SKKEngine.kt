@@ -283,7 +283,7 @@ class SKKEngine(
         mCandidates.moveCandidateCursor(isForward)
 
     internal fun handleDpad(keyCode: Int): Boolean {
-        SKKLog.d("handleDpad(${getKeyName(keyCode)}) in ${state.name}")
+        SKKLog.d("handleDpad(${KeyEvent.keyCodeToString(keyCode)}) in ${state.name}")
         when {
             // narrowing のときは hint のカーソルを動かす方が便利
             // 前の候補を選択したいときはちょっと不便だが直接選択したりできるし
@@ -299,8 +299,8 @@ class SKKEngine(
                 else -> return false
             }
 
-            mRegister.isOngoing -> mRegister.handleDpad(keyCode)
             state.isTransient -> handleDpadTransient(keyCode)
+            mRegister.isOngoing -> mRegister.handleDpad(keyCode)
             else -> return false
         }
         return true
