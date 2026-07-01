@@ -64,7 +64,7 @@ object SKKChooseState : SKKConfirmingState() {
         }
     }
 
-    override fun afterBackspace(context: SKKEngine) {
+    override fun afterBackspace(context: SKKEngine, isComposingDeleted: Boolean) {
         if (!declineUnregister(context)) context.pickCurrentCandidate(backspace = true)
     }
 
@@ -88,7 +88,6 @@ object SKKChooseState : SKKConfirmingState() {
 
                 else -> { // 漢字変換中
                     mComposing.setLength(0) // 最初から空のはずだけど念のため
-                    mOkurigana = "" // これは入っている可能性がある
                     changeState(SKKPreeditState) // Abbrev の可能性はない
                     val maybeComposing = mKanjiKey.lastOrNull() ?: Char(0)
                     if (isAlphabet(maybeComposing.code)) {
@@ -97,6 +96,8 @@ object SKKChooseState : SKKConfirmingState() {
                             mComposing.append(maybeComposing)
                         }
                     }
+                    mKanjiKey.append(mOkurigana)
+                    mOkurigana = ""
                 }
             }
             setComposingTextSKK()

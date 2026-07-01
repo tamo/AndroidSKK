@@ -56,7 +56,7 @@ object SKKAbbrevState : SKKState {
         }
     }
 
-    override fun afterBackspace(context: SKKEngine) {
+    override fun afterBackspace(context: SKKEngine, isComposingDeleted: Boolean) {
         context.apply {
             setComposingTextSKK()
             complete(mKanjiKey.toString())

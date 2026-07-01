@@ -223,12 +223,13 @@ class SKKEngine(
             } // else 何もしない
         }
 
-        if (mComposing.isNotEmpty()) {
-            mComposing.deleteCharAt(mComposing.lastIndex)
-        } else if (mKanjiKey.isNotEmpty()) {
-            mKanjiKey.deleteAtCursor()
+        val isComposingDeleted = when {
+            mComposing.isNotEmpty() -> true.also { mComposing.deleteCharAt(mComposing.lastIndex) }
+            mOkurigana.isNotEmpty() -> false.also { mOkurigana = mOkurigana.dropLast(1) }
+            mKanjiKey.isNotEmpty() -> false.also { mKanjiKey.deleteAtCursor() }
+            else -> false
         }
-        state.afterBackspace(this)
+        state.afterBackspace(this, isComposingDeleted)
 
         return true
     }

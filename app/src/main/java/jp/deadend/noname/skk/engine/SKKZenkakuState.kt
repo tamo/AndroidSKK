@@ -23,7 +23,7 @@ object SKKZenkakuState : SKKState {
         context.commitTextSKK(hankaku2zenkaku(Char(charCode).toString()))
     }
 
-    override fun afterBackspace(context: SKKEngine) {}
+    override fun afterBackspace(context: SKKEngine, isComposingDeleted: Boolean) {}
 
     override fun handleCancel(context: SKKEngine, reconvert: Boolean): Boolean {
         return SKKHiraganaState.handleCancel(context, reconvert)

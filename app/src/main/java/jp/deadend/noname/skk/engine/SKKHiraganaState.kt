@@ -101,7 +101,7 @@ object SKKHiraganaState : SKKState {
         }
     }
 
-    override fun afterBackspace(context: SKKEngine) {
+    override fun afterBackspace(context: SKKEngine, isComposingDeleted: Boolean) {
         context.setComposingTextSKK(context.mComposing)
     }
 

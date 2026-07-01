@@ -14,7 +14,7 @@ interface SKKState {
     fun handleKanaKey(context: SKKEngine)
     fun handleEnter(context: SKKEngine): Boolean = false
     fun processKey(context: SKKEngine, keyCode: Int)
-    fun afterBackspace(context: SKKEngine)
+    fun afterBackspace(context: SKKEngine, isComposingDeleted: Boolean = false)
     fun handleCancel(context: SKKEngine, reconvert: Boolean): Boolean
     fun changeToFlick(context: SKKEngine): Boolean // ここで FlickJP に変更されたら true
 }

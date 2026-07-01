@@ -142,7 +142,7 @@ object SKKPreeditState : SKKState {
                                 }
                             }
                             mComposing.append(Char(codeLower)) // ty や ch のように 2 文字の場合あり
-                            mKanjiKey.insertAtCursor(mComposing[0].toString()) //送りありの場合子音文字追加
+                            mKanjiKey.insertAtCursor(mComposing[0].toString()) //送りありの場合子音文字追加 (xに注意)
                             mKanjiKey.deleteAfterCursor()
                             setComposingTextSKK(
                                 createTrimmedBuilder(mKanjiKey.entry).append('*').append(mComposing)
@@ -181,7 +181,7 @@ object SKKPreeditState : SKKState {
         }
     }
 
-    override fun afterBackspace(context: SKKEngine) {
+    override fun afterBackspace(context: SKKEngine, isComposingDeleted: Boolean) {
         context.apply {
             setComposingTextSKK()
             complete(mKanjiKey.toString())

@@ -39,6 +39,7 @@ class RomajiConverterTest {
         assertEquals("ちゃ", RomajiConverter.convert("cha"))
         assertEquals("", RomajiConverter.convert("n")) // 未確定
         assertEquals("ん", RomajiConverter.convert("nn"))
+        assertEquals("", RomajiConverter.convert("ny"))
         assertEquals("う゛ぁ", RomajiConverter.convert("va")) // ゔぁ ではない
         assertEquals("‥", RomajiConverter.convert("z,"))
         assertEquals("〜", RomajiConverter.convert("z-"))

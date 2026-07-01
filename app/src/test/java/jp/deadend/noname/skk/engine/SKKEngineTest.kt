@@ -264,4 +264,33 @@ class SKKEngineTest {
         typeText("Obalq \n")
         verify { ic.commitText(match { it.toString() == "おばQ" }, 1) }
     }
+
+    @Test
+    fun testOkuriganaSokuon() {
+        typeText("IXtu")
+        assertEquals(SKKOkuriganaState, engine.state)
+        assertEquals("いt", engine.mKanjiKey.toString())
+        assertEquals("っ", engine.mOkurigana)
+
+        typeText("\b")
+        assertEquals(SKKPreeditState, engine.state)
+        assertEquals("い", engine.mKanjiKey.toString())
+    }
+
+    @Test
+    fun testOkuriganaComposingBackspace() {
+        typeText("IRy")
+        assertEquals(SKKOkuriganaState, engine.state)
+        assertEquals("いr", engine.mKanjiKey.toString())
+        assertEquals("", engine.mOkurigana)
+        assertEquals("ry", engine.mComposing.toString())
+
+        typeText("\b")
+        assertEquals(SKKOkuriganaState, engine.state)
+        assertEquals("r", engine.mComposing.toString())
+
+        typeText("\b")
+        assertEquals(SKKPreeditState, engine.state)
+        assertEquals("い", engine.mKanjiKey.toString())
+    }
 }

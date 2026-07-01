@@ -84,7 +84,7 @@ object SKKNarrowingState : SKKConfirmingState() {
         }
     }
 
-    override fun afterBackspace(context: SKKEngine) {
+    override fun afterBackspace(context: SKKEngine, isComposingDeleted: Boolean) {
         if (!declineUnregister(context)) context.apply {
             when {
                 mHint.isEmpty() && !mCandidates.isSpecial -> // 絵文字や記号は変換ではない

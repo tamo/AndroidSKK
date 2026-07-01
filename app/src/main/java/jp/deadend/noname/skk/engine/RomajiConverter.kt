@@ -6,7 +6,6 @@ import jp.deadend.noname.skk.hankaku2zenkaku
 import jp.deadend.noname.skk.isAlNum
 import jp.deadend.noname.skk.isAnyKana
 import jp.deadend.noname.skk.isDakuten
-import jp.deadend.noname.skk.isVowel
 import jp.deadend.noname.skk.katakana2hiragana
 
 object RomajiConverter {
@@ -159,14 +158,16 @@ object RomajiConverter {
 
     // 1文字目と2文字目を合わせて"ん"・"っ"になるか判定
     // ならなかったらnull
-    fun checkSpecialConsonants(first: Char, second: Int) = when {
-        (first == 'n') -> if (!isVowel(second) && second != 'n'.code && second != 'y'.code) {
-            "ん"
-        } else {
-            null
+    fun checkSpecialConsonants(first: Char, second: Int) = when (first) {
+        'n' -> "$first${Char(second)}".let { composing ->
+            when {
+                convert(composing).isNotEmpty() -> null // nn は second を残さないので
+                isIntermediateRomaji(composing) -> null // ny は平仮名を確定しないので
+                else -> "ん"
+            }
         }
 
-        (isIntermediateRomaji(first.toString()) && first.code == second) -> "っ"
+        Char(second) if isIntermediateRomaji(first.toString()) -> "っ"
         else -> null
     }
 

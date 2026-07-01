@@ -35,7 +35,7 @@ object SKKASCIIState : SKKConfirmingState() {
         context.completeASCII()
     }
 
-    override fun afterBackspace(context: SKKEngine) {
+    override fun afterBackspace(context: SKKEngine, isComposingDeleted: Boolean) {
         declineUnregister(context)
         context.completeASCII()
     }

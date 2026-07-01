@@ -26,7 +26,7 @@ object SKKKatakanaState : SKKState {
         }
     }
 
-    override fun afterBackspace(context: SKKEngine) {
+    override fun afterBackspace(context: SKKEngine, isComposingDeleted: Boolean) {
         SKKHiraganaState.afterBackspace(context)
     }
 

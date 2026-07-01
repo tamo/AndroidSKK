@@ -40,7 +40,7 @@ abstract class SKKConfirmingState : SKKState {
         return false
     }
 
-    override fun afterBackspace(context: SKKEngine) {
+    override fun afterBackspace(context: SKKEngine, isComposingDeleted: Boolean) {
         declineUnregister(context)
     }
 
