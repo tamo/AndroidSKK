@@ -51,22 +51,19 @@ internal inline val Int.upperChar: Char get() = Char(this.lowerCode).uppercaseCh
 internal inline val Int.char: Char get() = if (this.isShifted) this.upperChar else Char(this.lowerCode)
 internal inline val Int.upper: Int get() = this or SHIFT_PRESSED
 
-internal inline val Int.metaState: Int
-    get() = (if (this and META_PRESSED != 0) KeyEvent.META_META_ON else 0) or
-            (if (this and CTRL_PRESSED != 0) KeyEvent.META_CTRL_ON else 0) or
-            (if (this and ALT_PRESSED != 0) KeyEvent.META_ALT_ON else 0) or
-            (if (this and SHIFT_PRESSED != 0) KeyEvent.META_SHIFT_ON else 0)
+internal fun getKeyEventPair(key: Int): Pair<Int, Int> {
+    val metaState = (if (key and META_PRESSED != 0) KeyEvent.META_META_ON else 0) or
+            (if (key and CTRL_PRESSED != 0) KeyEvent.META_CTRL_ON else 0) or
+            (if (key and ALT_PRESSED != 0) KeyEvent.META_ALT_ON else 0) or
+            (if (key and SHIFT_PRESSED != 0) KeyEvent.META_SHIFT_ON else 0)
+    val charCode = key and CHAR_CODE_MASK
 
-internal inline val Int.charCode: Int
-    get() {
-        val code = this and CHAR_CODE_MASK
-        if (this and RAW_KEYCODE != 0) return code
-        val name = when (code) {
-            32 -> "SPACE" // keyCodeFromString(" ") は 0 (KEYCODE_UNKNOWN) を返す
-            else -> Char(code).uppercaseChar().toString()
-        }
-        return KeyEvent.keyCodeFromString(name)
-    }
+    return if (key and RAW_KEYCODE != 0) charCode to metaState
+    else charMap.getEvents(charArrayOf(Char(charCode)))
+        ?.lastOrNull { it.action == KeyEvent.ACTION_DOWN }
+        ?.let { it.keyCode to (it.metaState or metaState) }
+        ?: (KeyEvent.KEYCODE_UNKNOWN to metaState)
+}
 
 fun getKeyName(key: Int): String {
     val charCode = key and CHAR_CODE_MASK

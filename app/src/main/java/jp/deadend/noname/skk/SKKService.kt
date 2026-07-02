@@ -986,9 +986,10 @@ class SKKService : InputMethodService() {
             encKey == null -> return false
             else -> {
                 val now = System.currentTimeMillis()
+                val (code, metaState) = getKeyEventPair(encKey)
                 KeyEvent(
                     now, now, KeyEvent.ACTION_DOWN,
-                    encKey.charCode, 0, encKey.metaState,
+                    code, 0, metaState,
                     KeyCharacterMap.VIRTUAL_KEYBOARD, 0
                 ) to encKey
             }
@@ -1080,18 +1081,12 @@ class SKKService : InputMethodService() {
 
         if (KeyEvent.isModifierKey(event.keyCode)) return false
 
-        // シフトを内部状態で更新したキーイベントを作って使う
-        val newEvent = event.run {
-            KeyEvent(
-                downTime, eventTime, action, keyCode, repeatCount,
-                metaState or when {
-                    mStickyShift -> mShiftKey.useState()
-                    mSandS && mSpacePressed -> KeyEvent.META_SHIFT_ON.also { mSandSUsed = true }
-                    else -> 0
-                }, deviceId, scanCode, flags, source
-            )
+        // シフトを内部状態で更新
+        val k = encodedKey or when {
+            mStickyShift -> mShiftKey.useState()
+            mSandS && mSpacePressed -> SHIFT_PRESSED.also { mSandSUsed = true }
+            else -> 0
         }
-        val k = encodeKey(newEvent)
 
         // 割り当てのない特殊キーは無視 (rules で指定できる場合は別途考える必要があるか)
         if (k and (RAW_KEYCODE or META_PRESSED or CTRL_PRESSED or ALT_PRESSED) != 0
@@ -1112,8 +1107,7 @@ class SKKService : InputMethodService() {
     internal fun processKey(code: Int) {
         if (!skkPrefs.isModeKey(code) && (code and (CTRL_PRESSED or ALT_PRESSED) != 0)) {
             val downTime = System.currentTimeMillis()
-            val keyCode = code.charCode
-            val metaState = code.metaState
+            val (keyCode, metaState) = getKeyEventPair(code)
             currentInputConnection.sendKeyEvent(
                 KeyEvent(downTime, downTime, KeyEvent.ACTION_DOWN, keyCode, 0, metaState)
             )
