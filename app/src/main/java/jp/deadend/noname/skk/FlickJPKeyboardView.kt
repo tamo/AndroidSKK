@@ -509,11 +509,15 @@ class FlickJPKeyboardView(
 
             SKKFlickRule.ACTION_KBD_QWERTY ->
                 if (mService.engineState.isJapanese) {
-                    mService.kanaState = SKKHiraganaState // カタカナには戻れないので
+                    // カタカナには戻れないので一旦ひらがな経由でキーラベル表示を整える
+                    mService.kanaState = SKKHiraganaState
                     mService.processKey(skkPrefs.asciiKey)
                 } else {
                     mService.handleKanaKey()
                 }
+
+            SKKFlickRule.ACTION_ABBREV ->
+                mService.processKey(skkPrefs.abbrevKey)
 
             SKKFlickRule.ACTION_ZENKAKU ->
                 mService.processKey(skkPrefs.zenkakuKey)

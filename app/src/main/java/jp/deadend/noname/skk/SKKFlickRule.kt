@@ -97,6 +97,7 @@ object SKKFlickRule {
     internal const val ACTION_KBD_VOICE = "(KbdVoice)"
     internal const val ACTION_KBD_NUMBER = "(KbdNumber)"
     internal const val ACTION_RESET = "(Reset)"
+    internal const val ACTION_ABBREV = "(Abbrev)"
     internal const val ACTION_KATAKANA = "(Katakana)"
     internal const val ACTION_HANKAKU_KANA = "(HankakuKana)"
     internal const val ACTION_TRANS_SMALL = "(TransSmall)"
