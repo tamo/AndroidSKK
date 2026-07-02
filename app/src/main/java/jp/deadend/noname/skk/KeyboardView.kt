@@ -97,7 +97,7 @@ open class KeyboardView @JvmOverloads constructor(
     // For multi-tap
     private var mLastSentIndex = 0
     protected var mTapCount = 0
-    protected var mLastTapTime: Long = 0
+    private var mLastTapTime: Long = 0
     protected var mInMultiTap = false
 
     private var mDrawPending = false
@@ -361,16 +361,18 @@ open class KeyboardView @JvmOverloads constructor(
 
     private fun onBufferDraw() {
         if (width == 0 || height == 0) return
-        if (mBuffer == null || mKeyboardChanged) {
-            if (mBuffer == null || (mBuffer!!.width != width || mBuffer!!.height != height)) {
-                // Make sure our bitmap is at least 1x1
-                val w = width.coerceAtLeast(1)
-                val h = height.coerceAtLeast(1)
-                mBuffer = createBitmap(w, h)
-                mCanvas = Canvas(mBuffer!!)
+        mBuffer.let { buffer ->
+            if (buffer == null || mKeyboardChanged) {
+                if (buffer == null || buffer.width != width || buffer.height != height) {
+                    // Make sure our bitmap is at least 1x1
+                    val w = width.coerceAtLeast(1)
+                    val h = height.coerceAtLeast(1)
+                    mBuffer = createBitmap(w, h)
+                    mCanvas = Canvas(mBuffer ?: return)
+                }
+                invalidateAllKeys()
+                mKeyboardChanged = false
             }
-            invalidateAllKeys()
-            mKeyboardChanged = false
         }
 
         mCanvas?.withSave {
@@ -591,7 +593,7 @@ open class KeyboardView @JvmOverloads constructor(
         canvas: Canvas, x: Float, y: Float, paint: Paint
     ): Boolean = false
 
-    protected fun getKeyIndex(x: Int, y: Int): Int =
+    private fun getKeyIndex(x: Int, y: Int): Int =
         mKeyboard.getNearestKeys(x, y).findLast {
             mKeyboard.keys[it].isInside(x, y)
         } ?: NOT_A_KEY
@@ -1133,7 +1135,7 @@ open class KeyboardView @JvmOverloads constructor(
         mInMultiTap = false
     }
 
-    protected fun checkMultiTap(eventTime: Long, keyIndex: Int) {
+    private fun checkMultiTap(eventTime: Long, keyIndex: Int) {
         if (keyIndex == NOT_A_KEY) return
 
         mKeyboard.keys[keyIndex].let { key ->

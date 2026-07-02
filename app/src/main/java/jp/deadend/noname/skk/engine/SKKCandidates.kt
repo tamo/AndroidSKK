@@ -64,7 +64,7 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
         task()
     }
 
-    internal fun updateViewCursor() = service.setCandidatesCursor(mIndex)
+    private fun updateViewCursor() = service.setCandidatesCursor(mIndex)
 
     internal fun cycleCompletionCursor(isForward: Boolean) {
         val list = mList ?: return

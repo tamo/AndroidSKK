@@ -13,7 +13,7 @@ import java.util.ArrayDeque
 
 class SKKRegister(private val engine: SKKEngine) {
     internal val mStack = ArrayDeque<RegistrationInfo>()
-    internal var kanaStateBefore: SKKState = SKKHiraganaState
+    private var kanaStateBefore: SKKState = SKKHiraganaState
 
     internal class RegistrationInfo(val key: String, val okurigana: String) {
         val entry = StringBuilder()

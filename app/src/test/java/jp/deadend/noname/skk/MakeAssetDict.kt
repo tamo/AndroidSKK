@@ -26,7 +26,7 @@ object MakeAssetDict {
         }
     }
 
-    fun convertWordList(inputPath: String, outputZipPath: String, noticePath: String) {
+    private fun convertWordList(inputPath: String, outputZipPath: String, noticePath: String) {
         val dbBaseName = File(outputZipPath).nameWithoutExtension
         val mvFileName = "$dbBaseName.mv"
         File(mvFileName).delete()
@@ -96,7 +96,7 @@ object MakeAssetDict {
         zipDatabase(outputZipPath, mvFileName, noticePath)
     }
 
-    fun convertEmoji(inputPath: String, outputZipPath: String, noticePath: String) {
+    private fun convertEmoji(inputPath: String, outputZipPath: String, noticePath: String) {
         println("Converting Emoji source $inputPath to $outputZipPath...")
         val entries = mutableMapOf<String, MutableList<String>>()
         var count = 0

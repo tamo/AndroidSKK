@@ -138,7 +138,7 @@ object SKKFlickRule {
         return file
     }
 
-    fun parse(text: String): Map<String, Map<Int, Pair<FlickKeyConfig, FlickKeyConfig?>>> {
+    private fun parse(text: String): Map<String, Map<Int, Pair<FlickKeyConfig, FlickKeyConfig?>>> {
         val result = mutableMapOf<String, MutableMap<Int, Pair<FlickKeyConfig, FlickKeyConfig?>>>()
         var currentSection = SECTION_MAIN
 

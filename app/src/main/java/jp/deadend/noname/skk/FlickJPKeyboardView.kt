@@ -45,7 +45,7 @@ class FlickJPKeyboardView(
 
     internal var mJPKeyboard: Keyboard? = null
     internal var mNumKeyboard: Keyboard? = null
-    internal var mVoiceKeyboard: Keyboard? = null
+    private var mVoiceKeyboard: Keyboard? = null
 
     private var mFlickRules: Map<String, Map<Int, Pair<FlickKeyConfig, FlickKeyConfig?>>> =
         emptyMap()
@@ -136,7 +136,7 @@ class FlickJPKeyboardView(
                 key.icon = getIcon(config.label)
                 if (key.icon != null) key.labels.main = ""
 
-                val action = config.getAction(0)
+                val action = config.getAction()
                 when (action.text) {
                     // KEYCODE_SHIFT にしておくと Keyboard でシフト on してくれる
                     // codes を 2 つ入れておかないとダブルタップの判定がスキップされる (2 つ目の中身は関係ない)
@@ -177,7 +177,7 @@ class FlickJPKeyboardView(
         mJPKeyboard?.resize(widthPixel, heightPixel)
         mNumKeyboard?.resize(widthPixel, heightPixel)
         mVoiceKeyboard?.resize(widthPixel, heightPixel)
-        keyboard = mJPKeyboard!!
+        keyboard = mJPKeyboard ?: return
         invalidateAllKeys()
 
         readPrefs(context)
@@ -582,7 +582,7 @@ class FlickJPKeyboardView(
 
         if (mFlickState == EnumSet.of(FlickState.NONE)) {
             mLastPressedIndex = keyIndex
-            mArrowPressed = when (config.getAction(0).text) {
+            mArrowPressed = when (config.getAction().text) {
                 SKKFlickRule.ACTION_DPAD_LEFT, SKKFlickRule.ACTION_DPAD_RIGHT -> true
                 else -> false
             }

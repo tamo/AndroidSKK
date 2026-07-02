@@ -11,8 +11,8 @@ object SKKNarrowingState : SKKConfirmingState() {
 
     internal val mHint = SKKEngine.KanjiKey()
     internal var mOriginalCandidates: List<String>? = null
-    internal var mSpaceUsed = false // xを前候補にするためのフラグ
-    internal var isASCII = false // isJapanese とは違って可変な内部フラグ
+    private var mSpaceUsed = false // xを前候補にするためのフラグ
+    private var isASCII = false // isJapanese とは違って可変な内部フラグ
 
     override fun onEnter(context: SKKEngine, oldState: SKKState) {
         super.onEnter(context, oldState)

@@ -67,7 +67,7 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
     private val mColorCursor: Int
     private val mColorOther: Int
     private val mTextPath: Path
-    internal val mPaint = Paint()
+    private val mPaint = Paint()
     internal val mLineHeight
         get() = (mPaint.textSize * LINE_SCALE).toInt()
 

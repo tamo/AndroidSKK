@@ -249,7 +249,7 @@ internal suspend fun openDB(
         SKKLog.d("Migrating $filePath to MVStore...")
         val jdbmStore = JDBMStore.open(filePath, btreeName)
         val mvStore =
-            MVStoreStore.open(mvFile.absolutePath, btreeName, writable = true)
+            MVStoreStore.open(mvFile.absolutePath, btreeName)
 
         val browser = jdbmStore.cursor()
         if (browser != null) {

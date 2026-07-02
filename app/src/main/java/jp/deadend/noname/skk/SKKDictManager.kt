@@ -137,9 +137,10 @@ class SKKDictManager : AppCompatActivity() {
             .attachToRecyclerView(binding.dictManagerList)
 
         binding.dictManagerUninstallButton.setOnClickListener {
-            val position = mDictList.indexOf(mCurrentPreviewingItem)
+            val item = mCurrentPreviewingItem ?: return@setOnClickListener
+            val position = mDictList.indexOf(item)
             if (position != -1) {
-                confirmUninstall(mCurrentPreviewingItem!!, position)
+                confirmUninstall(item, position)
             }
         }
         binding.dictManagerPreviewText.movementMethod =
@@ -494,11 +495,12 @@ class SKKDictManager : AppCompatActivity() {
                     mAdapter.submitList(newList)
                     mDictList = newList
                 }
-                val charset = if (contentResolver.openInputStream(uri)!!.use { inputStream ->
-                        val processedInputStream =
-                            if (isGzip) GZIPInputStream(inputStream) else inputStream
-                        isTextDictInEucJp(processedInputStream)
-                    }) "EUC-JP" else "UTF-8"
+                val charset =
+                    if ((contentResolver.openInputStream(uri) ?: throw IOException()).use { s ->
+                            val stream = if (isGzip) GZIPInputStream(s) else s
+                            isTextDictInEucJp(stream)
+                        }
+                    ) "EUC-JP" else "UTF-8"
                 contentResolver.openInputStream(uri)?.use { inputStream ->
                     val processedInputStream =
                         if (isGzip) GZIPInputStream(inputStream) else inputStream

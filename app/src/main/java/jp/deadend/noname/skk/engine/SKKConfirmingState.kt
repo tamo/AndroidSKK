@@ -5,8 +5,8 @@ import jp.deadend.noname.skk.lowerCode
 
 abstract class SKKConfirmingState : SKKState {
     var pendingLambda: (() -> Unit)? = null
-    var oldList: List<String>? = null
-    var oldIndex: Int = 0
+    private var oldList: List<String>? = null
+    private var oldIndex: Int = 0
 
     override fun handleKanaKey(context: SKKEngine) {
         declineUnregister(context)

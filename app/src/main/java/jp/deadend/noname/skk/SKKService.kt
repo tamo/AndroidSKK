@@ -141,9 +141,9 @@ class SKKService : InputMethodService() {
     // 画面サイズが実際に変わる前に onConfigurationChanged で受け取ってサイズ計算
     private var mOrientation = Configuration.ORIENTATION_UNDEFINED
     internal var mRootWidth = 0
-    internal var mCutout = AGInsets.NONE // カメラ穴などで、すでに消えている部分
+    private var mCutout = AGInsets.NONE // カメラ穴などで、すでに消えている部分
     internal var mInsets = AGInsets.NONE // mCutout に gesture 用の空間を加えたもの
-    internal var mScreenWidth = 0
+    private var mScreenWidth = 0
     internal var mScreenHeight = 0
 
     // 入力中かどうか
@@ -154,12 +154,12 @@ class SKKService : InputMethodService() {
     private lateinit var mAudioManager: AudioManager
     private var mStreamVolume = 0
 
-    internal lateinit var mEngine: SKKEngine
+    private lateinit var mEngine: SKKEngine
     internal val engineState: SKKState get() = mEngine.state
-    internal lateinit var mUserDict: SKKUserDictionary
-    internal lateinit var mAsciiDict: SKKUserDictionary
-    internal lateinit var mEmojiDict: SKKUserDictionary
-    internal lateinit var mSymbolDict: SKKUserDictionary
+    private lateinit var mUserDict: SKKUserDictionary
+    private lateinit var mAsciiDict: SKKUserDictionary
+    private lateinit var mEmojiDict: SKKUserDictionary
+    private lateinit var mSymbolDict: SKKUserDictionary
 
     internal val isHiragana: Boolean
         get() = kanaState is SKKHiraganaState
@@ -563,7 +563,7 @@ class SKKService : InputMethodService() {
 
         mFlickJPInputView = FlickJPKeyboardView(context, null)
         mFlickJPInputView?.setService(this)
-        mQwertyInputView = QwertyKeyboardView(context, null)
+        mQwertyInputView = QwertyKeyboardView(context)
         mQwertyInputView?.setService(this)
 
         if (skkPrefs.useInset) ResourcesCompat
@@ -754,15 +754,11 @@ class SKKService : InputMethodService() {
 
             when (keyboardType) {
                 // 日本語にする
-                "flick-jp" -> {
-                    if (
-                        !engineState.isJapanese
-                        || (mInputView !== mFlickJPInputView)
-                        || (mInputView?.equals(mFlickJPInputView) == true
-                                && mInputView!!.keyboard !== mFlickJPInputView!!.mJPKeyboard)
-                    ) {
-                        mEngine.changeState(SKKHiraganaState)
-                    }
+                "flick-jp" -> mInputView.let {
+                    if (!engineState.isJapanese
+                        || it !is FlickJPKeyboardView
+                        || it.keyboard !== it.mJPKeyboard
+                    ) mEngine.changeState(SKKHiraganaState)
                 }
 
                 // テンキーにする
@@ -777,16 +773,16 @@ class SKKService : InputMethodService() {
                 // 英字にする
                 "qwerty" -> {
                     mEngine.handleASCIIKey()
-                    if (mInputView?.equals(mQwertyInputView) == true) {
-                        mQwertyInputView!!.keyboard = mQwertyInputView!!.mLatinKeyboard
+                    mQwertyInputView?.let {
+                        if (it === mInputView) it.keyboard = it.mLatinKeyboard
                     }
                 }
 
                 // 英数記号にする
                 "symbols" -> {
                     mEngine.handleASCIIKey()
-                    if (mInputView?.equals(mQwertyInputView) == true) {
-                        mQwertyInputView!!.keyboard = mQwertyInputView!!.mSymbolsKeyboard
+                    mQwertyInputView?.let {
+                        if (it === mInputView) it.keyboard = it.mSymbolsKeyboard
                     }
                 }
 
@@ -806,7 +802,7 @@ class SKKService : InputMethodService() {
         }
     }
 
-    internal fun restorePrevStates() {
+    private fun restorePrevStates() {
         mPrevStates?.let { prev ->
             if (prev.state != engineState) {
                 mEngine.changeState(prev.state)
@@ -891,8 +887,8 @@ class SKKService : InputMethodService() {
     override fun onComputeInsets(outInsets: Insets?) {
         //SKKLog.d("lifecycle: ${Thread.currentThread().stackTrace[2].methodName}")
         super.onComputeInsets(outInsets)
-        if (outInsets == null || mInputView == null) return
-        outInsets.apply {
+        val keyboard = mInputView?.keyboard ?: return
+        outInsets?.apply {
             val variableHeight = mCandidatesViewContainer.let { it.height - it.minHeight }
             contentTopInsets = when {
                 isFloating() -> mBinding.root.height // 高さをすべて無効にして floating を実現
@@ -903,7 +899,7 @@ class SKKService : InputMethodService() {
             touchableInsets = Insets.TOUCHABLE_INSETS_REGION
             touchableRegion.set(
                 if (isFloating()) leftOffset else mInsets.left, 0,
-                leftOffset + mInputView!!.keyboard.width, mBinding.root.height
+                leftOffset + keyboard.width, mBinding.root.height
             )
         }
     }
@@ -1104,20 +1100,15 @@ class SKKService : InputMethodService() {
         return true
     }
 
-    internal fun processKey(code: Int) {
+    internal fun processKey(code: Int) =
         if (!skkPrefs.isModeKey(code) && (code and (CTRL_PRESSED or ALT_PRESSED) != 0)) {
             val downTime = System.currentTimeMillis()
             val (keyCode, metaState) = getKeyEventPair(code)
-            currentInputConnection.sendKeyEvent(
-                KeyEvent(downTime, downTime, KeyEvent.ACTION_DOWN, keyCode, 0, metaState)
-            )
-            currentInputConnection.sendKeyEvent(
-                KeyEvent(downTime, downTime, KeyEvent.ACTION_UP, keyCode, 0, 0)
-            )
-            return
-        }
-        return mEngine.processKey(code)
-    }
+            listOf(
+                KeyEvent(downTime - 1, downTime - 1, KeyEvent.ACTION_DOWN, keyCode, 0, metaState),
+                KeyEvent(downTime - 0, downTime - 0, KeyEvent.ACTION_UP, keyCode, 0, 0)
+            ).forEach { currentInputConnection.sendKeyEvent(it) }
+        } else mEngine.processKey(code)
 
     fun processKey(char: Char) = mEngine.processKey(encodeKey(char.code))
 
@@ -1460,8 +1451,9 @@ class SKKService : InputMethodService() {
         // |cutout.left|padding|   rootWidth   |padding|cutout.right|
         // |cutout.left|leftOffset|keyboard|rightOffset|cutout.right|
         val padding = AGInsets.subtract(mInsets, mCutout)
+        val keyboard = mInputView?.keyboard ?: return
         val rightOffset = mInsets.left + mRootWidth + mInsets.right -
-                (mCutout.left + leftOffset + mInputView!!.keyboard.width + mCutout.right)
+                (mCutout.left + leftOffset + keyboard.width + mCutout.right)
         (mBinding.container.layoutParams as ViewGroup.MarginLayoutParams).apply {
             leftMargin = if (isFloating()) leftOffset else padding.left
             rightMargin = if (isFloating()) rightOffset else padding.right

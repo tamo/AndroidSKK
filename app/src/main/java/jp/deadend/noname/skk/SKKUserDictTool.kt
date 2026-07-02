@@ -66,14 +66,16 @@ class SKKUserDictTool : AppCompatActivity() {
             withUserDict { store ->
                 withContext(Dispatchers.Main) { mMenu.setGroupEnabled(0, false) }
 
-                val name = getFileNameFromUri(this@SKKUserDictTool, uri)!!
-                val isGzip = name.endsWith(".gz")
-                val isWordList = name.endsWith("combined.gz")
-
                 try {
+                    val name = getFileNameFromUri(this@SKKUserDictTool, uri)
+                        ?: throw IOException("getFileNameFromUri returned null")
+                    val isGzip = name.endsWith(".gz")
+                    val isWordList = name.endsWith("combined.gz")
+
                     withContext(Dispatchers.Main) { mSearchView.queryHint = "文字セット識別中" }
                     val charset = if (!isWordList &&
-                        contentResolver.openInputStream(uri)!!.use { inputStream ->
+                        (contentResolver.openInputStream(uri)
+                            ?: return@withUserDict).use { inputStream ->
                             val processedInputStream =
                                 if (isGzip) GZIPInputStream(inputStream) else inputStream
                             isTextDictInEucJp(processedInputStream)
@@ -95,12 +97,16 @@ class SKKUserDictTool : AppCompatActivity() {
                         }
                     }
                 } catch (e: IOException) {
-                    val errorMessage =
-                        if (e is CharacterCodingException) getString(R.string.error_text_dict_coding)
-                        else getString(
+                    val errorMessage = when {
+                        e is CharacterCodingException -> getString(R.string.error_text_dict_coding)
+                        e.message.orEmpty().contains("getFileNameFromUri") ->
+                            getString(R.string.error_file_load, e.message)
+
+                        else -> getString(
                             R.string.error_file_load,
                             getFileNameFromUri(this@SKKUserDictTool, uri)
                         )
+                    }
                     withContext(Dispatchers.Main) {
                         SimpleMessageDialogFragment.newInstance(errorMessage)
                             .show(supportFragmentManager, "dialog")
@@ -166,7 +172,7 @@ class SKKUserDictTool : AppCompatActivity() {
 
     public override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        mDictName = intent.dataString!!
+        mDictName = intent.dataString ?: return
         val binding = ActivityUserDictToolBinding.inflate(layoutInflater)
         setContentView(binding.root)
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, windowInsets ->
@@ -205,7 +211,7 @@ class SKKUserDictTool : AppCompatActivity() {
                     object : ConfirmationDialogFragment.Listener {
                         override fun onPositiveClick() {
                             val adapter = parent.adapter as EntryAdapter
-                            val item = adapter.getItem(position)!!
+                            val item = adapter.getItem(position) ?: return
                             SKKLog.d("remove $item from $mDictName")
                             mDatabaseJob.cancel()
                             mDatabaseJob = mScope.launch(Dispatchers.IO) {

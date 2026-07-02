@@ -206,11 +206,11 @@ class SKKEngine(
         return state.handleEnter(this)
     }
 
-    internal fun handleBackspace(): Boolean = handleDelete(false)
+    internal fun handleBackspace(): Boolean = handleDelete()
 
     internal fun handleForwardDel(): Boolean = handleDelete(true)
 
-    internal fun handleDelete(isForward: Boolean = false): Boolean {
+    private fun handleDelete(isForward: Boolean = false): Boolean {
         SKKLog.d("handleDelete(isForward=$isForward) in ${state.name} ($mKanjiKey[$mComposing])")
         if (state.hasCandidates) {
             if (!isForward) state.afterBackspace(this)
@@ -242,7 +242,7 @@ class SKKEngine(
         when (isForward) {
             true -> if (mKanjiKey.isNotEmpty() && mKanjiKey.cursor < mKanjiKey.length) {
                 mKanjiKey.deleteAfterCursor(all = false)
-                state.afterBackspace(this, false)
+                state.afterBackspace(this)
             }
 
             false -> when {
@@ -277,7 +277,7 @@ class SKKEngine(
             mOkurigana = ""
             return
         }
-        val (regInfo, firstEntry) = mRegister.first()!!
+        val (regInfo, firstEntry) = mRegister.first() ?: return
         firstEntry.insert(regInfo.cursor, text)
         regInfo.cursor += text.length
         setComposingTextSKK("")
@@ -409,7 +409,7 @@ class SKKEngine(
                 val newLastChar = newLast2Chars.second
 
                 if (mRegister.isOngoing) {
-                    val (regInfo, firstEntry) = mRegister.first()!!
+                    val (regInfo, firstEntry) = mRegister.first() ?: return
                     if (regInfo.cursor < if (deleteTwo) 2 else 1) return
                     firstEntry.deleteCharAt(regInfo.cursor--)
                     if (deleteTwo) {
@@ -470,7 +470,7 @@ class SKKEngine(
             ct.append("登録")
             repeat(depth) { ct.append("]") }
 
-            val (regInfo, entry) = mRegister.first()!!
+            val (regInfo, entry) = mRegister.first() ?: return
             val key = regInfo.key.convertTo(kanaState)
             val okurigana = regInfo.okurigana.convertTo(kanaState)
             if (okurigana.isEmpty()) {
