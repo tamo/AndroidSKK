@@ -41,7 +41,7 @@ class SKKEngine(
         private set
     internal var kanaState: SKKState = SKKHiraganaState
     internal var oldState: SKKState = SKKHiraganaState
-    private var cameFromFlick: Boolean = skkPrefs.softKeyboardType != "qwerty"
+    private var wasFlickBeforeTemporary: Boolean = skkPrefs.softKeyboardType != "qwerty"
 
     internal val mCandidates = SKKCandidates(this, mService)
     internal val mRegister = SKKRegister(this)
@@ -289,15 +289,8 @@ class SKKEngine(
         mKanjiKey.clear()
         mOkurigana = ""
         mCandidates.reset()
-        when {
-            state.isTransient -> {
-                changeState(kanaState)
-                mService.showStatusIcon(state.icon)
-            }
-
-            state is SKKASCIIState -> mService.hideStatusIcon()
-            else -> mService.showStatusIcon(state.icon)
-        }
+        if (state.isTransient) changeState(kanaState)
+        state.onEnter(this, state)
 
         // onStartInput()では，WebViewのときsetComposingText("", 1)すると落ちるようなのでやめる
     }
@@ -399,67 +392,16 @@ class SKKEngine(
     internal fun changeLastChar(type: String) {
         SKKLog.d("changeLastChar($type) in ${state.name} ($mKanjiKey[$mComposing])")
         when {
-            state is SKKPreeditState && mComposing.isEmpty() && mKanjiKey.cursor > 0 -> {
-                val s = mKanjiKey.toString() // ▽あい
-                if (mKanjiKey.cursor < 2 && type == LAST_CONVERSION_SHIFT) return // ▽あ
-                val newLastChar = RomajiConverter.convertLastChar(
-                    s.substring(mKanjiKey.cursor - 1, mKanjiKey.cursor), type
-                ).second
-                // この convertLastChar に 2 文字が渡ることはない
+            state.transformLastChar(this, type) -> return
 
-                mKanjiKey.deleteAtCursor()
-                if (type == LAST_CONVERSION_SHIFT) {
-                    mKanjiKey.deleteAfterCursor()
-                    mKanjiKey.insertAtCursor(RomajiConverter.getConsonantForVoiced(newLastChar))
-                    mOkurigana = newLastChar
-                    startConversion() // ▼合い
+            mKanjiKey.isEmpty() -> {
+                val cs = if (mComposing.isNotEmpty()) {
+                    mComposing.toString().also { mComposing.clear() }
                 } else {
-                    mKanjiKey.insertAtCursor(newLastChar)
-                    setComposingTextSKK()
-                    complete(mKanjiKey.toString())
+                    ic?.getTextBeforeCursor(2, 0) ?: return
                 }
-            }
-
-            state.hasCandidates && mComposing.isEmpty() -> {
-                if (state is SKKNarrowingState && SKKNarrowingState.mHint.isNotEmpty()) {
-                    val hint = SKKNarrowingState.mHint // ▼藹 hint: わ
-                    if (type == LAST_CONVERSION_SHIFT) return
-                    val newLastChar = RomajiConverter.convertLastChar(
-                        hint.substring(hint.cursor - 1, hint.cursor), type
-                    ).second
-                    // この convertLastChar にも 2 文字が渡ることはない
-
-                    hint.deleteAtCursor()
-                    hint.insertAtCursor(newLastChar)
-                    mCandidates.narrow(hint.toString())
-                } else if (state is SKKChooseState) {
-                    if (mOkurigana.isEmpty()) return
-                    val okurigana = mOkurigana // ▼合い (okurigana = い)
-                    val newOkurigana = RomajiConverter.convertLastChar(okurigana, type).second
-
-                    if (type == LAST_CONVERSION_SHIFT) {
-                        handleCancel() // ▽あ (mOkurigana = null)
-                        mKanjiKey.insertAtCursor(newOkurigana) // ▽あい
-                        setComposingTextSKK()
-                        complete(mKanjiKey.toString())
-                        return
-                    }
-                    // 例外: 送りがなが「っ」になる場合は，どのみち必ずt段の音なのでmKanjiKeyはそのまま
-                    // 「ゃゅょ」で送りがなが始まる場合はないはず
-                    if (type != LAST_CONVERSION_SMALL) {
-                        mKanjiKey.deleteAtCursor()
-                        mKanjiKey.insertAtCursor(RomajiConverter.getConsonantForVoiced(newOkurigana))
-                    }
-                    mOkurigana = newOkurigana
-                    startConversion() //変換やりなおし
-                }
-            }
-
-            mComposing.isEmpty() && mKanjiKey.isEmpty() -> {
-                ic ?: return
-                val cs = ic.getTextBeforeCursor(2, 0) ?: return
                 // 0〜2 文字を 0〜3 文字にするので注意!
-                val newLast2Chars = RomajiConverter.convertLastChar(cs.toString(), type)
+                val newLast2Chars = RomajiConverter.transform(cs.toString(), type)
                 SKKLog.d("changeLastChar: $cs -> 2chars=$newLast2Chars")
                 if (newLast2Chars.first.isEmpty() && newLast2Chars.second.isEmpty()) return
 
@@ -473,12 +415,13 @@ class SKKEngine(
                     if (deleteTwo) {
                         firstEntry.deleteCharAt(regInfo.cursor--)
                     }
-                    if (type == LAST_CONVERSION_SHIFT) {
+                    if (type == TRANS_SHIFT) {
                         mKanjiKey.append(katakana2hiragana(newLastChar))
                         changeState(SKKPreeditState)
                         setComposingTextSKK()
                         complete(mKanjiKey.toString())
                     } else {
+                        // ここは convertTo(state) しても良いかも
                         firstEntry.insert(regInfo.cursor, newLastChar)
                         regInfo.cursor += newLastChar.length
                         setComposingTextSKK("")
@@ -486,26 +429,23 @@ class SKKEngine(
                 } else {
                     // 同じ部分を消してまた書くのは避ける
                     when {
-                        cs.isEmpty() -> if (type != LAST_CONVERSION_SHIFT) return
+                        cs.isEmpty() -> if (type != TRANS_SHIFT) return
 
                         !deleteTwo -> {
-                            if (cs.last() == newLastChar.last() && type != LAST_CONVERSION_SHIFT) return
+                            if (cs.last() == newLastChar.last() && type != TRANS_SHIFT) return
                             else ic.deleteSurroundingText(1, 0)
                         }
 
                         else -> ic.deleteSurroundingText(2, 0)
                     }
-                    if (type == LAST_CONVERSION_SHIFT) {
+                    if (type == TRANS_SHIFT) {
                         mKanjiKey.append(katakana2hiragana(newLastChar))
                         changeState(SKKPreeditState) // Abbrevから来ることはないはず
                         setComposingTextSKK()
                         complete(mKanjiKey.toString())
                     } else {
-                        ic.commitText(
-                            if (state is SKKHanKanaState) zenkaku2hankaku(newLastChar)
-                            else newLastChar,
-                            1
-                        )
+                        // ここは convertTo(state) しても良いかも
+                        ic.commitText(newLastChar, 1)
                         mComposingText.setLength(0)
                     }
                 }
@@ -531,13 +471,8 @@ class SKKEngine(
             repeat(depth) { ct.append("]") }
 
             val (regInfo, entry) = mRegister.first()!!
-            val key =
-                if (kanaState is SKKHiraganaState) regInfo.key
-                else hiragana2katakana(regInfo.key)
-            val okurigana =
-                if (kanaState is SKKHiraganaState) regInfo.okurigana
-                else hiragana2katakana(regInfo.okurigana)
-            // 半角カナ変換はあとで
+            val key = regInfo.key.convertTo(kanaState)
+            val okurigana = regInfo.okurigana.convertTo(kanaState)
             if (okurigana.isEmpty()) {
                 ct.append(key)
             } else {
@@ -554,9 +489,7 @@ class SKKEngine(
 
         state.prefix?.let { prefix ->
             if (skkPrefs.prefixMark) {
-                if (!isPersonalizedLearning) {
-                    ct.append("㊙")
-                }
+                if (!isPersonalizedLearning) ct.append("㊙")
                 ct.append(prefix)
             } else if (text?.isEmpty() ?: mKanjiKey.isEmpty()) {
                 ct.append(" ")
@@ -569,18 +502,8 @@ class SKKEngine(
             "${mKanjiKey.take(mKanjiKey.cursor)}[${mComposing}]${mKanjiKey.drop(mKanjiKey.cursor)}"
         })
 
-        ct.append(
-            if (kanaState is SKKHiraganaState) textToProcess else hiragana2katakana(
-                textToProcess.toString(),
-                reversed = true
-            )
-        )
-        if (state is SKKNarrowingState) {
-            val hint = (state as SKKNarrowingState).mHint
-            val hintWithCursor = if (hint.cursor == hint.length) "${hint}${mComposing}"
-            else "${hint.take(hint.cursor)}[${mComposing}]${hint.drop(hint.cursor)}"
-            ct.append(" hint: ", hintWithCursor)
-        }
+        ct.append(textToProcess.toString().convertTo(kanaState, reversed = true))
+        state.setComposingText(this, ct)
 
         if (suffix.isNotEmpty()) {
             ct.append("]$suffix") // pseudo caret
@@ -859,102 +782,72 @@ class SKKEngine(
             if (!isAlphabet(mKanjiKey.first().code) && isAlphabet(mKanjiKey.last().code)) {
                 mKanjiKey.deleteLast()
             }
-            commitTextSKK(
-                when (kanaState) {
-                    SKKKatakanaState ->
-                        hiragana2katakana(mKanjiKey.toString())
-
-                    SKKHanKanaState ->
-                        zenkaku2hankaku(hiragana2katakana(mKanjiKey.toString()))
-
-                    else -> mKanjiKey.toString()
-                }
-            )
+            commitTextSKK(mKanjiKey.toString().convertTo(kanaState))
         }
         if (mComposing.toString() == "n") {
-            commitTextSKK(
-                when (kanaState) {
-                    SKKKatakanaState -> "ン"
-                    SKKHanKanaState -> "ﾝ"
-                    else -> "ん"
-                }
-            )
+            commitTextSKK("ん".convertTo(kanaState))
         }
         reset()
     }
 
-    internal fun changeState(newState: SKKState, force: Boolean = false) {
-        SKKLog.d("changeState ${this.state.name} -> ${newState.name} (force=$force)")
-        val willBeTemporaryView = newState.isTemporaryView
-        val wasTemporaryView = mService.isTemporaryView
-        val isPreeditTransition = this.state.isPreedit && newState.isPreedit // reset() しない
+    internal fun updateKanaState(state: SKKState) {
+        mService.kanaState = state
+    }
 
+    internal fun changeState(newState: SKKState, forceKeyboard: Boolean = false) {
+        SKKLog.d("changeState ${this.state.name} -> ${newState.name} (force=$forceKeyboard)")
+
+        val wasTemporaryQwerty = mService.isTemporaryQwerty
+        val willBeTemporaryQwerty = skkPrefs.softKeyboardType == "switch" &&
+                newState.isTemporaryQwerty
+        val isInternalTransition = newState.isTransient && // ▽▼ への遷移は通常では何もしない
+                !forceKeyboard && // しかしキーボード変更を強制する場合や
+                !willBeTemporaryQwerty && !wasTemporaryQwerty // abbrev 等の一時的な変更は除外
+
+        this.state.onExit(this, newState)
         oldState = this.state
-
-        if (oldState.canComplete && newState.hasCandidates)
-            mCandidates.reset() // 前の補完が遅れて悪さをしないように止める
-
         this.state = newState
 
-        val prevInputView = if (cameFromFlick) kanaState else SKKASCIIState
-        if (!newState.isTransient || force || willBeTemporaryView || wasTemporaryView) {
-            if (!newState.isTransient && !mCandidates.isSpecial) {
-                commitComposing() // 暗黙の確定
-            } else if (!isPreeditTransition) {
-                reset()
-            }
+        if (!isInternalTransition) {
             when {
-                force || willBeTemporaryView -> changeSoftKeyboard(newState)
-                wasTemporaryView -> mService.changeSoftKeyboard(prevInputView) // cameFromFlick に記録しない
+                forceKeyboard || willBeTemporaryQwerty -> changeSoftKeyboard(newState)
+
+                // 一時的なキーボードから戻る場面なので、wasFlick に記録せず直接 mService を叩く
+                wasTemporaryQwerty && wasFlickBeforeTemporary ->
+                    mService.changeSoftKeyboard(kanaState)
             }
-            if (mRegister.isOngoing) setComposingTextSKK("")
             // reset()で一旦消してるので， 登録中はここまで来てからComposingText復活
+            if (mRegister.isOngoing) setComposingTextSKK("")
         }
 
-        when (newState) {
-            SKKHiraganaState, SKKKatakanaState, SKKHanKanaState ->
-                mService.kanaState = newState
-
-            is SKKNarrowingState -> {
-                newState.apply {
-                    mHint.clear()
-                    mOriginalCandidates = null
-                    mSpaceUsed = false
-                    isASCII = false
-                }
-                mCandidates.updateComposingText()
-            }
-        }
-        if (newState.icon != 0) {
-            mService.showStatusIcon(newState.icon)
-        } else if (newState is SKKASCIIState) {
-            mService.hideStatusIcon()
-        }
+        newState.onEnter(this, oldState)
     }
 
     internal fun changeSoftKeyboard(state: SKKState) {
         // 仮名からASCII以外の一時的なキーボードになるときや明示的変更のとき記録して後で戻れるようにしておく
-        cameFromFlick = when {
-            state.isTemporaryView -> mService.isFlickWidth()
-            else -> when (state) {
-                SKKASCIIState -> false
-                SKKHiraganaState, SKKKatakanaState, SKKHanKanaState -> true
-                else -> {
-                    SKKLog.e("changeSoftKeyboard(${state.name})", Throwable())
-                    return
-                }
-            }
+        wasFlickBeforeTemporary = when {
+            state.isTemporaryQwerty -> mService.isFlick()
+            !state.isTransient -> skkPrefs.softKeyboardType != "qwerty" && state.isJapanese
+            else -> wasFlickBeforeTemporary
         }
         mService.changeSoftKeyboard(state)
     }
 
+    internal fun updateStatusIcon(icon: Int) {
+        when (icon) {
+            -1 -> mService.hideStatusIcon()
+            0 -> {}
+            else -> mService.showStatusIcon(icon)
+        }
+    }
+
 
     companion object {
-        const val LAST_CONVERSION_SMALL = "small"
-        const val LAST_CONVERSION_DAKUTEN = "dakuten"
-        const val LAST_CONVERSION_HANDAKUTEN = "handakuten"
-        const val LAST_CONVERSION_TRANS = "trans"
-        const val LAST_CONVERSION_SHIFT = "shift"
+        const val TRANS_SMALL = "small"
+        const val TRANS_DAKUTEN = "dakuten"
+        const val TRANS_HANDAKUTEN = "handakuten"
+        const val TRANS_AUTO = "auto"
+        const val TRANS_SHIFT = "shift"
         const val ASCII_WORD_MAX_LENGTH = 32
     }
 }

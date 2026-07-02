@@ -7,7 +7,7 @@ import jp.deadend.noname.skk.lowerCode
 
 // 全角英数モード
 object SKKZenkakuState : SKKState {
-    override val isTemporaryView = true
+    override val isTemporaryQwerty = true
     override val isJapanese = false
     override val icon = R.drawable.ic_full_alphabet
 

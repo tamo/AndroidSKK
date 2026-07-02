@@ -50,6 +50,9 @@ abstract class SKKConfirmingState : SKKState {
     override fun changeToFlick(context: SKKEngine) =
         declineUnregister(context)
 
+    override fun transformLastChar(context: SKKEngine, type: String) =
+        declineUnregister(context)
+
     fun confirmUnregister(context: SKKEngine, entryString: String, onConfirm: () -> Unit) {
         oldList = context.mCandidates.mList
         oldIndex = context.mCandidates.mIndex

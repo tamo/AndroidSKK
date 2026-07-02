@@ -4,11 +4,11 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import jp.deadend.noname.skk.SKKKanaRule.DEFAULT_RULE_FILE
 import jp.deadend.noname.skk.engine.RomajiConverter
-import jp.deadend.noname.skk.engine.SKKEngine.Companion.LAST_CONVERSION_DAKUTEN
-import jp.deadend.noname.skk.engine.SKKEngine.Companion.LAST_CONVERSION_HANDAKUTEN
-import jp.deadend.noname.skk.engine.SKKEngine.Companion.LAST_CONVERSION_SHIFT
-import jp.deadend.noname.skk.engine.SKKEngine.Companion.LAST_CONVERSION_SMALL
-import jp.deadend.noname.skk.engine.SKKEngine.Companion.LAST_CONVERSION_TRANS
+import jp.deadend.noname.skk.engine.SKKEngine.Companion.TRANS_AUTO
+import jp.deadend.noname.skk.engine.SKKEngine.Companion.TRANS_DAKUTEN
+import jp.deadend.noname.skk.engine.SKKEngine.Companion.TRANS_HANDAKUTEN
+import jp.deadend.noname.skk.engine.SKKEngine.Companion.TRANS_SHIFT
+import jp.deadend.noname.skk.engine.SKKEngine.Companion.TRANS_SMALL
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -123,55 +123,55 @@ class RomajiConverterTest {
     }
 
     @Test
-    fun testConvertLastChar() {
+    fun testTransform() {
         // LAST_CONVERSION_SMALL
-        assertEquals("" to "", RomajiConverter.convertLastChar("", LAST_CONVERSION_SMALL))
-        assertEquals("" to "ぁ", RomajiConverter.convertLastChar("あ", LAST_CONVERSION_SMALL))
-        assertEquals("" to "あ", RomajiConverter.convertLastChar("ぁ", LAST_CONVERSION_SMALL))
-        assertEquals("" to "ゕ", RomajiConverter.convertLastChar("か", LAST_CONVERSION_SMALL))
-        assertEquals("" to "か", RomajiConverter.convertLastChar("ゕ", LAST_CONVERSION_SMALL))
-        assertEquals("" to "が", RomajiConverter.convertLastChar("が", LAST_CONVERSION_SMALL))
-        assertEquals("" to "ゃ", RomajiConverter.convertLastChar("や", LAST_CONVERSION_SMALL))
-        assertEquals("" to "っ", RomajiConverter.convertLastChar("つ", LAST_CONVERSION_SMALL))
-        assertEquals("" to "ァ", RomajiConverter.convertLastChar("ア", LAST_CONVERSION_SMALL))
-        assertEquals("" to "ヵ", RomajiConverter.convertLastChar("カ", LAST_CONVERSION_SMALL))
-        assertEquals("" to "ガ", RomajiConverter.convertLastChar("ｶﾞ", LAST_CONVERSION_SMALL))
-        assertEquals("" to "ヵ", RomajiConverter.convertLastChar("ｶ", LAST_CONVERSION_SMALL))
+        assertEquals("" to "", RomajiConverter.transform("", TRANS_SMALL))
+        assertEquals("" to "ぁ", RomajiConverter.transform("あ", TRANS_SMALL))
+        assertEquals("" to "あ", RomajiConverter.transform("ぁ", TRANS_SMALL))
+        assertEquals("" to "ゕ", RomajiConverter.transform("か", TRANS_SMALL))
+        assertEquals("" to "か", RomajiConverter.transform("ゕ", TRANS_SMALL))
+        assertEquals("" to "が", RomajiConverter.transform("が", TRANS_SMALL))
+        assertEquals("" to "ゃ", RomajiConverter.transform("や", TRANS_SMALL))
+        assertEquals("" to "っ", RomajiConverter.transform("つ", TRANS_SMALL))
+        assertEquals("" to "ァ", RomajiConverter.transform("ア", TRANS_SMALL))
+        assertEquals("" to "ヵ", RomajiConverter.transform("カ", TRANS_SMALL))
+        assertEquals("" to "ガ", RomajiConverter.transform("ｶﾞ", TRANS_SMALL))
+        assertEquals("" to "ヵ", RomajiConverter.transform("ｶ", TRANS_SMALL))
         // 2 文字を前提として first と last で見ている
-        assertEquals("i" to "d", RomajiConverter.convertLastChar("invalid", LAST_CONVERSION_SMALL))
+        assertEquals("i" to "d", RomajiConverter.transform("invalid", TRANS_SMALL))
 
         // LAST_CONVERSION_DAKUTEN
-        assertEquals("か" to "が", RomajiConverter.convertLastChar("かか", LAST_CONVERSION_DAKUTEN))
-        assertEquals("か" to "ば", RomajiConverter.convertLastChar("かは", LAST_CONVERSION_DAKUTEN))
-        assertEquals("か" to "は", RomajiConverter.convertLastChar("かば", LAST_CONVERSION_DAKUTEN))
-        assertEquals("か" to "ゞ", RomajiConverter.convertLastChar("かゝ", LAST_CONVERSION_DAKUTEN))
-        assertEquals("カ" to "ガ", RomajiConverter.convertLastChar("カカ", LAST_CONVERSION_DAKUTEN))
-        assertEquals("カ" to "バ", RomajiConverter.convertLastChar("カハ", LAST_CONVERSION_DAKUTEN))
-        assertEquals("カ" to "ヾ", RomajiConverter.convertLastChar("カヽ", LAST_CONVERSION_DAKUTEN))
+        assertEquals("か" to "が", RomajiConverter.transform("かか", TRANS_DAKUTEN))
+        assertEquals("か" to "ば", RomajiConverter.transform("かは", TRANS_DAKUTEN))
+        assertEquals("か" to "は", RomajiConverter.transform("かば", TRANS_DAKUTEN))
+        assertEquals("か" to "ゞ", RomajiConverter.transform("かゝ", TRANS_DAKUTEN))
+        assertEquals("カ" to "ガ", RomajiConverter.transform("カカ", TRANS_DAKUTEN))
+        assertEquals("カ" to "バ", RomajiConverter.transform("カハ", TRANS_DAKUTEN))
+        assertEquals("カ" to "ヾ", RomajiConverter.transform("カヽ", TRANS_DAKUTEN))
 
         // LAST_CONVERSION_HANDAKUTEN
-        assertEquals("" to "ぱ", RomajiConverter.convertLastChar("は", LAST_CONVERSION_HANDAKUTEN))
-        assertEquals("" to "は", RomajiConverter.convertLastChar("ぱ", LAST_CONVERSION_HANDAKUTEN))
-        assertEquals("" to "パ", RomajiConverter.convertLastChar("ハ", LAST_CONVERSION_HANDAKUTEN))
+        assertEquals("" to "ぱ", RomajiConverter.transform("は", TRANS_HANDAKUTEN))
+        assertEquals("" to "は", RomajiConverter.transform("ぱ", TRANS_HANDAKUTEN))
+        assertEquals("" to "パ", RomajiConverter.transform("ハ", TRANS_HANDAKUTEN))
 
         // LAST_CONVERSION_TRANS
-        assertEquals("" to "ぁ", RomajiConverter.convertLastChar("あ", LAST_CONVERSION_TRANS))
-        assertEquals("" to "あ", RomajiConverter.convertLastChar("ぁ", LAST_CONVERSION_TRANS))
-        assertEquals("" to "び", RomajiConverter.convertLastChar("ひ", LAST_CONVERSION_TRANS))
-        assertEquals("" to "ぴ", RomajiConverter.convertLastChar("び", LAST_CONVERSION_TRANS))
-        assertEquals("" to "ひ", RomajiConverter.convertLastChar("ぴ", LAST_CONVERSION_TRANS))
+        assertEquals("" to "ぁ", RomajiConverter.transform("あ", TRANS_AUTO))
+        assertEquals("" to "あ", RomajiConverter.transform("ぁ", TRANS_AUTO))
+        assertEquals("" to "び", RomajiConverter.transform("ひ", TRANS_AUTO))
+        assertEquals("" to "ぴ", RomajiConverter.transform("び", TRANS_AUTO))
+        assertEquals("" to "ひ", RomajiConverter.transform("ぴ", TRANS_AUTO))
         // useSmallK は既定で false
-        assertEquals("" to "ガ", RomajiConverter.convertLastChar("カ", LAST_CONVERSION_TRANS))
-        assertEquals("" to "ガ", RomajiConverter.convertLastChar("ヵ", LAST_CONVERSION_TRANS))
-        assertEquals("" to "カ", RomajiConverter.convertLastChar("ガ", LAST_CONVERSION_TRANS))
+        assertEquals("" to "ガ", RomajiConverter.transform("カ", TRANS_AUTO))
+        assertEquals("" to "ガ", RomajiConverter.transform("ヵ", TRANS_AUTO))
+        assertEquals("" to "カ", RomajiConverter.transform("ガ", TRANS_AUTO))
         // useSmallK は既定で false
-        assertEquals("" to "ガ", RomajiConverter.convertLastChar("ｶ", LAST_CONVERSION_TRANS))
-        assertEquals("" to "カ", RomajiConverter.convertLastChar("ｶﾞ", LAST_CONVERSION_TRANS))
+        assertEquals("" to "ガ", RomajiConverter.transform("ｶ", TRANS_AUTO))
+        assertEquals("" to "カ", RomajiConverter.transform("ｶﾞ", TRANS_AUTO))
 
         // LAST_CONVERSION_SHIFT
-        assertEquals("あ" to "a", RomajiConverter.convertLastChar("あa", LAST_CONVERSION_SHIFT))
-        assertEquals("あ" to "あ", RomajiConverter.convertLastChar("ああ", LAST_CONVERSION_SHIFT))
-        assertEquals("あ" to "漢", RomajiConverter.convertLastChar("あ漢", LAST_CONVERSION_SHIFT))
+        assertEquals("あ" to "a", RomajiConverter.transform("あa", TRANS_SHIFT))
+        assertEquals("あ" to "あ", RomajiConverter.transform("ああ", TRANS_SHIFT))
+        assertEquals("あ" to "漢", RomajiConverter.transform("あ漢", TRANS_SHIFT))
     }
 
     @Test

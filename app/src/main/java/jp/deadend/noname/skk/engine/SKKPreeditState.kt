@@ -11,6 +11,7 @@ import jp.deadend.noname.skk.zenkaku2hankaku
 
 // 漢字変換のためのひらがな入力中(▽モード)
 object SKKPreeditState : SKKState {
+    override val isJapanese = true
     override val isTransient = true
     override val isPreedit = true
     override val canComplete = true
@@ -196,5 +197,35 @@ object SKKPreeditState : SKKState {
 
     override fun changeToFlick(context: SKKEngine): Boolean {
         return false
+    }
+
+    override fun transformLastChar(context: SKKEngine, type: String): Boolean = true.also {
+        context.run {
+            if (mComposing.isNotEmpty()) {
+                mKanjiKey.insertAtCursor(mComposing.toString())
+                mComposing.clear()
+                return@run
+            }
+            when (mKanjiKey.cursor) {
+                0 -> return@run
+                1 if type == SKKEngine.TRANS_SHIFT -> return@run
+            }
+            val newLastChar = RomajiConverter.transform(
+                mKanjiKey.substring(mKanjiKey.cursor - 1, mKanjiKey.cursor), type
+            ).second
+            // この transform に 2 文字が渡ることはない
+
+            mKanjiKey.deleteAtCursor()
+            if (type == SKKEngine.TRANS_SHIFT) {
+                mKanjiKey.deleteAfterCursor()
+                mKanjiKey.insertAtCursor(RomajiConverter.getConsonantForVoiced(newLastChar))
+                mOkurigana = newLastChar
+                startConversion() // ▼合い
+            } else {
+                mKanjiKey.insertAtCursor(newLastChar)
+                setComposingTextSKK()
+                complete(mKanjiKey.toString())
+            }
+        }
     }
 }

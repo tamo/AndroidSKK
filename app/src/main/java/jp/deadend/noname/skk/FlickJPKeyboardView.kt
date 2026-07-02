@@ -446,11 +446,11 @@ class FlickJPKeyboardView(
         }
 
         when (currentAction.text) {
-            SKKFlickRule.ACTION_SMALL_LAST -> mService.changeLastChar(SKKEngine.LAST_CONVERSION_SMALL)
-            SKKFlickRule.ACTION_DAKUTEN_LAST -> mService.changeLastChar(SKKEngine.LAST_CONVERSION_DAKUTEN)
-            SKKFlickRule.ACTION_HANDAKUTEN_LAST -> mService.changeLastChar(SKKEngine.LAST_CONVERSION_HANDAKUTEN)
-            SKKFlickRule.ACTION_TRANS_LAST -> mService.changeLastChar(SKKEngine.LAST_CONVERSION_TRANS)
-            SKKFlickRule.ACTION_SHIFT_LAST -> mService.changeLastChar(SKKEngine.LAST_CONVERSION_SHIFT)
+            SKKFlickRule.ACTION_TRANS_SMALL -> mService.changeLastChar(SKKEngine.TRANS_SMALL)
+            SKKFlickRule.ACTION_TRANS_DAKUTEN -> mService.changeLastChar(SKKEngine.TRANS_DAKUTEN)
+            SKKFlickRule.ACTION_TRANS_HANDAKUTEN -> mService.changeLastChar(SKKEngine.TRANS_HANDAKUTEN)
+            SKKFlickRule.ACTION_TRANS_AUTO -> mService.changeLastChar(SKKEngine.TRANS_AUTO)
+            SKKFlickRule.ACTION_TRANS_SHIFT -> mService.changeLastChar(SKKEngine.TRANS_SHIFT)
 
             SKKFlickRule.ACTION_CANCEL -> mService.handleCancel()
             SKKFlickRule.ACTION_EMOJI -> mService.emojiCandidates()

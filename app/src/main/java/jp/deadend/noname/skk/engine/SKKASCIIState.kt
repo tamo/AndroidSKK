@@ -8,6 +8,7 @@ import jp.deadend.noname.skk.lowerCode
 object SKKASCIIState : SKKConfirmingState() {
     override val canComplete = true
     override val isJapanese = false
+    override val icon = -1 // 非表示
 
     // Flickにするのは別キーなので内部だけひらがなに
     override fun handleKanaKey(context: SKKEngine) {

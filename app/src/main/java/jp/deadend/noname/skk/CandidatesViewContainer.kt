@@ -176,7 +176,7 @@ class CandidatesViewContainer(screen: Context, attrs: AttributeSet) : LinearLayo
     private fun saveWidth() {
         setSize(-1)
         val widthToSave = mService.inputViewWidth * 100 /
-                if (mService.isFlickWidth()) 100 else skkPrefs.keyWidthQwertyZoom
+                if (mService.isFlick()) 100 else skkPrefs.keyWidthQwertyZoom
         SKKLog.d("saveWidth: widthToSave=$widthToSave")
         val minWidth = resources.getDimensionPixelSize(R.dimen.keyboard_minimum_width)
         when (resources.configuration.orientation) {

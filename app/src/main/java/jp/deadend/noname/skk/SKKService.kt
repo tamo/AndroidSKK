@@ -47,10 +47,7 @@ import jp.deadend.noname.skk.engine.RomajiConverter
 import jp.deadend.noname.skk.engine.SKKASCIIState
 import jp.deadend.noname.skk.engine.SKKAbbrevState
 import jp.deadend.noname.skk.engine.SKKEngine
-import jp.deadend.noname.skk.engine.SKKHanKanaState
 import jp.deadend.noname.skk.engine.SKKHiraganaState
-import jp.deadend.noname.skk.engine.SKKKatakanaState
-import jp.deadend.noname.skk.engine.SKKPreeditState
 import jp.deadend.noname.skk.engine.SKKState
 import jp.deadend.noname.skk.engine.SKKZenkakuState
 import kotlinx.coroutines.Dispatchers
@@ -70,7 +67,6 @@ class SKKService : InputMethodService() {
 
     private var mFlickJPInputView: FlickJPKeyboardView? = null
     private var mQwertyInputView: QwertyKeyboardView? = null
-    private var mAbbrevKeyboardView: AbbrevKeyboardView? = null
 
     // 現在表示中の KeyboardView
     private var mInputView: KeyboardView? = mFlickJPInputView
@@ -101,7 +97,6 @@ class SKKService : InputMethodService() {
             context.mFlickJPInputView?.mNumKeyboard -> KeyboardType.FlickJPNum
             context.mQwertyInputView?.mLatinKeyboard -> KeyboardType.QwertyLatin
             context.mQwertyInputView?.mSymbolsKeyboard -> KeyboardType.QwertySymbols
-            context.mAbbrevKeyboardView?.keyboard -> KeyboardType.Abbrev
             else -> null // ないはず
         }
 
@@ -109,7 +104,6 @@ class SKKService : InputMethodService() {
             get() = when (keyboardType) {
                 KeyboardType.FlickJPJP, KeyboardType.FlickJPNum -> context.mFlickJPInputView
                 KeyboardType.QwertyLatin, KeyboardType.QwertySymbols -> context.mQwertyInputView
-                KeyboardType.Abbrev -> context.mAbbrevKeyboardView
                 null -> null
             }
         val keyboard: Keyboard?
@@ -122,19 +116,21 @@ class SKKService : InputMethodService() {
             }
 
         private enum class KeyboardType {
-            FlickJPJP, FlickJPNum, QwertyLatin, QwertySymbols, Abbrev
+            FlickJPJP, FlickJPNum, QwertyLatin, QwertySymbols
         }
     }
 
-    // 幅の確認
-    internal fun isFlickWidth(view: KeyboardView? = null): Boolean =
+    internal fun isFlick(view: KeyboardView? = null): Boolean =
         (view ?: mInputView).let { it is FlickJPKeyboardView }
 
     private val isInPref
         get() = currentInputEditorInfo?.privateImeOptions == EDITOR_OPTION_PREF
 
-    internal val isTemporaryView: Boolean
-        get() = (mInputView === mAbbrevKeyboardView || mEngine.state is SKKZenkakuState)
+    internal val isTemporaryQwerty: Boolean
+        get() = skkPrefs.softKeyboardType == "switch" &&
+                mInputView === mQwertyInputView &&
+                engineState.isTemporaryQwerty
+
     internal var leftOffset = 0
     private val bottomOffset
         get() = max(
@@ -442,8 +438,7 @@ class SKKService : InputMethodService() {
     private fun readPrefsForInputView() {
         val flick = mFlickJPInputView?.setKeyState(engineState)
         val qwerty = mQwertyInputView?.setKeyState(engineState)
-        val abbrev = mAbbrevKeyboardView?.setKeyState(engineState)
-        if (flick == null || qwerty == null || abbrev == null) return
+        if (flick == null || qwerty == null) return
 
         val context = createNightModeContext(applicationContext, skkPrefs.theme)
         val keyHeight = keyboardHeight()
@@ -457,20 +452,16 @@ class SKKService : InputMethodService() {
         flick.setTypeface(typeface)
 
         val qwertyWidth = keyboardWidth(qwerty)
-        SKKLog.d("prepare qwerty and abbrev ($qwertyWidth, $keyHeight)")
+        SKKLog.d("prepare qwerty ($qwertyWidth, $keyHeight)")
         qwerty.keyboard.resize(qwertyWidth, keyHeight)
         qwerty.mSymbolsKeyboard.resize(qwertyWidth, keyHeight)
         qwerty.setTypeface(typeface)
-        abbrev.keyboard.resize(qwertyWidth, keyHeight)
-        abbrev.setTypeface(typeface)
 
         val density = context.resources.displayMetrics.density
         val sensitivity = (skkPrefs.flickSensitivity * density + 0.5f).toInt()
         flick.setFlickSensitivity(sensitivity)
         qwerty.setFlickSensitivity(sensitivity)
         qwerty.backgroundAlpha = 255 * alpha / 100
-        abbrev.setFlickSensitivity(sensitivity)
-        abbrev.backgroundAlpha = 255 * alpha / 100
     }
 
     private fun checkUseSoftKeyboard(
@@ -574,14 +565,11 @@ class SKKService : InputMethodService() {
         mFlickJPInputView?.setService(this)
         mQwertyInputView = QwertyKeyboardView(context, null)
         mQwertyInputView?.setService(this)
-        mAbbrevKeyboardView = AbbrevKeyboardView(context, null)
-        mAbbrevKeyboardView?.setService(this)
 
         if (skkPrefs.useInset) ResourcesCompat
             .getDrawable(context.resources, R.drawable.key_bg_inset, context.theme)?.let {
                 mFlickJPInputView?.setKeyBackground(it)
                 mQwertyInputView?.setKeyBackground(it)
-                mAbbrevKeyboardView?.setKeyBackground(it)
             }
         mCandidatesViewContainer.apply {
             background = ResourcesCompat
@@ -647,8 +635,7 @@ class SKKService : InputMethodService() {
 
         SKKLog.d("onCreateInputView: wasFlick=$wasFlick engineState=${engineState.name}")
         val keyboardView = (when (engineState) {
-            SKKASCIIState, SKKZenkakuState -> if (skkPrefs.softKeyboardType == "flick") mFlickJPInputView else mQwertyInputView
-            SKKAbbrevState -> mAbbrevKeyboardView
+            SKKASCIIState, SKKZenkakuState, SKKAbbrevState -> if (skkPrefs.softKeyboardType == "flick") mFlickJPInputView else mQwertyInputView
             else -> when {
                 skkPrefs.softKeyboardType == "qwerty" -> mQwertyInputView
                 else -> mFlickJPInputView
@@ -841,7 +828,7 @@ class SKKService : InputMethodService() {
         super.onStartInputView(editorInfo, restarting)
 
         // シフト等の状態を同期
-        listOf(mFlickJPInputView, mQwertyInputView, mAbbrevKeyboardView)
+        listOf(mFlickJPInputView, mQwertyInputView)
             .forEach { it?.setKeyState(engineState) }
 
         showStatusIcon(engineState.icon)
@@ -870,7 +857,6 @@ class SKKService : InputMethodService() {
         mInputStarted = false
 
         mQwertyInputView?.handleBack()
-        mAbbrevKeyboardView?.handleBack()
         onWindowHidden()
     }
 
@@ -1424,11 +1410,7 @@ class SKKService : InputMethodService() {
     fun changeSoftKeyboard(state: SKKState) {
         SKKLog.d("changeSoftKeyboard(${state.name})")
         // 長押しリピートの message が残っている可能性があるので止める
-        for (kv in listOf(
-            mAbbrevKeyboardView,
-            mFlickJPInputView,
-            mQwertyInputView
-        )) {
+        for (kv in listOf(mFlickJPInputView, mQwertyInputView)) {
             kv?.stopRepeatKey(true)
         }
 
@@ -1436,21 +1418,23 @@ class SKKService : InputMethodService() {
             if (skkPrefs.softKeyboardType == "flick") {
                 mFlickJPInputView?.setKeyState(state)
             } else when (state) {
-                // state==ASCII は Qwerty にするためだけの場合があるので引数を使わない
-                // 他の場合は基本的に state==engineState のはずなので、どちらでも構わない
-                SKKASCIIState -> mQwertyInputView?.setKeyState(engineState)
+                // 実際の engineState とは関係なく qwerty を使いたい場合もあるので
+                // if-else せず無条件に qwerty を使う
+                SKKASCIIState -> mQwertyInputView
 
-                SKKPreeditState, SKKHiraganaState, SKKKatakanaState, SKKHanKanaState -> when {
-                    skkPrefs.softKeyboardType == "qwerty" -> mQwertyInputView
-                    else -> mFlickJPInputView
-                }?.setKeyState(state)
+                else if state.isJapanese ->
+                    if (skkPrefs.softKeyboardType == "qwerty") mQwertyInputView
+                    else mFlickJPInputView
 
-                SKKAbbrevState -> mAbbrevKeyboardView?.setKeyState(state)
-
-                SKKZenkakuState -> mQwertyInputView?.setKeyState(state)
+                else if state.isTemporaryQwerty ->
+                    if (skkPrefs.softKeyboardType == "flick") mFlickJPInputView
+                    else mQwertyInputView
 
                 else -> throw Exception("invalid state: $state")
-            } ?: return
+            }?.setKeyState(engineState) ?: return
+            // state==ASCII は Qwerty にするためだけの場合があるので
+            // setKeyState(state) を使わないで setKeyState(engineState)
+            // 他の場合は基本的に state==engineState のはずなので、どちらでも構わない
         )
     }
 
@@ -1543,7 +1527,7 @@ class SKKService : InputMethodService() {
 
             else -> mRootWidth
         }
-        return (baseWidth * (if (isFlickWidth(view)) 100 else skkPrefs.keyWidthQwertyZoom) / 100)
+        return (baseWidth * (if (isFlick(view)) 100 else skkPrefs.keyWidthQwertyZoom) / 100)
             .coerceAtMost(mRootWidth)
     }
 

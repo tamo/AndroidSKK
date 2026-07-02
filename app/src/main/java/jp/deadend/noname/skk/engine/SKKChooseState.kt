@@ -105,4 +105,27 @@ object SKKChooseState : SKKConfirmingState() {
         }
         return true
     }
+
+    override fun transformLastChar(context: SKKEngine, type: String): Boolean = true.also {
+        if (!super.transformLastChar(context, type)) context.run {
+            if (mComposing.isNotEmpty()) return@run
+            if (mOkurigana.isEmpty()) return@run
+            val okurigana = mOkurigana // ▼合い (okurigana = い)
+            val newOkurigana = RomajiConverter.transform(okurigana, type).second
+
+            if (type == SKKEngine.TRANS_SHIFT) {
+                handleCancel(this, false)
+                return@run
+            }
+
+            // 例外: 送りがなが「っ」になる場合は，どのみち必ず「た行」の音なのでmKanjiKeyはそのまま
+            // 「ゃゅょ」で送りがなが始まる場合はないはず
+            if (type != SKKEngine.TRANS_SMALL) {
+                mKanjiKey.deleteLast()
+                mKanjiKey.append(RomajiConverter.getConsonantForVoiced(newOkurigana))
+            }
+            mOkurigana = newOkurigana
+            startConversion() //変換やりなおし
+        }
+    }
 }

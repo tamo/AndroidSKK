@@ -121,11 +121,11 @@ class SKKEngineTest {
         assertEquals(SKKPreeditState, engine.state)
         assertEquals("あ", engine.mKanjiKey.toString())
 
-        engine.changeLastChar("trans")
+        engine.changeLastChar(SKKEngine.TRANS_AUTO)
         assertEquals(SKKPreeditState, engine.state)
         assertEquals("ぁ", engine.mKanjiKey.toString())
 
-        engine.changeLastChar("trans")
+        engine.changeLastChar(SKKEngine.TRANS_AUTO)
         assertEquals(SKKPreeditState, engine.state)
         assertEquals("あ", engine.mKanjiKey.toString())
 
@@ -133,11 +133,11 @@ class SKKEngineTest {
         assertEquals(SKKPreeditState, engine.state)
         assertEquals("あで", engine.mKanjiKey.toString())
 
-        engine.changeLastChar("trans")
+        engine.changeLastChar(SKKEngine.TRANS_AUTO)
         assertEquals(SKKPreeditState, engine.state)
         assertEquals("あて", engine.mKanjiKey.toString())
 
-        engine.changeLastChar("shift")
+        engine.changeLastChar(SKKEngine.TRANS_SHIFT)
         assertEquals(SKKHiraganaState, engine.state)
         assertEquals(true, engine.mRegister.isOngoing)
         assertEquals("あt", engine.mRegister.mStack.first().key)
@@ -339,5 +339,23 @@ class SKKEngineTest {
         typeText("◀")
         assertEquals(SKKPreeditState, engine.state)
         assertEquals("い", engine.mKanjiKey.toString())
+    }
+
+    @Test
+    fun testNarrowingHint() {
+        val candidatesList = listOf("漢字", "感じ")
+        every { userDict.getEntry("かんじ") } returns
+                SKKUserDictionary.Entry(candidatesList, emptyList())
+        every { userDict.getEntry("か") } returns
+                SKKUserDictionary.Entry(listOf("漢"), emptyList())
+        typeText("Kanji :")
+        assertEquals(SKKNarrowingState, engine.state)
+        assertEquals("▼漢字 hint: ", engine.mComposingText.toString())
+
+        typeText("k")
+        assertEquals("▼漢字 hint: k", engine.mComposingText.toString())
+
+        typeText("a")
+        assertEquals("▼漢字 hint: か", engine.mComposingText.toString())
     }
 }

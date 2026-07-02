@@ -14,6 +14,21 @@ object SKKNarrowingState : SKKConfirmingState() {
     internal var mSpaceUsed = false // xを前候補にするためのフラグ
     internal var isASCII = false // isJapanese とは違って可変な内部フラグ
 
+    override fun onEnter(context: SKKEngine, oldState: SKKState) {
+        super.onEnter(context, oldState)
+        mHint.clear()
+        mOriginalCandidates = null
+        mSpaceUsed = false
+        isASCII = false
+        context.mCandidates.updateComposingText()
+    }
+
+    override fun setComposingText(context: SKKEngine, ct: StringBuilder) {
+        val hintWithCursor = if (mHint.cursor == mHint.length) "${mHint}${context.mComposing}"
+        else "${mHint.take(mHint.cursor)}[${context.mComposing}]${mHint.drop(mHint.cursor)}"
+        ct.append(" hint: $hintWithCursor")
+    }
+
     override fun handleKanaKey(context: SKKEngine) {
         if (!declineUnregister(context)) SKKChooseState.handleKanaKey(context)
     }
@@ -43,7 +58,7 @@ object SKKNarrowingState : SKKConfirmingState() {
                 }
 
                 skkPrefs.kanaKey -> if (isASCII) {
-                    // おそらくここは通らず changeToFlick 経由で日本語キーボードに戻る
+                    // ソフトキーからはここを通らず changeToFlick 経由で日本語キーボードに戻る
                     isASCII = false
                     changeSoftKeyboard(SKKHiraganaState)
                     return
@@ -69,16 +84,14 @@ object SKKNarrowingState : SKKConfirmingState() {
                 else -> if (mSpaceUsed && keyCode == 'x'.code) {
                     moveCandidateCursor(false)
                 } else {
-                    SKKHiraganaState
-                        .processKana(
-                            this,
-                            Character.toLowerCase(keyCode),
-                            false
-                        ) { _, hiraganaChar ->
-                            mHint.insertAtCursor(hiraganaChar)
-                            mComposing.setLength(0)
-                            mCandidates.narrow(mHint.toString())
-                        }
+                    SKKHiraganaState.processKana(
+                        this, Character.toLowerCase(keyCode)
+                    ) { _, hiraganaChar ->
+                        mHint.insertAtCursor(hiraganaChar)
+                        mComposing.setLength(0)
+                        mCandidates.narrow(mHint.toString())
+                    }
+                    mCandidates.updateComposingText()
                 }
             }
         }
@@ -124,5 +137,25 @@ object SKKNarrowingState : SKKConfirmingState() {
         if (declineUnregister(context)) return true
         isASCII = false
         return false
+    }
+
+    override fun transformLastChar(context: SKKEngine, type: String): Boolean = true.also {
+        if (!super.transformLastChar(context, type)) context.run {
+            if (type == SKKEngine.TRANS_SHIFT) return@run
+
+            mHint.insertAtCursor(mComposing.toString())
+            mComposing.clear()
+
+            if (mHint.isEmpty()) return@run
+
+            val newLastChar = RomajiConverter.transform(
+                mHint.substring(mHint.cursor - 1, mHint.cursor), type
+            ).second
+            // この transform に 2 文字が渡ることはない
+
+            mHint.deleteAtCursor()
+            mHint.insertAtCursor(newLastChar)
+            mCandidates.narrow(mHint.toString())
+        }
     }
 }

@@ -6,6 +6,7 @@ import jp.deadend.noname.skk.skkPrefs
 import jp.deadend.noname.skk.zenkaku2hankaku
 
 object SKKHanKanaState : SKKState {
+    override val isJapanese = true
     override val icon = R.drawable.ic_katakana
 
     override fun handleKanaKey(context: SKKEngine) {

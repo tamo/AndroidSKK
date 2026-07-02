@@ -10,7 +10,7 @@ import jp.deadend.noname.skk.skkPrefs
 object SKKAbbrevState : SKKState {
     override val isTransient = true
     override val isPreedit = true
-    override val isTemporaryView = true
+    override val isTemporaryQwerty = true
     override val canComplete = true
     override val prefix = "▽"
     override val isJapanese = false
@@ -73,4 +73,6 @@ object SKKAbbrevState : SKKState {
         context.changeState(context.kanaState, true)
         return true
     }
+
+    override fun transformLastChar(context: SKKEngine, type: String): Boolean = true
 }

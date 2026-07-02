@@ -33,8 +33,7 @@ object SKKHiraganaState : SKKState {
 
     internal fun processKana(
         context: SKKEngine,
-        keyCode: Int, commitAlphabet: Boolean = true, commitFunc:
-            (SKKEngine, String) -> Unit
+        keyCode: Int, commitFunc: (SKKEngine, String) -> Unit
     ) {
         val lower = keyCode.lowerCode
         val charCode = if (keyCode.isShifted) Character.toUpperCase(lower) else lower
@@ -77,14 +76,10 @@ object SKKHiraganaState : SKKState {
                     if (isAlphabet(codeLower)) {
                         if (!RomajiConverter.isIntermediateRomaji(mComposing.toString())) {
                             mComposing.setLength(0) // これまでの composing は typo とみなす
-                            if (canRetry) return processKana(
-                                context, keyCode, commitAlphabet, commitFunc
-                            ) // 「ca」などもあるので再突入
+                            if (canRetry) // 「ca」などもあるので再突入
+                                return processKana(context, keyCode, commitFunc)
                         }
-                        // NarrowingState からだとバグるので回避
-                        if (commitAlphabet) {
-                            setComposingTextSKK(mComposing)
-                        }
+                        setComposingTextSKK(mComposing)
                     } else {
                         commitFunc(context, Char(codeLower).toString())
                     }

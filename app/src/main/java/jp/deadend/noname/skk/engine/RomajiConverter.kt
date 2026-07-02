@@ -108,7 +108,7 @@ object RomajiConverter {
     private fun createVowelMap(map: Map<String, String>): Map<String, Char> =
         map.entries.associate { (r, k) -> k to r.last() }
 
-    fun convertLastChar(str: String, type: String): Pair<String, String> {
+    fun transform(str: String, type: String): Pair<String, String> {
         SKKLog.d("convertLastChar(str=$str, type=$type)")
 
         if (str.isEmpty()) return "" to "" // str が 0 文字の場合
@@ -119,7 +119,7 @@ object RomajiConverter {
         val kana = if (first.isNotEmpty() && zen.length == 1) {
             first = "" // ｶﾞとかﾊﾟ(2文字)からガやパ(1文字)になったので消さないとｶガやﾊパになる
             zen
-        } else if (type == SKKEngine.LAST_CONVERSION_SHIFT && isAlNum(last.code)) {
+        } else if (type == SKKEngine.TRANS_SHIFT && isAlNum(last.code)) {
             last.toString() // 英数SHIFTは全角にしないで使う
         } else {
             checkNotNull(hankaku2zenkaku(last.toString()))
@@ -128,7 +128,7 @@ object RomajiConverter {
 
         val kanaLast = kana.last().code
         if (
-            type != SKKEngine.LAST_CONVERSION_SHIFT // SHIFTは英数でも可
+            type != SKKEngine.TRANS_SHIFT // SHIFTは英数でも可
             && !isAnyKana(kanaLast)
         ) {
             SKKLog.d("last is not convertible: $last")
@@ -137,13 +137,13 @@ object RomajiConverter {
         SKKLog.d("first=$first (last=$last), kana=$kana")
 
         return first to (when (type) {
-            SKKEngine.LAST_CONVERSION_SMALL -> (mSmallKanaMap + mSmallKMap + mReversedSmallKanaMap)[kana]
-            SKKEngine.LAST_CONVERSION_DAKUTEN -> (mDakutenMap + mReversedDakutenMap)[kana]
+            SKKEngine.TRANS_SMALL -> (mSmallKanaMap + mSmallKMap + mReversedSmallKanaMap)[kana]
+            SKKEngine.TRANS_DAKUTEN -> (mDakutenMap + mReversedDakutenMap)[kana]
                 ?: mDakutenMap[mReversedHandakutenMap[kana]]            // 半濁点を濁点に
-            SKKEngine.LAST_CONVERSION_HANDAKUTEN -> (mHandakutenMap + mReversedHandakutenMap)[kana]
+            SKKEngine.TRANS_HANDAKUTEN -> (mHandakutenMap + mReversedHandakutenMap)[kana]
                 ?: mHandakutenMap[mReversedDakutenMap[kana]]            // 濁点を半濁点に
             // useSmallK は既定で false
-            SKKEngine.LAST_CONVERSION_TRANS -> (if (SKKApplication.prefs?.useSmallK == true) mSmallKMap[kana] else null)
+            SKKEngine.TRANS_AUTO -> (if (SKKApplication.prefs?.useSmallK == true) mSmallKMap[kana] else null)
                 ?: mSmallKanaMap[kana]                                  // 普通を小に
                 ?: mDakutenMap[mReversedSmallKanaMap[kana]]             // 小を濁点に
                 ?: mDakutenMap[kana]                                    // 普通を濁点に
@@ -151,7 +151,7 @@ object RomajiConverter {
                 ?: mReversedHandakutenMap[kana]                         // 半濁点を普通に
                 ?: mReversedDakutenMap[kana]                            // 濁点を普通に
                 ?: mReversedSmallKanaMap[kana]                          // 小文字を普通に
-            SKKEngine.LAST_CONVERSION_SHIFT -> kana
+            SKKEngine.TRANS_SHIFT -> kana
             else -> throw IllegalArgumentException("convertLastChar: unknown type $type")
         } ?: kana)
     }
