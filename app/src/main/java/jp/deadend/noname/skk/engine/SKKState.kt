@@ -18,7 +18,10 @@ interface SKKState {
     }
 
     fun onExit(context: SKKEngine, newState: SKKState) {
-        if (canComplete) context.mCandidates.reset() // 遅れた補完が悪さをしないように
+        if (canComplete) context.mCandidates.run {
+            suspendCompletion()
+            resumeCompletion()
+        } // 遅れた補完が悪さをしないように
 
         if (!newState.isTransient) when {
             isTransient && !context.mCandidates.isSpecial ->
