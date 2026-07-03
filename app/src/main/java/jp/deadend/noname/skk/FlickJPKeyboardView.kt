@@ -551,10 +551,13 @@ class FlickJPKeyboardView(
                         if (index == currentAction.codes.lastIndex) mService.resumeCompletion()
                         val (char, code) = if ((index == 0 && isShifted) || low and SHIFT_PRESSED != 0)
                             low.upperChar to low.upper else low.char to low
+
+                        // 絞り込みで既に hasCandidates なら気にせず続行
+                        val hadCandidates = mService.engineState.hasCandidates
                         if (inZenkaku) mService.processKeyIn(SKKZenkakuState, char)
                         else mService.processKey(code)
                         // ▼モードになっていたら次で確定してしまうので止まる
-                        if (mService.engineState.hasCandidates) return@loop
+                        if (!hadCandidates && mService.engineState.hasCandidates) return@loop
                     }
                 }
                 mService.resumeCompletion()
