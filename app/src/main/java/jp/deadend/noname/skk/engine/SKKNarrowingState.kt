@@ -23,6 +23,11 @@ object SKKNarrowingState : SKKConfirmingState() {
         context.mCandidates.updateComposingText()
     }
 
+    override fun onExit(context: SKKEngine, newState: SKKState) {
+        if (isASCII) context.changeSoftKeyboard(context.kanaState)
+        super.onExit(context, newState)
+    }
+
     override fun setComposingText(context: SKKEngine, ct: StringBuilder) {
         val hintWithCursor = if (mHint.cursor == mHint.length) "${mHint}${context.mComposing}"
         else "${mHint.take(mHint.cursor)}[${context.mComposing}]${mHint.drop(mHint.cursor)}"
@@ -44,16 +49,16 @@ object SKKNarrowingState : SKKConfirmingState() {
         val charCode = if (keyCode.isShifted) Character.toUpperCase(lower) else lower
         context.apply {
             when (keyCode) {
-                skkPrefs.zenkakuKey, skkPrefs.abbrevKey -> {
+                skkPrefs.zenkakuKey -> {
                     // 暗黙の確定
                     pickCurrentCandidate()
                     changeInputMode(keyCode)
                     return
                 }
 
-                skkPrefs.asciiKey -> if (!isASCII) {
+                skkPrefs.asciiKey, skkPrefs.abbrevKey -> if (!isASCII) {
                     isASCII = true
-                    changeSoftKeyboard(SKKASCIIState)
+                    if (skkPrefs.softKeyboardType != "flick") changeSoftKeyboard(SKKASCIIState)
                     return
                 }
 

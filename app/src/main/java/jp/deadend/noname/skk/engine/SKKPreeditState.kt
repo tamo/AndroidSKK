@@ -89,10 +89,11 @@ object SKKPreeditState : SKKState {
 
             when (codeLower) {
                 ' '.code, '>'.code, ':'.code -> {
-                    if (mCandidates.isSpecial) {
+                    if (mCandidates.isSpecial) { // 記号モード
                         return if (codeLower == ':'.code) {
                             mCandidates.loadAllSymbols() // カテゴリ未選択なので全候補から絞る
                             changeState(SKKNarrowingState)
+                            SKKNarrowingState.processKey(context, skkPrefs.asciiKey) // 注釈が英語なので
                         } else {
                             pickCandidatesViewManually(mCandidates.mIndex)
                         }
