@@ -4,49 +4,10 @@ import android.content.Context
 import android.net.Uri
 import java.io.File
 
-data class FlickAction(val text: String) {
-    val codes: IntArray
-
-    init {
-        val result = mutableListOf<Int>()
-        var i = 0
-        while (i < text.length) {
-            var meta = 0
-            while (i < text.length) when {
-                text.startsWith(SKKFlickRule.MOD_CTRL, i) -> {
-                    meta = meta or CTRL_PRESSED; i += SKKFlickRule.MOD_CTRL.length
-                }
-
-                text.startsWith(SKKFlickRule.MOD_ALT, i) -> {
-                    meta = meta or ALT_PRESSED; i += SKKFlickRule.MOD_ALT.length
-                }
-
-                text.startsWith(SKKFlickRule.MOD_META, i) -> {
-                    meta = meta or META_PRESSED; i += SKKFlickRule.MOD_META.length
-                }
-
-                else -> {
-                    result.add(encodeKey(text[i++].code, meta))
-                    break
-                }
-            }
-        }
-        codes = result.toIntArray()
-    }
-
-    fun removePrefix(prefix: String): FlickAction =
-        if (!text.startsWith(prefix)) this
-        else FlickAction(text.removePrefix(prefix))
-
-    companion object {
-        val EMPTY = FlickAction("")
-    }
-}
-
 data class FlickKeyConfig(
     val label: String,
     val labels: Array<String>,
-    val actions: Array<FlickAction>
+    val actions: Array<String>
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -65,7 +26,7 @@ data class FlickKeyConfig(
 
     companion object {
         fun createEmpty(): FlickKeyConfig = FlickKeyConfig(
-            "", Array(15) { "" }, Array(15) { FlickAction.EMPTY }
+            "", Array(15) { "" }, Array(15) { "" }
         )
     }
 }
@@ -78,6 +39,7 @@ object SKKFlickRule {
 
     internal const val MARKER_KATAKANA_ONLY = "(K)"
 
+    internal const val ACTION_NOOP = "()"
     internal const val ACTION_COMMIT = "(Commit)"
     internal const val ACTION_COMMIT_CANDIDATE = "(N)"
     internal const val ACTION_DEDUPE_N = "(n)"
@@ -122,9 +84,14 @@ object SKKFlickRule {
     internal const val ICON_RETURN = "(IconReturn)"
     internal const val ICON_SPACE = "(IconSpace)"
 
-    internal const val MOD_CTRL = "<C>"
-    internal const val MOD_ALT = "<A>"
-    internal const val MOD_META = "<M>"
+    internal const val ACTION_MOD_CTRL = "(C)"
+    internal const val ACTION_MOD_ALT = "(A)"
+    internal const val ACTION_MOD_META = "(M)"
+
+    internal val ACTIONS = this::class.java.declaredFields
+        .filter { it.name.startsWith("ACTION_") }
+        .map { it.get(this) as String }
+        .sortedByDescending { it.length }
 
     internal const val INTERNAL_FILE_NAME = "flick-rule.conf"
     private const val DEFAULT_RULE_FILE = "default-flick-rule.conf"
@@ -163,16 +130,16 @@ object SKKFlickRule {
 
             val label = fields[idx++]
             val labels = Array(15) { "" }
-            val actions = Array(15) { FlickAction.EMPTY }
+            val actions = Array(15) { "" }
 
             for (i in 0 until 15) {
                 val labelIdx = idx + i * 2
                 val actionIdx = idx + 1 + i * 2
                 if (labelIdx < fields.size) labels[i] = fields[labelIdx]
-                if (actionIdx < fields.size) actions[i] = FlickAction(fields[actionIdx])
+                if (actionIdx < fields.size) actions[i] = fields[actionIdx]
 
-                if (actions[i].codes.isEmpty() && labels[i].isNotEmpty()) actions[i] =
-                    FlickAction(ACTION_COMMIT + labels[i].removePrefix(MARKER_KATAKANA_ONLY))
+                if (actions[i].isEmpty() && labels[i].isNotEmpty()) actions[i] =
+                    ACTION_COMMIT + labels[i].removePrefix(MARKER_KATAKANA_ONLY)
             }
 
             val config = FlickKeyConfig(label, labels, actions)
