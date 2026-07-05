@@ -147,6 +147,29 @@
     <string name="menu_flick_rule_load_godan_simple">簡易表示 Godan を読み込む</string>
     <string name="message_confirm_load_godan_rule">Godanのフリックルールを読み込みますか？\n(現在の設定は上書きされます)</string>
 
+    <string name="message_confirm_delete_godan_keys">キーを減らします。キー 20 以降をすべて削除してよろしいですか？</string>
+    <string name="message_confirm_delete_ascii_section">ASCII セクションをすべて削除してよろしいですか？</string>
+    <string name="label_use_godan">キーを増やす</string>
+    <string name="label_enable_ascii">ASCII を有効化</string>
+    <string name="label_gui_mode">GUIモード</string>
+    <string name="label_text_mode">テキストモード</string>
+    <string name="label_section_main">通常</string>
+    <string name="label_section_number">10キー</string>
+    <string name="label_section_voice">声</string>
+    <string name="label_section_ascii">ASCII</string>
+    <string name="label_shift_toggle">シフト</string>
+
+    <string name="title_flick_rule_editor">キーの編集</string>
+    <string name="label_flick_rule_editor">[%1$s] (%2$d) %3$s</string>
+    <string name="label_main_key_label">上書きキーラベル</string>
+    <string name="hint_main_key_label">ガイドから自動生成</string>
+    <string name="label_normal_state">通常時</string>
+    <string name="label_shifted_state">シフト時</string>
+    <string name="label_flick_label">ガイド</string>
+    <string name="label_flick_action">アクション</string>
+    <string name="hint_flick_action">ガイドを直接入力</string>
+    <string name="label_save">保存</string>
+
     <string name="pref_dict_order" translatable="false">PrefKeyDicsOrder</string>
 
     <string name="btree_name" translatable="false">skk_dict</string>

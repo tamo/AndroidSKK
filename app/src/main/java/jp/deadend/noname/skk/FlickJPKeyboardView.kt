@@ -11,7 +11,6 @@ import android.view.MotionEvent
 import android.view.WindowManager
 import android.widget.PopupWindow
 import android.widget.TextView
-import androidx.annotation.VisibleForTesting
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import jp.deadend.noname.skk.databinding.PopupFlickguideBinding
@@ -48,13 +47,23 @@ class FlickJPKeyboardView(
     internal var mNumKeyboard: Keyboard? = null
     private var mVoiceKeyboard: Keyboard? = null
 
-    private var mFlickRules: Map<String, Map<Int, Pair<FlickKeyConfig, FlickKeyConfig?>>> =
-        emptyMap()
+    private var mFlickRules: FlickRule = FlickRule()
+    internal var isEditorMode = false
 
-    init {
-        mFlickRules = SKKFlickRule.loadFromInternalStorage(context) ?: emptyMap()
+    interface OnFlickListener {
+        fun onFlick(keyIndex: Int, flickIndex: Int)
     }
 
+    internal var onFlickListener: OnFlickListener? = null
+
+    init {
+        mFlickRules = SKKFlickRule.loadFromInternalStorage(context) ?: FlickRule()
+    }
+
+    fun setFlickRules(rules: FlickRule) {
+        mFlickRules = rules
+        invalidateAllKeys()
+    }
 
     override fun setService(service: SKKService) {
         super.setService(service)
@@ -62,7 +71,7 @@ class FlickJPKeyboardView(
         isPreviewEnabled = false
         setBackgroundColor(0x00000000)
 
-        mFlickRules = SKKFlickRule.loadFromInternalStorage(context) ?: emptyMap()
+        mFlickRules = SKKFlickRule.loadFromInternalStorage(context) ?: FlickRule()
         prepareNewKeyboard(context, mService.mRootWidth, mService.mScreenHeight)
     }
 
@@ -77,17 +86,16 @@ class FlickJPKeyboardView(
     }
 
     private fun getConfig(index: Int, keyboard: Keyboard? = this.keyboard): FlickKeyConfig? {
-        val section = when (keyboard) {
+        val sectionName = when (keyboard) {
             mNumKeyboard -> SKKFlickRule.SECTION_NUMBER
             mVoiceKeyboard -> SKKFlickRule.SECTION_VOICE
-            else if mService.engineState.isJapanese -> SKKFlickRule.SECTION_MAIN
-            else -> SKKFlickRule.SECTION_ASCII
+            else -> if (mIsASCII) SKKFlickRule.SECTION_ASCII else SKKFlickRule.SECTION_MAIN
         }
-        val sectionMap = mFlickRules[section]
-            ?: if (section == SKKFlickRule.SECTION_ASCII) mFlickRules[SKKFlickRule.SECTION_MAIN]
+        val section = mFlickRules.sections[sectionName]
+            ?: if (sectionName == SKKFlickRule.SECTION_ASCII) mFlickRules.sections[SKKFlickRule.SECTION_MAIN]
             else null
-        val pair = sectionMap?.get(index)
-        return if (isShifted) pair?.second ?: pair?.first else pair?.first
+        val entry = section?.entries?.get(index)
+        return if (isShifted) entry?.shifted ?: entry?.normal else entry?.normal
     }
 
     private fun FlickKeyConfig?.getAction(actionIndex: Int = 0): String =
@@ -121,7 +129,7 @@ class FlickJPKeyboardView(
         return ContextCompat.getDrawable(context, resId)
     }
 
-    private fun updateKeyLabels(state: SKKState? = null) {
+    internal fun updateKeyLabels(state: SKKState? = null) {
         state?.let {
             mIsASCII = !it.isJapanese
             isHankaku = it is SKKHanKanaState
@@ -156,23 +164,20 @@ class FlickJPKeyboardView(
     }
 
     internal fun prepareNewKeyboard(context: Context, widthPixel: Int, heightPixel: Int) {
-        mFlickRules = SKKFlickRule.loadFromInternalStorage(context) ?: emptyMap()
-        fun xmlId(section: String) =
-            if ((mFlickRules[section]?.keys?.size ?: 0) > 20) R.xml.keys_flick_24
-            else R.xml.keys_flick_jp
+        if (mFlickRules.sections.isEmpty()) {
+            mFlickRules = SKKFlickRule.loadFromInternalStorage(context) ?: FlickRule()
+        }
 
-        mJPKeyboard = Keyboard(
-            context, xmlId(SKKFlickRule.SECTION_MAIN),
-            mService.mRootWidth, mService.mScreenHeight
-        )
-        mNumKeyboard = Keyboard(
-            context, xmlId(SKKFlickRule.SECTION_NUMBER),
-            mService.mRootWidth, mService.mScreenHeight
-        )
-        mVoiceKeyboard = Keyboard(
-            context, xmlId(SKKFlickRule.SECTION_VOICE),
-            mService.mRootWidth, mService.mScreenHeight
-        )
+        fun has24(sect: String) = (mFlickRules.sections[sect]?.entries?.keys?.maxOrNull() ?: 0) > 19
+        fun xmlId(sect: String) = if (has24(sect)) R.xml.keys_flick_24 else R.xml.keys_flick_jp
+        val jpXmlId = if (has24(SKKFlickRule.SECTION_MAIN) || has24(SKKFlickRule.SECTION_ASCII))
+            R.xml.keys_flick_24 else R.xml.keys_flick_jp // Main と ASCII で共通させる必要がある
+
+        val maxW = mService.mRootWidth
+        val maxH = mService.mScreenHeight
+        mJPKeyboard = Keyboard(context, jpXmlId, maxW, maxH)
+        mNumKeyboard = Keyboard(context, xmlId(SKKFlickRule.SECTION_NUMBER), maxW, maxH)
+        mVoiceKeyboard = Keyboard(context, xmlId(SKKFlickRule.SECTION_VOICE), maxW, maxH)
 
         mJPKeyboard?.resize(widthPixel, heightPixel)
         mNumKeyboard?.resize(widthPixel, heightPixel)
@@ -309,6 +314,7 @@ class FlickJPKeyboardView(
                 mFlickStartY = me.y
                 mArrowStartX = me.x
                 mArrowStartY = me.y
+                super.onModifiedTouchEvent(me, possiblePoly)
             }
 
             MotionEvent.ACTION_MOVE -> {
@@ -351,18 +357,23 @@ class FlickJPKeyboardView(
                 }
 
                 if (skkPrefs.usePopup) setupPopupTextView()
-                return true
+                super.onModifiedTouchEvent(me, possiblePoly)
             }
 
-            MotionEvent.ACTION_UP -> release()
+            MotionEvent.ACTION_UP -> {
+                release()
+                super.onModifiedTouchEvent(me, possiblePoly)
+            }
+
+            else -> super.onModifiedTouchEvent(me, possiblePoly)
         }
-        return super.onModifiedTouchEvent(me, possiblePoly)
+        return true
     }
 
     private fun processFirstFlick(dx: Float, dy: Float) {
         val dAngle = diamondAngle(dx, dy)
-        val hasLeftCurve = mCurrentPopupLabels[5].isNotEmpty()
-        val hasRightCurve = mCurrentPopupLabels[6].isNotEmpty()
+        val hasLeftCurve = isEditorMode || mCurrentPopupLabels[5].isNotEmpty()
+        val hasRightCurve = isEditorMode || mCurrentPopupLabels[6].isNotEmpty()
 
         val newState = when (dAngle) {
             in 0.5f..1.5f -> EnumSet.of(FlickState.DOWN)
@@ -397,8 +408,8 @@ class FlickJPKeyboardView(
             mFlickState.contains(FlickState.DOWN) -> 4
             else -> 0
         }
-        val hasLeftCurve = mCurrentPopupLabels[baseIndex * 2 + 5].isNotEmpty()
-        val hasRightCurve = mCurrentPopupLabels[baseIndex * 2 + 6].isNotEmpty()
+        val hasLeftCurve = isEditorMode || mCurrentPopupLabels[baseIndex * 2 + 5].isNotEmpty()
+        val hasRightCurve = isEditorMode || mCurrentPopupLabels[baseIndex * 2 + 6].isNotEmpty()
 
         val newState = when {
             mFlickState.contains(FlickState.LEFT) -> when (diamondAngle(-dx, -dy)) {
@@ -436,7 +447,6 @@ class FlickJPKeyboardView(
         }
     }
 
-    @VisibleForTesting
     internal fun executeAction(actionText: String) {
         if (actionText.isEmpty()) return
 
@@ -601,7 +611,8 @@ class FlickJPKeyboardView(
 
         // val index = -(primaryCode + 1000) はシフトキーが codes 変更するため破綻
         val keyIndex = keyboard.keys.indexOfFirst { it.codes.main[0] == primaryCode }
-        val config = getConfig(keyIndex) ?: return mCurrentPopupLabels.fill("")
+        val config = getConfig(keyIndex) ?: if (isEditorMode) FlickKeyConfig.createEmpty()
+        else return mCurrentPopupLabels.fill("")
 
         if (mFlickState == EnumSet.of(FlickState.NONE)) {
             mLastPressedIndex = keyIndex
@@ -625,7 +636,7 @@ class FlickJPKeyboardView(
     }
 
     private fun showPopup() {
-        if (!skkPrefs.usePopup || mCurrentPopupLabels[0] == "") return
+        if (!skkPrefs.usePopup || !isEditorMode && mCurrentPopupLabels[0] == "") return
 
         // FlickJP は mPopupTextView の内容をロジックに使わない
         setupPopupTextView()
@@ -679,15 +690,20 @@ class FlickJPKeyboardView(
     }
 
     private fun release() {
-        val action = getKeyAction(mLastPressedIndex, getFlickIndex(mFlickState))
+        val flickIndex = getFlickIndex(mFlickState)
+        val action = getKeyAction(mLastPressedIndex, flickIndex)
 
-        if (!mProcessedOnKey) executeAction(action)
+        if (isEditorMode) {
+            if (mLastPressedIndex != -1) onFlickListener?.onFlick(mLastPressedIndex, flickIndex)
+        } else {
+            if (!mProcessedOnKey) executeAction(action)
 
-        // onKey で処理されたキーもここでシフトを消費するので executeAction に関係なく実行
-        if (!isCapsLocked &&
-            action != SKKFlickRule.ACTION_CAPS &&
-            action != SKKFlickRule.ACTION_TOGGLE_SHIFT
-        ) isShifted = false
+            // onKey で処理されたキーもここでシフトを消費するので executeAction に関係なく実行
+            if (!isCapsLocked &&
+                action != SKKFlickRule.ACTION_CAPS &&
+                action != SKKFlickRule.ACTION_TOGGLE_SHIFT
+            ) isShifted = false
+        }
 
         updateKeyLabels(mService.engineState)
 

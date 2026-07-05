@@ -4,19 +4,29 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
+import android.view.View
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.isVisible
 import androidx.core.view.updatePadding
 import androidx.core.widget.addTextChangedListener
 import jp.deadend.noname.dialog.ConfirmationDialogFragment
 import jp.deadend.noname.dialog.SimpleMessageDialogFragment
 import jp.deadend.noname.skk.databinding.ActivityFlickRuleManagerBinding
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class SKKFlickRuleManager : AppCompatActivity() {
     private lateinit var binding: ActivityFlickRuleManagerBinding
     private var isModified = false
+
+    private var ruleMap: MutableFlickRule = MutableFlickRule()
+    private var currentSection = SKKFlickRule.SECTION_MAIN
+    private var editingKey: Int? = null
 
     private val selectFileLauncher = registerForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -25,7 +35,8 @@ class SKKFlickRuleManager : AppCompatActivity() {
             val success = SKKFlickRule.saveFromUri(this, uri)
             if (success) {
                 isModified = true
-                updateEditorText()
+                ruleMap = SKKFlickRule.load(this)
+                updateEditorUI()
             } else {
                 SimpleMessageDialogFragment.newInstance(getString(R.string.error_kana_rule_load))
                     .show(supportFragmentManager, "dialog")
@@ -33,23 +44,67 @@ class SKKFlickRuleManager : AppCompatActivity() {
         }
     }
 
+    private val exportFileLauncher = registerForActivityResult(
+        ActivityResultContracts.CreateDocument("text/plain")
+    ) { uri ->
+        if (uri == null) return@registerForActivityResult
+        val text = if (binding.guiEditorContainer.isVisible) {
+            SKKFlickRule.serialize(ruleMap.toImmutable())
+        } else {
+            binding.textEditor.text.toString()
+        }
+        if (SKKFlickRule.exportToUri(this, uri, text)) {
+            val fileName = getFileNameFromUri(this, uri)
+            SimpleMessageDialogFragment.newInstance(
+                getString(R.string.message_tools_written_to_external_storage, fileName)
+            ).show(supportFragmentManager, "dialog")
+        } else {
+            SimpleMessageDialogFragment.newInstance(
+                getString(R.string.error_write_to_external_storage, "")
+            ).show(supportFragmentManager, "dialog")
+        }
+    }
+
+    private val editorLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK) {
+            val data = result.data ?: return@registerForActivityResult
+            val keyIndex = editingKey ?: return@registerForActivityResult
+            val flickIndex = data.getIntExtra(FlickRuleEditorActivity.EXTRA_FLICK_INDEX, 0)
+
+            fun String?.nn(): String = this?.replace("\\n", "\n") ?: ""
+            val nKeyLabel = data.getStringExtra(FlickRuleEditorActivity.EXTRA_NORMAL_KEY_LABEL).nn()
+            val nLabel = data.getStringExtra(FlickRuleEditorActivity.EXTRA_NORMAL_LABEL).nn()
+            val nAction = data.getStringExtra(FlickRuleEditorActivity.EXTRA_NORMAL_ACTION).nn()
+            val sKeyLabel =
+                data.getStringExtra(FlickRuleEditorActivity.EXTRA_SHIFTED_KEY_LABEL).nn()
+            val sLabel = data.getStringExtra(FlickRuleEditorActivity.EXTRA_SHIFTED_LABEL).nn()
+            val sAction = data.getStringExtra(FlickRuleEditorActivity.EXTRA_SHIFTED_ACTION).nn()
+
+            updateRule(keyIndex, flickIndex, nKeyLabel, nLabel, nAction, sKeyLabel, sLabel, sAction)
+            isModified = true
+            updateKeyboardPreview()
+        }
+        editingKey?.let { setKeyHighlight(it, false) }
+        editingKey = null
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val intent = Intent(this, SKKService::class.java)
+        startService(intent)
+
         binding = ActivityFlickRuleManagerBinding.inflate(layoutInflater)
         setContentView(binding.root)
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, windowInsets ->
-            val bars = windowInsets.getInsets(
+            windowInsets.getInsets(
                 WindowInsetsCompat.Type.systemBars() or
                         WindowInsetsCompat.Type.displayCutout() or
                         WindowInsetsCompat.Type.ime()
-            )
-            view.updatePadding(
-                left = bars.left,
-                top = bars.top,
-                right = bars.right,
-                bottom = bars.bottom,
-            )
-            binding.flickRuleEditor.let { editor ->
+            ).run { view.updatePadding(left, top, right, bottom) }
+            binding.textEditor.let { editor ->
                 editor.bringPointIntoView(editor.selectionEnd)
             }
             WindowInsetsCompat.CONSUMED
@@ -57,17 +112,238 @@ class SKKFlickRuleManager : AppCompatActivity() {
         setSupportActionBar(binding.flickRuleManagerToolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
-        updateEditorText()
-        binding.flickRuleEditor.let { editor ->
-            editor.setSelection(0)
-            editor.addTextChangedListener(afterTextChanged = { isModified = true })
+        ruleMap = SKKFlickRule.load(this)
+
+        setupUI()
+        updateEditorUI()
+    }
+
+    private fun setupUI() {
+        binding.modeToggle.setOnCheckedChangeListener { _, checkedId ->
+            if (checkedId == R.id.radioGuiMode) { // Text -> GUI
+                val text = binding.textEditor.text.toString()
+                ruleMap = SKKFlickRule.parse(text).toMutable()
+                binding.guiEditorContainer.visibility = View.VISIBLE
+                binding.textEditorContainer.visibility = View.GONE
+                updateEditorUI()
+            } else { // GUI -> Text
+                binding.textEditor.setText(SKKFlickRule.serialize(ruleMap.toImmutable()))
+                binding.guiEditorContainer.visibility = View.GONE
+                binding.textEditorContainer.visibility = View.VISIBLE
+            }
+        }
+
+        binding.checkUseGodan.setOnCheckedChangeListener { _, isChecked ->
+            if (!isChecked) {
+                val currentSect = ruleMap.sections[currentSection]
+                val hasGodanKeys = (currentSect?.entries?.keys?.maxOrNull() ?: 0) > 19
+                if (hasGodanKeys) {
+                    val dialog = ConfirmationDialogFragment.newInstance(
+                        getString(R.string.message_confirm_delete_godan_keys)
+                    )
+                    dialog.setListener(object : ConfirmationDialogFragment.Listener {
+                        override fun onPositiveClick() {
+                            currentSect?.let { sect ->
+                                sect.entries.keys.filter { it > 19 }
+                                    .forEach { sect.entries.remove(it) }
+                            }
+                            isModified = true
+                            updateKeyboardPreview()
+                        }
+
+                        override fun onNegativeClick() {
+                            binding.checkUseGodan.isChecked = true
+                        }
+                    })
+                    dialog.show(supportFragmentManager, "dialog")
+                }
+            } else {
+                val currentSect =
+                    ruleMap.sections.getOrPut(currentSection) { MutableFlickSection(currentSection) }
+                var keysAdded = false
+                for (i in 20..23) if (!currentSect.entries.containsKey(i)) {
+                    currentSect.entries[i] = MutableFlickEntry.createEmpty(i)
+                    keysAdded = true
+                }
+                if (keysAdded) isModified = true
+                updateKeyboardPreview()
+            }
+        }
+
+        binding.checkEnableAscii.setOnCheckedChangeListener { _, isChecked ->
+            if (!isChecked) {
+                binding.radioSectionAscii.visibility = View.GONE
+                if (currentSection == SKKFlickRule.SECTION_ASCII) {
+                    binding.radioSectionMain.isChecked = true
+                }
+
+                if (ruleMap.sections.containsKey(SKKFlickRule.SECTION_ASCII)) {
+                    val dialog = ConfirmationDialogFragment.newInstance(
+                        getString(R.string.message_confirm_delete_ascii_section)
+                    )
+                    dialog.setListener(object : ConfirmationDialogFragment.Listener {
+                        override fun onPositiveClick() {
+                            ruleMap.sections.remove(SKKFlickRule.SECTION_ASCII)
+                            isModified = true
+                        }
+
+                        override fun onNegativeClick() {
+                            binding.checkEnableAscii.isChecked = true
+                        }
+                    })
+                    dialog.show(supportFragmentManager, "dialog")
+                }
+            } else {
+                binding.radioSectionAscii.visibility = View.VISIBLE
+            }
+        }
+
+        binding.sectionToggle.setOnCheckedChangeListener { _, checkedId ->
+            currentSection = when (checkedId) {
+                R.id.radioSectionMain -> SKKFlickRule.SECTION_MAIN
+                R.id.radioSectionNumber -> SKKFlickRule.SECTION_NUMBER
+                R.id.radioSectionVoice -> SKKFlickRule.SECTION_VOICE
+                R.id.radioSectionAscii -> SKKFlickRule.SECTION_ASCII
+                else -> SKKFlickRule.SECTION_MAIN
+            }
+            val currentSect = ruleMap.sections[currentSection]
+            binding.checkUseGodan.isChecked = (currentSect?.entries?.keys?.maxOrNull() ?: 0) > 19
+            updateKeyboardPreview()
+        }
+
+        binding.btnShiftToggle.setOnCheckedChangeListener { _, isChecked ->
+            binding.flickKeyboardView.isShifted = isChecked
+            updateKeyboardPreview()
+            binding.btnShiftToggle.setBackgroundColor(getColor(if (isChecked) R.color.key_checked_color else R.color.key_background_color))
+        }
+
+        binding.flickKeyboardView.let { kv ->
+            kv.isEditorMode = true
+            kv.onFlickListener = object : FlickJPKeyboardView.OnFlickListener {
+                override fun onFlick(keyIndex: Int, flickIndex: Int) {
+                    startRuleEditor(keyIndex, flickIndex)
+                }
+            }
+        }
+
+        binding.textEditor.addTextChangedListener(afterTextChanged = { isModified = true })
+    }
+
+    private fun updateEditorUI() {
+        val currentSect =
+            ruleMap.sections.getOrPut(currentSection) { MutableFlickSection(currentSection) }
+        // Ensure base keys 0..19
+        for (i in 0..19) {
+            currentSect.entries.getOrPut(i) { MutableFlickEntry.createEmpty(i) }
+        }
+
+        binding.checkUseGodan.isChecked = (currentSect.entries.keys.maxOrNull() ?: 0) > 19
+        binding.checkEnableAscii.isChecked =
+            ruleMap.sections.containsKey(SKKFlickRule.SECTION_ASCII)
+        binding.radioSectionAscii.visibility =
+            if (binding.checkEnableAscii.isChecked) View.VISIBLE else View.GONE
+
+        if (binding.modeToggle.checkedRadioButtonId == R.id.radioTextMode) {
+            binding.textEditor.setText(SKKFlickRule.serialize(ruleMap.toImmutable()))
+        } else {
+            updateKeyboardPreview()
+        }
+    }
+
+    private fun updateKeyboardPreview() {
+        val displayMetrics = resources.displayMetrics
+        val width = displayMetrics.widthPixels
+        // The keyboard layout (R.xml.keys_flick_jp) uses percentages for height (e.g. 8%p).
+        // Use a fixed portion that matches the service's behavior for preview.
+        val height = (displayMetrics.heightPixels * skkPrefs.keyHeightPort / 100)
+
+        binding.flickKeyboardView.let { kv ->
+            MainScope().launch(Dispatchers.Default) {
+                val service = SKKService.waitForInstance()
+                withContext(Dispatchers.Main) {
+                    kv.setService(service)
+                    kv.setFlickRules(ruleMap.toImmutable())
+                    kv.prepareNewKeyboard(this@SKKFlickRuleManager, width, height)
+
+                    when (currentSection) {
+                        SKKFlickRule.SECTION_NUMBER -> kv.executeAction(SKKFlickRule.ACTION_KBD_NUMBER)
+                        SKKFlickRule.SECTION_VOICE -> kv.executeAction(SKKFlickRule.ACTION_KBD_VOICE)
+                        else -> kv.executeAction(SKKFlickRule.ACTION_RESET)
+                    }
+
+                    kv.updateKeyLabels(
+                        when (currentSection) { // Mock state for labels
+                            SKKFlickRule.SECTION_ASCII -> jp.deadend.noname.skk.engine.SKKASCIIState
+                            else -> jp.deadend.noname.skk.engine.SKKHiraganaState
+                        }
+                    )
+                }
+            }
+        }
+    }
+
+    private fun startRuleEditor(keyIndex: Int, flick: Int) {
+        editingKey = keyIndex
+        setKeyHighlight(keyIndex, true)
+
+        val sectionData = ruleMap.sections[currentSection]
+        val entry = sectionData?.entries?.get(keyIndex)
+        val n = entry?.normal ?: MutableFlickKeyConfig.createEmpty()
+        val s = entry?.shifted
+
+        val intent = Intent(this, FlickRuleEditorActivity::class.java).apply {
+            fun String?.nn(): String = this?.replace("\n", "\\n") ?: ""
+            putExtra(FlickRuleEditorActivity.EXTRA_SECTION, currentSection)
+            putExtra(FlickRuleEditorActivity.EXTRA_KEY_INDEX, keyIndex)
+            putExtra(FlickRuleEditorActivity.EXTRA_FLICK_INDEX, flick)
+            putExtra(FlickRuleEditorActivity.EXTRA_NORMAL_KEY_LABEL, n.label.nn())
+            putExtra(FlickRuleEditorActivity.EXTRA_SHIFTED_KEY_LABEL, s?.label.nn())
+            putExtra(FlickRuleEditorActivity.EXTRA_NORMAL_LABEL, n.labels[flick].nn())
+            putExtra(FlickRuleEditorActivity.EXTRA_NORMAL_ACTION, n.actions[flick].nn())
+            putExtra(FlickRuleEditorActivity.EXTRA_SHIFTED_LABEL, s?.labels?.get(flick).nn())
+            putExtra(FlickRuleEditorActivity.EXTRA_SHIFTED_ACTION, s?.actions?.get(flick).nn())
+        }
+        editorLauncher.launch(intent)
+    }
+
+    private fun updateRule(
+        keyIndex: Int, flickIndex: Int,
+        nKeyLabel: String, nLabel: String, nAction: String,
+        sKeyLabel: String, sLabel: String, sAction: String
+    ) {
+        val sectionData =
+            ruleMap.sections.getOrPut(currentSection) { MutableFlickSection(currentSection) }
+        val entry = sectionData.entries.getOrPut(keyIndex) {
+            MutableFlickEntry.createEmpty(keyIndex)
+        }
+
+        entry.normal.label = nKeyLabel
+        entry.normal.labels[flickIndex] = nLabel
+        entry.normal.actions[flickIndex] = nAction
+
+        val s = entry.shifted ?: MutableFlickKeyConfig.createEmpty()
+        s.label = sKeyLabel
+        s.labels[flickIndex] = sLabel
+        s.actions[flickIndex] = sAction
+        entry.shifted = s
+    }
+
+    private fun setKeyHighlight(keyIndex: Int, on: Boolean) {
+        binding.flickKeyboardView.keyboard.keys.getOrNull(keyIndex)?.let {
+            it.on = on
+            binding.flickKeyboardView.invalidateAllKeys()
         }
     }
 
     override fun onPause() {
         if (isModified) {
+            val finalMap = if (binding.modeToggle.checkedRadioButtonId == R.id.radioTextMode) {
+                SKKFlickRule.parse(binding.textEditor.text.toString())
+            } else ruleMap.toImmutable()
+
             SKKFlickRule.getInternalFile(this@SKKFlickRuleManager)
-                .writeText(binding.flickRuleEditor.text.toString())
+                .writeText(SKKFlickRule.serialize(finalMap))
+
             if (SKKService.isRunning()) {
                 val intent = Intent(this@SKKFlickRuleManager, SKKService::class.java)
                 intent.putExtra(SKKService.KEY_COMMAND, SKKService.COMMAND_READ_PREFS)
@@ -96,7 +372,8 @@ class SKKFlickRuleManager : AppCompatActivity() {
                     override fun onPositiveClick() {
                         SKKFlickRule.loadGodan(this@SKKFlickRuleManager, isSimple)
                         isModified = true
-                        updateEditorText()
+                        ruleMap = SKKFlickRule.load(this@SKKFlickRuleManager)
+                        updateEditorUI()
                     }
 
                     override fun onNegativeClick() {}
@@ -108,6 +385,10 @@ class SKKFlickRuleManager : AppCompatActivity() {
                 selectFileLauncher.launch(arrayOf("*/*"))
             }
 
+            R.id.menu_flick_rule_export -> {
+                exportFileLauncher.launch(SKKFlickRule.INTERNAL_FILE_NAME)
+            }
+
             R.id.menu_flick_rule_clear -> {
                 val dialog = ConfirmationDialogFragment.newInstance(
                     getString(R.string.message_confirm_clear_flick_rule)
@@ -116,7 +397,8 @@ class SKKFlickRuleManager : AppCompatActivity() {
                     override fun onPositiveClick() {
                         SKKFlickRule.clear(this@SKKFlickRuleManager)
                         isModified = true
-                        updateEditorText()
+                        ruleMap = SKKFlickRule.load(this@SKKFlickRuleManager)
+                        updateEditorUI()
                     }
 
                     override fun onNegativeClick() {}
@@ -127,12 +409,5 @@ class SKKFlickRuleManager : AppCompatActivity() {
             else -> return super.onOptionsItemSelected(item)
         }
         return true
-    }
-
-    private fun updateEditorText() {
-        binding.flickRuleEditor.text.apply {
-            clear()
-            append(SKKFlickRule.getInternalFile(this@SKKFlickRuleManager).readText())
-        }
     }
 }

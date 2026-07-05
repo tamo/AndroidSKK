@@ -43,6 +43,9 @@ open class Keyboard {
     private var mGridNeighbors: Array<IntArray?> = arrayOfNulls(GRID_SIZE)
     private var mProximityThreshold = 0
 
+    private var mOriginalWidth = 0
+    private var mOriginalHeight = 0
+
     class Row(val parent: Keyboard) {
         var defaultWidth = 0
         var defaultHeight = 0
@@ -305,35 +308,37 @@ open class Keyboard {
         }
         height = y + defaultKeyHeight
         rows.add(row)
+        mOriginalWidth = width
+        mOriginalHeight = height
     }
 
     fun resize(newWidth: Int, newHeight: Int) {
         if (newWidth == width && newHeight == height) return
-        if (newWidth < 1) return
+        if (newWidth < 1 || newHeight < 1 || mOriginalWidth == 0 || mOriginalHeight == 0) return
 
-        val maxWidth = rows.maxOfOrNull { row ->
-            row.keys.sumOf { it.defaultHorizontalGap + it.defaultWidth }
-        } ?: 0
-        val totalHeight = rows.sumOf { it.defaultHeight + it.verticalGap }
+        val hScaleFactor = newWidth.toFloat() / mOriginalWidth
+        val vScaleFactor = newHeight.toFloat() / mOriginalHeight
 
-        if (maxWidth == 0 || totalHeight == 0) return
-
-        val hScaleFactor = newWidth.toFloat() / maxWidth
-        val vScaleFactor = newHeight.toFloat() / totalHeight
-        var y = 0
+        var currentY = 0f
         for (row in rows) {
-            row.defaultHeight = (row.defaultHeight * vScaleFactor).toInt()
-            row.verticalGap = (row.verticalGap * vScaleFactor).toInt()
-            var x = 0
+            val rowTopY = currentY
+            val rowBottomY = rowTopY + row.defaultHeight * vScaleFactor
+
+            var currentX = 0f
             for (key in row.keys) {
-                key.width = (key.defaultWidth * hScaleFactor).toInt()
-                key.horizontalGap = (key.defaultHorizontalGap * hScaleFactor).toInt()
-                key.x = x + key.horizontalGap
-                x += key.horizontalGap + key.width
-                key.height = (key.defaultHeight * vScaleFactor).toInt()
-                key.y = y
+                val keyStartX = currentX + key.defaultHorizontalGap * hScaleFactor
+                val keyEndX = keyStartX + key.defaultWidth * hScaleFactor
+
+                key.x = keyStartX.toInt()
+                key.width = keyEndX.toInt() - key.x
+                key.horizontalGap = key.x - currentX.toInt()
+
+                key.y = rowTopY.toInt()
+                key.height = (rowTopY + key.defaultHeight * vScaleFactor).toInt() - key.y
+
+                currentX = keyEndX
             }
-            y += row.defaultHeight + row.verticalGap
+            currentY = rowBottomY + row.verticalGap * vScaleFactor
         }
 
         width = newWidth
@@ -431,6 +436,8 @@ open class Keyboard {
         }.onFailure { SKKLog.e("Parse error", it) }
 
         height = y - defaultVerticalGap
+        mOriginalWidth = width
+        mOriginalHeight = height
     }
 
     private fun parseKeyboardAttributes(res: Resources, parser: XmlResourceParser) {

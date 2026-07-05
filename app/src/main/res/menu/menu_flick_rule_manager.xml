@@ -7,6 +7,10 @@
         android:title="@string/label_kana_rule_select"
         app:showAsAction="ifRoom" />
     <item
+        android:id="@+id/menu_flick_rule_export"
+        android:title="@string/label_tools_export"
+        app:showAsAction="never" />
+    <item
         android:id="@+id/menu_flick_rule_load_godan"
         android:title="@string/menu_flick_rule_load_godan"
         app:showAsAction="never" />

@@ -50,6 +50,7 @@ import jp.deadend.noname.skk.engine.SKKEngine
 import jp.deadend.noname.skk.engine.SKKHiraganaState
 import jp.deadend.noname.skk.engine.SKKState
 import jp.deadend.noname.skk.engine.SKKZenkakuState
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
@@ -408,6 +409,7 @@ class SKKService : InputMethodService() {
         updateDimensions()
         readPrefs()
         instance = this
+        instanceDeferred.complete(this)
     }
 
     private fun readPrefs() {
@@ -876,6 +878,7 @@ class SKKService : InputMethodService() {
 
         runBlocking(Dispatchers.IO) { mEngine.close() }
         mSpeechRecognizer.destroy()
+        instanceDeferred = CompletableDeferred()
         instance = null
 
         super.onDestroy()
@@ -1568,6 +1571,9 @@ class SKKService : InputMethodService() {
         }
 
         internal fun getStore(filePath: String) = instance?.getStore(filePath)
+
+        private var instanceDeferred = CompletableDeferred<SKKService>()
+        internal suspend fun waitForInstance(): SKKService = instanceDeferred.await()
 
         internal const val KEY_COMMAND = "jp.deadend.noname.skk.KEY_COMMAND"
         internal const val COMMAND_READ_PREFS = "jp.deadend.noname.skk.COMMAND_READ_PREFS"

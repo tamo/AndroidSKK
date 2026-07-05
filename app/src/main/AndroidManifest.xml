@@ -70,7 +70,13 @@
             android:name=".SKKFlickRuleManager"
             android:label="@string/label_flick_rule_manager_activity"
             android:launchMode="singleInstance"
-            android:theme="@style/Theme.AppCompat.DayNight.NoActionBar" />
+            android:theme="@style/Theme.AppCompat.DayNight.NoActionBar"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".FlickRuleEditorActivity"
+            android:label="@string/title_flick_rule_editor"
+            android:theme="@style/Theme.AppCompat.DayNight.Dialog"
+            android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".SKKMushroom"
             android:label="@string/label_mushroom"

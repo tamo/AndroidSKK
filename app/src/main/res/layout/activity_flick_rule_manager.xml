@@ -2,25 +2,145 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="16dp">
+    android:orientation="vertical">
 
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/flickRuleManagerToolbar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 
-    <ScrollView
+    <RadioGroup
+        android:id="@+id/modeToggle"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:padding="8dp">
 
-        <EditText
-            android:id="@+id/flickRuleEditor"
-            android:layout_width="match_parent"
+        <RadioButton
+            android:id="@+id/radioGuiMode"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:autofillHints="none"
-            android:fontFamily="monospace"
-            android:hint="@string/hint_flick_rule_editor"
-            android:inputType="textMultiLine|textNoSuggestions" />
-    </ScrollView>
+            android:layout_weight="1"
+            android:background="@drawable/toggle_bg_selector"
+            android:button="@null"
+            android:padding="8dp"
+            android:text="@string/label_gui_mode"
+            android:textAlignment="center" />
+
+        <RadioButton
+            android:id="@+id/radioTextMode"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="@drawable/toggle_bg_selector"
+            android:button="@null"
+            android:checked="true"
+            android:padding="8dp"
+            android:text="@string/label_text_mode"
+            android:textAlignment="center" />
+    </RadioGroup>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:padding="8dp">
+
+        <!-- GUI Editor -->
+        <LinearLayout
+            android:id="@+id/guiEditorContainer"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <CheckBox
+                    android:id="@+id/checkUseGodan"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/label_use_godan" />
+
+                <CheckBox
+                    android:id="@+id/checkEnableAscii"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/label_enable_ascii" />
+            </LinearLayout>
+
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="4dp"
+                android:scrollbars="none">
+
+                <RadioGroup
+                    android:id="@+id/sectionToggle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <RadioButton
+                        android:id="@+id/radioSectionMain"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        android:text="@string/label_section_main" />
+
+                    <RadioButton
+                        android:id="@+id/radioSectionNumber"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/label_section_number" />
+
+                    <RadioButton
+                        android:id="@+id/radioSectionVoice"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/label_section_voice" />
+
+                    <RadioButton
+                        android:id="@+id/radioSectionAscii"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/label_section_ascii" />
+                </RadioGroup>
+            </HorizontalScrollView>
+
+            <ToggleButton
+                android:id="@+id/btnShiftToggle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:background="@color/key_background_color"
+                android:textOff="@string/label_shift_toggle"
+                android:textOn="@string/label_shift_toggle" />
+
+            <jp.deadend.noname.skk.FlickJPKeyboardView
+                android:id="@+id/flickKeyboardView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <!-- Text Editor -->
+        <ScrollView
+            android:id="@+id/textEditorContainer"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <EditText
+                android:id="@+id/textEditor"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:autofillHints="none"
+                android:fontFamily="monospace"
+                android:hint="@string/hint_flick_rule_editor"
+                android:inputType="textMultiLine|textNoSuggestions" />
+        </ScrollView>
+    </FrameLayout>
 </LinearLayout>
