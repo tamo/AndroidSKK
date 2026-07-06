@@ -338,6 +338,7 @@ open class KeyboardView @JvmOverloads constructor(
     }
 
     public override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        if (!::mKeyboard.isInitialized) return setMeasuredDimension(0, 0)
         val size = MeasureSpec.getSize(widthMeasureSpec)
         val width = if (size < width + 10) size else mKeyboard.width + paddingLeft + paddingRight
 
@@ -346,6 +347,7 @@ open class KeyboardView @JvmOverloads constructor(
 
     public override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
+        if (!::mKeyboard.isInitialized) return
         mKeyboard.resize(w, h)
         mBuffer = null
     }
