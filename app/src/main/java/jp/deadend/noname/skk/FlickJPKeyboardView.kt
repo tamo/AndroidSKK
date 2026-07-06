@@ -14,6 +14,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import jp.deadend.noname.skk.databinding.PopupFlickguideBinding
+import jp.deadend.noname.skk.engine.SKKASCIIState
 import jp.deadend.noname.skk.engine.SKKEngine
 import jp.deadend.noname.skk.engine.SKKHanKanaState
 import jp.deadend.noname.skk.engine.SKKHiraganaState
@@ -454,6 +455,7 @@ class FlickJPKeyboardView(
         var meta = 0
         var inZenkaku = false
         var isCommit = false
+        val hadCandidates = mService.engineState.hasCandidates
 
         mService.suspendCompletion()
         while (text.isNotEmpty()) {
@@ -480,8 +482,6 @@ class FlickJPKeyboardView(
                 if (isShifted) it.upper.also { isShifted = isCapsLocked } else it
             }
 
-            val hadCandidates = mService.engineState.hasCandidates
-
             if (text.isEmpty()) mService.resumeCompletion()
             when {
                 isCommit -> mService.commitTextSKK(code.char.toString())
@@ -491,7 +491,9 @@ class FlickJPKeyboardView(
             meta = 0
 
             // processKey のせいで ▼モードになった場合は次で誤って確定しないようにここで終了
-            if (!hadCandidates && mService.engineState.hasCandidates) break
+            if (!hadCandidates && mService.engineState.hasCandidates && text.isNotEmpty() &&
+                text.first() == '(' && SKKFlickRule.ACTIONS.find { text.startsWith(it) } == null
+            ) break
         }
         mService.resumeCompletion()
     }
@@ -569,6 +571,9 @@ class FlickJPKeyboardView(
             }
 
             SKKFlickRule.ACTION_KBD_QWERTY ->
+                mService.changeSoftKeyboard(SKKASCIIState)
+
+            SKKFlickRule.ACTION_ASCII ->
                 if (mService.engineState.isJapanese) mService.run {
                     kanaState = SKKHiraganaState // キーラベル表示を整える
                     processKey(skkPrefs.asciiKey)

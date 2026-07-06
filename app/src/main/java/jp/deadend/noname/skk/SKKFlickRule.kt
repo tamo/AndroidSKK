@@ -110,6 +110,7 @@ object SKKFlickRule {
     internal const val ACTION_IN_ZENKAKU = "(Z)"
     internal const val ACTION_TOGGLE_SHIFT = "(ToggleShift)"
     internal const val ACTION_CAPS = "(Caps)"
+    internal const val ACTION_ASCII = "(Ascii)"
     internal const val ACTION_KBD_QWERTY = "(KbdQwerty)"
     internal const val ACTION_ENTER = "(Enter)"
     internal const val ACTION_BACKSPACE = "(Backspace)"
