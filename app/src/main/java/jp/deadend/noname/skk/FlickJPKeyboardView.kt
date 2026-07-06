@@ -73,6 +73,7 @@ class FlickJPKeyboardView(
         setBackgroundColor(0x00000000)
 
         mFlickRules = SKKFlickRule.loadFromInternalStorage(context) ?: FlickRule()
+        if (isEditorMode) return
         prepareNewKeyboard(context, mService.mRootWidth, mService.mScreenHeight)
     }
 

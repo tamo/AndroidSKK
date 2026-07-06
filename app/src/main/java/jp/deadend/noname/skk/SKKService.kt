@@ -433,7 +433,7 @@ class SKKService : InputMethodService() {
                     context.resources.displayMetrics
                 ).toInt()
             )
-            mCandidatesViewContainer.setTypeface(getTypeface(skkPrefs.font))
+            mCandidatesViewContainer.setTypeface(skkPrefs.typeface)
         }
     }
 
@@ -445,25 +445,23 @@ class SKKService : InputMethodService() {
         val context = createNightModeContext(applicationContext, skkPrefs.theme)
         val keyHeight = keyboardHeight()
         val alpha = skkPrefs.backgroundAlpha
-        val typeface = getTypeface(skkPrefs.font)
+        val density = context.resources.displayMetrics.density
+        val sensitivity = (skkPrefs.flickSensitivity * density + 0.5f).toInt()
 
         val flickWidth = keyboardWidth(flick)
         SKKLog.d("prepare flick ($flickWidth, $keyHeight)")
         flick.prepareNewKeyboard(context, flickWidth, keyHeight)
         flick.backgroundAlpha = 255 * alpha / 100
-        flick.setTypeface(typeface)
+        flick.setTypeface(skkPrefs.typeface)
+        flick.setFlickSensitivity(sensitivity)
 
         val qwertyWidth = keyboardWidth(qwerty)
         SKKLog.d("prepare qwerty ($qwertyWidth, $keyHeight)")
         qwerty.keyboard.resize(qwertyWidth, keyHeight)
         qwerty.mSymbolsKeyboard.resize(qwertyWidth, keyHeight)
-        qwerty.setTypeface(typeface)
-
-        val density = context.resources.displayMetrics.density
-        val sensitivity = (skkPrefs.flickSensitivity * density + 0.5f).toInt()
-        flick.setFlickSensitivity(sensitivity)
-        qwerty.setFlickSensitivity(sensitivity)
         qwerty.backgroundAlpha = 255 * alpha / 100
+        qwerty.setTypeface(skkPrefs.typeface)
+        qwerty.setFlickSensitivity(sensitivity)
     }
 
     private fun checkUseSoftKeyboard(
@@ -1348,13 +1346,6 @@ class SKKService : InputMethodService() {
 
     fun completeASCII() = mEngine.mCandidates.completeASCII()
 
-    private fun getTypeface(fontName: String) = when (fontName) {
-        "sans_serif" -> android.graphics.Typeface.SANS_SERIF
-        "serif" -> android.graphics.Typeface.SERIF
-        "monospace" -> android.graphics.Typeface.MONOSPACE
-        else -> android.graphics.Typeface.DEFAULT
-    }
-
     fun suspendCompletion() = mEngine.mCandidates.suspendCompletion()
 
     fun resumeCompletion() = mEngine.mCandidates.resumeCompletion()
@@ -1500,7 +1491,7 @@ class SKKService : InputMethodService() {
         }
     }
 
-    private fun keyboardWidth(view: KeyboardView? = mInputView): Int {
+    internal fun keyboardWidth(view: KeyboardView? = mInputView): Int {
         if (!checkUseSoftKeyboard()) return mRootWidth
         val minWidth = resources.getDimensionPixelSize(R.dimen.keyboard_minimum_width)
         val baseWidth = when (mOrientation) {

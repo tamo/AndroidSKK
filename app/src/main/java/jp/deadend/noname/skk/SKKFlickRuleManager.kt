@@ -7,6 +7,7 @@ import android.view.MenuItem
 import android.view.View
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.doOnLayout
@@ -17,6 +18,7 @@ import jp.deadend.noname.dialog.ConfirmationDialogFragment
 import jp.deadend.noname.dialog.SimpleMessageDialogFragment
 import jp.deadend.noname.skk.databinding.ActivityFlickRuleManagerBinding
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -24,6 +26,7 @@ import kotlinx.coroutines.withContext
 class SKKFlickRuleManager : AppCompatActivity() {
     private lateinit var binding: ActivityFlickRuleManagerBinding
     private var isModified = false
+    private var previewJob: Job? = null
 
     private var ruleMap: MutableFlickRule = MutableFlickRule()
     private var currentSection = SKKFlickRule.SECTION_MAIN
@@ -252,17 +255,33 @@ class SKKFlickRuleManager : AppCompatActivity() {
     }
 
     private fun updateKeyboardPreview() {
-        binding.flickKeyboardView.doOnLayout { view ->
-            val kv = view as FlickJPKeyboardView
-            val width = kv.width
-            val height = resources.displayMetrics.heightPixels * skkPrefs.keyHeightPort / 100
+        previewJob?.cancel()
+        previewJob = MainScope().launch(Dispatchers.Default) {
+            val service = SKKService.waitForInstance()
+            withContext(Dispatchers.Main) {
+                binding.flickKeyboardView.doOnLayout { view ->
+                    val kv = view as FlickJPKeyboardView
 
-            MainScope().launch(Dispatchers.Default) {
-                val service = SKKService.waitForInstance()
-                withContext(Dispatchers.Main) {
+                    // SKKService.createInputView と同様の処理
                     kv.setService(service)
                     kv.setFlickRules(ruleMap.toImmutable())
-                    kv.prepareNewKeyboard(this@SKKFlickRuleManager, width, height)
+                    if (skkPrefs.useInset) {
+                        theme.applyStyle(R.style.ThemeOverlay_SKK_RoundedKey, true)
+                        ResourcesCompat
+                            .getDrawable(resources, R.drawable.key_bg_inset, theme)
+                            ?.let { kv.setKeyBackground(it) }
+                    }
+
+                    // SKKService.readPrefsForInputView と同様の処理
+                    val keyHeight =
+                        resources.displayMetrics.heightPixels * skkPrefs.keyHeightPort / 100
+                    val density = resources.displayMetrics.density
+                    val sensitivity = (skkPrefs.flickSensitivity * density + 0.5f).toInt()
+                    val keyWidth = service.keyboardWidth(kv).takeIf { it > 0 } ?: kv.width
+                    kv.prepareNewKeyboard(this@SKKFlickRuleManager, keyWidth, keyHeight)
+                    kv.backgroundAlpha = 255 * skkPrefs.backgroundAlpha / 100
+                    kv.setTypeface(skkPrefs.typeface)
+                    kv.setFlickSensitivity(sensitivity)
 
                     when (currentSection) {
                         SKKFlickRule.SECTION_NUMBER -> kv.executeAction(SKKFlickRule.ACTION_KBD_NUMBER)

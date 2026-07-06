@@ -1,6 +1,7 @@
 package jp.deadend.noname.skk
 
 import android.content.Context
+import android.graphics.Typeface
 import androidx.core.content.edit
 import androidx.preference.PreferenceManager
 
@@ -21,6 +22,14 @@ class SKKPrefs(context: Context) {
         set(value) = prefs.edit {
             if (value == "default") remove(res.getString(R.string.pref_font))
             else putString(res.getString(R.string.pref_font), value)
+        }
+
+    internal val typeface: Typeface
+        get() = when (font) {
+            "sans_serif" -> Typeface.SANS_SERIF
+            "serif" -> Typeface.SERIF
+            "monospace" -> Typeface.MONOSPACE
+            else -> Typeface.DEFAULT
         }
 
     var prefixMark: Boolean
