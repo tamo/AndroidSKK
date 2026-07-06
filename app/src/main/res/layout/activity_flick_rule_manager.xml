@@ -124,7 +124,8 @@
             <jp.deadend.noname.skk.FlickJPKeyboardView
                 android:id="@+id/flickKeyboardView"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal" />
         </LinearLayout>
 
         <!-- Text Editor -->

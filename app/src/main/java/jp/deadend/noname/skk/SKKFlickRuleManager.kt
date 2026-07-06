@@ -9,6 +9,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.doOnLayout
 import androidx.core.view.isVisible
 import androidx.core.view.updatePadding
 import androidx.core.widget.addTextChangedListener
@@ -251,13 +252,11 @@ class SKKFlickRuleManager : AppCompatActivity() {
     }
 
     private fun updateKeyboardPreview() {
-        val displayMetrics = resources.displayMetrics
-        val width = displayMetrics.widthPixels
-        // The keyboard layout (R.xml.keys_flick_jp) uses percentages for height (e.g. 8%p).
-        // Use a fixed portion that matches the service's behavior for preview.
-        val height = (displayMetrics.heightPixels * skkPrefs.keyHeightPort / 100)
+        binding.flickKeyboardView.doOnLayout { view ->
+            val kv = view as FlickJPKeyboardView
+            val width = kv.width
+            val height = resources.displayMetrics.heightPixels * skkPrefs.keyHeightPort / 100
 
-        binding.flickKeyboardView.let { kv ->
             MainScope().launch(Dispatchers.Default) {
                 val service = SKKService.waitForInstance()
                 withContext(Dispatchers.Main) {
