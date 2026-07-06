@@ -496,6 +496,7 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
         engine.apply {
             (mDictList + mASCIIDict + mEmojiDict + mSymbolDict).forEach { it.clearCache() }
         }
+        setView(null, "", 0)
     }
 
     internal fun loadAllSymbols() {

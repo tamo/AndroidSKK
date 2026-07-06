@@ -11,8 +11,12 @@ import jp.deadend.noname.skk.skkPrefs
 object SKKOkuriganaState : SKKState {
     override val isTransient = true
     override val isPreedit = true
-    override val canComplete = true
     override val prefix = "▽"
+
+    override fun onEnter(context: SKKEngine, oldState: SKKState) {
+        super.onEnter(context, oldState)
+        context.mCandidates.reset()
+    }
 
     override fun handleKanaKey(context: SKKEngine) {
         context.apply {
