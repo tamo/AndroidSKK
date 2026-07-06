@@ -503,7 +503,7 @@ class SKKEngine(
         })
 
         ct.append(textToProcess.toString().convertTo(kanaState, reversed = true))
-        state.setComposingText(this, ct)
+        state.setComposingText?.invoke(this, ct)
 
         if (suffix.isNotEmpty()) {
             ct.append("]$suffix") // pseudo caret

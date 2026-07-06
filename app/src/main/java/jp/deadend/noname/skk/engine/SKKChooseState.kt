@@ -64,8 +64,15 @@ object SKKChooseState : SKKConfirmingState() {
         }
     }
 
-    override fun afterBackspace(context: SKKEngine, isComposingDeleted: Boolean) {
-        if (!declineUnregister(context)) context.pickCurrentCandidate(backspace = true)
+    override fun afterBackspace(context: SKKEngine, isComposingDeleted: Boolean) = context.run {
+        when { // 名前に反して after ではない。ここで処理する
+            mComposing.isNotEmpty() -> {
+                mComposing.deleteCharAt(mComposing.lastIndex)
+                mCandidates.updateComposingText()
+            }
+
+            !declineUnregister(context) -> pickCurrentCandidate(backspace = true)
+        }
     }
 
     override fun handleCancel(context: SKKEngine, reconvert: Boolean): Boolean {

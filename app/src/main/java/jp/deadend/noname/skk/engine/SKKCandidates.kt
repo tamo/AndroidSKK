@@ -134,9 +134,13 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
         processConcatAndMore(removeAnnotation(it), mQuery)
     }
 
-    fun updateComposingText() = get(mIndex)?.let { candidate ->
-        engine.setComposingTextSKK(candidate + engine.mOkurigana)
-    } ?: engine.setComposingTextSKK()
+    fun updateComposingText() = engine.run {
+        get(mIndex)?.let { candidate ->
+            setComposingTextSKK( // setComposingText のある NarrowingState は自前で mComposing を表示
+                candidate + mOkurigana + if (state.setComposingText == null) mComposing else ""
+            )
+        } ?: setComposingTextSKK()
+    }
 
     fun pickCandidate(index: Int, backspace: Boolean = false, unregister: Boolean = false) {
         if (!engine.state.hasCandidates) return

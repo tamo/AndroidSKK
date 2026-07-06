@@ -28,7 +28,7 @@ object SKKNarrowingState : SKKConfirmingState() {
         super.onExit(context, newState)
     }
 
-    override fun setComposingText(context: SKKEngine, ct: StringBuilder) {
+    override val setComposingText = fun (context: SKKEngine, ct: StringBuilder) {
         val hintWithCursor = if (mHint.cursor == mHint.length) "${mHint}${context.mComposing}"
         else "${mHint.take(mHint.cursor)}[${context.mComposing}]${mHint.drop(mHint.cursor)}"
         ct.append(" hint: $hintWithCursor")

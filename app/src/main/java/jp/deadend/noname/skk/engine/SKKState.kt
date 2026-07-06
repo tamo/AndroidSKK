@@ -11,6 +11,7 @@ interface SKKState {
     val isPreedit: Boolean get() = false // reset() しないで遷移する state
     val isTemporaryQwerty: Boolean get() = false // メインじゃないキーボードを使用
     val icon: Int get() = 0 // 0 は変更せず、-1 は消す
+    val setComposingText: ((SKKEngine, StringBuilder) -> Unit)? get() = null
 
     fun onEnter(context: SKKEngine, oldState: SKKState) {
         if (icon != 0) context.updateStatusIcon(icon)
@@ -30,7 +31,6 @@ interface SKKState {
         }
     }
 
-    fun setComposingText(context: SKKEngine, ct: StringBuilder) {}
     fun handleKanaKey(context: SKKEngine)
     fun handleEnter(context: SKKEngine): Boolean = false
     fun processKey(context: SKKEngine, keyCode: Int)
