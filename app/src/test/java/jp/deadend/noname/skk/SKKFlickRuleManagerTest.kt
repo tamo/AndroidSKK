@@ -20,7 +20,7 @@ class SKKFlickRuleManagerTest {
 
     @Before
     fun setUp() {
-        context = ApplicationProvider.getApplicationContext<Context>()
+        context = ApplicationProvider.getApplicationContext()
         SKKFlickRule.clear(context)
 
         val controller = Robolectric.buildActivity(SKKFlickRuleManager::class.java)
