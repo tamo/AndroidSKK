@@ -25,10 +25,6 @@ class SKKFlickRuleManagerTest {
 
         val controller = Robolectric.buildActivity(SKKFlickRuleManager::class.java)
         activity = controller.setup().get()
-
-        val mockService = io.mockk.mockk<SKKService>(relaxed = true)
-        val keyboardView = activity.findViewById<FlickJPKeyboardView>(R.id.flickKeyboardView)
-        keyboardView.setService(mockService)
     }
 
     @Test
