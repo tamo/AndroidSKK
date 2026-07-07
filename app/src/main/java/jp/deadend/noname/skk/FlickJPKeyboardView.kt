@@ -46,7 +46,7 @@ class FlickJPKeyboardView(
 
     internal var mJPKeyboard: Keyboard? = null
     internal var mNumKeyboard: Keyboard? = null
-    private var mVoiceKeyboard: Keyboard? = null
+    internal var mVoiceKeyboard: Keyboard? = null
 
     private var mFlickRules: FlickRule = FlickRule()
     internal var isEditorMode = false
@@ -165,6 +165,16 @@ class FlickJPKeyboardView(
         invalidateAllKeys()
     }
 
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+        super.onSizeChanged(w, h, oldw, oldh)
+        val cw = w - paddingLeft - paddingRight
+        val ch = h - paddingTop - paddingBottom
+        mJPKeyboard?.resize(cw, ch)
+        mNumKeyboard?.resize(cw, ch)
+        mVoiceKeyboard?.resize(cw, ch)
+        if (w > 0 && h > 0) invalidateAllKeys()
+    }
+
     internal fun prepareNewKeyboard(context: Context, widthPixel: Int, heightPixel: Int) {
         if (mFlickRules.sections.isEmpty()) {
             mFlickRules = SKKFlickRule.loadFromInternalStorage(context) ?: FlickRule()
@@ -175,15 +185,21 @@ class FlickJPKeyboardView(
         val jpXmlId = if (has24(SKKFlickRule.SECTION_MAIN) || has24(SKKFlickRule.SECTION_ASCII))
             R.xml.keys_flick_24 else R.xml.keys_flick_jp // Main と ASCII で共通させる必要がある
 
-        val maxW = mService.mRootWidth
-        val maxH = mService.mScreenHeight
-        mJPKeyboard = Keyboard(context, jpXmlId, maxW, maxH)
-        mNumKeyboard = Keyboard(context, xmlId(SKKFlickRule.SECTION_NUMBER), maxW, maxH)
-        mVoiceKeyboard = Keyboard(context, xmlId(SKKFlickRule.SECTION_VOICE), maxW, maxH)
+        SKKLog.d("prepareNewKeyboard($widthPixel, $heightPixel) kbd=(${mService.keyboardWidth()}, ${mService.keyboardHeight()}) self=($width, $height)")
+        val m = maxOf(mService.maxWidth, mService.mScreenHeight, widthPixel, heightPixel)
+        val w = (widthPixel.takeIf { it > 0 }
+            ?: width.takeIf { it > 0 } ?: mService.keyboardWidth()) - paddingLeft - paddingRight
+        val h = (heightPixel.takeIf { it > 0 }
+            ?: height.takeIf { it > 0 } ?: mService.keyboardHeight()) - paddingTop - paddingBottom
 
-        mJPKeyboard?.resize(widthPixel, heightPixel)
-        mNumKeyboard?.resize(widthPixel, heightPixel)
-        mVoiceKeyboard?.resize(widthPixel, heightPixel)
+        mJPKeyboard = Keyboard(context, jpXmlId, m, m)
+        mNumKeyboard = Keyboard(context, xmlId(SKKFlickRule.SECTION_NUMBER), m, m)
+        mVoiceKeyboard = Keyboard(context, xmlId(SKKFlickRule.SECTION_VOICE), m, m)
+
+        mJPKeyboard?.resize(w, h)
+        mNumKeyboard?.resize(w, h)
+        mVoiceKeyboard?.resize(w, h)
+
         keyboard = mJPKeyboard ?: return
         invalidateAllKeys()
 

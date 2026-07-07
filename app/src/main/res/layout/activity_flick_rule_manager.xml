@@ -121,11 +121,12 @@
                 android:textOff="@string/label_shift_toggle"
                 android:textOn="@string/label_shift_toggle" />
 
-            <jp.deadend.noname.skk.FlickJPKeyboardView
-                android:id="@+id/flickKeyboardView"
-                android:layout_width="match_parent"
+            <LinearLayout
+                android:id="@+id/previewContainer"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal" />
+                android:layout_gravity="center_horizontal"
+                android:orientation="horizontal" />
         </LinearLayout>
 
         <!-- Text Editor -->

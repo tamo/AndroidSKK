@@ -17,7 +17,7 @@ class SKKPrefs(context: Context) {
             else putString(res.getString(R.string.pref_kutouten_type), value)
         }
 
-    var font: String
+    private var font: String
         get() = prefs.getString(res.getString(R.string.pref_font), null) ?: "default"
         set(value) = prefs.edit {
             if (value == "default") remove(res.getString(R.string.pref_font))

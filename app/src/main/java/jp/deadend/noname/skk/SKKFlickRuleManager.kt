@@ -7,10 +7,8 @@ import android.view.MenuItem
 import android.view.View
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.doOnLayout
 import androidx.core.view.isVisible
 import androidx.core.view.updatePadding
 import androidx.core.widget.addTextChangedListener
@@ -18,16 +16,16 @@ import jp.deadend.noname.dialog.ConfirmationDialogFragment
 import jp.deadend.noname.dialog.SimpleMessageDialogFragment
 import jp.deadend.noname.skk.databinding.ActivityFlickRuleManagerBinding
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.time.Duration.Companion.milliseconds
 
 class SKKFlickRuleManager : AppCompatActivity() {
     private lateinit var binding: ActivityFlickRuleManagerBinding
+    private var service: SKKService? = null
     private var isModified = false
-    private var previewJob: Job? = null
-
     private var ruleMap: MutableFlickRule = MutableFlickRule()
     private var currentSection = SKKFlickRule.SECTION_MAIN
     private var editingKey: Int? = null
@@ -90,7 +88,6 @@ class SKKFlickRuleManager : AppCompatActivity() {
             isModified = true
             updateKeyboardPreview()
         }
-        editingKey?.let { setKeyHighlight(it, false) }
         editingKey = null
     }
 
@@ -98,7 +95,13 @@ class SKKFlickRuleManager : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         val intent = Intent(this, SKKService::class.java)
+        intent.putExtra(SKKService.KEY_COMMAND, SKKService.COMMAND_READ_PREFS)
         startService(intent)
+        MainScope().launch(Dispatchers.Default) {
+            service = SKKService.waitForInstance()
+            while (service?.mFlickJPPreview == null) delay(100.milliseconds)
+            withContext(Dispatchers.Main) { bindPreview() }
+        }
 
         binding = ActivityFlickRuleManagerBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -216,21 +219,31 @@ class SKKFlickRuleManager : AppCompatActivity() {
         }
 
         binding.btnShiftToggle.setOnCheckedChangeListener { _, isChecked ->
-            binding.flickKeyboardView.isShifted = isChecked
+            service?.mFlickJPPreview?.isShifted = isChecked
             updateKeyboardPreview()
             binding.btnShiftToggle.setBackgroundColor(getColor(if (isChecked) R.color.key_checked_color else R.color.key_background_color))
         }
 
-        binding.flickKeyboardView.let { kv ->
-            kv.isEditorMode = true
+        binding.textEditor.addTextChangedListener(afterTextChanged = { isModified = true })
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (service != null) bindPreview()
+    }
+
+    private fun bindPreview() = service?.mFlickJPPreview?.let { kv ->
+        if (kv.parent != binding.previewContainer) {
+            (kv.parent as? android.view.ViewGroup)?.removeView(kv)
+            binding.previewContainer.removeAllViews()
+            binding.previewContainer.addView(kv)
             kv.onFlickListener = object : FlickJPKeyboardView.OnFlickListener {
                 override fun onFlick(keyIndex: Int, flickIndex: Int) {
                     startRuleEditor(keyIndex, flickIndex)
                 }
             }
         }
-
-        binding.textEditor.addTextChangedListener(afterTextChanged = { isModified = true })
+        updateKeyboardPreview()
     }
 
     private fun updateEditorUI() {
@@ -255,54 +268,30 @@ class SKKFlickRuleManager : AppCompatActivity() {
     }
 
     private fun updateKeyboardPreview() {
-        previewJob?.cancel()
-        previewJob = MainScope().launch(Dispatchers.Default) {
-            val service = SKKService.waitForInstance()
-            withContext(Dispatchers.Main) {
-                binding.flickKeyboardView.doOnLayout { view ->
-                    val kv = view as FlickJPKeyboardView
+        val kv = service?.mFlickJPPreview ?: return
+        kv.setFlickRules(ruleMap.toImmutable())
+        kv.prepareNewKeyboard(this, kv.width, kv.height)
 
-                    // SKKService.createInputView と同様の処理
-                    kv.setService(service)
-                    kv.setFlickRules(ruleMap.toImmutable())
-                    if (skkPrefs.useInset) {
-                        theme.applyStyle(R.style.ThemeOverlay_SKK_RoundedKey, true)
-                        ResourcesCompat
-                            .getDrawable(resources, R.drawable.key_bg_inset, theme)
-                            ?.let { kv.setKeyBackground(it) }
-                    }
+        when (currentSection) {
+            SKKFlickRule.SECTION_NUMBER ->
+                kv.mNumKeyboard?.let { kv.keyboard = it }.also { kv.isHankaku = false }
 
-                    // SKKService.readPrefsForInputView と同様の処理
-                    val keyHeight =
-                        resources.displayMetrics.heightPixels * skkPrefs.keyHeightPort / 100
-                    val density = resources.displayMetrics.density
-                    val sensitivity = (skkPrefs.flickSensitivity * density + 0.5f).toInt()
-                    val keyWidth = service.keyboardWidth(kv).takeIf { it > 0 } ?: kv.width
-                    kv.prepareNewKeyboard(this@SKKFlickRuleManager, keyWidth, keyHeight)
-                    kv.backgroundAlpha = 255 * skkPrefs.backgroundAlpha / 100
-                    kv.setTypeface(skkPrefs.typeface)
-                    kv.setFlickSensitivity(sensitivity)
+            SKKFlickRule.SECTION_VOICE ->
+                kv.mVoiceKeyboard?.let { kv.keyboard = it }.also { kv.isHankaku = false }
 
-                    when (currentSection) {
-                        SKKFlickRule.SECTION_NUMBER -> kv.executeAction(SKKFlickRule.ACTION_KBD_NUMBER)
-                        SKKFlickRule.SECTION_VOICE -> kv.executeAction(SKKFlickRule.ACTION_KBD_VOICE)
-                        else -> kv.executeAction(SKKFlickRule.ACTION_RESET)
-                    }
-
-                    kv.updateKeyLabels(
-                        when (currentSection) { // Mock state for labels
-                            SKKFlickRule.SECTION_ASCII -> jp.deadend.noname.skk.engine.SKKASCIIState
-                            else -> jp.deadend.noname.skk.engine.SKKHiraganaState
-                        }
-                    )
-                }
-            }
+            else -> kv.mJPKeyboard?.let { kv.keyboard = it }
         }
+
+        kv.updateKeyLabels(
+            when (currentSection) { // Mock state for labels
+                SKKFlickRule.SECTION_ASCII -> jp.deadend.noname.skk.engine.SKKASCIIState
+                else -> jp.deadend.noname.skk.engine.SKKHiraganaState
+            }
+        )
     }
 
     private fun startRuleEditor(keyIndex: Int, flick: Int) {
         editingKey = keyIndex
-        setKeyHighlight(keyIndex, true)
 
         val sectionData = ruleMap.sections[currentSection]
         val entry = sectionData?.entries?.get(keyIndex)
@@ -344,13 +333,6 @@ class SKKFlickRuleManager : AppCompatActivity() {
         s.labels[flickIndex] = sLabel
         s.actions[flickIndex] = sAction
         entry.shifted = s
-    }
-
-    private fun setKeyHighlight(keyIndex: Int, on: Boolean) {
-        binding.flickKeyboardView.keyboard.keys.getOrNull(keyIndex)?.let {
-            it.on = on
-            binding.flickKeyboardView.invalidateAllKeys()
-        }
     }
 
     override fun onPause() {

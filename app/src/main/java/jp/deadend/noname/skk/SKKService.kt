@@ -9,6 +9,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Configuration
+import android.graphics.Typeface
 import android.hardware.display.DisplayManager
 import android.inputmethodservice.InputMethodService
 import android.media.AudioManager
@@ -67,6 +68,7 @@ class SKKService : InputMethodService() {
     internal val mCandidatesView get() = mBinding.candidatesContainer.candidates
 
     private var mFlickJPInputView: FlickJPKeyboardView? = null
+    internal var mFlickJPPreview: FlickJPKeyboardView? = null
     private var mQwertyInputView: QwertyKeyboardView? = null
 
     // 現在表示中の KeyboardView
@@ -445,23 +447,30 @@ class SKKService : InputMethodService() {
         val context = createNightModeContext(applicationContext, skkPrefs.theme)
         val keyHeight = keyboardHeight()
         val alpha = skkPrefs.backgroundAlpha
+        val typeface = skkPrefs.typeface
         val density = context.resources.displayMetrics.density
         val sensitivity = (skkPrefs.flickSensitivity * density + 0.5f).toInt()
 
         val flickWidth = keyboardWidth(flick)
         SKKLog.d("prepare flick ($flickWidth, $keyHeight)")
-        flick.prepareNewKeyboard(context, flickWidth, keyHeight)
-        flick.backgroundAlpha = 255 * alpha / 100
-        flick.setTypeface(skkPrefs.typeface)
-        flick.setFlickSensitivity(sensitivity)
+        listOfNotNull(flick, mFlickJPPreview).forEach { kv ->
+            kv.prepareNewKeyboard(context, flickWidth, keyHeight)
+            kv.setPrefs(alpha, typeface, sensitivity)
+        }
 
         val qwertyWidth = keyboardWidth(qwerty)
         SKKLog.d("prepare qwerty ($qwertyWidth, $keyHeight)")
-        qwerty.keyboard.resize(qwertyWidth, keyHeight)
-        qwerty.mSymbolsKeyboard.resize(qwertyWidth, keyHeight)
-        qwerty.backgroundAlpha = 255 * alpha / 100
-        qwerty.setTypeface(skkPrefs.typeface)
-        qwerty.setFlickSensitivity(sensitivity)
+        qwerty.apply {
+            keyboard.resize(qwertyWidth, keyHeight)
+            mSymbolsKeyboard.resize(qwertyWidth, keyHeight)
+            setPrefs(alpha, typeface, sensitivity)
+        }
+    }
+
+    private fun KeyboardView.setPrefs(alpha: Int, typeface: Typeface, sensitivity: Int) {
+        backgroundAlpha = 255 * alpha / 100
+        setTypeface(typeface)
+        setFlickSensitivity(sensitivity)
     }
 
     private fun checkUseSoftKeyboard(
@@ -563,6 +572,9 @@ class SKKService : InputMethodService() {
 
         mFlickJPInputView = FlickJPKeyboardView(context, null)
         mFlickJPInputView?.setService(this)
+        mFlickJPPreview = FlickJPKeyboardView(context, null)
+        mFlickJPPreview?.setService(this)
+        mFlickJPPreview?.isEditorMode = true
         mQwertyInputView = QwertyKeyboardView(context)
         mQwertyInputView?.setService(this)
 
@@ -1511,7 +1523,7 @@ class SKKService : InputMethodService() {
             .coerceAtMost(mRootWidth)
     }
 
-    private fun keyboardHeight() = if (!checkUseSoftKeyboard()) 0 else
+    internal fun keyboardHeight() = if (!checkUseSoftKeyboard()) 0 else
         mScreenHeight * when (mOrientation) {
             Configuration.ORIENTATION_PORTRAIT -> skkPrefs.keyHeightPort
             Configuration.ORIENTATION_LANDSCAPE -> skkPrefs.keyHeightLand

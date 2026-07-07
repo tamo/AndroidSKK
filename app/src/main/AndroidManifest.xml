@@ -75,7 +75,7 @@
         <activity
             android:name=".FlickRuleEditorActivity"
             android:label="@string/title_flick_rule_editor"
-            android:theme="@style/Theme.AppCompat.DayNight.Dialog"
+            android:theme="@style/Theme.AppCompat.DayNight.DialogWhenLarge"
             android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".SKKMushroom"
