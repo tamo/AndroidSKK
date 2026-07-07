@@ -1503,8 +1503,8 @@ class SKKService : InputMethodService() {
         }
     }
 
-    internal fun keyboardWidth(view: KeyboardView? = mInputView): Int {
-        if (!checkUseSoftKeyboard()) return mRootWidth
+    internal fun keyboardWidth(view: KeyboardView? = mInputView, ignoreHW: Boolean = false): Int {
+        if (!ignoreHW && !checkUseSoftKeyboard()) return mRootWidth
         val minWidth = resources.getDimensionPixelSize(R.dimen.keyboard_minimum_width)
         val baseWidth = when (mOrientation) {
             Configuration.ORIENTATION_PORTRAIT -> {
@@ -1523,8 +1523,9 @@ class SKKService : InputMethodService() {
             .coerceAtMost(mRootWidth)
     }
 
-    internal fun keyboardHeight() = if (!checkUseSoftKeyboard()) 0 else
-        mScreenHeight * when (mOrientation) {
+    internal fun keyboardHeight(ignoreHW: Boolean = false) =
+        if (!ignoreHW && !checkUseSoftKeyboard()) 0
+        else mScreenHeight * when (mOrientation) {
             Configuration.ORIENTATION_PORTRAIT -> skkPrefs.keyHeightPort
             Configuration.ORIENTATION_LANDSCAPE -> skkPrefs.keyHeightLand
             else -> 30

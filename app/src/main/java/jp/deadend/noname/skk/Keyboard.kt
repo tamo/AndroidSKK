@@ -314,7 +314,8 @@ open class Keyboard {
 
     fun resize(newWidth: Int, newHeight: Int) {
         if (newWidth == width && newHeight == height) return
-        if (newWidth < 1 || newHeight < 1 || mOriginalWidth == 0 || mOriginalHeight == 0) return
+        if (newWidth < 1 || mOriginalWidth == 0 || mOriginalHeight == 0) return
+        // newHeight = 0 はハードキーボード使用時にありうるので許容
 
         val hScaleFactor = newWidth.toFloat() / mOriginalWidth
         val vScaleFactor = newHeight.toFloat() / mOriginalHeight

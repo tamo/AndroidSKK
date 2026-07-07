@@ -165,16 +165,6 @@ class FlickJPKeyboardView(
         invalidateAllKeys()
     }
 
-    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
-        super.onSizeChanged(w, h, oldw, oldh)
-        val cw = w - paddingLeft - paddingRight
-        val ch = h - paddingTop - paddingBottom
-        mJPKeyboard?.resize(cw, ch)
-        mNumKeyboard?.resize(cw, ch)
-        mVoiceKeyboard?.resize(cw, ch)
-        if (w > 0 && h > 0) invalidateAllKeys()
-    }
-
     internal fun prepareNewKeyboard(context: Context, widthPixel: Int, heightPixel: Int) {
         if (mFlickRules.sections.isEmpty()) {
             mFlickRules = SKKFlickRule.loadFromInternalStorage(context) ?: FlickRule()
@@ -187,15 +177,16 @@ class FlickJPKeyboardView(
 
         SKKLog.d("prepareNewKeyboard($widthPixel, $heightPixel) kbd=(${mService.keyboardWidth()}, ${mService.keyboardHeight()}) self=($width, $height)")
         val m = maxOf(mService.maxWidth, mService.mScreenHeight, widthPixel, heightPixel)
-        val w = (widthPixel.takeIf { it > 0 }
-            ?: width.takeIf { it > 0 } ?: mService.keyboardWidth()) - paddingLeft - paddingRight
-        val h = (heightPixel.takeIf { it > 0 }
-            ?: height.takeIf { it > 0 } ?: mService.keyboardHeight()) - paddingTop - paddingBottom
-
         mJPKeyboard = Keyboard(context, jpXmlId, m, m)
         mNumKeyboard = Keyboard(context, xmlId(SKKFlickRule.SECTION_NUMBER), m, m)
         mVoiceKeyboard = Keyboard(context, xmlId(SKKFlickRule.SECTION_VOICE), m, m)
 
+        // widthPixel と heightPixel 両方が 0 なのはレイアウト計算前の状態 (ハードキーは height のみ 0)
+        // mService.keyboardWidth はハードキー接続時に画面幅いっぱいになってしまう (常に無視)
+        // mService.keyboardHeight はハードキー接続時に 0 になってしまう (isEditorMode 以外では尊重)
+        val isZero = widthPixel == 0 && heightPixel == 0
+        val w = if (isZero) mService.keyboardWidth(ignoreHW = true) else widthPixel
+        val h = if (isZero) mService.keyboardHeight(ignoreHW = isEditorMode) else heightPixel
         mJPKeyboard?.resize(w, h)
         mNumKeyboard?.resize(w, h)
         mVoiceKeyboard?.resize(w, h)
