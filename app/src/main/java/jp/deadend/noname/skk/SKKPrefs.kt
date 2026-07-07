@@ -383,6 +383,13 @@ class SKKPrefs(context: Context) {
             else putString(res.getString(R.string.pref_background_image), value)
         }
 
+    var backgroundImageAlpha: Int
+        get() = prefs.getInt(res.getString(R.string.pref_background_image_alpha), 100)
+        set(value) = prefs.edit {
+            if (value == 100) remove(res.getString(R.string.pref_background_image_alpha))
+            else putInt(res.getString(R.string.pref_background_image_alpha), value)
+        }
+
     val activeAlpha get() = (backgroundAlpha * 255 / 100) // backgroundAlpha と違い 0-255 の範囲
     val inactiveAlpha get() = (backgroundAlpha * 255 / 100 / 2) // 小さいほど薄く、存在感がなくなる
 

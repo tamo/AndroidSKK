@@ -1496,7 +1496,9 @@ class SKKService : InputMethodService() {
                                     mCandidatesViewContainer.run { (height - minHeight) }
                                 else 0
                             }
-                        )
+                        ).apply {
+                            if (isFloating()) alpha = skkPrefs.backgroundImageAlpha * 255 / 100
+                        }
                     }
                 }
             }

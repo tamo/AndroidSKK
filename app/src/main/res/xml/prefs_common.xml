@@ -70,11 +70,20 @@
                 app:min="0"
                 app:showSeekBarValue="true"
                 app:summary="0で完全に透明になります"
-                app:title="背景の透明化" />
+                app:title="キーの透明化" />
             <androidx.preference.Preference
                 app:iconSpaceReserved="false"
                 app:key="@string/pref_background_image"
                 app:title="背景画像" />
+            <androidx.preference.SeekBarPreference
+                android:max="100"
+                app:defaultValue="100"
+                app:iconSpaceReserved="false"
+                app:key="@string/pref_background_image_alpha"
+                app:min="0"
+                app:showSeekBarValue="true"
+                app:summary="フローティング状態のとき背景画像を薄くします"
+                app:title="背景画像の透明化" />
         </androidx.preference.PreferenceCategory>
 
         <androidx.preference.PreferenceCategory
