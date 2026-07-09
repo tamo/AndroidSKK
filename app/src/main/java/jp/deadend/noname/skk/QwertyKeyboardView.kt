@@ -25,7 +25,6 @@ class QwertyKeyboardView @JvmOverloads constructor(
     override fun setService(service: SKKService) {
         super.setService(service)
         keyboard = mLatinKeyboard
-        onKeyboardActionListener = this
     }
 
     override fun onDetachedFromWindow() {

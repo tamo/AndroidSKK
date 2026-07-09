@@ -68,7 +68,6 @@ class FlickJPKeyboardView(
 
     override fun setService(service: SKKService) {
         super.setService(service)
-        onKeyboardActionListener = this
         isPreviewEnabled = false
         setBackgroundColor(0x00000000)
 

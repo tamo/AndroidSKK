@@ -499,8 +499,8 @@ open class KeyboardView @JvmOverloads constructor(
 
         mPaint.textSize = h0
         mPaint.typeface = currentTypeface
-        canvas.drawText(lines[0], centerX, centerY + LINE_SCALE * (halfHeight - (h1 + h2)),
-            mPaint
+        canvas.drawText(
+            lines[0], centerX, centerY + LINE_SCALE * (halfHeight - (h1 + h2)), mPaint
         )
 
         mPaint.textSize = h1
@@ -605,16 +605,15 @@ open class KeyboardView @JvmOverloads constructor(
                     val codesLength = key.codes.main.size
                     val prevCount = (mTapCount + codesLength - 1) % codesLength
                     val prevCode = mKeyboard.keys[mLastSentIndex].codes.main[prevCount]
-                    if (prevCode > 0) {
-                        onKeyboardActionListener?.onKey(Keyboard.KEYCODE_DELETE)
-                    }
+                    if (prevCode > 0)
+                        (onKeyboardActionListener ?: this).onKey(Keyboard.KEYCODE_DELETE)
                 } else {
                     mTapCount = 0
                 }
                 code = key.codes.main[mTapCount]
             }
-            onKeyboardActionListener?.onKey(code)
-            onKeyboardActionListener?.onRelease(code)
+            (onKeyboardActionListener ?: this).onKey(code)
+            (onKeyboardActionListener ?: this).onRelease(code)
             mLastSentIndex = index
             mLastTapTime = eventTime
         }
@@ -788,23 +787,19 @@ open class KeyboardView @JvmOverloads constructor(
                 miniKeyboardContainer.findViewById<View>(R.id.closeButton)?.setOnClickListener(this)
                 miniKeyboardView = miniKeyboardContainer.findViewById(R.id.keyboardView)
                 miniKeyboardView.onKeyboardActionListener = object : OnKeyboardActionListener {
-                    override fun onKey(primaryCode: Int) {
-                        onKeyboardActionListener?.onKey(primaryCode)
-                        dismissPopupKeyboard()
-                    }
+                    override fun onKey(primaryCode: Int) =
+                        (onKeyboardActionListener ?: this@KeyboardView).onKey(primaryCode)
+                            .also { dismissPopupKeyboard() }
 
-                    override fun onText(text: CharSequence) {
-                        onKeyboardActionListener?.onText(text)
-                        dismissPopupKeyboard()
-                    }
+                    override fun onText(text: CharSequence) =
+                        (onKeyboardActionListener ?: this@KeyboardView).onText(text)
+                            .also { dismissPopupKeyboard() }
 
-                    override fun onPress(primaryCode: Int) {
-                        onKeyboardActionListener?.onPress(primaryCode)
-                    }
+                    override fun onPress(primaryCode: Int) =
+                        (onKeyboardActionListener ?: this@KeyboardView).onPress(primaryCode)
 
-                    override fun onRelease(primaryCode: Int) {
-                        onKeyboardActionListener?.onRelease(primaryCode)
-                    }
+                    override fun onRelease(primaryCode: Int) =
+                        (onKeyboardActionListener ?: this@KeyboardView).onRelease(primaryCode)
                 }
                 miniKeyboardView.keyboard = Keyboard(
                     context, popupKeyboardId,
@@ -1002,7 +997,7 @@ open class KeyboardView @JvmOverloads constructor(
                 checkMultiTap(eventTime, mCurrentKey)
 
                 val key = mKeyboard.keys[mCurrentKey]
-                onKeyboardActionListener?.onPress(key.codes.main.getOrNull(0) ?: 0)
+                (onKeyboardActionListener ?: this).onPress(key.codes.main.getOrNull(0) ?: 0)
 
                 if (key.repeatable) {
                     mRepeatKeyIndex = mCurrentKey
@@ -1063,10 +1058,17 @@ open class KeyboardView @JvmOverloads constructor(
         return true
     }
 
-    override fun swipeRight() = onKeyboardActionListener?.swipeRight() ?: Unit
-    override fun swipeLeft() = onKeyboardActionListener?.swipeLeft() ?: Unit
-    override fun swipeUp() = onKeyboardActionListener?.swipeUp() ?: Unit
-    override fun swipeDown() = onKeyboardActionListener?.swipeDown() ?: Unit
+    override fun swipeRight() =
+        onKeyboardActionListener?.let { if (it !== this) it.swipeRight() } ?: Unit
+
+    override fun swipeLeft() =
+        onKeyboardActionListener?.let { if (it !== this) it.swipeLeft() } ?: Unit
+
+    override fun swipeUp() =
+        onKeyboardActionListener?.let { if (it !== this) it.swipeUp() } ?: Unit
+
+    override fun swipeDown() =
+        onKeyboardActionListener?.let { if (it !== this) it.swipeDown() } ?: Unit
 
     override fun performClick(): Boolean =
         if (mActivePointerId == -1) {
