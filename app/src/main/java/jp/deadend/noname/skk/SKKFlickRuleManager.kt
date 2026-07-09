@@ -12,8 +12,6 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
 import androidx.core.view.updatePadding
 import androidx.core.widget.addTextChangedListener
-import jp.deadend.noname.dialog.ConfirmationDialogFragment
-import jp.deadend.noname.dialog.SimpleMessageDialogFragment
 import jp.deadend.noname.skk.databinding.ActivityFlickRuleManagerBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
@@ -40,7 +38,7 @@ class SKKFlickRuleManager : AppCompatActivity() {
                 ruleMap = SKKFlickRule.load(this)
                 updateEditorUI()
             } else {
-                SimpleMessageDialogFragment.newInstance(getString(R.string.error_kana_rule_load))
+                SimpleDialogFragment.newInstance(getString(R.string.error_kana_rule_load))
                     .show(supportFragmentManager, "dialog")
             }
         }
@@ -57,11 +55,11 @@ class SKKFlickRuleManager : AppCompatActivity() {
         }
         if (SKKFlickRule.exportToUri(this, uri, text)) {
             val fileName = getFileNameFromUri(this, uri)
-            SimpleMessageDialogFragment.newInstance(
+            SimpleDialogFragment.newInstance(
                 getString(R.string.message_tools_written_to_external_storage, fileName)
             ).show(supportFragmentManager, "dialog")
         } else {
-            SimpleMessageDialogFragment.newInstance(
+            SimpleDialogFragment.newInstance(
                 getString(R.string.error_write_to_external_storage, "")
             ).show(supportFragmentManager, "dialog")
         }
@@ -145,10 +143,10 @@ class SKKFlickRuleManager : AppCompatActivity() {
                 val currentSect = ruleMap.sections[currentSection]
                 val hasGodanKeys = (currentSect?.entries?.keys?.maxOrNull() ?: 0) > 19
                 if (hasGodanKeys) {
-                    val dialog = ConfirmationDialogFragment.newInstance(
-                        getString(R.string.message_confirm_delete_godan_keys)
+                    val dialog = SimpleDialogFragment.newInstance(
+                        getString(R.string.message_confirm_delete_godan_keys), true
                     )
-                    dialog.setListener(object : ConfirmationDialogFragment.Listener {
+                    dialog.setListener(object : SimpleDialogFragment.Listener {
                         override fun onPositiveClick() {
                             currentSect?.let { sect ->
                                 sect.entries.keys.filter { it > 19 }
@@ -185,10 +183,10 @@ class SKKFlickRuleManager : AppCompatActivity() {
                 }
 
                 if (ruleMap.sections.containsKey(SKKFlickRule.SECTION_ASCII)) {
-                    val dialog = ConfirmationDialogFragment.newInstance(
-                        getString(R.string.message_confirm_delete_ascii_section)
+                    val dialog = SimpleDialogFragment.newInstance(
+                        getString(R.string.message_confirm_delete_ascii_section), true
                     )
-                    dialog.setListener(object : ConfirmationDialogFragment.Listener {
+                    dialog.setListener(object : SimpleDialogFragment.Listener {
                         override fun onPositiveClick() {
                             ruleMap.sections.remove(SKKFlickRule.SECTION_ASCII)
                             isModified = true
@@ -365,10 +363,10 @@ class SKKFlickRuleManager : AppCompatActivity() {
 
             R.id.menu_flick_rule_load_godan, R.id.menu_flick_rule_load_godan_simple -> {
                 val isSimple = item.itemId == R.id.menu_flick_rule_load_godan_simple
-                val dialog = ConfirmationDialogFragment.newInstance(
-                    getString(R.string.message_confirm_load_godan_rule)
+                val dialog = SimpleDialogFragment.newInstance(
+                    getString(R.string.message_confirm_load_godan_rule), true
                 )
-                dialog.setListener(object : ConfirmationDialogFragment.Listener {
+                dialog.setListener(object : SimpleDialogFragment.Listener {
                     override fun onPositiveClick() {
                         SKKFlickRule.loadGodan(this@SKKFlickRuleManager, isSimple)
                         isModified = true
@@ -376,7 +374,6 @@ class SKKFlickRuleManager : AppCompatActivity() {
                         updateEditorUI()
                     }
 
-                    override fun onNegativeClick() {}
                 })
                 dialog.show(supportFragmentManager, "dialog")
             }
@@ -390,10 +387,10 @@ class SKKFlickRuleManager : AppCompatActivity() {
             }
 
             R.id.menu_flick_rule_clear -> {
-                val dialog = ConfirmationDialogFragment.newInstance(
-                    getString(R.string.message_confirm_clear_flick_rule)
+                val dialog = SimpleDialogFragment.newInstance(
+                    getString(R.string.message_confirm_clear_flick_rule), true
                 )
-                dialog.setListener(object : ConfirmationDialogFragment.Listener {
+                dialog.setListener(object : SimpleDialogFragment.Listener {
                     override fun onPositiveClick() {
                         SKKFlickRule.clear(this@SKKFlickRuleManager)
                         isModified = true
@@ -401,7 +398,6 @@ class SKKFlickRuleManager : AppCompatActivity() {
                         updateEditorUI()
                     }
 
-                    override fun onNegativeClick() {}
                 })
                 dialog.show(supportFragmentManager, "dialog")
             }

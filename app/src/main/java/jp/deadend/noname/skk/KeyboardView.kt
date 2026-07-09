@@ -456,8 +456,8 @@ open class KeyboardView @JvmOverloads constructor(
         } else {
             mPaint.textSize = mKeyTextSize.toFloat()
             mPaint.textScaleX = when {
-                isZenkaku -> 1.4f
-                isHankaku && (numLines <= 1 || lines[0].length == 1) -> 0.7f
+                isZenkaku -> ZENKAKU_TEXT_SCALE
+                isHankaku && (numLines <= 1 || lines[0].length == 1) -> HANKAKU_TEXT_SCALE
                 else -> 1.0f
             }
         }
@@ -491,23 +491,21 @@ open class KeyboardView @JvmOverloads constructor(
         canvas: Canvas, lines: List<String>, labelZoom: Float, sizeDefault: Float,
         centerX: Float, centerY: Float, currentTypeface: Typeface?
     ) {
-        val lineScale = 1.05f // 行間
-        val h0 = 0.4f * labelZoom * sizeDefault
-        val h1 = 0.6f * labelZoom * sizeDefault
-        val h2 = 0.4f * labelZoom * sizeDefault
+        val h0 = LABEL_HEIGHT_RATIO_SMALL * labelZoom * sizeDefault
+        val h1 = LABEL_HEIGHT_RATIO_LARGE * labelZoom * sizeDefault
+        val h2 = LABEL_HEIGHT_RATIO_SMALL * labelZoom * sizeDefault
         val totalHeight = h0 + h1 + h2
+        val halfHeight = (totalHeight - mPaint.descent()) / 2f
 
         mPaint.textSize = h0
         mPaint.typeface = currentTypeface
-        canvas.drawText(
-            lines[0], centerX,
-            centerY + lineScale * ((totalHeight - mPaint.descent()) / 2f - (h1 + h2)),
+        canvas.drawText(lines[0], centerX, centerY + LINE_SCALE * (halfHeight - (h1 + h2)),
             mPaint
         )
 
         mPaint.textSize = h1
         mPaint.typeface = currentTypeface
-        val drawY1 = centerY + lineScale * ((totalHeight - mPaint.descent()) / 2f - h2)
+        val drawY1 = centerY + LINE_SCALE * (halfHeight - h2)
         if (!drawCenterLabel(lines, 1, canvas, centerX, drawY1, mPaint)) {
             mPaint.typeface = mBoldTypeface
             canvas.drawText(lines[1], centerX, drawY1, mPaint)
@@ -515,22 +513,18 @@ open class KeyboardView @JvmOverloads constructor(
 
         mPaint.textSize = h2
         mPaint.typeface = currentTypeface
-        canvas.drawText(
-            lines[2], centerX, centerY + lineScale * ((totalHeight - mPaint.descent()) / 2f),
-            mPaint
-        )
+        canvas.drawText(lines[2], centerX, centerY + LINE_SCALE * halfHeight, mPaint)
     }
 
     private fun drawSingleLabel(
         canvas: Canvas, line: String, labelZoom: Float, sizeDefault: Float,
         centerX: Float, centerY: Float
     ) {
-        val lineScale = 1.05f // 行間
         val h0 = labelZoom * sizeDefault * shrinkFactor(line)
         mPaint.textSize = h0
         mPaint.typeface = mBoldTypeface
         canvas.drawText(
-            line, centerX, centerY + lineScale * ((h0 - mPaint.descent()) / 2f),
+            line, centerX, centerY + LINE_SCALE * ((h0 - mPaint.descent()) / 2f),
             mPaint
         )
     }
@@ -551,13 +545,13 @@ open class KeyboardView @JvmOverloads constructor(
             val upLine = upLines[0]
             mPaint.apply {
                 textAlign = Align.LEFT
-                textSize = mLabelTextSize * .7f * labelZoom * shrinkFactor(upLine)
+                textSize = mLabelTextSize * SUB_LABEL_TEXT_SCALE * labelZoom * shrinkFactor(upLine)
                 typeface = currentTypeface
             }
             canvas.drawText(
                 upLine,
-                mPaint.textSize * .5f,
-                mPaint.textSize * 1.5f,
+                mPaint.textSize * SUB_LABEL_OFFSET_X,
+                mPaint.textSize * SUB_LABEL_OFFSET_Y,
                 mPaint
             )
         }
@@ -566,13 +560,14 @@ open class KeyboardView @JvmOverloads constructor(
             val downLine = key.labels.downLines[0]
             mPaint.apply {
                 textAlign = Align.RIGHT
-                textSize = mLabelTextSize * .7f * labelZoom * shrinkFactor(downLine)
+                textSize =
+                    mLabelTextSize * SUB_LABEL_TEXT_SCALE * labelZoom * shrinkFactor(downLine)
                 typeface = mBoldTypeface
             }
             canvas.drawText(
                 downLine,
-                key.width.toFloat() - mPaint.textSize * .5f,
-                key.height.toFloat() - mPaint.textSize * .6f,
+                key.width.toFloat() - mPaint.textSize * SUB_LABEL_OFFSET_X,
+                key.height.toFloat() - mPaint.textSize * SUB_LABEL_OFFSET_Y_BOTTOM,
                 mPaint
             )
         }
@@ -1176,6 +1171,16 @@ open class KeyboardView @JvmOverloads constructor(
 
         private const val VELOCITY_UNITS_MS = 1000
         private const val DISAMBIGUATION_VELOCITY_DIVISOR = 4f
+
+        private const val ZENKAKU_TEXT_SCALE = 1.4f
+        private const val HANKAKU_TEXT_SCALE = 0.7f
+        private const val SUB_LABEL_TEXT_SCALE = 0.7f
+        private const val LINE_SCALE = 1.05f
+        private const val LABEL_HEIGHT_RATIO_SMALL = 0.4f
+        private const val LABEL_HEIGHT_RATIO_LARGE = 0.6f
+        private const val SUB_LABEL_OFFSET_X = 0.5f
+        private const val SUB_LABEL_OFFSET_Y = 1.5f
+        private const val SUB_LABEL_OFFSET_Y_BOTTOM = 0.6f
 
         // private const val MAX_NEARBY_KEYS = 12
         private const val BACKGROUND_DIM_AMOUNT = 0.6f

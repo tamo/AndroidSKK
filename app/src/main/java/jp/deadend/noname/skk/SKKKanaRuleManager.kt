@@ -10,8 +10,6 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 import androidx.core.widget.addTextChangedListener
-import jp.deadend.noname.dialog.ConfirmationDialogFragment
-import jp.deadend.noname.dialog.SimpleMessageDialogFragment
 import jp.deadend.noname.skk.databinding.ActivityKanaRuleManagerBinding
 
 class SKKKanaRuleManager : AppCompatActivity() {
@@ -27,7 +25,7 @@ class SKKKanaRuleManager : AppCompatActivity() {
                 isModified = true
                 updateEditorText()
             } else {
-                SimpleMessageDialogFragment.newInstance(getString(R.string.error_kana_rule_load))
+                SimpleDialogFragment.newInstance(getString(R.string.error_kana_rule_load))
                     .show(supportFragmentManager, "dialog")
             }
         }
@@ -93,33 +91,31 @@ class SKKKanaRuleManager : AppCompatActivity() {
             }
 
             R.id.menu_kara_rule_azik -> {
-                val dialog = ConfirmationDialogFragment.newInstance(
-                    getString(R.string.message_confirm_load_azik_rule)
+                val dialog = SimpleDialogFragment.newInstance(
+                    getString(R.string.message_confirm_load_azik_rule), true
                 )
-                dialog.setListener(object : ConfirmationDialogFragment.Listener {
+                dialog.setListener(object : SimpleDialogFragment.Listener {
                     override fun onPositiveClick() {
                         SKKKanaRule.loadAzik(this@SKKKanaRuleManager)
                         isModified = true
                         updateEditorText()
                     }
 
-                    override fun onNegativeClick() {}
                 })
                 dialog.show(supportFragmentManager, "dialog")
             }
 
             R.id.menu_kana_rule_clear -> {
-                val dialog = ConfirmationDialogFragment.newInstance(
-                    getString(R.string.message_confirm_clear_kana_rule)
+                val dialog = SimpleDialogFragment.newInstance(
+                    getString(R.string.message_confirm_clear_kana_rule), true
                 )
-                dialog.setListener(object : ConfirmationDialogFragment.Listener {
+                dialog.setListener(object : SimpleDialogFragment.Listener {
                     override fun onPositiveClick() {
                         SKKKanaRule.clear(this@SKKKanaRuleManager)
                         isModified = true
                         updateEditorText()
                     }
 
-                    override fun onNegativeClick() {}
                 })
                 dialog.show(supportFragmentManager, "dialog")
             }

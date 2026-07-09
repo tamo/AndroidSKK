@@ -59,6 +59,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import java.io.IOException
 import kotlin.math.max
+import kotlin.math.roundToInt
 import android.graphics.Insets as AGInsets
 import android.view.WindowInsets.Type as InsetsType
 
@@ -449,7 +450,7 @@ class SKKService : InputMethodService() {
         val alpha = skkPrefs.backgroundAlpha
         val typeface = skkPrefs.typeface
         val density = context.resources.displayMetrics.density
-        val sensitivity = (skkPrefs.flickSensitivity * density + 0.5f).toInt()
+        val sensitivity = (skkPrefs.flickSensitivity * density).roundToInt()
 
         val flickWidth = keyboardWidth(flick)
         SKKLog.d("prepare flick ($flickWidth, $keyHeight)")
@@ -468,7 +469,7 @@ class SKKService : InputMethodService() {
     }
 
     private fun KeyboardView.setPrefs(alpha: Int, typeface: Typeface, sensitivity: Int) {
-        backgroundAlpha = 255 * alpha / 100
+        backgroundAlpha = alpha.percentToAlpha()
         setTypeface(typeface)
         setFlickSensitivity(sensitivity)
     }
@@ -521,9 +522,9 @@ class SKKService : InputMethodService() {
         val conf = config ?: resources.configuration
         mOrientation = conf.orientation
         val density = resources.displayMetrics.density
-        mRootWidth = (conf.screenWidthDp * density + 0.5f).toInt()
+        mRootWidth = (conf.screenWidthDp * density).roundToInt()
         mScreenWidth = mRootWidth
-        mScreenHeight = (conf.screenHeightDp * density + 0.5f).toInt()
+        mScreenHeight = (conf.screenHeightDp * density).roundToInt()
         SKKLog.d("updateDimensions: legacy width=$mRootWidth height=$mScreenHeight")
 
         if (Build.VERSION.SDK_INT >= 34) {
@@ -1497,7 +1498,7 @@ class SKKService : InputMethodService() {
                                 else 0
                             }
                         ).apply {
-                            if (isFloating()) alpha = skkPrefs.backgroundImageAlpha * 255 / 100
+                            if (isFloating()) alpha = skkPrefs.backgroundImageAlpha.percentToAlpha()
                         }
                     }
                 }
@@ -1516,7 +1517,10 @@ class SKKService : InputMethodService() {
 
             Configuration.ORIENTATION_LANDSCAPE -> {
                 val w = skkPrefs.keyWidthLand
-                if (w < minWidth) mRootWidth * 3 / 10 else w.coerceIn(minWidth, mRootWidth)
+                if (w < minWidth) (mRootWidth * LANDSCAPE_WIDTH_RATIO).toInt() else w.coerceIn(
+                    minWidth,
+                    mRootWidth
+                )
             }
 
             else -> mRootWidth
@@ -1530,7 +1534,7 @@ class SKKService : InputMethodService() {
         else mScreenHeight * when (mOrientation) {
             Configuration.ORIENTATION_PORTRAIT -> skkPrefs.keyHeightPort
             Configuration.ORIENTATION_LANDSCAPE -> skkPrefs.keyHeightLand
-            else -> 30
+            else -> DEFAULT_HEIGHT_RATIO
         } / 100
 
     private fun computeLeftOffset() {
@@ -1539,7 +1543,7 @@ class SKKService : InputMethodService() {
             else -> skkPrefs.keyCenterPort
         }
         leftOffset = mInsets.left - mCutout.left +
-                (mRootWidth * center - keyboardWidth() / 2 + 0.5f).toInt()
+                (mRootWidth * center - keyboardWidth() / 2).roundToInt()
                     .coerceIn(0, mRootWidth - keyboardWidth())
     }
 
@@ -1586,6 +1590,8 @@ class SKKService : InputMethodService() {
         internal const val COMMAND_RELOAD_DICT = "jp.deadend.noname.skk.COMMAND_RELOAD_DICT"
         internal const val COMMAND_MUSHROOM = "jp.deadend.noname.skk.COMMAND_MUSHROOM"
         internal const val EDITOR_OPTION_PREF = "jp.deadend.noname.skk.OPTION_PREF"
+        private const val DEFAULT_HEIGHT_RATIO = 30
+        private const val LANDSCAPE_WIDTH_RATIO = 0.3f
         private const val CHANNEL_ID = "skk_notification"
         private const val CHANNEL_NAME = "SKK"
         private const val NOTIFY_ID_ERROR_DICT = 1

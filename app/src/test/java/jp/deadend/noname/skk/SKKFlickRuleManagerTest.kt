@@ -77,7 +77,7 @@ class SKKFlickRuleManagerTest {
 
         // Simulate positive click
         val listener = dialog
-            ?.getPrivateProperty<jp.deadend.noname.dialog.ConfirmationDialogFragment.Listener>("mListener")
+            ?.getPrivateProperty<SimpleDialogFragment.Listener>("mListener")
         listener?.onPositiveClick()
         shadowOf(getMainLooper()).idle()
 

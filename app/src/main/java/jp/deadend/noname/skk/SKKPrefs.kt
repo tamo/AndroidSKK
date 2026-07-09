@@ -390,8 +390,8 @@ class SKKPrefs(context: Context) {
             else putInt(res.getString(R.string.pref_background_image_alpha), value)
         }
 
-    val activeAlpha get() = (backgroundAlpha * 255 / 100) // backgroundAlpha と違い 0-255 の範囲
-    val inactiveAlpha get() = (backgroundAlpha * 255 / 100 / 2) // 小さいほど薄く、存在感がなくなる
+    val activeAlpha get() = backgroundAlpha.percentToAlpha() // backgroundAlpha と違い 0-255 の範囲
+    val inactiveAlpha get() = backgroundAlpha.percentToAlpha() / 2 // 小さいほど薄く、存在感がなくなる
 
     var originalColor: Boolean
         get() = prefs.getBoolean(res.getString(R.string.pref_ignore_high_contrast), false)

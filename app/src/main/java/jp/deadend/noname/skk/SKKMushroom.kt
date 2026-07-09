@@ -69,7 +69,8 @@ class SKKMushroom : AppCompatActivity() {
         val result = pm.queryIntentActivities(intent, 0).map {
             val ai = it.activityInfo
             val icon = it.loadIcon(pm)
-            icon.setBounds(0, 0, 48, 48)
+            val size = (MUSHROOM_ICON_SIZE * resources.displayMetrics.density).toInt()
+            icon.setBounds(0, 0, size, size)
             AppInfo(icon, it.loadLabel(pm).toString(), ai.packageName, ai.name)
         }
 
@@ -79,18 +80,16 @@ class SKKMushroom : AppCompatActivity() {
     private inner class AppListAdapter(
         context: Context,
         items: List<AppInfo>
-    ) : ArrayAdapter<AppInfo>(context, 0, items) {
+    ) : ArrayAdapter<AppInfo>(context, R.layout.item_mushroom, items) {
         override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-            val tv = convertView ?: TextView(this@SKKMushroom).apply {
-                textSize = 20f
-                gravity = android.view.Gravity.CENTER_VERTICAL
-                setPadding(4, 4, 4, 4)
-                compoundDrawablePadding = 8
-            }
+            val tv = (convertView ?: layoutInflater.inflate(
+                R.layout.item_mushroom,
+                parent,
+                false
+            )) as TextView
 
-            val item = getItem(position)
-            if (item != null) {
-                (tv as TextView).apply {
+            getItem(position)?.let { item ->
+                tv.apply {
                     setCompoundDrawables(item.icon, null, null, null)
                     text = item.appName
                 }
@@ -105,5 +104,6 @@ class SKKMushroom : AppCompatActivity() {
         const val CATEGORY_SIMEJI_MUSHROOM = "com.adamrocker.android.simeji.REPLACE"
 
         const val REPLACE_KEY = "replace_key"
+        const val MUSHROOM_ICON_SIZE = 48
     }
 }

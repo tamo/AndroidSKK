@@ -70,6 +70,8 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
     private val mPaint = Paint()
     internal val mLineHeight
         get() = (mPaint.textSize * LINE_SCALE).toInt()
+    private val mMinWidth
+        get() = mPaint.textSize * LINE_SCALE.toFloat() * 0.7f
 
     private var mTargetScrollX = 0
 
@@ -265,7 +267,7 @@ class CandidatesView(context: Context, attrs: AttributeSet) : View(context, attr
             val mainW = mainPaint.measureText(main)
             val annoW = anno?.let { annoPaint.measureText(it) } ?: 0f
             val ww = if (viewLines == 0) 1f else
-                (mainW + annoW).coerceAtLeast(mLineHeight * 0.7f) + X_GAP * 2
+                (mainW + annoW).coerceAtLeast(mMinWidth) + X_GAP * 2
 
             // 改行
             if (viewLines != 0 && lineW != 0 && lineW + ww > viewWidth) {

@@ -15,6 +15,9 @@ import java.time.ZonedDateTime
 import java.util.zip.ZipInputStream
 import kotlin.math.max
 
+fun Int.toAlphaFloat(): Float = this / 255f
+fun Int.percentToAlpha(): Int = this * 255 / 100
+
 private val PAT_QUOTED = "\"(.+?)\"".toRegex()
 private val PAT_ESCAPE_NUM = """\\\d{1,3}""".toRegex()
 private val PAT_NUMBER_LIST = Regex("\\d+(\\.\\d+)?")

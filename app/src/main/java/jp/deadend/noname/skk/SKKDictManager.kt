@@ -19,9 +19,6 @@ import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import jp.deadend.noname.dialog.ConfirmationDialogFragment
-import jp.deadend.noname.dialog.SimpleMessageDialogFragment
-import jp.deadend.noname.dialog.TextInputDialogFragment
 import jp.deadend.noname.skk.databinding.ActivityCheckedTextBinding
 import jp.deadend.noname.skk.databinding.ActivityDictManagerBinding
 import kotlinx.coroutines.CoroutineScope
@@ -39,8 +36,6 @@ import java.net.URL
 import java.nio.file.Files
 import java.util.Collections
 import java.util.zip.GZIPInputStream
-import kotlin.math.floor
-import kotlin.math.sqrt
 import kotlin.time.Duration.Companion.milliseconds
 
 class SKKDictManager : AppCompatActivity() {
@@ -214,10 +209,9 @@ class SKKDictManager : AppCompatActivity() {
         binding.dictManagerPreviewLayout.visibility = android.view.View.GONE
     }
 
-    private fun confirmUninstall(item: SKKStoreTuple, position: Int) = ConfirmationDialogFragment
-        .newInstance(getString(R.string.message_dict_manager_confirm_remove_dict)).let {
-            it.setListener(object : ConfirmationDialogFragment.Listener {
-                override fun onNegativeClick() {}
+    private fun confirmUninstall(item: SKKStoreTuple, position: Int) = SimpleDialogFragment
+        .newInstance(getString(R.string.message_dict_manager_confirm_remove_dict), true).let {
+            it.setListener(object : SimpleDialogFragment.Listener {
                 override fun onPositiveClick() {
                     val dictName = item.key
                     val dictPath = item.value
@@ -291,18 +285,18 @@ class SKKDictManager : AppCompatActivity() {
 
                 val files = mutableListOf<String>()
                 ifDeletable { files.add(it) }
-                val dialog = ConfirmationDialogFragment.newInstance(
-                    getString(R.string.message_dict_manager_confirm_clear, files.joinToString())
+                val dialog = SimpleDialogFragment.newInstance(
+                    getString(R.string.message_dict_manager_confirm_clear, files.joinToString()),
+                    true
                 )
                 dialog.setListener(
-                    object : ConfirmationDialogFragment.Listener {
+                    object : SimpleDialogFragment.Listener {
                         override fun onPositiveClick() {
                             ifDeletable { deleteFile(it) }
                             mAdapter.submitList(commonDictList)
                             mDictList = commonDictList
                         }
 
-                        override fun onNegativeClick() {}
                     })
                 dialog.show(supportFragmentManager, "dialog")
             }
@@ -315,14 +309,14 @@ class SKKDictManager : AppCompatActivity() {
 
     private fun downloadDict(type: String, position: Int) {
         val dialog =
-            ConfirmationDialogFragment.newInstance(
+            SimpleDialogFragment.newInstance(
                 getString(
                     R.string.message_dict_manager_confirm_download_dict,
                     type
-                )
+                ), true
             )
         dialog.setListener(
-            object : ConfirmationDialogFragment.Listener {
+            object : SimpleDialogFragment.Listener {
                 val path = File("${filesDir.absolutePath}/SKK-JISYO.${type}.gz")
 
                 override fun onPositiveClick() {
@@ -374,7 +368,6 @@ class SKKDictManager : AppCompatActivity() {
                     }
                 }
 
-                override fun onNegativeClick() {}
             }
         )
         dialog.show(supportFragmentManager, "dialog")
@@ -393,11 +386,14 @@ class SKKDictManager : AppCompatActivity() {
 
         // 新規 item を作ってから loader で loadDict する
         val dialog =
-            TextInputDialogFragment.newInstance(getString(R.string.label_dict_manager_input_name))
-        dialog.setSingleLine(true)
-        dialog.setPlaceHolder(dictFileBaseName.removePrefix("/").removePrefix("dict_"))
+            SimpleDialogFragment.newInstance(
+                getString(R.string.label_dict_manager_input_name),
+                hasTextInput = true,
+                isSingleLine = true,
+                placeHolder = dictFileBaseName.removePrefix("/").removePrefix("dict_")
+            )
         dialog.setListener(
-            object : TextInputDialogFragment.Listener {
+            object : SimpleDialogFragment.Listener {
                 override fun onPositiveClick(result: String) {
                     val dictName = if (result.isEmpty()) {
                         getString(R.string.label_dict_manager_optional_dict)
@@ -432,7 +428,7 @@ class SKKDictManager : AppCompatActivity() {
     private fun loadDict(uri: Uri, position: Int, common: Boolean) {
         val name = getFileNameFromUri(this, uri)
         if (name == null) {
-            SimpleMessageDialogFragment.newInstance(
+            SimpleDialogFragment.newInstance(
                 getString(R.string.error_open_dict)
             ).show(supportFragmentManager, "dialog")
             return
@@ -449,23 +445,22 @@ class SKKDictManager : AppCompatActivity() {
 
         val filesDir = filesDir
         if (filesDir == null) {
-            SimpleMessageDialogFragment.newInstance(
+            SimpleDialogFragment.newInstance(
                 getString(R.string.error_access_failed, filesDir)
             ).show(supportFragmentManager, "dialog")
             return
         }
         if (File(filesDir, "$dictFileBaseName.mv").exists()) {
-            val dialog = ConfirmationDialogFragment.newInstance(
-                getString(R.string.error_dict_exists, dictFileBaseName)
+            val dialog = SimpleDialogFragment.newInstance(
+                getString(R.string.error_dict_exists, dictFileBaseName), true
             )
             dialog.setListener(
-                object : ConfirmationDialogFragment.Listener {
+                object : SimpleDialogFragment.Listener {
                     override fun onPositiveClick() {
                         deleteFile("$dictFileBaseName.mv")
                         loadDict(uri, position, common)
                     }
 
-                    override fun onNegativeClick() {}
                 }
             )
             dialog.show(supportFragmentManager, "dialog")
@@ -504,8 +499,12 @@ class SKKDictManager : AppCompatActivity() {
                 contentResolver.openInputStream(uri)?.use { inputStream ->
                     val processedInputStream =
                         if (isGzip) GZIPInputStream(inputStream) else inputStream
+                    var lastUpdate = 0L
+                    val updateInterval = 300
                     loadFromTextDict(processedInputStream, charset, false, store, false) {
-                        if (floor(sqrt(it.toFloat())) % 70 == 0f) {
+                        val now = System.currentTimeMillis()
+                        if (now - lastUpdate > updateInterval) {
+                            lastUpdate = now
                             MainScope().launch {
                                 val newList = mDictList.toMutableList()
                                 newList[position] =
@@ -526,11 +525,11 @@ class SKKDictManager : AppCompatActivity() {
             } catch (e: IOException) {
                 withContext(Dispatchers.Main) {
                     if (e is CharacterCodingException) {
-                        SimpleMessageDialogFragment.newInstance(
+                        SimpleDialogFragment.newInstance(
                             getString(R.string.error_text_dict_coding)
                         ).show(supportFragmentManager, "dialog")
                     } else {
-                        SimpleMessageDialogFragment.newInstance(
+                        SimpleDialogFragment.newInstance(
                             getString(R.string.error_file_load, name)
                         ).show(supportFragmentManager, "dialog")
                     }

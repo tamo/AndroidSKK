@@ -19,8 +19,6 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.get
 import androidx.core.view.updatePadding
-import jp.deadend.noname.dialog.ConfirmationDialogFragment
-import jp.deadend.noname.dialog.SimpleMessageDialogFragment
 import jp.deadend.noname.skk.databinding.ActivityUserDictToolBinding
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -32,8 +30,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.IOException
 import java.util.zip.GZIPInputStream
-import kotlin.math.floor
-import kotlin.math.sqrt
 
 class SKKUserDictTool : AppCompatActivity() {
     private lateinit var mDictName: String
@@ -86,10 +82,14 @@ class SKKUserDictTool : AppCompatActivity() {
                     contentResolver.openInputStream(uri)?.use { inputStream ->
                         val processedInputStream =
                             if (isGzip) GZIPInputStream(inputStream) else inputStream
+                        var lastUpdate = 0L
+                        val updateInterval = 300
                         loadFromTextDict(
                             processedInputStream, charset, isWordList, store, false
                         ) {
-                            if (floor(sqrt(it.toFloat())) % 50 == 0f) { // 味わい進捗
+                            val now = System.currentTimeMillis()
+                            if (now - lastUpdate > updateInterval) {
+                                lastUpdate = now
                                 mScope.launch(Dispatchers.Main) {
                                     mSearchView.queryHint = "インポート中 ${it}行目"
                                 }
@@ -108,7 +108,7 @@ class SKKUserDictTool : AppCompatActivity() {
                         )
                     }
                     withContext(Dispatchers.Main) {
-                        SimpleMessageDialogFragment.newInstance(errorMessage)
+                        SimpleDialogFragment.newInstance(errorMessage)
                             .show(supportFragmentManager, "dialog")
                     }
                 }
@@ -153,7 +153,7 @@ class SKKUserDictTool : AppCompatActivity() {
             mInFileLauncher = false
             withContext(Dispatchers.Main) {
                 updateListItems()
-                SimpleMessageDialogFragment.newInstance(
+                SimpleDialogFragment.newInstance(
                     if (errorMessage.isEmpty()) {
                         getString(
                             R.string.message_tools_written_to_external_storage,
@@ -206,9 +206,12 @@ class SKKUserDictTool : AppCompatActivity() {
                     return@OnItemClickListener
                 }
                 val dialog =
-                    ConfirmationDialogFragment.newInstance(getString(R.string.message_tools_confirm_remove_entry))
+                    SimpleDialogFragment.newInstance(
+                        getString(R.string.message_tools_confirm_remove_entry),
+                        true
+                    )
                 dialog.setListener(
-                    object : ConfirmationDialogFragment.Listener {
+                    object : SimpleDialogFragment.Listener {
                         override fun onPositiveClick() {
                             val adapter = parent.adapter as EntryAdapter
                             val item = adapter.getItem(position) ?: return
@@ -226,7 +229,6 @@ class SKKUserDictTool : AppCompatActivity() {
                             }
                         }
 
-                        override fun onNegativeClick() {}
                     })
                 dialog.show(supportFragmentManager, "dialog")
             }
@@ -302,16 +304,15 @@ class SKKUserDictTool : AppCompatActivity() {
 
             R.id.menu_user_dict_tool_initialize,
             R.id.menu_user_dict_tool_clear -> {
-                val cfDialog = ConfirmationDialogFragment.newInstance(
-                    getString(R.string.message_tools_confirm_clear)
+                val cfDialog = SimpleDialogFragment.newInstance(
+                    getString(R.string.message_tools_confirm_clear), true
                 )
                 cfDialog.setListener(
-                    object : ConfirmationDialogFragment.Listener {
+                    object : SimpleDialogFragment.Listener {
                         override fun onPositiveClick() {
                             recreateUserDict(item.itemId == R.id.menu_user_dict_tool_initialize)
                         }
 
-                        override fun onNegativeClick() {}
                     })
                 cfDialog.show(supportFragmentManager, "dialog")
                 return true
@@ -331,11 +332,11 @@ class SKKUserDictTool : AppCompatActivity() {
             when (val commandChar = mDictName.first()) {
                 '*', '+' -> {
                     mDictName = mDictName.removePrefix(commandChar.toString())
-                    val cfDialog = ConfirmationDialogFragment.newInstance(
-                        getString(R.string.message_tools_confirm_clear)
+                    val cfDialog = SimpleDialogFragment.newInstance(
+                        getString(R.string.message_tools_confirm_clear), true
                     )
                     cfDialog.setListener(
-                        object : ConfirmationDialogFragment.Listener {
+                        object : SimpleDialogFragment.Listener {
                             override fun onPositiveClick() {
                                 recreateUserDict(commandChar == '+')
                             }
@@ -394,9 +395,9 @@ class SKKUserDictTool : AppCompatActivity() {
     private fun onFailToOpenUserDict() {
         mSearchView.queryHint = ""
 
-        ConfirmationDialogFragment.newInstance(getString(R.string.error_tools_open_user_dict)).let {
+        SimpleDialogFragment.newInstance(getString(R.string.error_tools_open_user_dict), true).let {
             it.setListener(
-                object : ConfirmationDialogFragment.Listener {
+                object : SimpleDialogFragment.Listener {
                     override fun onPositiveClick() {
                         recreateUserDict(extract = false)
                     }

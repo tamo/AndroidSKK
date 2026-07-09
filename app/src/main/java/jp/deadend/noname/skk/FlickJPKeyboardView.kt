@@ -23,6 +23,7 @@ import jp.deadend.noname.skk.engine.SKKZenkakuState
 import jp.deadend.noname.skk.engine.convertTo
 import java.util.EnumSet
 import kotlin.math.ceil
+import kotlin.math.roundToInt
 
 class FlickJPKeyboardView(
     context: Context, attrs: AttributeSet?
@@ -41,7 +42,6 @@ class FlickJPKeyboardView(
 
     private var mPopup: PopupWindow? = null
     private var mPopupTextView: Array<TextView>? = null
-    private val mPopupSize = 120
     private val mCoordinates = IntArray(2)
 
     internal var mJPKeyboard: Keyboard? = null
@@ -208,13 +208,13 @@ class FlickJPKeyboardView(
             val line = lines[lineIndex]
             val centerText = line.substring(1, line.length - 1)
             val ascii = centerText.count { it.code < 0x7F }
-            val spaces = "　".repeat(1 + ceil((centerText.length - ascii * 0.5)).toInt())
+            val spaces = "　".repeat(1 + ceil((centerText.length - ascii / 2f)).toInt())
             val sideText = "${line.first()}$spaces${line.last()}"
 
             canvas.drawText(centerText, x, y, paint)
 
             paint.typeface = currentTypeface
-            paint.textSize *= 0.67f
+            paint.textSize *= CENTER_LABEL_SIDE_TEXT_RATIO
             canvas.drawText(sideText, x, y, paint)
             return true
         }
@@ -241,7 +241,7 @@ class FlickJPKeyboardView(
         val view = inflate(context, R.layout.popup_flickguide, null)
 
         val scale = getContext().resources.displayMetrics.density
-        val size = (mPopupSize * scale + 0.5f).toInt()
+        val size = (POPUP_SIZE_DEFAULT * scale).roundToInt()
 
         val popup = PopupWindow(view, size, size)
         //~ popup.setWindowLayoutMode(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT)
@@ -660,7 +660,7 @@ class FlickJPKeyboardView(
 
     private fun calculatePopupPos(): Pair<Int, Int> {
         val scale = context.resources.displayMetrics.density
-        val size = (mPopupSize * scale + 0.5f).toInt()
+        val size = (POPUP_SIZE_DEFAULT * scale).roundToInt()
         val fingerOffset = size * skkPrefs.fingerOffset / 100
         getLocationInWindow(mCoordinates)
         return if (skkPrefs.useFixedPopup)
@@ -773,6 +773,9 @@ class FlickJPKeyboardView(
     companion object {
         private const val LEFT_SYMBOL = "【"
         private const val RIGHT_SYMBOL = "】"
+
+        private const val CENTER_LABEL_SIDE_TEXT_RATIO = 0.67f
+        private const val POPUP_SIZE_DEFAULT = 120
 
         private enum class FlickState { NONE, LEFT, UP, RIGHT, DOWN, CURVE_LEFT, CURVE_RIGHT }
     }

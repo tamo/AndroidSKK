@@ -199,8 +199,8 @@ class CandidatesViewContainer(screen: Context, attrs: AttributeSet) : LinearLayo
 
     fun setAlpha(alpha: Int) {
         binding.candidates.background.alpha = alpha
-        binding.candidatesLeft.alpha = alpha / 255f
-        binding.candidatesRight.alpha = alpha / 255f
+        binding.candidatesLeft.alpha = alpha.toAlphaFloat()
+        binding.candidatesRight.alpha = alpha.toAlphaFloat()
         binding.candidatesLeft.background.alpha = alpha
         binding.candidatesRight.background.alpha = alpha
     }
@@ -232,7 +232,7 @@ class CandidatesViewImageButton(screen: Context, attrs: AttributeSet?, defStyleA
         set(value) {
             field = value
             background.alpha = if (value) skkPrefs.activeAlpha else 255
-            alpha = if (value) 1f else skkPrefs.inactiveAlpha / 255f
+            alpha = if (value) 1f else skkPrefs.inactiveAlpha.toAlphaFloat()
         }
 
     init {
