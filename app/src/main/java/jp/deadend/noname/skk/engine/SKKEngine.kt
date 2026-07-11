@@ -296,63 +296,55 @@ class SKKEngine(
         SKKLog.d("changeLastChar($type) in ${state.name} ($mKanjiKey[$mComposing])")
         when {
             state.transformLastChar(this, type) -> return
+            mKanjiKey.isNotEmpty() -> return
+        }
 
-            mKanjiKey.isEmpty() -> {
-                val cs = if (mComposing.isNotEmpty()) {
-                    mComposing.toString().also { mComposing.clear() }
-                } else {
-                    ic?.getTextBeforeCursor(2, 0) ?: return
-                }
-                // 0〜2 文字を 0〜3 文字にするので注意!
-                val newLast2Chars = RomajiConverter.transform(cs.toString(), type)
-                SKKLog.d("changeLastChar: $cs -> 2chars=$newLast2Chars")
-                if (newLast2Chars.first.isEmpty() && newLast2Chars.second.isEmpty()) return
+        val cs =
+            if (mComposing.isNotEmpty()) mComposing.toString().also { mComposing.clear() }
+            else ic?.getTextBeforeCursor(2, 0) ?: return
 
-                val deleteTwo = (cs.length == 2 && newLast2Chars.first.isEmpty())
-                val newLastChar = newLast2Chars.second
+        // 0〜2 文字を 0〜3 文字にするので注意!
+        val newLast2Chars = RomajiConverter.transform(cs.toString(), type)
+        SKKLog.d("changeLastChar: $cs -> 2chars=$newLast2Chars")
+        if (newLast2Chars.toList().all { it.isEmpty() }) return
 
-                if (mRegister.isOngoing) {
-                    val (regInfo, firstEntry) = mRegister.first() ?: return
-                    if (regInfo.cursor < if (deleteTwo) 2 else 1) return
-                    firstEntry.deleteCharAt(regInfo.cursor--)
-                    if (deleteTwo) {
-                        firstEntry.deleteCharAt(regInfo.cursor--)
-                    }
-                    if (type == TRANS_SHIFT) {
-                        mKanjiKey.append(katakana2hiragana(newLastChar))
-                        changeState(SKKPreeditState)
-                        setComposingTextSKK()
-                        complete(mKanjiKey.toString())
-                    } else {
-                        // ここは convertTo(state) しても良いかも
-                        firstEntry.insert(regInfo.cursor, newLastChar)
-                        regInfo.cursor += newLastChar.length
-                        setComposingTextSKK("")
-                    }
-                } else {
-                    // 同じ部分を消してまた書くのは避ける
-                    when {
-                        cs.isEmpty() -> if (type != TRANS_SHIFT) return
+        val deleteTwo = (cs.length == 2 && newLast2Chars.first.isEmpty())
+        val newLastChar = newLast2Chars.second
 
-                        !deleteTwo -> {
-                            if (cs.last() == newLastChar.last() && type != TRANS_SHIFT) return
-                            else ic.deleteSurroundingText(1, 0)
-                        }
-
-                        else -> ic.deleteSurroundingText(2, 0)
-                    }
-                    if (type == TRANS_SHIFT) {
-                        mKanjiKey.append(katakana2hiragana(newLastChar))
-                        changeState(SKKPreeditState) // Abbrevから来ることはないはず
-                        setComposingTextSKK()
-                        complete(mKanjiKey.toString())
-                    } else {
-                        // ここは convertTo(state) しても良いかも
-                        ic.commitText(newLastChar, 1)
-                        mComposingText.setLength(0)
-                    }
-                }
+        if (mRegister.isOngoing) {
+            val (regInfo, firstEntry) = mRegister.first() ?: return
+            when {
+                regInfo.cursor < if (deleteTwo) 2 else 1 -> return
+                deleteTwo -> firstEntry.deleteCharAt(regInfo.cursor--)
             }
+            firstEntry.deleteCharAt(regInfo.cursor--)
+            if (type == TRANS_SHIFT) {
+                mKanjiKey.append(katakana2hiragana(newLastChar))
+                changeState(SKKPreeditState)
+                setComposingTextSKK()
+                complete(mKanjiKey.toString())
+            } else {
+                firstEntry.insert(regInfo.cursor, newLastChar)
+                regInfo.cursor += newLastChar.length
+                setComposingTextSKK("")
+            }
+            return
+        }
+
+        // 同じ部分を消してまた書くのは避ける
+        when {
+            cs.isEmpty() -> if (type != TRANS_SHIFT) return
+            !deleteTwo && cs.last() == newLastChar.last() && type != TRANS_SHIFT -> return
+            !deleteTwo -> ic.deleteSurroundingText(1, 0)
+            deleteTwo -> ic.deleteSurroundingText(2, 0)
+        }
+        if (type == TRANS_SHIFT) {
+            mKanjiKey.append(katakana2hiragana(newLastChar))
+            changeState(SKKPreeditState) // Abbrevから来ることはないはず
+            updateComplete()
+        } else {
+            ic.commitText(newLastChar, 1)
+            mComposingText.setLength(0)
         }
     }
 
