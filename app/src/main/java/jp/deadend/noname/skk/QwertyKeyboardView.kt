@@ -73,7 +73,7 @@ class QwertyKeyboardView @JvmOverloads constructor(
 
                             else -> null
                         }?.let { dpad ->
-                            mService.keyDownUp(dpad)
+                            if (!mService.handleDpad(dpad)) mService.keyDownUp(dpad)
                             mSpaceFlicked = true
                             flickStartX = me.x
                             flickStartY = me.y
