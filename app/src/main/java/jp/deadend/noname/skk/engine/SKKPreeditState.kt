@@ -17,6 +17,14 @@ object SKKPreeditState : SKKState {
     override val canComplete = true
     override val prefix = "▽"
 
+    override fun handleASCIIKey(context: SKKEngine): Boolean {
+        if (context.mComposing.length != 1 || context.mComposing[0] != 'z') {
+            context.changeState(SKKAbbrevState)
+            return true
+        }
+        return false
+    }
+
     override fun handleKanaKey(context: SKKEngine) {
         context.apply {
             if (skkPrefs.toggleKanaKey) {
@@ -168,27 +176,22 @@ object SKKPreeditState : SKKState {
                                 if (kanaState is SKKHiraganaState) hiraganaChar
                                 else katakana2hiragana(hiraganaChar)
                             )
-                            setComposingTextSKK()
-                        } else {
-                            if (!RomajiConverter.isIntermediateRomaji(mComposing.toString())) {
-                                mComposing.setLength(0) // これまでの composing は typo とみなす
-                                if (canRetry) return processKey(context, keyCode) // 「ca」などもあるので再突入
-                            }
-                            setComposingTextSKK()
+                        } else if (!RomajiConverter.isIntermediateRomaji(mComposing.toString())) {
+                            mComposing.setLength(0) // これまでの composing は typo とみなす
+                            if (canRetry) return processKey(context, keyCode) // 「ca」などもあるので再突入
                         }
-                        complete(mKanjiKey.toString())
+                        updateComplete()
                     }
                 }
             }
         }
     }
 
-    override fun afterBackspace(context: SKKEngine, isComposingDeleted: Boolean) {
-        context.apply {
-            setComposingTextSKK()
-            complete(mKanjiKey.toString())
-        }
-    }
+    override fun handleBackspace(context: SKKEngine): Boolean =
+        context.handleDelete().also { if (it) context.updateComplete() }
+
+    override fun handleForwardDel(context: SKKEngine): Boolean =
+        context.handleDelete(true).also { if (it) context.updateComplete() }
 
     override fun handleCancel(context: SKKEngine, reconvert: Boolean): Boolean {
         context.mKanjiKey.clear() // 確定させない
@@ -224,8 +227,7 @@ object SKKPreeditState : SKKState {
                 startConversion() // ▼合い
             } else {
                 mKanjiKey.insertAtCursor(newLastChar)
-                setComposingTextSKK()
-                complete(mKanjiKey.toString())
+                updateComplete()
             }
         }
     }

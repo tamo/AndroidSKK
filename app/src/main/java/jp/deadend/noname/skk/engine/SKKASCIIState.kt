@@ -36,24 +36,40 @@ object SKKASCIIState : SKKConfirmingState() {
         context.completeASCII()
     }
 
-    override fun afterBackspace(context: SKKEngine, isComposingDeleted: Boolean) {
-        declineUnregister(context)
-        context.completeASCII()
-    }
-
-    override fun handleCancel(context: SKKEngine, reconvert: Boolean): Boolean {
+    override fun handleBackspace(context: SKKEngine): Boolean {
         if (declineUnregister(context)) return true
-        if (!reconvert) {
-            if (context.mCandidates.mList?.isEmpty() ?: true) return false
-            context.reset()
-            return true
-        }
-
-        val prefix = getPrefix(context)
-        val suffix = getSuffix(context)
-        return ((prefix.isNotEmpty() || suffix.isNotEmpty()) &&
-                context.ic?.deleteSurroundingText(prefix.length, suffix.length) == true)
+        if (!context.handleDelete()) return false
+        context.completeASCII()
+        return true
     }
+
+    override fun handleForwardDel(context: SKKEngine): Boolean {
+        if (declineUnregister(context)) return true
+        if (!context.handleDelete(isForward = true)) return false
+        context.completeASCII()
+        return true
+    }
+
+    override fun handleCancel(context: SKKEngine, reconvert: Boolean): Boolean = when {
+        declineUnregister(context) -> true
+        context.mRegister.isOngoing -> context.mRegister.cancel().let { true }
+        !reconvert && context.mCandidates.mList.isNullOrEmpty() -> false
+        !reconvert -> context.reset().let { true }
+        else -> {
+            val prefix = getPrefix(context)
+            val suffix = getSuffix(context)
+            (prefix.isNotEmpty() || suffix.isNotEmpty()) &&
+                    context.ic?.deleteSurroundingText(prefix.length, suffix.length) == true
+        }
+    }
+
+    override fun prepareToMushroom(context: SKKEngine, clip: String): String =
+        getPrefix(context).ifEmpty { clip }.also {
+            if (!declineUnregister(context)) {
+                context.reset()
+                context.mRegister.mStack.clear()
+            }
+        }
 
     // 元の「ひら/カタ」で FlickJP に
     override fun changeToFlick(context: SKKEngine): Boolean {

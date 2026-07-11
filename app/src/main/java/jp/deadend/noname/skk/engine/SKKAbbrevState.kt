@@ -49,19 +49,17 @@ object SKKAbbrevState : SKKState {
 
                 else -> {
                     mKanjiKey.insertAtCursor(Char(charCode).toString())
-                    setComposingTextSKK()
-                    complete(mKanjiKey.toString())
+                    updateComplete()
                 }
             }
         }
     }
 
-    override fun afterBackspace(context: SKKEngine, isComposingDeleted: Boolean) {
-        context.apply {
-            setComposingTextSKK()
-            complete(mKanjiKey.toString())
-        }
-    }
+    override fun handleBackspace(context: SKKEngine): Boolean =
+        context.handleDelete().also { if (it) context.updateComplete() }
+
+    override fun handleForwardDel(context: SKKEngine): Boolean =
+        context.handleDelete(true).also { if (it) context.updateComplete() }
 
     override fun handleCancel(context: SKKEngine, reconvert: Boolean): Boolean {
         context.mKanjiKey.clear() // 確定させない

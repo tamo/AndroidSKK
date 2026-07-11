@@ -8,18 +8,24 @@ abstract class SKKConfirmingState : SKKState {
     private var oldList: List<String>? = null
     private var oldIndex: Int = 0
 
-    override fun handleKanaKey(context: SKKEngine) {
-        declineUnregister(context)
-    }
-
-    override fun handleEnter(context: SKKEngine) =
-        declineUnregister(context)
+    override fun handleKanaKey(context: SKKEngine) = declineUnregister(context).let {}
+    override fun handleKatakanaKey(context: SKKEngine) = declineUnregister(context)
+    override fun handleASCIIKey(context: SKKEngine) = declineUnregister(context)
+    override fun handleZenkakuKey(context: SKKEngine) = declineUnregister(context)
+    override fun handleAbbrevKey(context: SKKEngine) = declineUnregister(context)
+    override fun handleHankakuKanaKey(context: SKKEngine) = declineUnregister(context)
+    override fun handleEnter(context: SKKEngine) = declineUnregister(context)
+    override fun handleBackspace(context: SKKEngine): Boolean = declineUnregister(context)
+    override fun handleForwardDel(context: SKKEngine): Boolean = declineUnregister(context)
 
     fun beforeProcessKey(context: SKKEngine, keyCode: Int) =
         answerUnregister(context, keyCode.lowerCode)
 
     fun declineUnregister(context: SKKEngine) =
         answerUnregister(context, 'n'.code)
+
+    fun acceptUnregister(context: SKKEngine) =
+        answerUnregister(context, 'y'.code)
 
     private fun answerUnregister(context: SKKEngine, lowerCode: Int): Boolean {
         context.mCandidates.resumeCompletion()
@@ -35,14 +41,12 @@ abstract class SKKConfirmingState : SKKState {
                 if (context.state.hasCandidates) appendTask { updateComposingText() }
                 else context.setComposingTextSKK("")
             }
+            pendingLambda = null
             return true
         }
         return false
     }
 
-    override fun afterBackspace(context: SKKEngine, isComposingDeleted: Boolean) {
-        declineUnregister(context)
-    }
 
     override fun handleCancel(context: SKKEngine, reconvert: Boolean) =
         declineUnregister(context)

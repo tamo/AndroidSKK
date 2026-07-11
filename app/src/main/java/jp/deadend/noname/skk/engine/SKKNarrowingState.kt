@@ -9,7 +9,7 @@ object SKKNarrowingState : SKKConfirmingState() {
     override val hasCandidates = true
     override val prefix = "▼"
 
-    internal val mHint = SKKEngine.KanjiKey()
+    private val mHint = SKKEngine.KanjiKey()
     internal var mOriginalCandidates: List<String>? = null
     private var mSpaceUsed = false // xを前候補にするためのフラグ
     private var isASCII = false // isJapanese とは違って可変な内部フラグ
@@ -40,6 +40,34 @@ object SKKNarrowingState : SKKConfirmingState() {
 
     override fun handleEnter(context: SKKEngine): Boolean {
         if (!declineUnregister(context)) context.pickCurrentCandidate()
+        return true
+    }
+
+    override fun handleBackspace(context: SKKEngine): Boolean {
+        if (!declineUnregister(context)) context.apply {
+            when {
+                mHint.isEmpty() && !mCandidates.isSpecial -> // 絵文字や記号は変換ではない
+                    startConversion()
+
+                mComposing.isNotEmpty() -> {
+                    mComposing.deleteCharAt(mComposing.lastIndex)
+                    mCandidates.updateComposingText()
+                }
+
+                else -> {
+                    mHint.deleteAtCursor()
+                    mCandidates.narrow(mHint.toString())
+                }
+            }
+        }
+        return true
+    }
+
+    override fun handleForwardDel(context: SKKEngine): Boolean {
+        if (!declineUnregister(context)) context.apply {
+            mHint.deleteAfterCursor(all = false)
+            mCandidates.narrow(mHint.toString())
+        }
         return true
     }
 
@@ -102,24 +130,10 @@ object SKKNarrowingState : SKKConfirmingState() {
         }
     }
 
-    override fun afterBackspace(context: SKKEngine, isComposingDeleted: Boolean) {
-        if (!declineUnregister(context)) context.apply {
-            when {
-                mHint.isEmpty() && !mCandidates.isSpecial -> // 絵文字や記号は変換ではない
-                    startConversion()
 
-                mComposing.isNotEmpty() -> {
-                    mComposing.deleteCharAt(mComposing.lastIndex)
-                    mCandidates.updateComposingText()
-                }
-
-                else -> {
-                    mHint.deleteAtCursor()
-                    mCandidates.narrow(mHint.toString())
-                }
-            }
-        }
-    }
+    override fun handleDpad(context: SKKEngine, keyCode: Int): Boolean =
+        if (declineUnregister(context)) true
+        else context.handleDpadTransient(keyCode, mHint)
 
     override fun handleCancel(context: SKKEngine, reconvert: Boolean): Boolean {
         if (!declineUnregister(context)) context.apply {

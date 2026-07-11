@@ -9,7 +9,6 @@ import jp.deadend.noname.skk.SKKDictionaryInterface
 import jp.deadend.noname.skk.SKKLog
 import jp.deadend.noname.skk.SKKService
 import jp.deadend.noname.skk.SKKUserDictionary
-import jp.deadend.noname.skk.encodeKey
 import jp.deadend.noname.skk.getKeyName
 import jp.deadend.noname.skk.hankaku2zenkaku
 import jp.deadend.noname.skk.hiragana2katakana
@@ -156,75 +155,35 @@ class SKKEngine(
         state.handleKanaKey(this)
     }
 
-    @Suppress("SameReturnValue")
-    private fun handleKatakanaKey(): Boolean {
-        SKKLog.d("handleKatakanaKey() in ${state.name}")
-        changeState(
-            if (kanaState is SKKHiraganaState) SKKKatakanaState
-            else SKKHiraganaState
-        )
-        return true
-    }
 
-    internal fun handleASCIIKey(): Boolean {
-        SKKLog.d("handleASCIIKey() in ${state.name}")
-        if (mComposing.length != 1 || mComposing[0] != 'z') {
-            // ▽モード(PreeditState)では l で Abbrev モードに遷移（SKK 原本の動作）
-            if (state is SKKPreeditState) changeState(SKKAbbrevState)
-            else changeState(SKKASCIIState, true)
-            return true
-        }
-        // 「→」を入力するための z+l 例外はそのまま維持
-        return false
-    }
+    internal fun handleASCIIKey(): Boolean = state.handleASCIIKey(this)
 
-    @Suppress("SameReturnValue")
-    private fun handleZenkakuKey(): Boolean {
-        SKKLog.d("handleZenkakuKey() in ${state.name}")
-        changeState(SKKZenkakuState)
-        return true
-    }
-
-    private fun handleAbbrevKey(): Boolean {
-        SKKLog.d("handleAbbrevKey() in ${state.name}")
-        if (mComposing.isEmpty()) {
-            changeState(SKKAbbrevState)
-            return true
-        }
-        return false
-    }
-
-    @Suppress("SameReturnValue")
-    private fun handleHankakuKanaKey(): Boolean {
-        SKKLog.d("handleHankakuKanaKey() in ${state.name}")
-        changeState(SKKHanKanaState)
-        return true
-    }
 
     internal fun handleEnter(): Boolean {
         SKKLog.d("handleEnter() in ${state.name}")
         return state.handleEnter(this)
     }
 
-    internal fun handleBackspace(): Boolean = handleDelete()
+    internal fun handleBackspace(): Boolean = state.handleBackspace(this)
 
-    internal fun handleForwardDel(): Boolean = handleDelete(true)
+    internal fun handleForwardDel(): Boolean = state.handleForwardDel(this)
 
-    private fun handleDelete(isForward: Boolean = false): Boolean {
-        SKKLog.d("handleDelete(isForward=$isForward) in ${state.name} ($mKanjiKey[$mComposing])")
-        if (state.hasCandidates) {
-            if (!isForward) state.afterBackspace(this)
-            return true
+    internal fun handleDelete(isForward: Boolean = false): Boolean {
+        when (state) {
+            SKKChooseState, SKKNarrowingState -> SKKLog.e("handleDelete() can't be called in ${state.name}")
+            // Abbrev, ASCII, *Kana, Okurigana, Preedit, Zenkaku からは来る
+            else -> SKKLog.d("handleDelete(isForward=$isForward) in ${state.name} ($mKanjiKey[$mComposing])")
         }
 
-        // 変換中のものがない場合
+        // 変換中のものがない場合 (ASCII/Zenkaku は必ずここを通る)
         if (mComposing.isEmpty() && mKanjiKey.isEmpty()) {
             if (!isForward && state.isTransient && state.canComplete) {
                 changeState(kanaState)
                 return true
             }
-            val (regInfo, firstEntry) = mRegister.first() ?: return state.isTransient
 
+            // 登録中なら true で吸収、非登録中の非 transient なら false で外部処理
+            val (regInfo, firstEntry) = mRegister.first() ?: return state.isTransient
             when (isForward) {
                 true if regInfo.cursor < firstEntry.length ->
                     firstEntry.deleteCharAt(regInfo.cursor)
@@ -232,29 +191,33 @@ class SKKEngine(
                 false if regInfo.cursor > 0 ->
                     firstEntry.deleteCharAt(--regInfo.cursor)
 
-                else -> null
-            }?.let {
-                setComposingTextSKK("")
-                return true
-            } // ?: 何もしない
+                else -> return true
+            }
+            setComposingTextSKK("")
+            return true
         }
 
+        // ここで ASCII/Zenkaku の可能性が消滅し、handleBackspace/handleForwardDel 実装が必ず存在する
+        // そのため、ここからの返り値は外部処理の必要性ではなく、変化の有無となる
         when (isForward) {
             true -> if (mKanjiKey.isNotEmpty() && mKanjiKey.cursor < mKanjiKey.length) {
                 mKanjiKey.deleteAfterCursor(all = false)
-                state.afterBackspace(this)
-            }
+            } else return false
 
             false -> when {
-                mComposing.isNotEmpty() -> true.also { mComposing.deleteCharAt(mComposing.lastIndex) }
-                mOkurigana.isNotEmpty() -> false.also { mOkurigana = mOkurigana.dropLast(1) }
-                mKanjiKey.isNotEmpty() -> false.also { mKanjiKey.deleteAtCursor() }
-                else -> false
-            }.let { isComposingDeleted ->
-                state.afterBackspace(this, isComposingDeleted)
+                mComposing.isNotEmpty() -> mComposing.deleteCharAt(mComposing.lastIndex)
+                mOkurigana.isNotEmpty() -> mOkurigana = mOkurigana.dropLast(1)
+                mKanjiKey.isNotEmpty() -> mKanjiKey.deleteAtCursor()
+                else -> return false
             }
         }
         return true
+    }
+
+    // Abbrev と Preedit で delete 処理後などに実行
+    internal fun updateComplete() {
+        setComposingTextSKK()
+        complete(mKanjiKey.toString())
     }
 
     internal fun handleCancel(reconvert: Boolean = true): Boolean {
@@ -298,32 +261,9 @@ class SKKEngine(
     internal fun moveCandidateCursor(isForward: Boolean) =
         mCandidates.moveCandidateCursor(isForward)
 
-    internal fun handleDpad(keyCode: Int): Boolean {
-        SKKLog.d("handleDpad(${KeyEvent.keyCodeToString(keyCode)}) in ${state.name}")
-        when {
-            // narrowing のときは hint のカーソルを動かす方が便利
-            // 前の候補を選択したいときはちょっと不便だが直接選択したりできるし
-            // 次の候補はスペースで選択できるから
-            state.hasCandidates && state !is SKKNarrowingState -> when (keyCode) {
-                KeyEvent.KEYCODE_MOVE_HOME -> mCandidates.setCandidateCursor(0)
-                KeyEvent.KEYCODE_DPAD_LEFT -> moveCandidateCursor(false)
-                KeyEvent.KEYCODE_DPAD_RIGHT -> moveCandidateCursor(true)
-                KeyEvent.KEYCODE_MOVE_END -> mCandidates.mList?.run {
-                    mCandidates.setCandidateCursor(lastIndex)
-                }
+    internal fun handleDpad(keyCode: Int): Boolean = state.handleDpad(this, keyCode)
 
-                else -> return false
-            }
-
-            state.isTransient -> handleDpadTransient(keyCode)
-            mRegister.isOngoing -> mRegister.handleDpad(keyCode)
-            else -> return false
-        }
-        return true
-    }
-
-    private fun handleDpadTransient(keyCode: Int): Boolean {
-        val target = if (state is SKKNarrowingState) SKKNarrowingState.mHint else mKanjiKey
+    internal fun handleDpadTransient(keyCode: Int, target: KanjiKey): Boolean {
         val (cursor, direction) = when (keyCode) {
             KeyEvent.KEYCODE_MOVE_HOME -> 0 to null
             KeyEvent.KEYCODE_DPAD_LEFT -> target.cursor.dec().coerceAtLeast(0) to false
@@ -332,7 +272,7 @@ class SKKEngine(
             else -> return false
         }
         if (target.cursor == cursor && direction != null) {
-            if (state is SKKNarrowingState) mCandidates.moveCandidateCursor(direction)
+            if (state.hasCandidates) mCandidates.moveCandidateCursor(direction)
             else mCandidates.cycleCompletionCursor(direction)
             if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT) target.cursor = 0
         } else {
@@ -344,49 +284,12 @@ class SKKEngine(
     }
 
     internal fun pickCandidatesViewManually(
-        index: Int,
-        unregister: Boolean = false,
-        sequential: Boolean = false
-    ) {
-        SKKLog.d("pickCandidatesViewManually(index=$index, unregister=$unregister, sequential=$sequential) state=${state.name}")
-        val state = state
-        when {
-            state is SKKConfirmingState && state.pendingLambda != null -> {
-                state.beforeProcessKey(this, encodeKey('y'.code))
-                return
-            }
+        index: Int, unregister: Boolean = false, sequential: Boolean = false
+    ) = state.pickCandidatesViewManually(this, index, unregister, sequential)
 
-            state.hasCandidates -> {
-                mCandidates.isSequential = sequential
-                mCandidates.pickCandidate(index, unregister = unregister)
-            }
 
-            state.canComplete -> {
-                mCandidates.isSequential = sequential
-                mCandidates.pickCompletion(index, unregister)
-            }
+    internal fun prepareToMushroom(clip: String): String = state.prepareToMushroom(this, clip)
 
-            else -> throw RuntimeException("cannot pick candidate in $state")
-        }
-    }
-
-    internal fun prepareToMushroom(clip: String): String {
-        SKKLog.d("prepareToMushroom() in ${state.name}")
-        val str = when {
-            state is SKKASCIIState -> (state as SKKASCIIState).getPrefix(this).ifEmpty { clip }
-            state.canComplete -> mKanjiKey.toString()
-            else -> clip
-        }
-
-        if (state.isTransient) {
-            changeState(kanaState)
-        } else {
-            reset()
-            mRegister.mStack.clear()
-        }
-
-        return str
-    }
 
     // 小文字大文字変換，濁音，半濁音に使う
     internal fun changeLastChar(type: String) {
@@ -769,11 +672,11 @@ class SKKEngine(
 
     // 入力モード変更操作．変更したらtrue
     internal fun changeInputMode(keyCode: Int): Boolean = when (keyCode) {
-        skkPrefs.katakanaKey -> handleKatakanaKey()
-        skkPrefs.hankakuKanaKey -> handleHankakuKanaKey()
-        skkPrefs.asciiKey -> handleASCIIKey()
-        skkPrefs.zenkakuKey -> handleZenkakuKey()
-        skkPrefs.abbrevKey -> handleAbbrevKey()
+        skkPrefs.katakanaKey -> state.handleKatakanaKey(this)
+        skkPrefs.hankakuKanaKey -> state.handleHankakuKanaKey(this)
+        skkPrefs.asciiKey -> state.handleASCIIKey(this)
+        skkPrefs.zenkakuKey -> state.handleZenkakuKey(this)
+        skkPrefs.abbrevKey -> state.handleAbbrevKey(this)
         else -> false
     }
 

@@ -19,6 +19,12 @@ object SKKHanKanaState : SKKState {
 
     override fun handleEnter(context: SKKEngine): Boolean = SKKHiraganaState.handleEnter(context)
 
+    override fun handleBackspace(context: SKKEngine): Boolean =
+        SKKHiraganaState.handleBackspace(context)
+
+    override fun handleForwardDel(context: SKKEngine): Boolean =
+        SKKHiraganaState.handleForwardDel(context)
+
     override fun processKey(context: SKKEngine, keyCode: Int) {
         if (context.changeInputMode(keyCode)) return
         SKKHiraganaState.processKana(context, keyCode) { engine, hiraganaChar ->
@@ -27,9 +33,6 @@ object SKKHanKanaState : SKKState {
         }
     }
 
-    override fun afterBackspace(context: SKKEngine, isComposingDeleted: Boolean) {
-        SKKHiraganaState.afterBackspace(context)
-    }
 
     override fun handleCancel(context: SKKEngine, reconvert: Boolean): Boolean {
         return SKKHiraganaState.handleCancel(context, reconvert)

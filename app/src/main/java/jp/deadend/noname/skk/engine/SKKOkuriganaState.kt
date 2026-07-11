@@ -98,9 +98,22 @@ object SKKOkuriganaState : SKKState {
         setComposingTextSKK(tmpText)
     }
 
-    override fun afterBackspace(context: SKKEngine, isComposingDeleted: Boolean) {
+    override fun handleBackspace(context: SKKEngine): Boolean {
+        val previousLength = context.mComposing.length
+        context.handleDelete()
+        val isComposingDeleted = context.mComposing.length < previousLength
+        updateAfterDelete(context, isComposingDeleted)
+        return true
+    }
+
+    override fun handleForwardDel(context: SKKEngine): Boolean {
+        context.handleDelete(true)
+        return true
+    }
+
+    private fun updateAfterDelete(context: SKKEngine, isComposingDeleted: Boolean = false) {
         context.apply {
-            SKKLog.d("SKKOkuriganaState.afterBackspace($isComposingDeleted): $mKanjiKey + $mOkurigana + $mComposing")
+            SKKLog.d("SKKOkuriganaState.updateAfterDelete($isComposingDeleted): $mKanjiKey + $mOkurigana + $mComposing")
             if (isComposingDeleted && (mComposing.isNotEmpty() || mOkurigana.isNotEmpty())) {
                 setComposingOkuri(mOkurigana + mComposing)
                 return

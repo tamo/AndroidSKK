@@ -1,5 +1,6 @@
 package jp.deadend.noname.skk.engine
 
+import android.view.KeyEvent
 import jp.deadend.noname.skk.isAlphabet
 import jp.deadend.noname.skk.isShifted
 import jp.deadend.noname.skk.lowerCode
@@ -25,6 +26,26 @@ object SKKChooseState : SKKConfirmingState() {
 
     override fun handleEnter(context: SKKEngine): Boolean {
         if (!declineUnregister(context)) context.pickCurrentCandidate()
+        return true
+    }
+
+    override fun handleBackspace(context: SKKEngine): Boolean {
+        if (!declineUnregister(context)) {
+            if (context.mComposing.isNotEmpty()) {
+                context.mComposing.deleteCharAt(context.mComposing.lastIndex)
+                context.mCandidates.updateComposingText()
+            } else {
+                context.pickCurrentCandidate(backspace = true)
+            }
+        }
+        return true
+    }
+
+    override fun handleForwardDel(context: SKKEngine): Boolean {
+        if (!declineUnregister(context)) {
+            context.pickCurrentCandidate()
+            return false
+        }
         return true
     }
 
@@ -64,15 +85,22 @@ object SKKChooseState : SKKConfirmingState() {
         }
     }
 
-    override fun afterBackspace(context: SKKEngine, isComposingDeleted: Boolean) = context.run {
-        when { // 名前に反して after ではない。ここで処理する
-            mComposing.isNotEmpty() -> {
-                mComposing.deleteCharAt(mComposing.lastIndex)
-                mCandidates.updateComposingText()
-            }
 
-            !declineUnregister(context) -> pickCurrentCandidate(backspace = true)
+    override fun handleDpad(context: SKKEngine, keyCode: Int): Boolean {
+        if (declineUnregister(context)) return true
+        context.apply {
+            when (keyCode) {
+                KeyEvent.KEYCODE_MOVE_HOME -> mCandidates.setCandidateCursor(0)
+                KeyEvent.KEYCODE_DPAD_LEFT -> moveCandidateCursor(false)
+                KeyEvent.KEYCODE_DPAD_RIGHT -> moveCandidateCursor(true)
+                KeyEvent.KEYCODE_MOVE_END -> mCandidates.mList?.run {
+                    mCandidates.setCandidateCursor(lastIndex)
+                }
+
+                else -> return false
+            }
         }
+        return true
     }
 
     override fun handleCancel(context: SKKEngine, reconvert: Boolean): Boolean {

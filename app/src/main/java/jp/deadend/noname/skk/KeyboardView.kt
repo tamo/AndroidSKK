@@ -143,13 +143,9 @@ open class KeyboardView @JvmOverloads constructor(
             val endingVelocityY = mVelocityTracker?.yVelocity ?: 0f
 
             fun handleSwipe(velocity: Float, endingVelocity: Float, action: () -> Unit): Boolean =
-                if (abs(endingVelocity) < abs(velocity) / DISAMBIGUATION_VELOCITY_DIVISOR) {
-                    detectAndSendKey(mDownKey, me1.eventTime)
-                    false
-                } else {
-                    action()
-                    true
-                }
+                if (abs(endingVelocity) < abs(velocity) / DISAMBIGUATION_VELOCITY_DIVISOR)
+                    detectAndSendKey(mDownKey, me1.eventTime).let { false }
+                else action().let { true }
 
             when {
                 velocityX > mSwipeThreshold && absY < absX && deltaX > travelX ->

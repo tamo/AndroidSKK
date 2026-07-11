@@ -62,7 +62,7 @@ object SKKHiraganaState : SKKState {
                 if (!skkPrefs.isModeKey(encodeKey(codeLower))) {
                     SKKPreeditState.processKey(context, codeLower)
                 } else {
-                    SKKPreeditState.afterBackspace(context) // 画面の更新
+                    context.updateComplete() // 画面の更新
                 }
             } else {
                 mComposing.append(Char(codeLower))
@@ -88,6 +88,14 @@ object SKKHiraganaState : SKKState {
         }
     }
 
+    override fun handleBackspace(context: SKKEngine): Boolean =
+        context.handleDelete()
+            .also { if (it) context.setComposingTextSKK(context.mComposing) }
+
+    override fun handleForwardDel(context: SKKEngine): Boolean =
+        context.handleDelete(true)
+            .also { if (it) context.setComposingTextSKK(context.mComposing) }
+
     override fun processKey(context: SKKEngine, keyCode: Int) {
         if (context.changeInputMode(keyCode)) return
         processKana(context, keyCode) { engine, hiraganaChar ->
@@ -96,9 +104,6 @@ object SKKHiraganaState : SKKState {
         }
     }
 
-    override fun afterBackspace(context: SKKEngine, isComposingDeleted: Boolean) {
-        context.setComposingTextSKK(context.mComposing)
-    }
 
     override fun handleCancel(context: SKKEngine, reconvert: Boolean): Boolean =
         context.run {
