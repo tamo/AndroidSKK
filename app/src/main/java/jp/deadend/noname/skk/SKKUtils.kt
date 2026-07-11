@@ -110,7 +110,7 @@ fun katakana2hiragana(str: String): String = str.map {
     if (it in 'ァ'..'ヴ') it.minus(0x60) else it
 }.joinToString("") // 「ヴ」が「う゛」ではなく「ゔ」になる
 
-fun isAlphabet(code: Int) = code.toChar() in 'a'..'z' || code.toChar() in 'A'..'Z'
+fun isAlphabet(code: Int) = code.toChar().let { it in 'a'..'z' || it in 'A'..'Z' }
 fun isAlNum(code: Int) = isAlphabet(code) || code.toChar() in '0'..'9'
 
 fun isHiragana(code: Int) = code in 0x3041..0x3096
@@ -293,12 +293,6 @@ fun processConcatAndMore(rawStr: String, kanjiKey: String): String {
         }
 
     return processNumber(rawStr, numberList)
-}
-
-fun createTrimmedBuilder(orig: StringBuilder): StringBuilder {
-    val ret = StringBuilder(orig)
-    ret.deleteCharAt(ret.length - 1)
-    return ret
 }
 
 fun getFileNameFromUri(context: Context, uri: Uri): String? = when (uri.scheme) {

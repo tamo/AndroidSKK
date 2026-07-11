@@ -1,6 +1,5 @@
 package jp.deadend.noname.skk.engine
 
-import jp.deadend.noname.skk.createTrimmedBuilder
 import jp.deadend.noname.skk.hiragana2katakana
 import jp.deadend.noname.skk.isShifted
 import jp.deadend.noname.skk.isVowel
@@ -17,13 +16,11 @@ object SKKPreeditState : SKKState {
     override val canComplete = true
     override val prefix = "▽"
 
-    override fun handleASCIIKey(context: SKKEngine): Boolean {
-        if (context.mComposing.length != 1 || context.mComposing[0] != 'z') {
-            context.changeState(SKKAbbrevState)
-            return true
-        }
-        return false
-    }
+    override fun handleASCIIKey(context: SKKEngine): Boolean =
+        context.changeState(SKKAbbrevState).let { true }
+
+    override fun handleEnter(context: SKKEngine): Boolean =
+        context.changeState(context.kanaState).let { true }
 
     override fun handleKanaKey(context: SKKEngine) {
         context.apply {
@@ -35,31 +32,24 @@ object SKKPreeditState : SKKState {
         }
     }
 
-    override fun handleEnter(context: SKKEngine): Boolean {
-        context.changeState(context.kanaState)
-        return true
-    }
-
     override fun processKey(context: SKKEngine, keyCode: Int) {
         val codeLower = keyCode.lowerCode
         val isUpper = keyCode.isShifted
 
         context.apply {
-            val canRetry = mComposing.isNotEmpty() // 無限ループ防止
-            if (mComposing.length == 1) {
-                val hiraganaChar = RomajiConverter.checkSpecialConsonants(mComposing[0], codeLower)
+            val canRetry = mRoman.isNotEmpty() // 無限ループ防止
+            if (mRoman.length == 1) {
+                val hiraganaChar = RomajiConverter.checkSpecialConsonants(mRoman[0], codeLower)
                 if (hiraganaChar != null) {
                     mKanjiKey.insertAtCursor(hiraganaChar)
                     setComposingTextSKK()
-                    mComposing.setLength(0)
+                    mRoman.clear()
                 }
             }
 
             when (keyCode) {
-                skkPrefs.asciiKey, skkPrefs.abbrevKey, skkPrefs.zenkakuKey -> {
-                    changeInputMode(keyCode)
-                    return
-                }
+                skkPrefs.asciiKey, skkPrefs.abbrevKey, skkPrefs.zenkakuKey ->
+                    if (changeInputMode(keyCode)) return
                 // abbrevはtransientなのでchangeInputModeで自動確定されない
                 // ▽の状態で英数(abbrev)と仮名(kanji)を行き来するには ModeKey.KANA と ABBREV を使うことにする
                 // 一般的なキーコードが分かれば対応するが、emacsではabbrevから普通の▽(kanji)に行けないと思う
@@ -95,10 +85,10 @@ object SKKPreeditState : SKKState {
                 }
             }
 
-            when (codeLower) {
-                ' '.code, '>'.code, ':'.code -> {
+            when (val lower = Char(codeLower)) {
+                ' ', '>', ':' -> {
                     if (mCandidates.isSpecial) { // 記号モード
-                        return if (codeLower == ':'.code) {
+                        return if (lower == ':') {
                             mCandidates.loadAllSymbols() // カテゴリ未選択なので全候補から絞る
                             changeState(SKKNarrowingState)
                             SKKNarrowingState.processKey(context, skkPrefs.asciiKey) // 注釈が英語なので
@@ -109,14 +99,14 @@ object SKKPreeditState : SKKState {
 
                     // 変換開始
                     // 最後に単体の'n'で終わっている場合、'ん'に変換
-                    if (mComposing.length == 1 && mComposing[0] == 'n') {
+                    if (mRoman.length == 1 && mRoman[0] == 'n') {
                         mKanjiKey.insertAtCursor("ん")
                         setComposingTextSKK()
                     }
-                    if (codeLower == '>'.code) mKanjiKey.insertAtCursor(">") // 接頭辞入力
-                    mComposing.setLength(0)
+                    if (lower == '>') mKanjiKey.roman = '>' // 接頭辞入力
+                    mRoman.clear()
                     startConversion()
-                    if (codeLower == ':'.code) changeState(SKKNarrowingState)
+                    if (lower == ':') changeState(SKKNarrowingState)
                 }
 
                 else -> {
@@ -131,38 +121,28 @@ object SKKPreeditState : SKKState {
                     if (isUpper && mKanjiKey.isNotEmpty()) {
                         // 送り仮名開始
                         if (isVowel(codeLower)) { // 母音なら送り仮名決定，変換
-                            mComposing.append(Char(codeLower)) // 「OkurI」の composing を ri に
-                            mOkurigana = RomajiConverter.convert(mComposing.toString())
-                            mKanjiKey.insertAtCursor(mComposing[0].toString()) //送りありの場合子音文字追加
-                            mComposing.setLength(0) // 送りがなに消費されたはず
+                            mRoman.append(lower) // 「OkurI」の ri で処理する
+                            mOkurigana = RomajiConverter.convert(mRoman.toString())
+                            mKanjiKey.roman = RomajiConverter.getConsonantForVoiced(mOkurigana)
+                            mRoman.clear() // 送りがなに消費されたはず
                             startConversion()
                         } else { // それ以外は送り仮名モード
-                            if (!RomajiConverter.isIntermediateRomaji(
-                                    "${mComposing}${Char(codeLower)}"
-                                )
-                            ) {
-                                if (mComposing.isNotEmpty()) {
-                                    mComposing.setLength(0) // 「OkukR」のcomposingはrに (kはtypoとみなす)
-                                }
-                                if (!RomajiConverter.isIntermediateRomaji(
-                                        Char(codeLower).toString()
-                                    )
-                                ) {
+                            if (!RomajiConverter.isIntermediateRomaji("${mRoman}$lower")) {
+                                if (mRoman.isNotEmpty()) mRoman.clear() // 「OkukR」のcomposingはrに (kはtypoとみなす)
+                                if (!RomajiConverter.isIntermediateRomaji(lower.toString()))
                                     return // 今回の code 自体が typo なので無視
-                                }
                             }
-                            mComposing.append(Char(codeLower)) // ty や ch のように 2 文字の場合あり
-                            mKanjiKey.insertAtCursor(mComposing[0].toString()) //送りありの場合子音文字追加 (xに注意)
+                            mRoman.append(lower) // ty や ch のように 2 文字の場合あり
+                            mKanjiKey.roman = RomajiConverter
+                                .run { getConsonantForVoiced(convert(mRoman.toString() + 'u')) }
                             mKanjiKey.deleteAfterCursor()
-                            setComposingTextSKK(
-                                createTrimmedBuilder(mKanjiKey.entry).append('*').append(mComposing)
-                            )
+                            setComposingTextSKK("${mKanjiKey.entry}*$mRoman")
                             changeState(SKKOkuriganaState)
                         }
                     } else {
                         // 未確定
-                        mComposing.append(Char(codeLower))
-                        val composing = mComposing.toString()
+                        mRoman.append(lower)
+                        val composing = mRoman.toString()
                         // 全角にする記号ならば全角，そうでなければローマ字変換、だめなら数字かチェック
                         val hiraganaChar = getZenkakuSeparator(composing)
                             ?: RomajiConverter.convert(composing).ifEmpty {
@@ -171,13 +151,13 @@ object SKKPreeditState : SKKState {
                             }
 
                         if (hiraganaChar != null) {
-                            mComposing.setLength(0)
+                            mRoman.clear()
                             mKanjiKey.insertAtCursor(
                                 if (kanaState is SKKHiraganaState) hiraganaChar
                                 else katakana2hiragana(hiraganaChar)
                             )
-                        } else if (!RomajiConverter.isIntermediateRomaji(mComposing.toString())) {
-                            mComposing.setLength(0) // これまでの composing は typo とみなす
+                        } else if (!RomajiConverter.isIntermediateRomaji(mRoman.toString())) {
+                            mRoman.clear() // これまでの composing は typo とみなす
                             if (canRetry) return processKey(context, keyCode) // 「ca」などもあるので再突入
                         }
                         updateComplete()
@@ -199,15 +179,13 @@ object SKKPreeditState : SKKState {
         return true
     }
 
-    override fun changeToFlick(context: SKKEngine): Boolean {
-        return false
-    }
+    override fun changeToFlick(context: SKKEngine): Boolean = false
 
     override fun transformLastChar(context: SKKEngine, type: String): Boolean = true.also {
         context.run {
-            if (mComposing.isNotEmpty()) {
-                mKanjiKey.insertAtCursor(mComposing.toString())
-                mComposing.clear()
+            if (mRoman.isNotEmpty()) {
+                mKanjiKey.insertAtCursor(mRoman.toString())
+                mRoman.clear()
                 return@run
             }
             when (mKanjiKey.cursor) {
@@ -222,7 +200,7 @@ object SKKPreeditState : SKKState {
             mKanjiKey.deleteAtCursor()
             if (type == SKKEngine.TRANS_SHIFT) {
                 mKanjiKey.deleteAfterCursor()
-                mKanjiKey.insertAtCursor(RomajiConverter.getConsonantForVoiced(newLastChar))
+                mKanjiKey.roman = RomajiConverter.getConsonantForVoiced(newLastChar)
                 mOkurigana = newLastChar
                 startConversion() // ▼合い
             } else {

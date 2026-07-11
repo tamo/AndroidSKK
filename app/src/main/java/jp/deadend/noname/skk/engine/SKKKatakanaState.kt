@@ -28,7 +28,7 @@ object SKKKatakanaState : SKKState {
         SKKHiraganaState.processKana(context, keyCode) { engine, hiraganaChar ->
             val str = hiragana2katakana(hiraganaChar)
             engine.commitTextSKK(str)
-            engine.mComposing.setLength(0)
+            engine.mRoman.clear()
         }
     }
 

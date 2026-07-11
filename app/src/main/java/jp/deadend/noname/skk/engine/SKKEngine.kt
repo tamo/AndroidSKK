@@ -14,6 +14,7 @@ import jp.deadend.noname.skk.hankaku2zenkaku
 import jp.deadend.noname.skk.hiragana2katakana
 import jp.deadend.noname.skk.isAlphabet
 import jp.deadend.noname.skk.katakana2hiragana
+import jp.deadend.noname.skk.lowerCode
 import jp.deadend.noname.skk.removeAnnotation
 import jp.deadend.noname.skk.skkPrefs
 import jp.deadend.noname.skk.zenkaku2hankaku
@@ -40,13 +41,12 @@ class SKKEngine(
         private set
     internal var kanaState: SKKState = SKKHiraganaState
     internal var oldState: SKKState = SKKHiraganaState
-    private var wasFlickBeforeTemporary: Boolean = skkPrefs.softKeyboardType != "qwerty"
 
     internal val mCandidates = SKKCandidates(this, mService)
     internal val mRegister = SKKRegister(this)
 
     // ひらがなや英単語などの入力途中
-    internal val mComposing = StringBuilder()
+    internal val mRoman = StringBuilder()
 
     // 漢字変換のキー 送りありの場合最後がアルファベット 変換中は不変
     internal val mKanjiKey = KanjiKey()
@@ -54,11 +54,21 @@ class SKKEngine(
     @Suppress("JavaDefaultMethodsNotOverriddenByDelegation")
     internal class KanjiKey(val entry: StringBuilder = StringBuilder()) : CharSequence by entry {
         var cursor = 0
+        var roman: Char? = null
 
-        fun clear(): StringBuilder = entry.apply { setLength(0) }.also { cursor = 0 }
+        fun clear(): StringBuilder = entry.clear().also { cursor = 0; roman = null }
         fun append(c: Char): StringBuilder = entry.append(c).also { cursor = entry.length }
         fun append(s: String): StringBuilder = entry.append(s).also { cursor = entry.length }
-        fun set(s: String): StringBuilder = clear().append(s).also { cursor = entry.length }
+        fun set(s: String): StringBuilder = clear().append(s).also {
+            if (it.length > 1 && !isAlphabet(it.first().code)) {
+                val last = it.last()
+                if (isAlphabet(last.code) || last == '>') {
+                    roman = last
+                    it.deleteAt(it.lastIndex)
+                }
+            }
+            cursor = entry.length
+        }
 
         fun insertAtCursor(s: String): StringBuilder =
             entry.insert(cursor, s).also { cursor += s.length }
@@ -72,11 +82,7 @@ class SKKEngine(
                 else entry.deleteCharAt(cursor)
             } else entry
 
-        fun deleteLast(): StringBuilder =
-            (if (entry.isNotEmpty()) entry.deleteCharAt(entry.lastIndex) else entry)
-                .also { cursor = entry.length }
-
-        override fun toString() = entry.toString()
+        override fun toString() = entry.toString() + roman?.toString().orEmpty()
     }
 
     // 送りがな 「っ」や「ん」が含まれる場合だけ二文字になる
@@ -101,6 +107,9 @@ class SKKEngine(
 
     internal var isPersonalizedLearning = true
     internal val ic get() = mService.currentInputConnection
+    internal val keyboardType: String
+        get() = if (mService.checkUseSoftKeyboard()) skkPrefs.softKeyboardType else "qwerty"
+    private var wasFlickBeforeTemporary: Boolean = keyboardType != "qwerty"
 
     init {
         setZenkakuPunctuationMarks("en")
@@ -172,11 +181,11 @@ class SKKEngine(
         when (state) {
             SKKChooseState, SKKNarrowingState -> SKKLog.e("handleDelete() can't be called in ${state.name}")
             // Abbrev, ASCII, *Kana, Okurigana, Preedit, Zenkaku からは来る
-            else -> SKKLog.d("handleDelete(isForward=$isForward) in ${state.name} ($mKanjiKey[$mComposing])")
+            else -> SKKLog.d("handleDelete(isForward=$isForward) in ${state.name} ($mKanjiKey[$mRoman])")
         }
 
         // 変換中のものがない場合 (ASCII/Zenkaku は必ずここを通る)
-        if (mComposing.isEmpty() && mKanjiKey.isEmpty()) {
+        if (mRoman.isEmpty() && mKanjiKey.isEmpty()) {
             if (!isForward && state.isTransient && state.canComplete) {
                 changeState(kanaState)
                 return true
@@ -205,7 +214,7 @@ class SKKEngine(
             } else return false
 
             false -> when {
-                mComposing.isNotEmpty() -> mComposing.deleteCharAt(mComposing.lastIndex)
+                mRoman.isNotEmpty() -> mRoman.deleteCharAt(mRoman.lastIndex)
                 mOkurigana.isNotEmpty() -> mOkurigana = mOkurigana.dropLast(1)
                 mKanjiKey.isNotEmpty() -> mKanjiKey.deleteAtCursor()
                 else -> return false
@@ -234,9 +243,9 @@ class SKKEngine(
         ic ?: return
         if (!mRegister.isOngoing) {
             ic.commitText(text, 1)
-            mComposingText.setLength(0)
+            mComposingText.clear()
             mKanjiKey.clear()
-            mComposing.setLength(0)
+            mRoman.clear()
             mOkurigana = ""
             return
         }
@@ -248,7 +257,7 @@ class SKKEngine(
 
     internal fun resetOnStartInput() {
         SKKLog.d("resetOnStartInput()")
-        mComposing.setLength(0)
+        mRoman.clear()
         mKanjiKey.clear()
         mOkurigana = ""
         mCandidates.reset()
@@ -293,14 +302,14 @@ class SKKEngine(
 
     // 小文字大文字変換，濁音，半濁音に使う
     internal fun changeLastChar(type: String) {
-        SKKLog.d("changeLastChar($type) in ${state.name} ($mKanjiKey[$mComposing])")
+        SKKLog.d("changeLastChar($type) in ${state.name} ($mKanjiKey[$mRoman])")
         when {
             state.transformLastChar(this, type) -> return
             mKanjiKey.isNotEmpty() -> return
         }
 
         val cs =
-            if (mComposing.isNotEmpty()) mComposing.toString().also { mComposing.clear() }
+            if (mRoman.isNotEmpty()) mRoman.toString().also { mRoman.clear() }
             else ic?.getTextBeforeCursor(2, 0) ?: return
 
         // 0〜2 文字を 0〜3 文字にするので注意!
@@ -344,7 +353,7 @@ class SKKEngine(
             updateComplete()
         } else {
             ic.commitText(newLastChar, 1)
-            mComposingText.setLength(0)
+            mComposingText.clear()
         }
     }
 
@@ -356,8 +365,7 @@ class SKKEngine(
      * @param text
      */
     internal fun setComposingTextSKK(text: CharSequence? = null) {
-        val ct = mComposingText
-        ct.setLength(0)
+        val ct = mComposingText.clear()
 
         val suffix = if (mRegister.isOngoing) {
             val depth = mRegister.mStack.size
@@ -392,9 +400,9 @@ class SKKEngine(
         }
 
         val textToProcess = text ?: (if (mKanjiKey.cursor == mKanjiKey.length) {
-            "${mKanjiKey}${mComposing}"
+            "${mKanjiKey.entry}${mRoman}"
         } else {
-            "${mKanjiKey.take(mKanjiKey.cursor)}[${mComposing}]${mKanjiKey.drop(mKanjiKey.cursor)}"
+            "${mKanjiKey.take(mKanjiKey.cursor)}[${mRoman}]${mKanjiKey.drop(mKanjiKey.cursor)}"
         })
 
         ct.append(textToProcess.toString().convertTo(kanaState, reversed = true))
@@ -414,15 +422,13 @@ class SKKEngine(
      * 送りありの場合，事前に送りがなをmOkuriganaにセットしておく
      */
     internal fun startConversion(dictList: List<SKKDictionaryInterface> = mDictList) {
-        val key = mKanjiKey.entry
-        if (key.isEmpty()) {
+        if (mKanjiKey.isEmpty()) {
             changeState(kanaState) // ASCIIには戻れない…
             return
         }
-        val str = key.toString()
-
         changeState(SKKChooseState)
 
+        val str = mKanjiKey.toString()
         val list = lookup(str, dictList).ifEmpty {
             lookup(str.replace(Regex("\\d+(\\.\\d+)?"), "#"), dictList).ifEmpty {
                 mRegister.start(str)
@@ -448,7 +454,7 @@ class SKKEngine(
 
             changeState(SKKChooseState)
 
-            mComposing.setLength(0)
+            mRoman.clear()
             mKanjiKey.set(lastConv.kanjiKey)
             mOkurigana = lastConv.okurigana
             mCandidates.apply {
@@ -479,17 +485,16 @@ class SKKEngine(
         } else {
             // candidate から選択しただけで登録されるので
             val regInfo = mRegister.mStack.removeFirst() ?: return
-            mComposing.setLength(0)
+            mRoman.clear()
             mKanjiKey.set(regInfo.key)
             mOkurigana = regInfo.okurigana
         }
         SKKLog.d("googleTransliterate mKanjiKey=${mKanjiKey} mOkurigana=${mOkurigana}")
 
         changeState(SKKPreeditState)
-        val query = if (mKanjiKey.isNotEmpty() && isAlphabet(mKanjiKey.last().code)) {
-            val trimmedKanjiKey = mKanjiKey.dropLast(1)
-            setComposingTextSKK("${trimmedKanjiKey}*${mOkurigana}")
-            "${trimmedKanjiKey}${mOkurigana}"
+        val query = if (mKanjiKey.isNotEmpty() && mKanjiKey.roman != null) {
+            setComposingTextSKK("${mKanjiKey.entry}*${mOkurigana}")
+            "${mKanjiKey.entry}${mOkurigana}"
         } else {
             setComposingTextSKK()
             mKanjiKey.toString() // たぶん送り仮名は存在しないはず
@@ -648,7 +653,7 @@ class SKKEngine(
         mCandidates.pickCandidate(mCandidates.mIndex, backspace, unregister)
 
     internal fun reset() {
-        mComposing.setLength(0)
+        mRoman.clear()
         mKanjiKey.clear()
         mOkurigana = ""
         mCandidates.reset()
@@ -659,27 +664,32 @@ class SKKEngine(
             // SpannableStringBuilder SPAN_EXCLUSIVE_EXCLUSIVE spans cannot have a zero length
             // というエラーを出してしまう
         }
-        mComposingText.setLength(0)
+        mComposingText.clear()
     }
 
     // 入力モード変更操作．変更したらtrue
-    internal fun changeInputMode(keyCode: Int): Boolean = when (keyCode) {
-        skkPrefs.katakanaKey -> state.handleKatakanaKey(this)
-        skkPrefs.hankakuKanaKey -> state.handleHankakuKanaKey(this)
-        skkPrefs.asciiKey -> state.handleASCIIKey(this)
-        skkPrefs.zenkakuKey -> state.handleZenkakuKey(this)
-        skkPrefs.abbrevKey -> state.handleAbbrevKey(this)
-        else -> false
+    internal fun changeInputMode(keyCode: Int): Boolean {
+        val char = Char(keyCode.lowerCode)
+        if (mRoman.isNotEmpty() && RomajiConverter.convert("$mRoman$char")
+                .isNotEmpty()
+        ) return false
+
+        return when (keyCode) {
+            skkPrefs.katakanaKey -> state.handleKatakanaKey(this)
+            skkPrefs.hankakuKanaKey -> state.handleHankakuKanaKey(this)
+            skkPrefs.asciiKey -> state.handleASCIIKey(this)
+            skkPrefs.zenkakuKey -> state.handleZenkakuKey(this)
+            skkPrefs.abbrevKey -> state.handleAbbrevKey(this)
+            else -> false
+        }
     }
 
     internal fun commitComposing() {
         if (mKanjiKey.isNotEmpty()) {
-            if (!isAlphabet(mKanjiKey.first().code) && isAlphabet(mKanjiKey.last().code)) {
-                mKanjiKey.deleteLast()
-            }
+            mKanjiKey.roman = null
             commitTextSKK(mKanjiKey.toString().convertTo(kanaState))
         }
-        if (mComposing.toString() == "n") {
+        if (mRoman.toString() == "n") {
             commitTextSKK("ん".convertTo(kanaState))
         }
         reset()
@@ -693,8 +703,7 @@ class SKKEngine(
         SKKLog.d("changeState ${this.state.name} -> ${newState.name} (force=$forceKeyboard)")
 
         val wasTemporaryQwerty = mService.isTemporaryQwerty
-        val willBeTemporaryQwerty = skkPrefs.softKeyboardType == "switch" &&
-                newState.isTemporaryQwerty
+        val willBeTemporaryQwerty = keyboardType == "switch" && newState.isTemporaryQwerty
         val isInternalTransition = newState.isTransient && // ▽▼ への遷移は通常では何もしない
                 !forceKeyboard && // しかしキーボード変更を強制する場合や
                 !willBeTemporaryQwerty && !wasTemporaryQwerty // abbrev 等の一時的な変更は除外
@@ -722,7 +731,7 @@ class SKKEngine(
         // 仮名からASCII以外の一時的なキーボードになるときや明示的変更のとき記録して後で戻れるようにしておく
         wasFlickBeforeTemporary = when {
             state.isTemporaryQwerty -> mService.isFlick()
-            !state.isTransient -> skkPrefs.softKeyboardType != "qwerty" && state.isJapanese
+            !state.isTransient -> keyboardType != "qwerty" && state.isJapanese
             else -> wasFlickBeforeTemporary
         }
         mService.changeSoftKeyboard(state)

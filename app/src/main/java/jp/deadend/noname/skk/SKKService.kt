@@ -178,7 +178,7 @@ class SKKService : InputMethodService() {
             }
         }
     internal val isComposingN
-        get() = mEngine.mComposing.toString() == "n"
+        get() = mEngine.mRoman.toString() == "n"
 
     // onKeyDown()でEnterキーのイベントを消費したかどうかのフラグ．onKeyUp()で判定するのに使う
     private var isEnterUsed = false
@@ -474,7 +474,7 @@ class SKKService : InputMethodService() {
         setFlickSensitivity(sensitivity)
     }
 
-    private fun checkUseSoftKeyboard(
+    internal fun checkUseSoftKeyboard(
         default: Boolean = super.onEvaluateInputViewShown()
     ): Boolean = when (skkPrefs.useSoftKey) {
         "on" -> true.also { SKKLog.d("software keyboard forced") }

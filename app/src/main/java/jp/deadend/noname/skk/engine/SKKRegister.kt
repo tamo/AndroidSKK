@@ -3,9 +3,7 @@ package jp.deadend.noname.skk.engine
 import android.view.KeyEvent
 import jp.deadend.noname.skk.SKKLog
 import jp.deadend.noname.skk.hiragana2katakana
-import jp.deadend.noname.skk.isAlphabet
 import jp.deadend.noname.skk.processConcatAndMore
-import jp.deadend.noname.skk.skkPrefs
 import jp.deadend.noname.skk.zenkaku2hankaku
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
@@ -75,13 +73,12 @@ class SKKRegister(private val engine: SKKEngine) {
     fun cancel() = engine.apply {
         changeState(kanaStateBefore)
         val (regInfo, _) = mStack.removeFirst()
-        mComposing.setLength(0)
-        mKanjiKey.set(regInfo.key).lastOrNull()?.let { maybeComposing ->
-            if (isAlphabet(maybeComposing.code)) {
-                mKanjiKey.deleteAtCursor()
-                if (skkPrefs.softKeyboardType == "qwerty") { // Flickでアルファベットがあっても困る
-                    mComposing.append(maybeComposing)
-                }
+        mRoman.clear()
+        mKanjiKey.set(regInfo.key)
+        mKanjiKey.roman?.let { roman ->
+            mKanjiKey.roman = null
+            if (roman != '>' && keyboardType == "qwerty") { // Flickでアルファベットがあっても困る
+                mRoman.append(roman)
             }
         }
         changeState(SKKPreeditState)
@@ -90,7 +87,7 @@ class SKKRegister(private val engine: SKKEngine) {
     }
 
     fun handleDpad(keyCode: Int): Boolean {
-        if (engine.mKanjiKey.isNotEmpty() || engine.mComposing.isNotEmpty()) return false
+        if (engine.mKanjiKey.isNotEmpty() || engine.mRoman.isNotEmpty()) return false
         val (regInfo, entry) = first() ?: return false
         regInfo.cursor = when (keyCode) {
             KeyEvent.KEYCODE_MOVE_HOME -> 0

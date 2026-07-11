@@ -16,7 +16,7 @@ object SKKHiraganaState : SKKState {
 
     override fun handleEnter(context: SKKEngine): Boolean = context.run {
         when {
-            mComposing.isNotEmpty() -> {
+            mRoman.isNotEmpty() -> {
                 commitComposing()
                 setComposingTextSKK("")
                 true
@@ -49,9 +49,9 @@ object SKKHiraganaState : SKKState {
         }
 
         context.apply {
-            val canRetry = mComposing.isNotEmpty() // 無限ループ防止
-            if (mComposing.length == 1) {
-                val hiraganaChar = RomajiConverter.checkSpecialConsonants(mComposing[0], codeLower)
+            val canRetry = mRoman.isNotEmpty() // 無限ループ防止
+            if (mRoman.length == 1) {
+                val hiraganaChar = RomajiConverter.checkSpecialConsonants(mRoman[0], codeLower)
                 if (hiraganaChar != null) commitFunc(context, hiraganaChar)
             }
             if (isUpper) {
@@ -65,21 +65,21 @@ object SKKHiraganaState : SKKState {
                     context.updateComplete() // 画面の更新
                 }
             } else {
-                mComposing.append(Char(codeLower))
+                mRoman.append(Char(codeLower))
                 // 全角にする記号ならば全角，そうでなければローマ字変換
-                val hiraganaChar = getZenkakuSeparator(mComposing.toString())
-                    ?: RomajiConverter.convert(mComposing.toString())
+                val hiraganaChar = getZenkakuSeparator(mRoman.toString())
+                    ?: RomajiConverter.convert(mRoman.toString())
 
                 if (hiraganaChar.isNotEmpty()) { // 確定できるものがあれば確定
                     commitFunc(context, hiraganaChar)
                 } else { // アルファベットならComposingに積む
                     if (isAlphabet(codeLower)) {
-                        if (!RomajiConverter.isIntermediateRomaji(mComposing.toString())) {
-                            mComposing.setLength(0) // これまでの composing は typo とみなす
+                        if (!RomajiConverter.isIntermediateRomaji(mRoman.toString())) {
+                            mRoman.clear() // これまでの composing は typo とみなす
                             if (canRetry) // 「ca」などもあるので再突入
                                 return processKana(context, keyCode, commitFunc)
                         }
-                        setComposingTextSKK(mComposing)
+                        setComposingTextSKK(mRoman)
                     } else {
                         commitFunc(context, Char(codeLower).toString())
                     }
@@ -90,17 +90,17 @@ object SKKHiraganaState : SKKState {
 
     override fun handleBackspace(context: SKKEngine): Boolean =
         context.handleDelete()
-            .also { if (it) context.setComposingTextSKK(context.mComposing) }
+            .also { if (it) context.setComposingTextSKK(context.mRoman) }
 
     override fun handleForwardDel(context: SKKEngine): Boolean =
         context.handleDelete(true)
-            .also { if (it) context.setComposingTextSKK(context.mComposing) }
+            .also { if (it) context.setComposingTextSKK(context.mRoman) }
 
     override fun processKey(context: SKKEngine, keyCode: Int) {
         if (context.changeInputMode(keyCode)) return
         processKana(context, keyCode) { engine, hiraganaChar ->
             engine.commitTextSKK(hiraganaChar)
-            engine.mComposing.setLength(0)
+            engine.mRoman.clear()
         }
     }
 

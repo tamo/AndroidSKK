@@ -46,7 +46,7 @@ interface SKKState {
         context.changeState(SKKZenkakuState).let { true }
 
     fun handleAbbrevKey(context: SKKEngine): Boolean =
-        if (context.mComposing.isEmpty()) context.changeState(SKKAbbrevState).let { true }
+        if (context.mRoman.isEmpty()) context.changeState(SKKAbbrevState).let { true }
         else false
 
     fun handleHankakuKanaKey(context: SKKEngine): Boolean =

@@ -29,7 +29,7 @@ object SKKHanKanaState : SKKState {
         if (context.changeInputMode(keyCode)) return
         SKKHiraganaState.processKana(context, keyCode) { engine, hiraganaChar ->
             engine.commitTextSKK(zenkaku2hankaku(hiragana2katakana(hiraganaChar)))
-            engine.mComposing.setLength(0)
+            engine.mRoman.clear()
         }
     }
 

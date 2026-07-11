@@ -81,7 +81,7 @@ class SKKEngineTest {
 
         typeText("a")
         verify { ic.commitText(match { it.toString() == "か" }, 1) }
-        assertEquals(0, engine.mComposing.length)
+        assertEquals(0, engine.mRoman.length)
     }
 
     @Test
@@ -183,7 +183,7 @@ class SKKEngineTest {
 
         engine.handleBackspace()
         verify { ic.setComposingText(match { it.toString() == "" }, 1) }
-        assertEquals(0, engine.mComposing.length)
+        assertEquals(0, engine.mRoman.length)
 
         val candidatesList = listOf("漢字")
         every { userDict.getEntry("かんじ") } returns
@@ -215,23 +215,23 @@ class SKKEngineTest {
     fun testHandleEnter() {
         typeText("n\n")
         verify { ic.commitText(match { it.toString() == "ん" }, 1) }
-        assertEquals(0, engine.mComposing.length)
+        assertEquals(0, engine.mRoman.length)
 
         typeText("k\n")
         verify { ic.setComposingText(match { it.toString() == "" }, 1) }
-        assertEquals(0, engine.mComposing.length)
+        assertEquals(0, engine.mRoman.length)
 
         typeText("qn\n")
         verify { ic.commitText(match { it.toString() == "ン" }, 1) }
 
         typeText("Ak")
-        assertEquals(1, engine.mComposing.length)
-        assertEquals('k', engine.mComposing[0])
+        assertEquals(1, engine.mRoman.length)
+        assertEquals('k', engine.mRoman[0])
         typeText("\n")
         verify { ic.commitText(match { it.toString() == "ア" }, 1) }
         assertEquals(SKKKatakanaState, engine.state)
         assertEquals(0, engine.mKanjiKey.length)
-        assertEquals(0, engine.mComposing.length)
+        assertEquals(0, engine.mRoman.length)
 
         val candidatesList = listOf("漢字", "感じ")
         every { userDict.getEntry("かんじ") } returns
@@ -330,11 +330,11 @@ class SKKEngineTest {
         assertEquals(SKKOkuriganaState, engine.state)
         assertEquals("いr", engine.mKanjiKey.toString())
         assertEquals("", engine.mOkurigana)
-        assertEquals("ry", engine.mComposing.toString())
+        assertEquals("ry", engine.mRoman.toString())
 
         typeText("◀")
         assertEquals(SKKOkuriganaState, engine.state)
-        assertEquals("r", engine.mComposing.toString())
+        assertEquals("r", engine.mRoman.toString())
 
         typeText("◀")
         assertEquals(SKKPreeditState, engine.state)

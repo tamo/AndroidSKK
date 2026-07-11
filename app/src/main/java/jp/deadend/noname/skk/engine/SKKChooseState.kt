@@ -31,8 +31,8 @@ object SKKChooseState : SKKConfirmingState() {
 
     override fun handleBackspace(context: SKKEngine): Boolean {
         if (!declineUnregister(context)) {
-            if (context.mComposing.isNotEmpty()) {
-                context.mComposing.deleteCharAt(context.mComposing.lastIndex)
+            if (context.mRoman.isNotEmpty()) {
+                context.mRoman.deleteCharAt(context.mRoman.lastIndex)
                 context.mCandidates.updateComposingText()
             } else {
                 context.pickCurrentCandidate(backspace = true)
@@ -70,7 +70,7 @@ object SKKChooseState : SKKConfirmingState() {
                     // 接尾辞入力
                     pickCurrentCandidate()
                     changeState(SKKPreeditState) // Abbrevキーボードのことは無視
-                    mKanjiKey.append('>')
+                    mKanjiKey.roman = '>'
                     setComposingTextSKK()
                 }
 
@@ -122,13 +122,12 @@ object SKKChooseState : SKKConfirmingState() {
                     changeState(SKKAbbrevState)
 
                 else -> { // 漢字変換中
-                    mComposing.setLength(0) // 最初から空のはずだけど念のため
+                    mRoman.clear() // 最初から空のはずだけど念のため
                     changeState(SKKPreeditState) // Abbrev の可能性はない
-                    val maybeComposing = mKanjiKey.lastOrNull() ?: Char(0)
-                    if (isAlphabet(maybeComposing.code)) {
-                        mKanjiKey.deleteLast() // 送りがなのアルファベットを削除
-                        if (skkPrefs.softKeyboardType == "qwerty") { // Flickではアルファベットが残ると困る
-                            mComposing.append(maybeComposing)
+                    mKanjiKey.roman?.let { roman ->
+                        mKanjiKey.roman = null
+                        if (roman != '>' && keyboardType == "qwerty") { // Flickではアルファベットが残ると困る
+                            mRoman.append(roman)
                         }
                     }
                     mKanjiKey.append(mOkurigana)
@@ -143,7 +142,7 @@ object SKKChooseState : SKKConfirmingState() {
 
     override fun transformLastChar(context: SKKEngine, type: String): Boolean = true.also {
         if (!super.transformLastChar(context, type)) context.run {
-            if (mComposing.isNotEmpty()) return@run
+            if (mRoman.isNotEmpty()) return@run
             if (mOkurigana.isEmpty()) return@run
             val okurigana = mOkurigana // ▼合い (okurigana = い)
             val newOkurigana = RomajiConverter.transform(okurigana, type).second
@@ -156,8 +155,7 @@ object SKKChooseState : SKKConfirmingState() {
             // 例外: 送りがなが「っ」になる場合は，どのみち必ず「た行」の音なのでmKanjiKeyはそのまま
             // 「ゃゅょ」で送りがなが始まる場合はないはず
             if (type != SKKEngine.TRANS_SMALL) {
-                mKanjiKey.deleteLast()
-                mKanjiKey.append(RomajiConverter.getConsonantForVoiced(newOkurigana))
+                mKanjiKey.roman = RomajiConverter.getConsonantForVoiced(newOkurigana)
             }
             mOkurigana = newOkurigana
             startConversion() //変換やりなおし

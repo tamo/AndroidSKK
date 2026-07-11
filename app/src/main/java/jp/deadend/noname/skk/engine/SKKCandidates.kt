@@ -98,12 +98,12 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
                 is SKKNarrowingState -> mIndex = list.lastIndex
 
                 is SKKChooseState -> engine.apply {
-                    SKKLog.d("back to preedit: composing=$mComposing, key=$mKanjiKey, okuri=$mOkurigana")
+                    SKKLog.d("back to preedit: key=$mKanjiKey, okuri=$mOkurigana, roman=$mRoman")
                     this@SKKCandidates.reset()
-                    if (mComposing.isEmpty()) {
+                    if (mRoman.isEmpty()) {
                         if (mOkurigana.isNotEmpty()) {
                             mOkurigana = ""
-                            mKanjiKey.deleteAtCursor()
+                            mKanjiKey.roman = null
                         }
                         changeState(SKKPreeditState)
                         setComposingTextSKK()
@@ -111,8 +111,8 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
                     } else {
                         mKanjiKey.clear()
                         changeState(SKKAbbrevState)
-                        setComposingTextSKK(mComposing)
-                        complete(mComposing.toString())
+                        setComposingTextSKK(mRoman)
+                        complete(mRoman.toString())
                     }
                     return
                 }
@@ -137,7 +137,7 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
     fun updateComposingText() = engine.run {
         get(mIndex)?.let { candidate ->
             setComposingTextSKK( // setComposingText のある NarrowingState は自前で mComposing を表示
-                candidate + mOkurigana + if (state.setComposingText == null) mComposing else ""
+                candidate + mOkurigana + if (state.setComposingText == null) mRoman else ""
             )
         } ?: setComposingTextSKK()
     }
@@ -258,7 +258,7 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
                             !isAlphabet(hira.first().code) && isAlphabet(last.code)
                     val kanjiKey = if (hasOkuri) hira.dropLast(1) else hira
                     mKanjiKey.set(kanjiKey)
-                    mComposing.setLength(0)
+                    mRoman.clear()
                     if (commit) when {
                         isSpecial -> {
                             mKanjiKey.set(conv) // カテゴリ名
@@ -270,7 +270,7 @@ class SKKCandidates(private val engine: SKKEngine, private val service: SKKServi
                     } else {
                         // ハードウェアキーボードで Tab を押しただけなら送り仮名で conversionStart しない
                         val composing = if (hasOkuri && last !in "aiueo") {
-                            mComposing.append(last) // 子音は入力したことにして、次の母音を大文字で入力させる
+                            mRoman.append(last) // 子音は入力したことにして、次の母音を大文字で入力させる
                             kanjiKey + last
                         } else kanjiKey
                         setComposingTextSKK(composing)

@@ -29,8 +29,8 @@ object SKKNarrowingState : SKKConfirmingState() {
     }
 
     override val setComposingText = fun(context: SKKEngine, ct: StringBuilder) {
-        val hintWithCursor = if (mHint.cursor == mHint.length) "${mHint}${context.mComposing}"
-        else "${mHint.take(mHint.cursor)}[${context.mComposing}]${mHint.drop(mHint.cursor)}"
+        val hintWithCursor = if (mHint.cursor == mHint.length) "${mHint}${context.mRoman}"
+        else "${mHint.take(mHint.cursor)}[${context.mRoman}]${mHint.drop(mHint.cursor)}"
         ct.append(" hint: $hintWithCursor")
     }
 
@@ -49,8 +49,8 @@ object SKKNarrowingState : SKKConfirmingState() {
                 mHint.isEmpty() && !mCandidates.isSpecial -> // 絵文字や記号は変換ではない
                     startConversion()
 
-                mComposing.isNotEmpty() -> {
-                    mComposing.deleteCharAt(mComposing.lastIndex)
+                mRoman.isNotEmpty() -> {
+                    mRoman.deleteCharAt(mRoman.lastIndex)
                     mCandidates.updateComposingText()
                 }
 
@@ -101,7 +101,7 @@ object SKKNarrowingState : SKKConfirmingState() {
             if (isASCII) {
                 // このモードでは ' ' も 'X' も利かない
                 mHint.insertAtCursor(Char(charCode).toString())
-                mComposing.setLength(0)
+                mRoman.clear()
                 mCandidates.narrow(mHint.toString())
                 return
             }
@@ -121,7 +121,7 @@ object SKKNarrowingState : SKKConfirmingState() {
                         this, Character.toLowerCase(keyCode)
                     ) { _, hiraganaChar ->
                         mHint.insertAtCursor(hiraganaChar)
-                        mComposing.setLength(0)
+                        mRoman.clear()
                         mCandidates.narrow(mHint.toString())
                     }
                     mCandidates.updateComposingText()
@@ -162,8 +162,8 @@ object SKKNarrowingState : SKKConfirmingState() {
         if (!super.transformLastChar(context, type)) context.run {
             if (type == SKKEngine.TRANS_SHIFT) return@run
 
-            mHint.insertAtCursor(mComposing.toString())
-            mComposing.clear()
+            mHint.insertAtCursor(mRoman.toString())
+            mRoman.clear()
 
             if (mHint.isEmpty()) return@run
 

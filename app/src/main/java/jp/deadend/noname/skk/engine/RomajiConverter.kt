@@ -69,36 +69,36 @@ object RomajiConverter {
             mapOf("゜" to "", "゚" to "") // 半濁点も2種類 309A, 309C
 
     fun convert(romaji: String) = mRomajiMap[romaji].orEmpty()
-    fun getConsonantForVoiced(kana: String): String {
+    fun getConsonantForVoiced(kana: String): Char? {
         val hiragana = katakana2hiragana(hankaku2zenkaku(kana))
-        if (hiragana.isEmpty()) return ""
+        if (hiragana.isEmpty()) return null
         return when (val c = hiragana[0]) {
-            'ぁ', 'あ' -> "a"
-            'ぃ', 'い' -> "i"
-            'ぅ' -> "u"
-            'う' -> if (hiragana.length > 1 && isDakuten(hiragana[1].code)) "v" else "u"
-            'ぇ', 'え' -> "e"
-            'ぉ', 'お' -> "o"
-            in 'か'..'ご' -> if ((c - 'か') % 2 == 0) "k" else "g"
-            in 'さ'..'ぞ' -> if ((c - 'さ') % 2 == 0) "s" else "z"
-            in 'た'..'ぢ' -> if ((c - 'た') % 2 == 0) "t" else "d"
-            'っ' -> "t"
-            in 'つ'..'ど' -> if ((c - 'つ') % 2 == 0) "t" else "d"
-            in 'な'..'の' -> "n"
+            'ぁ', 'あ' -> 'a'
+            'ぃ', 'い' -> 'i'
+            'ぅ' -> 'u'
+            'う' -> if (hiragana.length > 1 && isDakuten(hiragana[1].code)) 'v' else 'u'
+            'ぇ', 'え' -> 'e'
+            'ぉ', 'お' -> 'o'
+            in 'か'..'ご' -> if ((c - 'か') % 2 == 0) 'k' else 'g'
+            in 'さ'..'ぞ' -> if ((c - 'さ') % 2 == 0) 's' else 'z'
+            in 'た'..'ぢ' -> if ((c - 'た') % 2 == 0) 't' else 'd'
+            'っ' -> 't'
+            in 'つ'..'ど' -> if ((c - 'つ') % 2 == 0) 't' else 'd'
+            in 'な'..'の' -> 'n'
             in 'は'..'ぽ' -> when ((c - 'は') % 3) {
-                0 -> "h"
-                1 -> "b"
-                else -> "p"
+                0 -> 'h'
+                1 -> 'b'
+                else -> 'p'
             }
 
-            in 'ま'..'も' -> "m"
-            in 'ゃ'..'よ' -> "y"
-            in 'ら'..'ろ' -> "r"
-            in 'ゎ'..'を' -> "w"
-            'ん' -> "n"
-            'ゔ' -> "v"
-            'ゕ', 'ゖ' -> "k"
-            else -> ""
+            in 'ま'..'も' -> 'm'
+            in 'ゃ'..'よ' -> 'y'
+            in 'ら'..'ろ' -> 'r'
+            in 'ゎ'..'を' -> 'w'
+            'ん' -> 'n'
+            'ゔ' -> 'v'
+            'ゕ', 'ゖ' -> 'k'
+            else -> null
         }
     }
 
