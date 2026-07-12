@@ -58,13 +58,15 @@ object SKKOkuriganaState : SKKState {
                     if (hiraganaChar.isNotEmpty()) {
                         mRoman.clear()
                         mOkurigana += hiraganaChar
+                        if (mOkurigana.first() == 'っ') mKanjiKey.roman =
+                            RomajiConverter.getConsonantForVoiced(hiraganaChar.last().toString())
                         startConversion()
                     } else
                         setComposingOkuri(mOkurigana + mRoman)
                 }
 
                 hiraganaChar == "っ" -> { // IXtu など
-                    mKanjiKey.roman = 't' // これでほぼカバーしているはずだが
+                    mKanjiKey.roman = 't' // あとから getConsonantForVoiced で修正される
                     mOkurigana = "っ"
                     mRoman.clear()
                     setComposingOkuri(mOkurigana)

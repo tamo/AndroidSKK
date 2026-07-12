@@ -325,6 +325,42 @@ class SKKEngineTest {
     }
 
     @Test
+    fun testOkuriganaSokuonSuPpa() {
+        every { userDict.getEntry(any()) } returns null
+        every { userDict.getEntry("すp") } returns
+                SKKUserDictionary.Entry(listOf("酸"), listOf("っぱ" to "酸"))
+
+        typeText("SuPpa")
+        assertEquals(SKKChooseState, engine.state)
+        assertEquals("酸", engine.mCandidates.mList?.get(0))
+        assertEquals("っぱ", engine.mOkurigana)
+    }
+
+    @Test
+    fun testOkuriganaSokuonSuXtupa() {
+        every { userDict.getEntry(any()) } returns null
+        every { userDict.getEntry("すp") } returns
+                SKKUserDictionary.Entry(listOf("酸"), listOf("っぱ" to "酸"))
+
+        typeText("SuXtupa")
+        assertEquals(SKKChooseState, engine.state)
+        assertEquals("酸", engine.mCandidates.mList?.get(0))
+        assertEquals("っぱ", engine.mOkurigana)
+    }
+
+    @Test
+    fun testOkuriganaSokuonSuTtBackspacePa() {
+        every { userDict.getEntry(any()) } returns null
+        every { userDict.getEntry("すp") } returns
+                SKKUserDictionary.Entry(listOf("酸"), listOf("っぱ" to "酸"))
+
+        typeText("SuTt◀pa")
+        assertEquals(SKKChooseState, engine.state)
+        assertEquals("酸", engine.mCandidates.mList?.get(0))
+        assertEquals("っぱ", engine.mOkurigana)
+    }
+
+    @Test
     fun testOkuriganaComposingBackspace() {
         typeText("IRy")
         assertEquals(SKKOkuriganaState, engine.state)
